@@ -227,7 +227,7 @@ with col_table:
 
 with col_chart:
     asset_values = {}
-    total_invested_principal = 0.0 # 원금 총합 계산용
+    total_invested_principal = 0.0 
     
     for _, row in edited_df.iterrows():
         tkr = str(row["티커 (Ticker)"]).upper().strip()
@@ -277,7 +277,7 @@ with col_chart:
 
 st.write("")
 
-# --- 신규: 리밸런싱 지시표 및 수익률 현황판 (병합) ---
+# --- 리밸런싱 지시표 및 수익률 현황판 ---
 st.markdown("##### 💵 종목별 수익률 & 리밸런싱 액션 지침")
 st.markdown("현재 평가액과 오늘의 Regime 목표 비중을 비교하여 **부족한 것은 [매수], 넘치는 것은 [매도]**를 지시합니다.")
 
@@ -286,12 +286,9 @@ all_tickers = set([t for t in asset_values.keys()] + list(mr['target_weights'].k
 
 for tkr in all_tickers:
     tkr = tkr.upper()
-    
-    # 내 정보 가져오기
     my_val = asset_values.get(tkr, 0.0)
     my_weight = (my_val / total_value) * 100 if total_value > 0 else 0.0
     
-    # 수익률 정보 (표에서 해당 티커 찾기)
     shares, avg_price = 0.0, 0.0
     for _, row in edited_df.iterrows():
         if str(row["티커 (Ticker)"]).upper().strip() == tkr:
@@ -300,7 +297,6 @@ for tkr in all_tickers:
                 avg_price = float(row.get("평균 단가 ($)", 0.0))
             except: pass
             
-    # 타겟 정보 가져오기
     target_w_dec = mr['target_weights'].get(tkr, 0.0)
     target_val = total_value * target_w_dec if total_value > 0 else 0.0
     
@@ -309,20 +305,18 @@ for tkr in all_tickers:
     elif diff_val > 0: action = f"🟢 약 ${diff_val:,.0f} 매수"
     else: action = f"🔴 약 ${abs(diff_val):,.0f} 매도"
 
-    # 수익률 계산
     if shares > 0:
         if tkr == "CASH":
-            ret_pct, ret_amt, p_str, c_str = 0.0, 0.0, "-", "-"
+            ret_pct, ret_amt = 0.0, 0.0
         else:
             curr_price = mr['latest_prices'].get(tkr, 0.0)
-            p_str, c_str = f"${avg_price:,.2f}", f"${curr_price:,.2f}"
             if avg_price > 0:
                 ret_pct = ((curr_price - avg_price) / avg_price) * 100
                 ret_amt = (curr_price - avg_price) * shares
             else:
                 ret_pct, ret_amt = 0.0, 0.0
     else:
-        p_str, c_str, ret_pct, ret_amt = "-", "-", 0.0, 0.0
+        ret_pct, ret_amt = 0.0, 0.0
 
     if my_val > 0 or target_w_dec > 0:
         status_data.append({
@@ -350,12 +344,23 @@ if status_data:
 
 st.divider()
 
-# --- 2 & 3. 하단 데이터 연산부 (원금/순수익 분리 차트) ---
-if total_value > 0 and st.session_state.get('first_entry_date'):
+# --- 2 & 3. 하단 데이터 연산부 (원금/순수익 분리 차트 및 날짜 선택) ---
+if total_value > 0:
     with st.spinner("자산 가치 추이를 계산 중입니다..."):
         st.subheader("📈 2. 포트폴리오 가치 추이 및 순수익")
-        st.markdown(f"최초 기입일(**{st.session_state['first_entry_date'].strftime('%Y-%m-%d')}**) 기준, 내가 투입한 **총 원금**과 상승으로 인한 **순수익**을 분리하여 보여줍니다.")
         
+        # 사용자가 추적 시작일(매수일)을 맘대로 수정할 수 있도록 달력 복구
+        default_date = st.session_state.get('first_entry_date')
+        if default_date is None:
+            default_date = datetime.today() - timedelta(days=90)
+            
+        col_date, _ = st.columns([1, 2])
+        with col_date:
+            user_start_date = st.date_input("📅 포트폴리오 매수 시작일 (이 날짜부터 차트 생성)", value=default_date)
+            # 날짜를 선택하면 그 날짜를 세션 및 JSON에 덮어쓰기
+            st.session_state['first_entry_date'] = datetime.combine(user_start_date, datetime.min.time())
+            save_portfolio_data(st.session_state['init_portfolio'], st.session_state['portfolio_history'], st.session_state['first_entry_date'], st.session_state['journal_text'])
+
         v_col1, v_col2, v_col3 = st.columns(3)
         pure_profit = total_value - total_invested_principal
         profit_pct = (pure_profit / total_invested_principal * 100) if total_invested_principal > 0 else 0.0
@@ -365,51 +370,54 @@ if total_value > 0 and st.session_state.get('first_entry_date'):
         v_col3.metric("누적 순수익금", f"${pure_profit:+,.2f}", f"{profit_pct:+.2f}% 수익률")
 
         # 시계열 차트 생성 로직
-        chart_start_ts = pd.Timestamp(st.session_state['first_entry_date'].date())
-        benchmark_index = yf.download("QQQ", start=(chart_start_ts - timedelta(days=1)).strftime('%Y-%m-%d'), progress=False)['Close'].index
-        portfolio_value_series = pd.Series(0.0, index=benchmark_index)
-        principal_series = pd.Series(0.0, index=benchmark_index)
-
-        for _, row in edited_df.iterrows():
-            tkr = str(row["티커 (Ticker)"]).upper().strip()
-            try: 
-                shares = float(row["수량 (주/달러)"])
-                avg_p = float(row.get("평균 단가 ($)", 0.0))
-            except: 
-                shares, avg_p = 0.0, 0.0
-                
-            if shares > 0:
-                if tkr == "CASH":
-                    portfolio_value_series += shares
-                    principal_series += shares
-                else:
-                    try:
-                        stock_series = yf.download(tkr, start=(chart_start_ts - timedelta(days=1)).strftime('%Y-%m-%d'), progress=False)['Close']
-                        if not stock_series.empty:
-                            if isinstance(stock_series, pd.DataFrame): stock_series = stock_series.iloc[:, 0]
-                            stock_series = stock_series.reindex(benchmark_index).ffill().fillna(0)
-                            portfolio_value_series += stock_series * shares
-                            principal_series += (shares * avg_p) # 원금은 평단가 고정
-                    except: pass
-
-        portfolio_value_series = portfolio_value_series.dropna()
-        principal_series = principal_series.dropna()
+        chart_start_ts = pd.Timestamp(user_start_date)
+        fetch_start = (chart_start_ts - timedelta(days=10)).strftime('%Y-%m-%d') # 여유분 다운로드
         
-        # 기입일 이전 값 자르기 (정확히 0부터 시작)
-        portfolio_value_series = portfolio_value_series[portfolio_value_series.index >= chart_start_ts]
-        principal_series = principal_series[principal_series.index >= chart_start_ts]
+        try:
+            benchmark_index = yf.download("QQQ", start=fetch_start, progress=False)['Close'].index
+            portfolio_value_series = pd.Series(0.0, index=benchmark_index)
+            principal_series = pd.Series(0.0, index=benchmark_index)
 
-        if len(portfolio_value_series) > 1:
-            fig_perf = go.Figure()
-            # 평가액 면적 그래프
-            fig_perf.add_trace(go.Scatter(x=portfolio_value_series.index, y=portfolio_value_series.values, mode='lines', name='내 총 자산 (평가액)', line=dict(color='#8e44ad', width=3), fill='tozeroy', fillcolor='rgba(142, 68, 173, 0.1)'))
-            # 원금 점선 그래프
-            fig_perf.add_trace(go.Scatter(x=principal_series.index, y=principal_series.values, mode='lines', name='투입 원금', line=dict(color='#e74c3c', width=2, dash='dash')))
+            for _, row in edited_df.iterrows():
+                tkr = str(row["티커 (Ticker)"]).upper().strip()
+                try: 
+                    shares = float(row["수량 (주/달러)"])
+                    avg_p = float(row.get("평균 단가 ($)", 0.0))
+                except: 
+                    shares, avg_p = 0.0, 0.0
+                    
+                if shares > 0:
+                    if tkr == "CASH":
+                        portfolio_value_series += shares
+                        principal_series += shares
+                    else:
+                        try:
+                            stock_series = yf.download(tkr, start=fetch_start, progress=False)['Close']
+                            if not stock_series.empty:
+                                if isinstance(stock_series, pd.DataFrame): stock_series = stock_series.iloc[:, 0]
+                                stock_series = stock_series.reindex(benchmark_index).ffill().fillna(0)
+                                portfolio_value_series += stock_series * shares
+                                principal_series += (shares * avg_p)
+                        except: pass
+
+            portfolio_value_series = portfolio_value_series.dropna()
+            principal_series = principal_series.dropna()
             
-            fig_perf.update_layout(height=400, margin=dict(l=0, r=0, t=10, b=0), yaxis_title="달러 ($)", hovermode="x unified", legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
-            st.plotly_chart(fig_perf, use_container_width=True)
-        else:
-            st.info("데이터 누적을 위해 하루 이상 경과해야 차트가 표시됩니다.")
+            # 선택한 날짜 이후 데이터만 자르기
+            portfolio_value_series = portfolio_value_series[portfolio_value_series.index >= chart_start_ts]
+            principal_series = principal_series[principal_series.index >= chart_start_ts]
+
+            if len(portfolio_value_series) > 0:
+                fig_perf = go.Figure()
+                fig_perf.add_trace(go.Scatter(x=portfolio_value_series.index, y=portfolio_value_series.values, mode='lines', name='내 총 자산 (평가액)', line=dict(color='#8e44ad', width=3), fill='tozeroy', fillcolor='rgba(142, 68, 173, 0.1)'))
+                fig_perf.add_trace(go.Scatter(x=principal_series.index, y=principal_series.values, mode='lines', name='투입 원금', line=dict(color='#e74c3c', width=2, dash='dash')))
+                
+                fig_perf.update_layout(height=400, margin=dict(l=0, r=0, t=10, b=0), yaxis_title="달러 ($)", hovermode="x unified", legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+                st.plotly_chart(fig_perf, use_container_width=True)
+            else:
+                st.info("선택하신 시작일 이후의 거래 데이터가 없습니다. 날짜를 조금 더 과거로 설정해 보세요.")
+        except Exception as e:
+            st.error("차트 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
 else:
     st.info("👆 위 표에 종목과 평단가를 기입하시면 자산 추이와 순수익이 분석됩니다.")
 
