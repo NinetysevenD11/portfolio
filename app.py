@@ -35,7 +35,7 @@ def save_portfolio_data(df, history, first_date):
 # --- 페이지 기본 설정 ---
 st.set_page_config(page_title="AMLS 내 포트폴리오 현황", layout="wide")
 st.title("💼 AMLS v4 실전 포트폴리오 트래커")
-st.markdown("현재 시장의 **AMLS 국면(Regime)**을 파악하고, 내 보유 종목의 **비중, 기술적 위치**, **자산 성장 추이**, 그리고 **수량 변경 히스토리**를 추적합니다.")
+st.markdown("현재 시장의 **AMLS 국면(Regime)**을 파악하고, 내 보유 종목의 **평균 단가 대비 수익률, 기술적 위치**, **자산 성장 추이**를 추적합니다.")
 
 # --- 0. AMLS v4 현재 레짐 및 반도체 스위칭 파악 ---
 @st.cache_data(ttl=1800)
@@ -59,50 +59,94 @@ def get_market_regime():
     today = df.iloc[-1]
 
     vix, qqq, ma200, ma50 = today['VIX'], today['QQQ'], today['QQQ_MA200'], today['QQQ_MA50']
+    smh, smh_ma50, smh_3m_ret, smh_rsi = today['SMH'], today['SMH_MA50'], today['SMH_3M_Ret'], today['SMH_RSI']
 
+    # 레짐 판독
     if vix > 40: regime = 4
     elif qqq < ma200: regime = 3
     elif qqq >= ma200 and ma50 >= ma200 and vix < 25: regime = 1
     else: regime = 2
 
-    use_soxl = (today['SMH'] > today['SMH_MA50']) and (today['SMH_3M_Ret'] > 0.05) and (today['SMH_RSI'] > 50)
+    # 반도체 스위칭 판독
+    cond1 = smh > smh_ma50
+    cond2 = smh_3m_ret > 0.05
+    cond3 = smh_rsi > 50
+    use_soxl = cond1 and cond2 and cond3
+    
     semi_target = "SOXL (3배)" if use_soxl else "USD (2배)"
     if regime in [3, 4]: semi_target = "미보유 (안전 자산 대피)"
     elif regime == 2: semi_target = "USD (2배 - 레버리지 축소)"
 
-    return regime, vix, qqq, ma200, semi_target, today.name
+    return {
+        'regime': regime, 'vix': vix, 'qqq': qqq, 'ma200': ma200, 'ma50': ma50,
+        'smh': smh, 'smh_ma50': smh_ma50, 'smh_3m_ret': smh_3m_ret, 'smh_rsi': smh_rsi,
+        'cond1': cond1, 'cond2': cond2, 'cond3': cond3,
+        'semi_target': semi_target, 'date': today.name
+    }
 
-with st.spinner("시장 국면을 판독 중입니다..."):
-    regime, vix, qqq, ma200, semi_target, last_date = get_market_regime()
+with st.spinner("시장 국면을 정밀 판독 중입니다..."):
+    mr = get_market_regime()
 
-st.subheader("🧭 0. AMLS v4 시장 레이더")
-st.info("기준일: **{} 종가**".format(last_date.strftime('%Y년 %m월 %d일')))
+st.subheader("🧭 0. AMLS v4 시장 레이더 (상세 지표)")
+st.info(f"기준일: **{mr['date'].strftime('%Y년 %m월 %d일')} 종가**")
 
+# 상단 요약 카드
 r_col1, r_col2, r_col3, r_col4 = st.columns(4)
-r_col1.metric("오늘의 국면 (Regime)", "Regime {}".format(regime))
-r_col2.metric("공포 지수 (VIX)", "{:.2f}".format(vix), "40 초과 시 위험 / 25 미만 시 안정", delta_color="off")
-r_col3.metric("QQQ 200일선 이격도", "{:.2f}%".format((qqq / ma200 - 1) * 100), "양수(+)면 장기 상승 추세")
-r_col4.metric("반도체 스위칭 타겟", "{}".format(semi_target))
+r_col1.metric("📌 오늘의 확정 국면", f"Regime {mr['regime']}")
+r_col2.metric("📌 공포 지수 (VIX)", f"{mr['vix']:.2f}")
+r_col3.metric("📌 QQQ 200일선 이격도", f"{(mr['qqq'] / mr['ma200'] - 1) * 100:.2f}%")
+r_col4.metric("📌 반도체 스위칭 타겟", f"{mr['semi_target']}")
+
+# 하단 상세 지표 분석 (2단 레이아웃)
+col_ind1, col_ind2 = st.columns(2)
+
+with col_ind1:
+    st.markdown("##### 🎯 레짐 판단 3대 핵심 지표")
+    vix_status = "🔴 위험 (>40)" if mr['vix'] > 40 else ("🟡 경계 (>25)" if mr['vix'] >= 25 else "🟢 안정 (<25)")
+    qqq_trend = "🟢 상승 추세 (위에 있음)" if mr['qqq'] >= mr['ma200'] else "🔴 하락 추세 (아래에 있음)"
+    qqq_cross = "🟢 정배열 (골든 크로스)" if mr['ma50'] >= mr['ma200'] else "🔴 역배열 (데드 크로스)"
+    
+    st.markdown(f"""
+    - **1. 공포 지수 (VIX):** {mr['vix']:.2f} ➔ **{vix_status}**
+    - **2. 장기 추세 (QQQ vs 200일선):** QQQ(${mr['qqq']:.2f})가 200일선(${mr['ma200']:.2f}) 대비 ➔ **{qqq_trend}**
+    - **3. 중기 배열 (QQQ 50일선 vs 200일선):** 50일선(${mr['ma50']:.2f})이 200일선(${mr['ma200']:.2f}) 대비 ➔ **{qqq_cross}**
+    """)
+
+with col_ind2:
+    st.markdown("##### ⚡ 반도체(SOXL) 진입 3대 모멘텀 지표")
+    c1_mark = "🟢 합격" if mr['cond1'] else "🔴 미달"
+    c2_mark = "🟢 합격" if mr['cond2'] else "🔴 미달"
+    c3_mark = "🟢 합격" if mr['cond3'] else "🔴 미달"
+    
+    st.markdown(f"""
+    - **1. 단기 추세 (SMH > 50일선):** 종가(${mr['smh']:.2f}) > 50일선(${mr['smh_ma50']:.2f}) ➔ **{c1_mark}**
+    - **2. 중기 수익률 (최근 3개월 > +5%):** 현재 {mr['smh_3m_ret']*100:.2f}% ➔ **{c2_mark}**
+    - **3. 모멘텀 강도 (RSI 14 > 50):** 현재 {mr['smh_rsi']:.1f} ➔ **{c3_mark}**
+    """)
 
 st.divider()
 
 # --- 1. 내 포트폴리오 직접 기입 및 시각화 ---
-st.subheader("📝 1. 내 포트폴리오 기입란 & 비중")
-st.markdown("티커와 수량을 수정하시면 **히스토리가 영구 저장**되며, 우측에 **현재 가치 기준 포트폴리오 비중**이 실시간으로 표시됩니다.")
+st.subheader("📝 1. 내 포트폴리오 기입란 & 평단가 대비 수익률")
+st.markdown("수량과 **평균 단가**를 입력하시면 우측에 비중이, 하단에 **실시간 수익률 현황판**이 표시됩니다. (내역 영구 저장)")
 
-# 세션 상태 초기화 및 데이터 로드 (요청하신 초기 세팅 반영)
+# 세션 상태 초기화 및 데이터 로드
 if 'portfolio' not in st.session_state:
     saved_data = load_portfolio_data()
     if saved_data and len(saved_data.get("portfolio", [])) > 0:
-        st.session_state['portfolio'] = pd.DataFrame(saved_data["portfolio"])
+        pf_df = pd.DataFrame(saved_data["portfolio"])
+        # 기존 데이터에 평균 단가 열이 없다면 추가
+        if "평균 단가 ($)" not in pf_df.columns:
+            pf_df["평균 단가 ($)"] = 0.0
+        st.session_state['portfolio'] = pf_df
         st.session_state['portfolio_history'] = saved_data.get("history", [])
         fd = saved_data.get("first_entry_date")
         st.session_state['first_entry_date'] = datetime.fromisoformat(fd) if fd else None
     else:
-        # 사용자가 요청한 기본 포트폴리오 목록 및 0 세팅
         initial_df = pd.DataFrame({
             "티커 (Ticker)": ["TQQQ", "QLD", "QQQ", "SOXL", "USD", "GLD", "CASH"],
-            "수량 (주/달러)": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+            "수량 (주/달러)": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            "평균 단가 ($)": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         })
         st.session_state['portfolio'] = initial_df
         st.session_state['portfolio_history'] = []
@@ -118,12 +162,13 @@ with col_table:
         num_rows="dynamic",
         use_container_width=True,
         column_config={
-            "티커 (Ticker)": st.column_config.TextColumn("티커 (Ticker)", help="예: TQQQ, QLD, GLD, CASH"),
-            "수량 (주/달러)": st.column_config.NumberColumn("수량 (주/달러)", min_value=0, format="%.2f")
+            "티커 (Ticker)": st.column_config.TextColumn("티커 (Ticker)"),
+            "수량 (주/달러)": st.column_config.NumberColumn("수량", min_value=0.0, format="%.2f"),
+            "평균 단가 ($)": st.column_config.NumberColumn("평균 단가 ($)", min_value=0.0, format="%.2f")
         }
     )
 
-    # 변경 사항 추적 및 영구 저장 로직
+    # 수량 변경 히스토리 추적
     def get_dict_from_df(df):
         d = {}
         for _, row in df.iterrows():
@@ -139,22 +184,21 @@ with col_table:
     changes_made = False
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    # 평단가까지 변경되었는지 확인하여 저장 트리거 작동
+    if not edited_df.equals(st.session_state['last_portfolio']):
+        changes_made = True
+
     for tkr, old_val in old_dict.items():
         if tkr in new_dict:
             new_val = new_dict[tkr]
             if old_val != new_val:
-                st.session_state['portfolio_history'].append({"변경 일시": now_str, "티커": tkr, "상태": "수량 변경 🔄", "변경 전": "{:,.2f}".format(old_val), "변경 후": "{:,.2f}".format(new_val)})
-                changes_made = True
+                st.session_state['portfolio_history'].append({"변경 일시": now_str, "티커": tkr, "상태": "수량 변경 🔄", "변경 전": f"{old_val:,.2f}", "변경 후": f"{new_val:,.2f}"})
         else:
-            st.session_state['portfolio_history'].append({"변경 일시": now_str, "티커": tkr, "상태": "항목 삭제 ❌", "변경 전": "{:,.2f}".format(old_val), "변경 후": "0.00"})
-            changes_made = True
+            st.session_state['portfolio_history'].append({"변경 일시": now_str, "티커": tkr, "상태": "항목 삭제 ❌", "변경 전": f"{old_val:,.2f}", "변경 후": "0.00"})
 
     for tkr, new_val in new_dict.items():
         if tkr not in old_dict:
-            st.session_state['portfolio_history'].append({"변경 일시": now_str, "티커": tkr, "상태": "신규 추가 🟢", "변경 전": "0.00", "변경 후": "{:,.2f}".format(new_val)})
-            changes_made = True
-            
-            # 0에서 유의미한 숫자로 처음 입력되는 시점을 최초 진입일로 기록
+            st.session_state['portfolio_history'].append({"변경 일시": now_str, "티커": tkr, "상태": "신규 추가 🟢", "변경 전": "0.00", "변경 후": f"{new_val:,.2f}"})
             if st.session_state['first_entry_date'] is None and new_val > 0:
                 st.session_state['first_entry_date'] = datetime.now()
 
@@ -163,97 +207,109 @@ with col_table:
         st.session_state['portfolio'] = edited_df.copy()
         save_portfolio_data(edited_df, st.session_state['portfolio_history'], st.session_state['first_entry_date'])
 
-with col_chart:
-    # 차트용 최신 가격 조회 및 비중 계산
-    raw_tickers = edited_df["티커 (Ticker)"].dropna().astype(str).str.upper().str.strip().tolist()
-    valid_stock_tickers = [t for t in raw_tickers if t != "" and t != "CASH" and t.lower() != 'nan']
-    
-    asset_values = {}
-    total_value = 0.0
-    
-    if valid_stock_tickers:
-        try:
-            fast_data = yf.download(valid_stock_tickers, period="5d", progress=False)['Close']
-            latest_prices = {}
-            if isinstance(fast_data, pd.Series): latest_prices[valid_stock_tickers[0]] = fast_data.dropna().iloc[-1]
-            else:
-                for t in valid_stock_tickers:
-                    if t in fast_data.columns: latest_prices[t] = fast_data[t].dropna().iloc[-1]
-                    
-            for _, row in edited_df.iterrows():
-                tkr = str(row["티커 (Ticker)"]).upper().strip()
-                try: shares = float(row["수량 (주/달러)"])
-                except: shares = 0.0
-                if shares > 0:
-                    if tkr == "CASH":
-                        asset_values[tkr] = asset_values.get(tkr, 0) + shares
-                    elif tkr in latest_prices:
-                        asset_values[tkr] = asset_values.get(tkr, 0) + (shares * latest_prices[tkr])
-        except:
-            pass
-            
-    # 현금만 있거나 예외 처리
-    if not asset_values:
-        for _, row in edited_df.iterrows():
-            tkr = str(row["티커 (Ticker)"]).upper().strip()
-            if tkr == "CASH":
-                try: 
-                    val = float(row["수량 (주/달러)"])
-                    if val > 0: asset_values["CASH"] = asset_values.get("CASH", 0) + val
-                except: pass
+# 차트용 최신 가격 조회 및 비중 계산
+raw_tickers = edited_df["티커 (Ticker)"].dropna().astype(str).str.upper().str.strip().tolist()
+valid_stock_tickers = [t for t in raw_tickers if t != "" and t != "CASH" and t.lower() != 'nan']
 
-    if asset_values:
-        total_value = sum(asset_values.values())
-        if total_value > 0:
-            fig_bar = go.Figure()
-            
-            # 색상 팔레트
-            palette = ['#e74c3c', '#3498db', '#f1c40f', '#2ecc71', '#9b59b6', '#e67e22', '#1abc9c', '#34495e']
-            sorted_assets = sorted(asset_values.items(), key=lambda x: x[1], reverse=True)
-            
-            for idx, (tkr, val) in enumerate(sorted_assets):
-                weight = (val / total_value) * 100
-                fig_bar.add_trace(go.Bar(
-                    y=['내 포트폴리오 비중'],
-                    x=[weight],
-                    name=tkr,
-                    orientation='h',
-                    text=f"<b>{tkr}</b><br>{weight:.1f}%",
-                    textposition='inside',
-                    insidetextanchor='middle',
-                    marker=dict(color=palette[idx % len(palette)], line=dict(color='white', width=1.5)),
-                    hoverinfo='text',
-                    hovertext=f"{tkr}: ${val:,.0f} ({weight:.1f}%)"
-                ))
-
-            fig_bar.update_layout(
-                barmode='stack',
-                height=200,
-                margin=dict(l=0, r=0, t=40, b=0),
-                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[0, 100]),
-                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                showlegend=False,
-                title=dict(text=f"총 자산 평가액: <b>${total_value:,.0f}</b>", font=dict(size=18), x=0.5, xanchor='center')
-            )
-            st.plotly_chart(fig_bar, use_container_width=True)
+latest_prices = {}
+if valid_stock_tickers:
+    try:
+        fast_data = yf.download(valid_stock_tickers, period="5d", progress=False)['Close']
+        if isinstance(fast_data, pd.Series): latest_prices[valid_stock_tickers[0]] = fast_data.dropna().iloc[-1]
         else:
-            st.info("수량이 모두 0입니다. 비중을 확인하려면 수량을 기입해 주세요.")
+            for t in valid_stock_tickers:
+                if t in fast_data.columns: latest_prices[t] = fast_data[t].dropna().iloc[-1]
+    except:
+        pass
+
+with col_chart:
+    asset_values = {}
+    for _, row in edited_df.iterrows():
+        tkr = str(row["티커 (Ticker)"]).upper().strip()
+        try: shares = float(row["수량 (주/달러)"])
+        except: shares = 0.0
+        if shares > 0:
+            if tkr == "CASH":
+                asset_values[tkr] = asset_values.get(tkr, 0) + shares
+            elif tkr in latest_prices:
+                asset_values[tkr] = asset_values.get(tkr, 0) + (shares * latest_prices[tkr])
+                
+    total_value = sum(asset_values.values()) if asset_values else 0.0
+
+    if total_value > 0:
+        fig_bar = go.Figure()
+        palette = ['#e74c3c', '#3498db', '#f1c40f', '#2ecc71', '#9b59b6', '#e67e22', '#1abc9c', '#34495e']
+        sorted_assets = sorted(asset_values.items(), key=lambda x: x[1], reverse=True)
+        
+        for idx, (tkr, val) in enumerate(sorted_assets):
+            weight = (val / total_value) * 100
+            fig_bar.add_trace(go.Bar(
+                y=['내 포트폴리오 비중'], x=[weight], name=tkr, orientation='h',
+                text=f"<b>{tkr}</b><br>{weight:.1f}%", textposition='inside', insidetextanchor='middle',
+                marker=dict(color=palette[idx % len(palette)], line=dict(color='white', width=1.5)),
+                hoverinfo='text', hovertext=f"{tkr}: ${val:,.0f} ({weight:.1f}%)"
+            ))
+
+        fig_bar.update_layout(
+            barmode='stack', height=200, margin=dict(l=0, r=0, t=40, b=0),
+            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[0, 100]),
+            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            showlegend=False,
+            title=dict(text=f"총 자산 평가액: <b>${total_value:,.0f}</b>", font=dict(size=18), x=0.5, xanchor='center')
+        )
+        st.plotly_chart(fig_bar, use_container_width=True)
     else:
         st.info("수량을 기입하시면 비중 그래프가 나타납니다.")
+
+# --- 신규: 내 포트폴리오 수익률 상세 현황판 ---
+st.markdown("##### 💵 내 종목별 실시간 수익률 현황")
+status_data = []
+for _, row in edited_df.iterrows():
+    tkr = str(row["티커 (Ticker)"]).upper().strip()
+    try: 
+        shares = float(row["수량 (주/달러)"])
+        avg_price = float(row.get("평균 단가 ($)", 0.0))
+    except: 
+        shares, avg_price = 0.0, 0.0
+        
+    if shares > 0:
+        if tkr == "CASH":
+            status_data.append({"종목": tkr, "보유 수량": f"${shares:,.2f}", "평균 단가": "-", "현재 시장가": "-", "평가액": f"${shares:,.2f}", "수익률 (%)": "0.00%", "수익금 ($)": "$0.00"})
+        elif tkr in latest_prices:
+            curr_price = latest_prices[tkr]
+            total_val = shares * curr_price
+            if avg_price > 0:
+                ret_pct = ((curr_price - avg_price) / avg_price) * 100
+                ret_amt = (curr_price - avg_price) * shares
+            else:
+                ret_pct, ret_amt = 0.0, 0.0
+                
+            status_data.append({
+                "종목": tkr,
+                "보유 수량": f"{shares:,.2f} 주",
+                "평균 단가": f"${avg_price:,.2f}",
+                "현재 시장가": f"${curr_price:,.2f}",
+                "평가액": f"${total_val:,.2f}",
+                "수익률 (%)": f"{ret_pct:+.2f}%",
+                "수익금 ($)": f"${ret_amt:+,.2f}"
+            })
+
+if status_data:
+    status_df = pd.DataFrame(status_data)
+    # 수익률 색상 스타일링
+    def color_returns(val):
+        if type(val) == str and ('%' in val or '$+' in val or '$-' in val):
+            if '+' in val: return 'color: #2ecc71; font-weight: bold;'
+            elif '-' in val and val != '-': return 'color: #e74c3c; font-weight: bold;'
+        return ''
+    
+    st.dataframe(status_df.style.map(color_returns, subset=['수익률 (%)', '수익금 ($)']), hide_index=True, use_container_width=True)
 
 st.divider()
 
 # --- 2 & 3. 하단 데이터 연산부 ---
 cash_amount = asset_values.get("CASH", 0.0)
-
-# 0.0이 아닌 주식 티커만 골라내기
-active_stock_tickers = []
-for _, row in edited_df.iterrows():
-    tkr = str(row["티커 (Ticker)"]).upper().strip()
-    try: val = float(row["수량 (주/달러)"])
-    except: val = 0.0
-    if val > 0 and tkr != "CASH" and tkr != "" and tkr.lower() != 'nan':
-        active_stock_tickers.append(tkr)
+active_stock_tickers = [t for t in valid_stock_tickers if asset_values.get(t, 0) > 0]
 
 if active_stock_tickers or cash_amount > 0:
     with st.spinner("과거 궤적과 기술적 지표를 분석 중입니다..."):
@@ -272,26 +328,25 @@ if active_stock_tickers or cash_amount > 0:
             else: port_data = downloaded
             port_data = port_data.ffill()
 
-            st.subheader("📊 2. 내 종목 기술적 지표 현황")
+            st.subheader("📊 2. 내 종목 장기 기술적 지표 현황")
             for tkr in active_stock_tickers:
                 if tkr in port_data.columns:
                     series = port_data[tkr].dropna()
                     if len(series) < 150: continue
                     current_price = series.iloc[-1]
                     ma_30w = series.rolling(window=150).mean().iloc[-1]
-                    trend_status = "🟢 위 (상승추세)" if current_price > ma_30w else "🔴 아래 (하락추세)"
+                    trend_status = "🟢 위 (장기 상승추세)" if current_price > ma_30w else "🔴 아래 (장기 하락추세)"
                     rsi_14 = ta.rsi(series, length=14).iloc[-1]
 
                     indicator_data.append({
                         "종목 (Ticker)": tkr,
-                        "현재가 ($)": "${:.2f}".format(current_price),
-                        "현재 RSI (14)": "{:.1f}".format(rsi_14),
-                        "30주 MA ($)": "${:.2f}".format(ma_30w),
+                        "현재가 ($)": f"${current_price:.2f}",
+                        "현재 RSI (14)": f"{rsi_14:.1f}",
+                        "30주 MA ($)": f"${ma_30w:.2f}",
                         "30주 MA 돌파 여부": trend_status
                     })
 
             if indicator_data: st.dataframe(pd.DataFrame(indicator_data), hide_index=True, use_container_width=True)
-            else: st.info("데이터가 부족하거나 상장된 지 얼마 안 된 종목입니다.")
 
         st.divider()
 
@@ -323,9 +378,9 @@ if active_stock_tickers or cash_amount > 0:
             val_1m = portfolio_value_series.iloc[-22] if len(portfolio_value_series) >= 22 else val_today
 
             v_col1, v_col2, v_col3 = st.columns(3)
-            v_col1.metric("총 평가액 (현금 포함)", "${:,.2f}".format(val_today), "전일 대비: ${:+,.2f}".format(val_today - val_1d))
-            v_col2.metric("1주일 전 대비 변화", "${:+,.2f}".format(val_today - val_1w), "{:+.2f}%".format((val_today / val_1w - 1) * 100) if val_1w else "0.00%")
-            v_col3.metric("1개월 전 대비 변화", "${:+,.2f}".format(val_today - val_1m), "{:+.2f}%".format((val_today / val_1m - 1) * 100) if val_1m else "0.00%")
+            v_col1.metric("총 평가액 (현금 포함)", f"${val_today:,.2f}", f"전일 대비: ${(val_today - val_1d):+,.2f}")
+            v_col2.metric("1주일 전 대비 변화", f"${(val_today - val_1w):+,.2f}", f"{(val_today / val_1w - 1) * 100:+.2f}%" if val_1w else "0.00%")
+            v_col3.metric("1개월 전 대비 변화", f"${(val_today - val_1m):+,.2f}", f"{(val_today / val_1m - 1) * 100:+.2f}%" if val_1m else "0.00%")
 
             daily_df = portfolio_value_series.last('90D')
             monthly_df = portfolio_value_series.resample('ME').last().last('1095D')
@@ -350,21 +405,15 @@ if active_stock_tickers or cash_amount > 0:
                 fig_yearly.add_trace(go.Bar(
                     x=yearly_df.index.strftime('%Y'), y=yearly_df.values,
                     name='자산 가치', marker_color='#e74c3c',
-                    text=["${:,.0f}".format(v) for v in yearly_df.values], textposition='auto'
+                    text=[f"${v:,.0f}" for v in yearly_df.values], textposition='auto'
                 ))
                 fig_yearly.update_layout(height=400, margin=dict(l=0, r=0, t=10, b=0), yaxis_title="달러 ($)")
                 st.plotly_chart(fig_yearly, use_container_width=True)
-        else:
-            st.info("차트를 그리기에는 아직 데이터가 부족합니다. (최소 하루 경과 필요)")
-else:
-    st.info("수량이 0이 아닌 종목이 하나 이상 있어야 지표와 차트가 표시됩니다.")
 
 st.divider()
 
 # --- 4. 포트폴리오 변경 히스토리 (영구 보존) ---
 st.subheader("🕰️ 4. 포트폴리오 변경 히스토리")
-st.markdown("내가 직접 수정한 종목과 수량의 **변경 내역(로그)**이 시간순으로 영구 기록됩니다.")
-
 if st.session_state['portfolio_history']:
     history_df = pd.DataFrame(st.session_state['portfolio_history'])[::-1]
     st.dataframe(history_df, hide_index=True, use_container_width=True)
