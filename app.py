@@ -97,32 +97,53 @@ r_col2.metric("📌 공포 지수 (VIX)", f"{mr['vix']:.2f}")
 r_col3.metric("📌 QQQ 200일선 이격도", f"{(mr['qqq'] / mr['ma200'] - 1) * 100:.2f}%")
 r_col4.metric("📌 반도체 스위칭 타겟", f"{mr['semi_target']}")
 
-# 하단 상세 지표 분석 (2단 레이아웃)
+st.write("") # 간격 띄우기
+
+# 하단 상세 지표 분석 (예쁜 상태 카드 형태)
 col_ind1, col_ind2 = st.columns(2)
 
 with col_ind1:
     st.markdown("##### 🎯 레짐 판단 3대 핵심 지표")
-    vix_status = "🔴 위험 (>40)" if mr['vix'] > 40 else ("🟡 경계 (>25)" if mr['vix'] >= 25 else "🟢 안정 (<25)")
-    qqq_trend = "🟢 상승 추세 (위에 있음)" if mr['qqq'] >= mr['ma200'] else "🔴 하락 추세 (아래에 있음)"
-    qqq_cross = "🟢 정배열 (골든 크로스)" if mr['ma50'] >= mr['ma200'] else "🔴 역배열 (데드 크로스)"
     
-    st.markdown(f"""
-    - **1. 공포 지수 (VIX):** {mr['vix']:.2f} ➔ **{vix_status}**
-    - **2. 장기 추세 (QQQ vs 200일선):** QQQ(${mr['qqq']:.2f})가 200일선(${mr['ma200']:.2f}) 대비 ➔ **{qqq_trend}**
-    - **3. 중기 배열 (QQQ 50일선 vs 200일선):** 50일선(${mr['ma50']:.2f})이 200일선(${mr['ma200']:.2f}) 대비 ➔ **{qqq_cross}**
-    """)
+    # 1. VIX
+    vix_status = "위험 (>40)" if mr['vix'] > 40 else ("경계 (25~40)" if mr['vix'] >= 25 else "안정 (<25)")
+    vix_text = f"**1. 공포 지수 (VIX):** 현재 {mr['vix']:.2f} ➔ **{vix_status}**"
+    if mr['vix'] > 40: st.error(vix_text, icon="🚨")
+    elif mr['vix'] >= 25: st.warning(vix_text, icon="⚠️")
+    else: st.success(vix_text, icon="✅")
+
+    # 2. QQQ 추세
+    qqq_trend = "상승 추세 (위에 있음)" if mr['qqq'] >= mr['ma200'] else "하락 추세 (아래에 있음)"
+    qqq_text = f"**2. 장기 추세:** QQQ(${mr['qqq']:.2f})가 200일선(${mr['ma200']:.2f}) 대비 ➔ **{qqq_trend}**"
+    if mr['qqq'] >= mr['ma200']: st.success(qqq_text, icon="✅")
+    else: st.error(qqq_text, icon="🚨")
+
+    # 3. QQQ 배열
+    qqq_cross = "정배열 (골든 크로스)" if mr['ma50'] >= mr['ma200'] else "역배열 (데드 크로스)"
+    cross_text = f"**3. 중기 배열:** 50일선(${mr['ma50']:.2f})이 200일선(${mr['ma200']:.2f}) 대비 ➔ **{qqq_cross}**"
+    if mr['ma50'] >= mr['ma200']: st.success(cross_text, icon="✅")
+    else: st.error(cross_text, icon="🚨")
 
 with col_ind2:
     st.markdown("##### ⚡ 반도체(SOXL) 진입 3대 모멘텀 지표")
-    c1_mark = "🟢 합격" if mr['cond1'] else "🔴 미달"
-    c2_mark = "🟢 합격" if mr['cond2'] else "🔴 미달"
-    c3_mark = "🟢 합격" if mr['cond3'] else "🔴 미달"
     
-    st.markdown(f"""
-    - **1. 단기 추세 (SMH > 50일선):** 종가(${mr['smh']:.2f}) > 50일선(${mr['smh_ma50']:.2f}) ➔ **{c1_mark}**
-    - **2. 중기 수익률 (최근 3개월 > +5%):** 현재 {mr['smh_3m_ret']*100:.2f}% ➔ **{c2_mark}**
-    - **3. 모멘텀 강도 (RSI 14 > 50):** 현재 {mr['smh_rsi']:.1f} ➔ **{c3_mark}**
-    """)
+    # 1. SMH 단기 추세
+    c1_mark = "합격" if mr['cond1'] else "미달"
+    c1_text = f"**1. 단기 추세:** SMH(${mr['smh']:.2f}) > 50일선(${mr['smh_ma50']:.2f}) ➔ **{c1_mark}**"
+    if mr['cond1']: st.success(c1_text, icon="✅")
+    else: st.error(c1_text, icon="❌")
+
+    # 2. SMH 중기 수익률
+    c2_mark = "합격" if mr['cond2'] else "미달"
+    c2_text = f"**2. 중기 수익률:** 최근 3개월 수익률 ({mr['smh_3m_ret']*100:.2f}%) > +5% ➔ **{c2_mark}**"
+    if mr['cond2']: st.success(c2_text, icon="✅")
+    else: st.error(c2_text, icon="❌")
+
+    # 3. SMH 모멘텀 강도
+    c3_mark = "합격" if mr['cond3'] else "미달"
+    c3_text = f"**3. 모멘텀 (RSI):** RSI 14 지수 ({mr['smh_rsi']:.1f}) > 50 ➔ **{c3_mark}**"
+    if mr['cond3']: st.success(c3_text, icon="✅")
+    else: st.error(c3_text, icon="❌")
 
 st.divider()
 
@@ -130,12 +151,10 @@ st.divider()
 st.subheader("📝 1. 내 포트폴리오 기입란 & 평단가 대비 수익률")
 st.markdown("수량과 **평균 단가**를 입력하시면 우측에 비중이, 하단에 **실시간 수익률 현황판**이 표시됩니다. (내역 영구 저장)")
 
-# 세션 상태 초기화 및 데이터 로드
 if 'portfolio' not in st.session_state:
     saved_data = load_portfolio_data()
     if saved_data and len(saved_data.get("portfolio", [])) > 0:
         pf_df = pd.DataFrame(saved_data["portfolio"])
-        # 기존 데이터에 평균 단가 열이 없다면 추가
         if "평균 단가 ($)" not in pf_df.columns:
             pf_df["평균 단가 ($)"] = 0.0
         st.session_state['portfolio'] = pf_df
@@ -168,7 +187,6 @@ with col_table:
         }
     )
 
-    # 수량 변경 히스토리 추적
     def get_dict_from_df(df):
         d = {}
         for _, row in df.iterrows():
@@ -184,7 +202,6 @@ with col_table:
     changes_made = False
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # 평단가까지 변경되었는지 확인하여 저장 트리거 작동
     if not edited_df.equals(st.session_state['last_portfolio']):
         changes_made = True
 
@@ -207,7 +224,6 @@ with col_table:
         st.session_state['portfolio'] = edited_df.copy()
         save_portfolio_data(edited_df, st.session_state['portfolio_history'], st.session_state['first_entry_date'])
 
-# 차트용 최신 가격 조회 및 비중 계산
 raw_tickers = edited_df["티커 (Ticker)"].dropna().astype(str).str.upper().str.strip().tolist()
 valid_stock_tickers = [t for t in raw_tickers if t != "" and t != "CASH" and t.lower() != 'nan']
 
@@ -261,7 +277,6 @@ with col_chart:
     else:
         st.info("수량을 기입하시면 비중 그래프가 나타납니다.")
 
-# --- 신규: 내 포트폴리오 수익률 상세 현황판 ---
 st.markdown("##### 💵 내 종목별 실시간 수익률 현황")
 status_data = []
 for _, row in edited_df.iterrows():
@@ -296,7 +311,6 @@ for _, row in edited_df.iterrows():
 
 if status_data:
     status_df = pd.DataFrame(status_data)
-    # 수익률 색상 스타일링
     def color_returns(val):
         if type(val) == str and ('%' in val or '$+' in val or '$-' in val):
             if '+' in val: return 'color: #2ecc71; font-weight: bold;'
