@@ -61,13 +61,11 @@ def get_market_regime():
     vix, qqq, ma200, ma50 = today['VIX'], today['QQQ'], today['QQQ_MA200'], today['QQQ_MA50']
     smh, smh_ma50, smh_3m_ret, smh_rsi = today['SMH'], today['SMH_MA50'], today['SMH_3M_Ret'], today['SMH_RSI']
 
-    # 레짐 판독
     if vix > 40: regime = 4
     elif qqq < ma200: regime = 3
     elif qqq >= ma200 and ma50 >= ma200 and vix < 25: regime = 1
     else: regime = 2
 
-    # 반도체 스위칭 판독
     cond1 = smh > smh_ma50
     cond2 = smh_3m_ret > 0.05
     cond3 = smh_rsi > 50
@@ -90,35 +88,27 @@ with st.spinner("시장 국면을 정밀 판독 중입니다..."):
 st.subheader("🧭 0. AMLS v4 시장 레이더 (상세 지표)")
 st.info(f"기준일: **{mr['date'].strftime('%Y년 %m월 %d일')} 종가**")
 
-# 상단 요약 카드
 r_col1, r_col2, r_col3, r_col4 = st.columns(4)
 r_col1.metric("📌 오늘의 확정 국면", f"Regime {mr['regime']}")
 r_col2.metric("📌 공포 지수 (VIX)", f"{mr['vix']:.2f}")
 r_col3.metric("📌 QQQ 200일선 이격도", f"{(mr['qqq'] / mr['ma200'] - 1) * 100:.2f}%")
 r_col4.metric("📌 반도체 스위칭 타겟", f"{mr['semi_target']}")
 
-st.write("") # 간격 띄우기
-
-# 하단 상세 지표 분석 (예쁜 상태 카드 형태)
 col_ind1, col_ind2 = st.columns(2)
 
 with col_ind1:
     st.markdown("##### 🎯 레짐 판단 3대 핵심 지표")
-    
-    # 1. VIX
     vix_status = "위험 (>40)" if mr['vix'] > 40 else ("경계 (25~40)" if mr['vix'] >= 25 else "안정 (<25)")
     vix_text = f"**1. 공포 지수 (VIX):** 현재 {mr['vix']:.2f} ➔ **{vix_status}**"
     if mr['vix'] > 40: st.error(vix_text, icon="🚨")
     elif mr['vix'] >= 25: st.warning(vix_text, icon="⚠️")
     else: st.success(vix_text, icon="✅")
 
-    # 2. QQQ 추세
     qqq_trend = "상승 추세 (위에 있음)" if mr['qqq'] >= mr['ma200'] else "하락 추세 (아래에 있음)"
     qqq_text = f"**2. 장기 추세:** QQQ(${mr['qqq']:.2f})가 200일선(${mr['ma200']:.2f}) 대비 ➔ **{qqq_trend}**"
     if mr['qqq'] >= mr['ma200']: st.success(qqq_text, icon="✅")
     else: st.error(qqq_text, icon="🚨")
 
-    # 3. QQQ 배열
     qqq_cross = "정배열 (골든 크로스)" if mr['ma50'] >= mr['ma200'] else "역배열 (데드 크로스)"
     cross_text = f"**3. 중기 배열:** 50일선(${mr['ma50']:.2f})이 200일선(${mr['ma200']:.2f}) 대비 ➔ **{qqq_cross}**"
     if mr['ma50'] >= mr['ma200']: st.success(cross_text, icon="✅")
@@ -126,20 +116,16 @@ with col_ind1:
 
 with col_ind2:
     st.markdown("##### ⚡ 반도체(SOXL) 진입 3대 모멘텀 지표")
-    
-    # 1. SMH 단기 추세
     c1_mark = "합격" if mr['cond1'] else "미달"
     c1_text = f"**1. 단기 추세:** SMH(${mr['smh']:.2f}) > 50일선(${mr['smh_ma50']:.2f}) ➔ **{c1_mark}**"
     if mr['cond1']: st.success(c1_text, icon="✅")
     else: st.error(c1_text, icon="❌")
 
-    # 2. SMH 중기 수익률
     c2_mark = "합격" if mr['cond2'] else "미달"
     c2_text = f"**2. 중기 수익률:** 최근 3개월 수익률 ({mr['smh_3m_ret']*100:.2f}%) > +5% ➔ **{c2_mark}**"
     if mr['cond2']: st.success(c2_text, icon="✅")
     else: st.error(c2_text, icon="❌")
 
-    # 3. SMH 모멘텀 강도
     c3_mark = "합격" if mr['cond3'] else "미달"
     c3_text = f"**3. 모멘텀 (RSI):** RSI 14 지수 ({mr['smh_rsi']:.1f}) > 50 ➔ **{c3_mark}**"
     if mr['cond3']: st.success(c3_text, icon="✅")
@@ -149,15 +135,21 @@ st.divider()
 
 # --- 1. 내 포트폴리오 직접 기입 및 시각화 ---
 st.subheader("📝 1. 내 포트폴리오 기입란 & 평단가 대비 수익률")
-st.markdown("수량과 **평균 단가**를 입력하시면 우측에 비중이, 하단에 **실시간 수익률 현황판**이 표시됩니다. (내역 영구 저장)")
+st.markdown("💡 **Tip:** 표의 숫자를 **더블 클릭**하시면 수량과 평균 단가를 자유롭게 입력할 수 있습니다.")
 
-if 'portfolio' not in st.session_state:
+# 튕김 방지를 위한 세션 상태 분리 (초기 데이터만 로드)
+if 'init_portfolio' not in st.session_state:
     saved_data = load_portfolio_data()
     if saved_data and len(saved_data.get("portfolio", [])) > 0:
         pf_df = pd.DataFrame(saved_data["portfolio"])
         if "평균 단가 ($)" not in pf_df.columns:
             pf_df["평균 단가 ($)"] = 0.0
-        st.session_state['portfolio'] = pf_df
+        
+        # 타입 강제 지정 (에러 방지)
+        pf_df["수량 (주/달러)"] = pf_df["수량 (주/달러)"].astype(float)
+        pf_df["평균 단가 ($)"] = pf_df["평균 단가 ($)"].astype(float)
+
+        st.session_state['init_portfolio'] = pf_df
         st.session_state['portfolio_history'] = saved_data.get("history", [])
         fd = saved_data.get("first_entry_date")
         st.session_state['first_entry_date'] = datetime.fromisoformat(fd) if fd else None
@@ -167,62 +159,75 @@ if 'portfolio' not in st.session_state:
             "수량 (주/달러)": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
             "평균 단가 ($)": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         })
-        st.session_state['portfolio'] = initial_df
+        st.session_state['init_portfolio'] = initial_df
         st.session_state['portfolio_history'] = []
         st.session_state['first_entry_date'] = None
 
-    st.session_state['last_portfolio'] = st.session_state['portfolio'].copy()
+    st.session_state['last_portfolio'] = st.session_state['init_portfolio'].copy()
 
 col_table, col_chart = st.columns([1, 1.5])
 
 with col_table:
+    # key 부여로 포커스 튕김 방지
     edited_df = st.data_editor(
-        st.session_state['portfolio'],
+        st.session_state['init_portfolio'],
         num_rows="dynamic",
+        key="portfolio_editor",
         use_container_width=True,
         column_config={
             "티커 (Ticker)": st.column_config.TextColumn("티커 (Ticker)"),
-            "수량 (주/달러)": st.column_config.NumberColumn("수량", min_value=0.0, format="%.2f"),
-            "평균 단가 ($)": st.column_config.NumberColumn("평균 단가 ($)", min_value=0.0, format="%.2f")
+            "수량 (주/달러)": st.column_config.NumberColumn("수량", min_value=0.0, format="%.2f", step=1.0),
+            "평균 단가 ($)": st.column_config.NumberColumn("평균 단가 ($)", min_value=0.0, format="%.2f", step=1.0)
         }
     )
 
-    def get_dict_from_df(df):
-        d = {}
+    # 상태 추출 함수 (평단가까지 감지)
+    def get_portfolio_state(df):
+        state = {}
         for _, row in df.iterrows():
             tkr = str(row["티커 (Ticker)"]).upper().strip()
-            if tkr and tkr.lower() != 'nan' and tkr.lower() != 'none':
-                try: val = float(row["수량 (주/달러)"])
-                except: val = 0.0
-                d[tkr] = d.get(tkr, 0.0) + val
-        return d
+            if tkr and tkr.lower() not in ['nan', 'none', '']:
+                try: qty = float(row["수량 (주/달러)"])
+                except: qty = 0.0
+                try: avg_p = float(row["평균 단가 ($)"])
+                except: avg_p = 0.0
+                
+                if tkr in state:
+                    state[tkr]['qty'] += qty
+                    state[tkr]['avg_p'] = avg_p
+                else:
+                    state[tkr] = {'qty': qty, 'avg_p': avg_p}
+        return state
 
-    old_dict = get_dict_from_df(st.session_state['last_portfolio'])
-    new_dict = get_dict_from_df(edited_df)
-    changes_made = False
+    old_state = get_portfolio_state(st.session_state['last_portfolio'])
+    new_state = get_portfolio_state(edited_df)
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    changes_made = False
 
     if not edited_df.equals(st.session_state['last_portfolio']):
-        changes_made = True
+        for tkr, old_val in old_state.items():
+            if tkr in new_state:
+                new_val = new_state[tkr]
+                if old_val['qty'] != new_val['qty']:
+                    st.session_state['portfolio_history'].append({"변경 일시": now_str, "티커": tkr, "상태": "수량 변경 🔄", "변경 전": f"{old_val['qty']:.2f}", "변경 후": f"{new_val['qty']:.2f}"})
+                    changes_made = True
+                if old_val['avg_p'] != new_val['avg_p']:
+                    st.session_state['portfolio_history'].append({"변경 일시": now_str, "티커": tkr, "상태": "평단가 변경 💰", "변경 전": f"${old_val['avg_p']:.2f}", "변경 후": f"${new_val['avg_p']:.2f}"})
+                    changes_made = True
+            else:
+                st.session_state['portfolio_history'].append({"변경 일시": now_str, "티커": tkr, "상태": "항목 삭제 ❌", "변경 전": f"{old_val['qty']:.2f} (수량)", "변경 후": "삭제됨"})
+                changes_made = True
 
-    for tkr, old_val in old_dict.items():
-        if tkr in new_dict:
-            new_val = new_dict[tkr]
-            if old_val != new_val:
-                st.session_state['portfolio_history'].append({"변경 일시": now_str, "티커": tkr, "상태": "수량 변경 🔄", "변경 전": f"{old_val:,.2f}", "변경 후": f"{new_val:,.2f}"})
-        else:
-            st.session_state['portfolio_history'].append({"변경 일시": now_str, "티커": tkr, "상태": "항목 삭제 ❌", "변경 전": f"{old_val:,.2f}", "변경 후": "0.00"})
+        for tkr, new_val in new_state.items():
+            if tkr not in old_state:
+                st.session_state['portfolio_history'].append({"변경 일시": now_str, "티커": tkr, "상태": "신규 추가 🟢", "변경 전": "없음", "변경 후": f"{new_val['qty']:.2f} 주 추가"})
+                changes_made = True
+                if st.session_state['first_entry_date'] is None and new_val['qty'] > 0:
+                    st.session_state['first_entry_date'] = datetime.now()
 
-    for tkr, new_val in new_dict.items():
-        if tkr not in old_dict:
-            st.session_state['portfolio_history'].append({"변경 일시": now_str, "티커": tkr, "상태": "신규 추가 🟢", "변경 전": "0.00", "변경 후": f"{new_val:,.2f}"})
-            if st.session_state['first_entry_date'] is None and new_val > 0:
-                st.session_state['first_entry_date'] = datetime.now()
-
-    if changes_made:
-        st.session_state['last_portfolio'] = edited_df.copy()
-        st.session_state['portfolio'] = edited_df.copy()
-        save_portfolio_data(edited_df, st.session_state['portfolio_history'], st.session_state['first_entry_date'])
+        if changes_made:
+            st.session_state['last_portfolio'] = edited_df.copy()
+            save_portfolio_data(edited_df, st.session_state['portfolio_history'], st.session_state['first_entry_date'])
 
 raw_tickers = edited_df["티커 (Ticker)"].dropna().astype(str).str.upper().str.strip().tolist()
 valid_stock_tickers = [t for t in raw_tickers if t != "" and t != "CASH" and t.lower() != 'nan']
@@ -432,4 +437,4 @@ if st.session_state['portfolio_history']:
     history_df = pd.DataFrame(st.session_state['portfolio_history'])[::-1]
     st.dataframe(history_df, hide_index=True, use_container_width=True)
 else:
-    st.info("아직 수량이 변경된 내역이 없습니다. 위 표에서 수량을 수정해 보세요!")
+    st.info("아직 수량이나 평단가가 변경된 내역이 없습니다.")
