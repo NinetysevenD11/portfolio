@@ -90,16 +90,20 @@ st.divider()
 st.subheader("📝 1. 내 포트폴리오 기입란 & 비중")
 st.markdown("티커와 수량을 수정하시면 **히스토리가 영구 저장**되며, 우측에 **현재 가치 기준 포트폴리오 비중**이 실시간으로 표시됩니다.")
 
-# 세션 상태 초기화 및 데이터 로드
+# 세션 상태 초기화 및 데이터 로드 (요청하신 초기 세팅 반영)
 if 'portfolio' not in st.session_state:
     saved_data = load_portfolio_data()
-    if saved_data:
+    if saved_data and len(saved_data.get("portfolio", [])) > 0:
         st.session_state['portfolio'] = pd.DataFrame(saved_data["portfolio"])
         st.session_state['portfolio_history'] = saved_data.get("history", [])
         fd = saved_data.get("first_entry_date")
         st.session_state['first_entry_date'] = datetime.fromisoformat(fd) if fd else None
     else:
-        initial_df = pd.DataFrame({"티커 (Ticker)": ["TQQQ", "QLD", "GLD", "CASH"], "수량 (주/달러)": [100.0, 50.0, 20.0, 1000.0]})
+        # 사용자가 요청한 기본 포트폴리오 목록 및 0 세팅
+        initial_df = pd.DataFrame({
+            "티커 (Ticker)": ["TQQQ", "QLD", "QQQ", "SOXL", "USD", "GLD", "CASH"],
+            "수량 (주/달러)": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        })
         st.session_state['portfolio'] = initial_df
         st.session_state['portfolio_history'] = []
         st.session_state['first_entry_date'] = None
@@ -149,7 +153,9 @@ with col_table:
         if tkr not in old_dict:
             st.session_state['portfolio_history'].append({"변경 일시": now_str, "티커": tkr, "상태": "신규 추가 🟢", "변경 전": "0.00", "변경 후": "{:,.2f}".format(new_val)})
             changes_made = True
-            if st.session_state['first_entry_date'] is None:
+            
+            # 0에서 유의미한 숫자로 처음 입력되는 시점을 최초 진입일로 기록
+            if st.session_state['first_entry_date'] is None and new_val > 0:
                 st.session_state['first_entry_date'] = datetime.now()
 
     if changes_made:
@@ -191,51 +197,65 @@ with col_chart:
         for _, row in edited_df.iterrows():
             tkr = str(row["티커 (Ticker)"]).upper().strip()
             if tkr == "CASH":
-                try: asset_values["CASH"] = asset_values.get("CASH", 0) + float(row["수량 (주/달러)"])
+                try: 
+                    val = float(row["수량 (주/달러)"])
+                    if val > 0: asset_values["CASH"] = asset_values.get("CASH", 0) + val
                 except: pass
 
     if asset_values:
         total_value = sum(asset_values.values())
-        fig_bar = go.Figure()
-        
-        # 색상 팔레트
-        palette = ['#e74c3c', '#3498db', '#f1c40f', '#2ecc71', '#9b59b6', '#e67e22', '#1abc9c', '#34495e']
-        sorted_assets = sorted(asset_values.items(), key=lambda x: x[1], reverse=True)
-        
-        for idx, (tkr, val) in enumerate(sorted_assets):
-            weight = (val / total_value) * 100
-            fig_bar.add_trace(go.Bar(
-                y=['내 포트폴리오 비중'],
-                x=[weight],
-                name=tkr,
-                orientation='h',
-                text=f"<b>{tkr}</b><br>{weight:.1f}%",
-                textposition='inside',
-                insidetextanchor='middle',
-                marker=dict(color=palette[idx % len(palette)], line=dict(color='white', width=1.5)),
-                hoverinfo='text',
-                hovertext=f"{tkr}: ${val:,.0f} ({weight:.1f}%)"
-            ))
+        if total_value > 0:
+            fig_bar = go.Figure()
+            
+            # 색상 팔레트
+            palette = ['#e74c3c', '#3498db', '#f1c40f', '#2ecc71', '#9b59b6', '#e67e22', '#1abc9c', '#34495e']
+            sorted_assets = sorted(asset_values.items(), key=lambda x: x[1], reverse=True)
+            
+            for idx, (tkr, val) in enumerate(sorted_assets):
+                weight = (val / total_value) * 100
+                fig_bar.add_trace(go.Bar(
+                    y=['내 포트폴리오 비중'],
+                    x=[weight],
+                    name=tkr,
+                    orientation='h',
+                    text=f"<b>{tkr}</b><br>{weight:.1f}%",
+                    textposition='inside',
+                    insidetextanchor='middle',
+                    marker=dict(color=palette[idx % len(palette)], line=dict(color='white', width=1.5)),
+                    hoverinfo='text',
+                    hovertext=f"{tkr}: ${val:,.0f} ({weight:.1f}%)"
+                ))
 
-        fig_bar.update_layout(
-            barmode='stack',
-            height=200,
-            margin=dict(l=0, r=0, t=40, b=0),
-            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[0, 100]),
-            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            showlegend=False,
-            title=dict(text=f"총 자산 평가액: <b>${total_value:,.0f}</b>", font=dict(size=18), x=0.5, xanchor='center')
-        )
-        st.plotly_chart(fig_bar, use_container_width=True)
+            fig_bar.update_layout(
+                barmode='stack',
+                height=200,
+                margin=dict(l=0, r=0, t=40, b=0),
+                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[0, 100]),
+                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                showlegend=False,
+                title=dict(text=f"총 자산 평가액: <b>${total_value:,.0f}</b>", font=dict(size=18), x=0.5, xanchor='center')
+            )
+            st.plotly_chart(fig_bar, use_container_width=True)
+        else:
+            st.info("수량이 모두 0입니다. 비중을 확인하려면 수량을 기입해 주세요.")
     else:
-        st.info("종목 수량을 입력하시면 비중 그래프가 나타납니다.")
+        st.info("수량을 기입하시면 비중 그래프가 나타납니다.")
 
 st.divider()
 
 # --- 2 & 3. 하단 데이터 연산부 ---
 cash_amount = asset_values.get("CASH", 0.0)
 
-if valid_stock_tickers or cash_amount > 0:
+# 0.0이 아닌 주식 티커만 골라내기
+active_stock_tickers = []
+for _, row in edited_df.iterrows():
+    tkr = str(row["티커 (Ticker)"]).upper().strip()
+    try: val = float(row["수량 (주/달러)"])
+    except: val = 0.0
+    if val > 0 and tkr != "CASH" and tkr != "" and tkr.lower() != 'nan':
+        active_stock_tickers.append(tkr)
+
+if active_stock_tickers or cash_amount > 0:
     with st.spinner("과거 궤적과 기술적 지표를 분석 중입니다..."):
         if st.session_state.get('first_entry_date'):
             chart_start = st.session_state['first_entry_date'] - timedelta(days=1)
@@ -246,14 +266,14 @@ if valid_stock_tickers or cash_amount > 0:
         indicator_data = []
         port_data = pd.DataFrame()
 
-        if valid_stock_tickers:
-            downloaded = yf.download(valid_stock_tickers, start=data_fetch_start.strftime('%Y-%m-%d'), progress=False)['Close']
-            if isinstance(downloaded, pd.Series): port_data = downloaded.to_frame(name=valid_stock_tickers[0])
+        if active_stock_tickers:
+            downloaded = yf.download(active_stock_tickers, start=data_fetch_start.strftime('%Y-%m-%d'), progress=False)['Close']
+            if isinstance(downloaded, pd.Series): port_data = downloaded.to_frame(name=active_stock_tickers[0])
             else: port_data = downloaded
             port_data = port_data.ffill()
 
             st.subheader("📊 2. 내 종목 기술적 지표 현황")
-            for tkr in valid_stock_tickers:
+            for tkr in active_stock_tickers:
                 if tkr in port_data.columns:
                     series = port_data[tkr].dropna()
                     if len(series) < 150: continue
@@ -271,7 +291,7 @@ if valid_stock_tickers or cash_amount > 0:
                     })
 
             if indicator_data: st.dataframe(pd.DataFrame(indicator_data), hide_index=True, use_container_width=True)
-            else: st.info("입력된 주식/ETF 종목이 없거나 데이터가 부족합니다.")
+            else: st.info("데이터가 부족하거나 상장된 지 얼마 안 된 종목입니다.")
 
         st.divider()
 
@@ -296,7 +316,7 @@ if valid_stock_tickers or cash_amount > 0:
             chart_start_ts = pd.Timestamp(st.session_state['first_entry_date'].date())
             portfolio_value_series = portfolio_value_series[portfolio_value_series.index >= chart_start_ts]
 
-        if not portfolio_value_series.empty:
+        if not portfolio_value_series.empty and len(portfolio_value_series) > 1:
             val_today = portfolio_value_series.iloc[-1]
             val_1d = portfolio_value_series.iloc[-2] if len(portfolio_value_series) >= 2 else val_today
             val_1w = portfolio_value_series.iloc[-6] if len(portfolio_value_series) >= 6 else val_today
@@ -304,8 +324,8 @@ if valid_stock_tickers or cash_amount > 0:
 
             v_col1, v_col2, v_col3 = st.columns(3)
             v_col1.metric("총 평가액 (현금 포함)", "${:,.2f}".format(val_today), "전일 대비: ${:+,.2f}".format(val_today - val_1d))
-            v_col2.metric("1주일 전 대비 변화", "${:+,.2f}".format(val_today - val_1w), "{:+.2f}%".format((val_today / val_1w - 1) * 100))
-            v_col3.metric("1개월 전 대비 변화", "${:+,.2f}".format(val_today - val_1m), "{:+.2f}%".format((val_today / val_1m - 1) * 100))
+            v_col2.metric("1주일 전 대비 변화", "${:+,.2f}".format(val_today - val_1w), "{:+.2f}%".format((val_today / val_1w - 1) * 100) if val_1w else "0.00%")
+            v_col3.metric("1개월 전 대비 변화", "${:+,.2f}".format(val_today - val_1m), "{:+.2f}%".format((val_today / val_1m - 1) * 100) if val_1m else "0.00%")
 
             daily_df = portfolio_value_series.last('90D')
             monthly_df = portfolio_value_series.resample('ME').last().last('1095D')
@@ -327,11 +347,17 @@ if valid_stock_tickers or cash_amount > 0:
 
             with tab3:
                 fig_yearly = go.Figure()
-                fig_yearly.add_trace(go.Bar(x=yearly_df.index.strftime('%Y'), y=yearly_df.values, name='자산 가치', marker_color='#e74c3c', text=["${:,.0f}".format(v) for v in yearly_df.values], textposition='auto'))
+                fig_yearly.add_trace(go.Bar(
+                    x=yearly_df.index.strftime('%Y'), y=yearly_df.values,
+                    name='자산 가치', marker_color='#e74c3c',
+                    text=["${:,.0f}".format(v) for v in yearly_df.values], textposition='auto'
+                ))
                 fig_yearly.update_layout(height=400, margin=dict(l=0, r=0, t=10, b=0), yaxis_title="달러 ($)")
                 st.plotly_chart(fig_yearly, use_container_width=True)
         else:
-            st.info("선택한 기간에 데이터가 부족합니다.")
+            st.info("차트를 그리기에는 아직 데이터가 부족합니다. (최소 하루 경과 필요)")
+else:
+    st.info("수량이 0이 아닌 종목이 하나 이상 있어야 지표와 차트가 표시됩니다.")
 
 st.divider()
 
@@ -343,4 +369,4 @@ if st.session_state['portfolio_history']:
     history_df = pd.DataFrame(st.session_state['portfolio_history'])[::-1]
     st.dataframe(history_df, hide_index=True, use_container_width=True)
 else:
-    st.info("아직 수량이 변경된 내역이 없습니다. 위 표에 종목을 추가해 보세요!")
+    st.info("아직 수량이 변경된 내역이 없습니다. 위 표에서 수량을 수정해 보세요!")
