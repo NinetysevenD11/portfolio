@@ -4,106 +4,200 @@ import pandas as pd
 import pandas_ta as ta
 import numpy as np
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 from datetime import datetime, timedelta
 import warnings
 
 warnings.filterwarnings('ignore')
 
-# ════════════════════════════════════════════════════════════
-# 페이지 기본 설정
-# ════════════════════════════════════════════════════════════
-st.set_page_config(page_title="AMLS v4 통합 대시보드", layout="wide", initial_sidebar_state="expanded")
-st.title("🛡️ AMLS v4 퀀트 투자 대시보드 (Final Edition)")
+# --- 페이지 기본 설정 ---
+st.set_page_config(page_title="AMLS 내 포트폴리오 현황", layout="wide")
+st.title("💼 AMLS v4 실전 포트폴리오 트래커")
+st.markdown("현재 시장의 **AMLS 국면(Regime)**을 파악하고, 내 보유 종목의 **기술적 위치**와 **자산 성장 추이**를 추적합니다.")
 
-# ════════════════════════════════════════════════════════════
-# 사이드바 설정
-# ════════════════════════════════════════════════════════════
-st.sidebar.header("⚙️ 백테스트 설정")
-st.sidebar.markdown("이곳에서 설정값을 바꾸면 대시보드가 실시간으로 다시 계산됩니다.")
-BACKTEST_START = st.sidebar.date_input("시작일", datetime(2018, 1, 1))
-BACKTEST_END = st.sidebar.date_input("종료일", datetime.today())
-INITIAL_CAPITAL = st.sidebar.number_input("초기 자본금 ($)", value=10000, step=1000)
-MONTHLY_CONTRIBUTION = st.sidebar.number_input("매월 추가 적립금 ($)", value=2000, step=500)
-
-# ════════════════════════════════════════════════════════════
-# 백테스트 엔진 (데이터 수집 및 연산)
-# ════════════════════════════════════════════════════════════
-@st.cache_data(ttl=3600)
-def load_and_calculate_data(start, end, init_cap, monthly_cont):
-    tickers = ['QQQ', 'TQQQ', 'SOXL', 'USD', 'QLD', 'SSO', 'SPY', 'SMH', 'GLD', '^VIX']
-    start_str = (start - timedelta(days=400)).strftime("%Y-%m-%d")
-    end_str = end.strftime("%Y-%m-%d")
-
-    try:
-        data = yf.download(tickers, start=start_str, end=end_str, progress=False, auto_adjust=True)['Close']
-    except:
-        data = yf.download(tickers, start=start_str, end=end_str, progress=False)['Close']
-
-    data = data.ffill().dropna(subset=['QQQ', '^VIX'])
-
+# --- 0. AMLS v4 현재 레짐 및 반도체 스위칭 파악 ---
+@st.cache_data(ttl=1800) # 30분마다 갱신
+def get_market_regime():
+    tickers = ['QQQ', '^VIX', 'SMH']
+    end_date = datetime.today()
+    start_date = end_date - timedelta(days=400)
+    
+    data = yf.download(tickers, start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'), progress=False)['Close'].ffill()
+    
     df = pd.DataFrame(index=data.index)
-    for t in data.columns:
-        df[t] = data[t]
-
-    df['QQQ_MA50'] = df['QQQ'].rolling(window=50).mean()
-    df['QQQ_MA200'] = df['QQQ'].rolling(window=200).mean()
-    df['QQQ_RSI'] = ta.rsi(df['QQQ'], length=14)
-    df['SMH_MA50'] = df['SMH'].rolling(window=50).mean()
-    df['SMH_3M_Ret'] = df['SMH'].pct_change(periods=63)
+    df['QQQ'], df['VIX'], df['SMH'] = data['QQQ'], data['^VIX'], data['SMH']
+    
+    df['QQQ_MA50'] = df['QQQ'].rolling(50).mean()
+    df['QQQ_MA200'] = df['QQQ'].rolling(200).mean()
+    df['SMH_MA50'] = df['SMH'].rolling(50).mean()
+    df['SMH_3M_Ret'] = df['SMH'].pct_change(63)
     df['SMH_RSI'] = ta.rsi(df['SMH'], length=14)
+    
+    df = df.dropna()
+    today = df.iloc[-1]
+    
+    vix, qqq, ma200, ma50 = today['VIX'], today['QQQ'], today['QQQ_MA200'], today['QQQ_MA50']
+    
+    if vix > 40: regime = 4
+    elif qqq < ma200: regime = 3
+    elif qqq >= ma200 and ma50 >= ma200 and vix < 25: regime = 1
+    else: regime = 2
+    
+    use_soxl = (today['SMH'] > today['SMH_MA50']) and (today['SMH_3M_Ret'] > 0.05) and (today['SMH_RSI'] > 50)
+    semi_target = "SOXL (3배)" if use_soxl else "USD (2배)"
+    if regime in [3, 4]: semi_target = "미보유 (안전 자산 대피)"
+    elif regime == 2: semi_target = "USD (2배 - 레버리지 축소)"
+        
+    return regime, vix, qqq, ma200, semi_target, today.name
 
-    df = df.dropna(subset=['QQQ_MA200', 'SMH_RSI'])
-    df = df.loc[pd.to_datetime(start):]
-    daily_returns = df[data.columns].pct_change().fillna(0)
+with st.spinner("시장 국면을 판독 중입니다..."):
+    regime, vix, qqq, ma200, semi_target, last_date = get_market_regime()
 
-    def get_target_regime(row):
-        vix, qqq, ma200, ma50 = row['^VIX'], row['QQQ'], row['QQQ_MA200'], row['QQQ_MA50']
-        if vix > 40: return 4
-        if qqq < ma200: return 3
-        if qqq >= ma200 and ma50 >= ma200 and vix < 25: return 1
-        return 2
+st.subheader("🧭 0. AMLS v4 시장 레이더")
+st.info(f"기준일: **{last_date.strftime('%Y년 %m월 %d일')} 종가**")
 
-    df['Target_Regime'] = df.apply(get_target_regime, axis=1)
+r_col1, r_col2, r_col3, r_col4 = st.columns(4)
+r_col1.metric("오늘의 국면 (Regime)", f"Regime {regime}")
+r_col2.metric("공포 지수 (VIX)", f"{vix:.2f}", "40 초과 시 위험 / 25 미만 시 안정", delta_color="off")
+r_col3.metric("QQQ 200일선 이격도", f"{(qqq/ma200 - 1)*100:.2f}%", "양수(+)면 장기 상승 추세")
+r_col4.metric("반도체 스위칭 타겟", f"{semi_target}")
 
-    current_regime = 3
-    pending_regime = None
-    confirm_count = 0
-    actual_regime_list = []
+st.divider()
 
-    for i in range(len(df)):
-        new_regime = df['Target_Regime'].iloc[i]
-        if new_regime > current_regime:
-            current_regime = new_regime; pending_regime = None; confirm_count = 0
-        elif new_regime < current_regime:
-            if new_regime == pending_regime:
-                confirm_count += 1
-                if confirm_count >= 5:
-                    current_regime = new_regime; pending_regime = None; confirm_count = 0
+# --- 1. 내 포트폴리오 직접 기입 ---
+st.subheader("📝 1. 내 포트폴리오 기입란")
+st.markdown("보유 중인 종목의 **티커(Ticker)**와 **수량(주)**을 입력하세요. 현금은 티커란에 **CASH** 라고 적고, 수량 란에 **달러($) 금액**을 적으시면 됩니다.")
+
+if 'portfolio' not in st.session_state:
+    st.session_state['portfolio'] = pd.DataFrame({
+        "티커 (Ticker)": ["TQQQ", "QLD", "GLD", "CASH"],
+        "수량 (주/달러)": [100.0, 50.0, 20.0, 1000.0]
+    })
+
+edited_df = st.data_editor(
+    st.session_state['portfolio'],
+    num_rows="dynamic",
+    use_container_width=False,
+    width=600
+)
+st.divider()
+
+# 데이터 처리를 위한 티커 추출 (CASH 제외)
+raw_tickers = edited_df["티커 (Ticker)"].dropna().astype(str).str.upper().str.strip().tolist()
+valid_stock_tickers = [t for t in raw_tickers if t != "" and t != "CASH"]
+
+cash_amount = 0.0
+for index, row in edited_df.iterrows():
+    tkr = str(row["티커 (Ticker)"]).upper().strip()
+    if tkr == "CASH":
+        try: cash_amount += float(row["수량 (주/달러)"])
+        except: pass
+
+if valid_stock_tickers or cash_amount > 0:
+    with st.spinner("데이터를 분석 중입니다..."):
+        start_5y = datetime.today() - timedelta(days=365*6)
+        
+        # 1. 기술적 지표 표 (주식 티커만)
+        indicator_data = []
+        port_data = pd.DataFrame()
+        
+        if valid_stock_tickers:
+            downloaded = yf.download(valid_stock_tickers, start=start_5y.strftime('%Y-%m-%d'), progress=False)['Close']
+            
+            # Series vs DataFrame 형태 보정
+            if isinstance(downloaded, pd.Series):
+                port_data = downloaded.to_frame(name=valid_stock_tickers[0])
             else:
-                pending_regime = new_regime; confirm_count = 1
-        else:
-            pending_regime = None; confirm_count = 0
-        actual_regime_list.append(current_regime)
+                port_data = downloaded
+                
+            port_data = port_data.ffill()
 
-    df['Signal_Regime'] = pd.Series(actual_regime_list, index=df.index).shift(1).bfill()
+            st.subheader("📊 2. 내 종목 기술적 지표 현황")
+            for tkr in valid_stock_tickers:
+                if tkr in port_data.columns:
+                    series = port_data[tkr].dropna()
+                    if len(series) < 150: continue # 데이터 부족 상폐/신규 종목 스킵
+                    
+                    current_price = series.iloc[-1]
+                    ma_30w = series.rolling(window=150).mean().iloc[-1]
+                    trend_status = "🟢 위 (상승추세)" if current_price > ma_30w else "🔴 아래 (하락추세)"
+                    rsi_14 = ta.rsi(series, length=14).iloc[-1]
+                    
+                    indicator_data.append({
+                        "종목 (Ticker)": tkr,
+                        "현재가 ($)": f"${current_price:.2f}",
+                        "현재 RSI (14)": f"{rsi_14:.1f}",
+                        "30주 MA ($)": f"${ma_30w:.2f}",
+                        "30주 MA 돌파 여부": trend_status
+                    })
+                    
+            if indicator_data:
+                st.dataframe(pd.DataFrame(indicator_data), hide_index=True, use_container_width=True)
+            else:
+                st.info("입력된 주식/ETF 종목이 없거나 데이터가 부족합니다.")
 
-    def get_v4_weights(regime, use_soxl):
-        w = {t: 0.0 for t in data.columns}
-        semi = 'SOXL' if use_soxl else 'USD'
-        if regime == 1: w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'] = 0.30, 0.20, 0.20, 0.15, 0.10
-        elif regime == 2: w['QLD'], w['SSO'], w['GLD'], w['QQQ'], w['USD'] = 0.25, 0.20, 0.20, 0.15, 0.10
-        elif regime == 3: w['GLD'], w['QQQ'], w['SPY'] = 0.35, 0.20, 0.10
-        elif regime == 4: w['GLD'], w['QQQ'] = 0.50, 0.10
-        return w
+        st.divider()
 
-    strategies = ['AMLS v4', 'QQQ', 'QLD', 'TQQQ', 'SPY']
-    ports = {s: init_cap for s in strategies}
-    hists = {s: [init_cap] for s in strategies}
-    invested_hist = [init_cap]
-    total_invested = init_cap
-    weights_v4 = {t: 0.0 for t in data.columns}
-    logs = []
+        # 2. 자산 가치 시계열 계산 (오류 수정 핵심부)
+        st.subheader("📈 3. 내 포트폴리오 가치 추이 및 변화량")
+        
+        # QQQ 데이터를 기준으로 전체 영업일 인덱스(달력) 생성
+        benchmark_index = yf.download("QQQ", start=start_5y.strftime('%Y-%m-%d'), progress=False)['Close'].index
+        portfolio_value_series = pd.Series(0.0, index=benchmark_index)
+        
+        # 주식 가치 누적
+        for index, row in edited_df.iterrows():
+            tkr = str(row["티커 (Ticker)"]).upper().strip()
+            try: shares = float(row["수량 (주/달러)"])
+            except: shares = 0.0
+            
+            if shares > 0 and tkr in port_data.columns:
+                # 인덱스(날짜)를 맞추어(reindex) 오류 방지, 없는 날은 이전 가격으로 채움(ffill)
+                stock_series = port_data[tkr].reindex(benchmark_index).ffill().fillna(0)
+                portfolio_value_series += stock_series * shares
 
-    for i in range(1, len(df)):
-        today, yesterday = df.index
+        # 현금 가치 더하기 (모든 날짜에 동일하게 적용)
+        if cash_amount > 0:
+            portfolio_value_series += cash_amount
+            
+        portfolio_value_series = portfolio_value_series.dropna()
+        current_total_value = portfolio_value_series.iloc[-1]
+        
+        if current_total_value > 0:
+            # 1일 전, 1주일 전, 1달 전 변화량 계산
+            val_today = portfolio_value_series.iloc[-1]
+            val_1d = portfolio_value_series.iloc[-2] if len(portfolio_value_series) >= 2 else val_today
+            val_1w = portfolio_value_series.iloc[-6] if len(portfolio_value_series) >= 6 else val_today
+            val_1m = portfolio_value_series.iloc[-22] if len(portfolio_value_series) >= 22 else val_today
+            
+            v_col1, v_col2, v_col3 = st.columns(3)
+            v_col1.metric("총 평가액 (현금 포함)", f"${val_today:,.2f}", f"전일 대비: ${(val_today - val_1d):+,.2f}")
+            v_col2.metric("1주일 전 대비 변화", f"${(val_today - val_1w):+,.2f}", f"{(val_today/val_1w - 1)*100:+.2f}%")
+            v_col3.metric("1개월 전 대비 변화", f"${(val_today - val_1m):+,.2f}", f"{(val_today/val_1m - 1)*100:+.2f}%")
+
+            # 리샘플링 및 차트 그리기
+            daily_df = portfolio_value_series.last('90D')
+            monthly_df = portfolio_value_series.resample('ME').last().last('1095D')
+            yearly_df = portfolio_value_series.resample('YE').last()
+
+            tab1, tab2, tab3 = st.tabs(["📉 일별 추이 (최근 3개월)", "📆 월별 추이 (최근 3년)", "📅 연별 추이 (최근 5년)"])
+
+            with tab1:
+                fig_daily = go.Figure()
+                fig_daily.add_trace(go.Scatter(x=daily_df.index, y=daily_df.values, mode='lines+markers', name='자산 가치', line=dict(color='#3498db', width=2)))
+                fig_daily.update_layout(height=400, margin=dict(l=0, r=0, t=10, b=0), yaxis_title="달러 ($)", hovermode="x unified")
+                st.plotly_chart(fig_daily, use_container_width=True)
+
+            with tab2:
+                fig_monthly = go.Figure()
+                fig_monthly.add_trace(go.Bar(x=monthly_df.index.strftime('%Y-%m'), y=monthly_df.values, name='자산 가치', marker_color='#8e44ad'))
+                fig_monthly.update_layout(height=400, margin=dict(l=0, r=0, t=10, b=0), yaxis_title="달러 ($)", hovermode="x unified")
+                st.plotly_chart(fig_monthly, use_container_width=True)
+
+            with tab3:
+                fig_yearly = go.Figure()
+                fig_yearly.add_trace(go.Bar(x=yearly_df.index.strftime('%Y'), y=yearly_df.values, name='자산 가치', marker_color='#e74c3c', text=[f"${v:,.0f}" for v in yearly_df.values], textposition='auto'))
+                fig_yearly.update_layout(height=400, margin=dict(l=0, r=0, t=10, b=0), yaxis_title="달러 ($)")
+                st.plotly_chart(fig_yearly, use_container_width=True)
+                
+else:
+    st.info("👆 위 표에 티커와 수량을 기입해 주세요.")
