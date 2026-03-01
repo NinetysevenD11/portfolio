@@ -12,10 +12,10 @@ warnings.filterwarnings('ignore')
 # --- 페이지 기본 설정 ---
 st.set_page_config(page_title="AMLS 내 포트폴리오 현황", layout="wide")
 st.title("💼 AMLS v4 실전 포트폴리오 트래커")
-st.markdown("현재 시장의 **AMLS 국면(Regime)**을 파악하고, 내 보유 종목의 **기술적 위치**와 **자산 성장 추이**를 추적합니다.")
+st.markdown("현재 시장의 **AMLS 국면(Regime)**을 파악하고, 내 보유 종목의 **기술적 위치**, **자산 성장 추이**, 그리고 **수량 변경 히스토리**를 추적합니다.")
 
 # --- 0. AMLS v4 현재 레짐 및 반도체 스위칭 파악 ---
-@st.cache_data(ttl=1800) # 30분마다 갱신
+@st.cache_data(ttl=1800)
 def get_market_regime():
     tickers = ['QQQ', '^VIX', 'SMH']
     end_date = datetime.today()
@@ -68,10 +68,13 @@ st.subheader("📝 1. 내 포트폴리오 기입란")
 st.markdown("보유 중인 종목의 **티커(Ticker)**와 **수량(주)**을 입력하세요. 현금은 티커란에 **CASH** 라고 적고, 수량 란에 **달러($) 금액**을 적으시면 됩니다.")
 
 if 'portfolio' not in st.session_state:
-    st.session_state['portfolio'] = pd.DataFrame({
+    initial_df = pd.DataFrame({
         "티커 (Ticker)": ["TQQQ", "QLD", "GLD", "CASH"],
         "수량 (주/달러)": [100.0, 50.0, 20.0, 1000.0]
     })
+    st.session_state['portfolio'] = initial_df
+    st.session_state['last_portfolio'] = initial_df.copy()
+    st.session_state['portfolio_history'] = []
 
 edited_df = st.data_editor(
     st.session_state['portfolio'],
@@ -79,9 +82,44 @@ edited_df = st.data_editor(
     use_container_width=False,
     width=600
 )
+
+# 변경 사항 추적 로직
+def get_dict_from_df(df):
+    d = {}
+    for _, row in df.iterrows():
+        tkr = str(row["티커 (Ticker)"]).upper().strip()
+        if tkr and tkr.lower() != 'nan' and tkr.lower() != 'none':
+            try: val = float(row["수량 (주/달러)"])
+            except: val = 0.0
+            d[tkr] = d.get(tkr, 0.0) + val
+    return d
+
+old_dict = get_dict_from_df(st.session_state['last_portfolio'])
+new_dict = get_dict_from_df(edited_df)
+changes_made = False
+now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+for tkr, old_val in old_dict.items():
+    if tkr in new_dict:
+        new_val = new_dict[tkr]
+        if old_val != new_val:
+            st.session_state['portfolio_history'].append({"변경 일시": now_str, "티커": tkr, "상태": "수량 변경 🔄", "변경 전": f"{old_val:,.2f}", "변경 후": f"{new_val:,.2f}"})
+            changes_made = True
+    else:
+        st.session_state['portfolio_history'].append({"변경 일시": now_str, "티커": tkr, "상태": "항목 삭제 ❌", "변경 전": f"{old_val:,.2f}", "변경 후": "0.00"})
+        changes_made = True
+
+for tkr, new_val in new_dict.items():
+    if tkr not in old_dict:
+        st.session_state['portfolio_history'].append({"변경 일시": now_str, "티커": tkr, "상태": "신규 추가 🟢", "변경 전": "0.00", "변경 후": f"{new_val:,.2f}"})
+        changes_made = True
+
+if changes_made:
+    st.session_state['last_portfolio'] = edited_df.copy()
+    st.session_state['portfolio'] = edited_df.copy()
+
 st.divider()
 
-# 데이터 처리를 위한 티커 추출 (CASH 제외)
 raw_tickers = edited_df["티커 (Ticker)"].dropna().astype(str).str.upper().str.strip().tolist()
 valid_stock_tickers = [t for t in raw_tickers if t != "" and t != "CASH"]
 
@@ -96,108 +134,108 @@ if valid_stock_tickers or cash_amount > 0:
     with st.spinner("데이터를 분석 중입니다..."):
         start_5y = datetime.today() - timedelta(days=365*6)
         
-        # 1. 기술적 지표 표 (주식 티커만)
+        # 1. 기술적 지표 표
         indicator_data = []
         port_data = pd.DataFrame()
         
         if valid_stock_tickers:
             downloaded = yf.download(valid_stock_tickers, start=start_5y.strftime('%Y-%m-%d'), progress=False)['Close']
-            
-            # Series vs DataFrame 형태 보정
-            if isinstance(downloaded, pd.Series):
-                port_data = downloaded.to_frame(name=valid_stock_tickers[0])
-            else:
-                port_data = downloaded
-                
+            if isinstance(downloaded, pd.Series): port_data = downloaded.to_frame(name=valid_stock_tickers[0])
+            else: port_data = downloaded
             port_data = port_data.ffill()
 
             st.subheader("📊 2. 내 종목 기술적 지표 현황")
             for tkr in valid_stock_tickers:
                 if tkr in port_data.columns:
                     series = port_data[tkr].dropna()
-                    if len(series) < 150: continue # 데이터 부족 상폐/신규 종목 스킵
-                    
+                    if len(series) < 150: continue
                     current_price = series.iloc[-1]
                     ma_30w = series.rolling(window=150).mean().iloc[-1]
                     trend_status = "🟢 위 (상승추세)" if current_price > ma_30w else "🔴 아래 (하락추세)"
                     rsi_14 = ta.rsi(series, length=14).iloc[-1]
+                    indicator_data.append({"종목 (Ticker)": tkr, "현재가 ($)": f"${current_price:.2f}", "현재 RSI (14)": f"{rsi_14:.1f}", "30주 MA ($)": f"${ma_30w:.2f}", "30주 MA 돌파 여부": trend_status})
                     
-                    indicator_data.append({
-                        "종목 (Ticker)": tkr,
-                        "현재가 ($)": f"${current_price:.2f}",
-                        "현재 RSI (14)": f"{rsi_14:.1f}",
-                        "30주 MA ($)": f"${ma_30w:.2f}",
-                        "30주 MA 돌파 여부": trend_status
-                    })
-                    
-            if indicator_data:
-                st.dataframe(pd.DataFrame(indicator_data), hide_index=True, use_container_width=True)
-            else:
-                st.info("입력된 주식/ETF 종목이 없거나 데이터가 부족합니다.")
+            if indicator_data: st.dataframe(pd.DataFrame(indicator_data), hide_index=True, use_container_width=True)
+            else: st.info("입력된 주식/ETF 종목이 없거나 데이터가 부족합니다.")
 
         st.divider()
 
-        # 2. 자산 가치 시계열 계산 (오류 수정 핵심부)
+        # 2. 자산 가치 시계열 계산 (기입일 필터링 추가)
         st.subheader("📈 3. 내 포트폴리오 가치 추이 및 변화량")
         
-        # QQQ 데이터를 기준으로 전체 영업일 인덱스(달력) 생성
+        # 사용자가 포트폴리오를 시작한 날짜 선택
+        col_date, _ = st.columns([1, 2])
+        with col_date:
+            port_start_date = st.date_input("📅 포트폴리오 최초 기입일(매수일)", value=datetime.today() - timedelta(days=90))
+            
+        st.markdown(f"⚠️ **참고:** 설정하신 **{port_start_date.strftime('%Y년 %m월 %d일')}**부터 계산된 실제 내 계좌의 자산 가치 변화입니다.")
+        
         benchmark_index = yf.download("QQQ", start=start_5y.strftime('%Y-%m-%d'), progress=False)['Close'].index
         portfolio_value_series = pd.Series(0.0, index=benchmark_index)
         
-        # 주식 가치 누적
         for index, row in edited_df.iterrows():
             tkr = str(row["티커 (Ticker)"]).upper().strip()
             try: shares = float(row["수량 (주/달러)"])
             except: shares = 0.0
             
             if shares > 0 and tkr in port_data.columns:
-                # 인덱스(날짜)를 맞추어(reindex) 오류 방지, 없는 날은 이전 가격으로 채움(ffill)
                 stock_series = port_data[tkr].reindex(benchmark_index).ffill().fillna(0)
                 portfolio_value_series += stock_series * shares
 
-        # 현금 가치 더하기 (모든 날짜에 동일하게 적용)
         if cash_amount > 0:
             portfolio_value_series += cash_amount
             
-        portfolio_value_series = portfolio_value_series.dropna()
-        current_total_value = portfolio_value_series.iloc[-1]
+        # 시간대(timezone) 제거 후 시작일 기준으로 필터링
+        portfolio_value_series.index = portfolio_value_series.index.tz_localize(None)
+        portfolio_value_series = portfolio_value_series.loc[pd.to_datetime(port_start_date):].dropna()
         
-        if current_total_value > 0:
-            # 1일 전, 1주일 전, 1달 전 변화량 계산
+        if len(portfolio_value_series) > 0:
             val_today = portfolio_value_series.iloc[-1]
-            val_1d = portfolio_value_series.iloc[-2] if len(portfolio_value_series) >= 2 else val_today
-            val_1w = portfolio_value_series.iloc[-6] if len(portfolio_value_series) >= 6 else val_today
-            val_1m = portfolio_value_series.iloc[-22] if len(portfolio_value_series) >= 22 else val_today
+            val_start = portfolio_value_series.iloc[0] # 기입일(시작일) 당시의 가치
             
+            # 메트릭스 출력 (수익률)
             v_col1, v_col2, v_col3 = st.columns(3)
-            v_col1.metric("총 평가액 (현금 포함)", f"${val_today:,.2f}", f"전일 대비: ${(val_today - val_1d):+,.2f}")
-            v_col2.metric("1주일 전 대비 변화", f"${(val_today - val_1w):+,.2f}", f"{(val_today/val_1w - 1)*100:+.2f}%")
-            v_col3.metric("1개월 전 대비 변화", f"${(val_today - val_1m):+,.2f}", f"{(val_today/val_1m - 1)*100:+.2f}%")
+            v_col1.metric("총 평가액 (현금 포함)", f"${val_today:,.2f}", f"기입일 대비 수익금: ${(val_today - val_start):+,.2f}")
+            v_col2.metric("기입일 이후 총 수익률", f"{(val_today/val_start - 1)*100:+.2f}%")
+            
+            if len(portfolio_value_series) >= 2:
+                val_1d = portfolio_value_series.iloc[-2]
+                v_col3.metric("전일 대비 변화", f"${(val_today - val_1d):+,.2f}", f"{(val_today/val_1d - 1)*100:+.2f}%")
+            else:
+                v_col3.metric("전일 대비 변화", "-", "데이터 대기 중")
 
-            # 리샘플링 및 차트 그리기
-            daily_df = portfolio_value_series.last('90D')
-            monthly_df = portfolio_value_series.resample('ME').last().last('1095D')
-            yearly_df = portfolio_value_series.resample('YE').last()
-
-            tab1, tab2, tab3 = st.tabs(["📉 일별 추이 (최근 3개월)", "📆 월별 추이 (최근 3년)", "📅 연별 추이 (최근 5년)"])
+            # 기입일 기준 데이터로 차트 그리기
+            tab1, tab2 = st.tabs(["📉 전체 기간 일별 추이", "📆 월별 수익금 추이"])
 
             with tab1:
                 fig_daily = go.Figure()
-                fig_daily.add_trace(go.Scatter(x=daily_df.index, y=daily_df.values, mode='lines+markers', name='자산 가치', line=dict(color='#3498db', width=2)))
+                fig_daily.add_trace(go.Scatter(x=portfolio_value_series.index, y=portfolio_value_series.values, mode='lines', name='자산 가치', line=dict(color='#3498db', width=2.5), fill='tozeroy', fillcolor='rgba(52, 152, 219, 0.1)'))
                 fig_daily.update_layout(height=400, margin=dict(l=0, r=0, t=10, b=0), yaxis_title="달러 ($)", hovermode="x unified")
                 st.plotly_chart(fig_daily, use_container_width=True)
 
             with tab2:
-                fig_monthly = go.Figure()
-                fig_monthly.add_trace(go.Bar(x=monthly_df.index.strftime('%Y-%m'), y=monthly_df.values, name='자산 가치', marker_color='#8e44ad'))
-                fig_monthly.update_layout(height=400, margin=dict(l=0, r=0, t=10, b=0), yaxis_title="달러 ($)", hovermode="x unified")
-                st.plotly_chart(fig_monthly, use_container_width=True)
-
-            with tab3:
-                fig_yearly = go.Figure()
-                fig_yearly.add_trace(go.Bar(x=yearly_df.index.strftime('%Y'), y=yearly_df.values, name='자산 가치', marker_color='#e74c3c', text=[f"${v:,.0f}" for v in yearly_df.values], textposition='auto'))
-                fig_yearly.update_layout(height=400, margin=dict(l=0, r=0, t=10, b=0), yaxis_title="달러 ($)")
-                st.plotly_chart(fig_yearly, use_container_width=True)
+                if len(portfolio_value_series) > 10:
+                    monthly_df = portfolio_value_series.resample('ME').last()
+                    fig_monthly = go.Figure()
+                    fig_monthly.add_trace(go.Bar(x=monthly_df.index.strftime('%Y-%m'), y=monthly_df.values, name='자산 가치', marker_color='#8e44ad', text=[f"${v:,.0f}" for v in monthly_df.values], textposition='auto'))
+                    fig_monthly.update_layout(height=400, margin=dict(l=0, r=0, t=10, b=0), yaxis_title="달러 ($)")
+                    st.plotly_chart(fig_monthly, use_container_width=True)
+                else:
+                    st.info("월별 차트를 생성하기에는 아직 기간이 짧습니다.")
                 
+        else:
+            st.warning("선택하신 기입일 이후의 데이터가 존재하지 않습니다.")
 else:
     st.info("👆 위 표에 티커와 수량을 기입해 주세요.")
+
+st.divider()
+
+# --- 4. 포트폴리오 변경 히스토리 ---
+st.subheader("🕰️ 4. 포트폴리오 변경 히스토리")
+st.markdown("내가 직접 수정한 종목과 수량의 **변경 내역(로그)**이 시간순으로 기록됩니다. (※ 새로고침 시 초기화)")
+
+if st.session_state['portfolio_history']:
+    history_df = pd.DataFrame(st.session_state['portfolio_history'])[::-1]
+    st.dataframe(history_df, hide_index=True, use_container_width=True)
+else:
+    st.info("아직 수량이 변경된 내역이 없습니다. 위 표의 숫자를 수정해 보세요!")
