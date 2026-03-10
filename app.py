@@ -563,7 +563,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지 구성: 내 포트폴리오 관리 (새로운 통합 레이아웃)
+# [6] 페이지 구성: 내 포트폴리오 관리 (새로운 통합 레이아웃 & 한국어 번역)
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
@@ -744,7 +744,7 @@ def make_portfolio_page(acc_name):
 
 
         # -------------------------------------------------------------
-        # 레이아웃 편집기 UI
+        # 레이아 편집기 UI
         # -------------------------------------------------------------
         with st.expander("🛠️ 화면 레이아웃 편집 (위아래로 순서 변경)"):
             for i, block_name in enumerate(current_layout):
@@ -780,7 +780,7 @@ def make_portfolio_page(acc_name):
                         st.rerun()
                 with c_prog:
                     pb_bg = "rgba(0,0,0,0.1)" if WIDGET_THEME=="light" else "rgba(255,255,255,0.1)"
-                    st.markdown(f"""<div class='info-panel' style='padding:20px; margin-bottom:20px;'>
+                    st.markdown(f"""<div class='info-panel'>
 <div style='display:flex; justify-content:space-between; margin-bottom:8px; font-weight:bold; font-size:1.05rem;'>
 <span>현재: ${total_val_now:,.0f}</span>
 <span style='color:{C_DOWN};'>목표: ${target_val:,.0f}</span>
@@ -794,12 +794,14 @@ def make_portfolio_page(acc_name):
 
             elif block == "📊 실시간 요약":
                 st.markdown(f"#### 📊 자산 및 시황 요약 (기준: {price_label})")
+                
                 col_group, col_ai = st.columns([3, 1])
                 
                 with col_group:
                     pn_col = C_UP if daily_diff > 0 else (C_DOWN if daily_diff < 0 else TEXT_COLOR)
                     pn_ico = "▲" if daily_diff > 0 else ("▼" if daily_diff < 0 else "-")
-                    st.markdown(f"""<div class='info-panel' style='display:flex; justify-content:space-around; align-items:center; text-align:center; padding:15px;'>
+                    
+                    st.markdown(f"""<div class='info-panel' style='display:flex; justify-content:space-around; align-items:center; text-align:center;'>
 <div style='flex:1; border-right:1px dashed rgba(150,150,150,0.4);'>
 <div style='font-size:0.85rem; font-weight:bold; opacity:0.8; color:{TEXT_COLOR};'>💰 총 평가액 (Total)</div>
 <div style='font-size:1.6rem; font-weight:bold; margin-top:5px; color:{TEXT_COLOR};'>${total_val_now:,.0f}</div>
@@ -818,7 +820,7 @@ def make_portfolio_page(acc_name):
 
                 with col_ai:
                     app_reg = ms['regime']
-                    st.markdown(f"""<div class='info-panel' style='text-align:center; display:flex; flex-direction:column; justify-content:center; padding:15px;'>
+                    st.markdown(f"""<div class='info-panel' style='text-align:center; display:flex; flex-direction:column; justify-content:center;'>
 <div style='font-size:0.85rem; font-weight:bold; opacity:0.8; color:{TEXT_COLOR};'>AI 전략 국면</div>
 <div style='font-size:1.6rem; font-weight:bold; margin-top:5px; color:{TEXT_COLOR};'>Regime {app_reg}</div>
 <div style='font-size:0.8rem; font-weight:bold; color:{TEXT_COLOR};'>{ms['entry_grade'].split('(')[0].strip()}</div>
@@ -910,13 +912,13 @@ def make_portfolio_page(acc_name):
                         num_rows="dynamic", use_container_width=True, height=320, key=f"ed_{acc_name}",
                         column_order=["태그", "티커 (Ticker)", "수량 (주/달러)", "평균 단가 ($)", "매입 환율", "현재가 ($)", "수익률 (%)", "원화 수익률 (%)"],
                         column_config={
-                            "태그": st.column_config.SelectboxColumn("CLASS", options=["코어", "위성", "헷지", "현금", "단기픽"], required=True),
-                            "티커 (Ticker)": st.column_config.TextColumn("TICKER"),
-                            "현재가 ($)": st.column_config.NumberColumn("PRICE", disabled=True, format="$ %.2f"),
-                            "현재 환율": st.column_config.NumberColumn("FX", disabled=True, format="₩ %.1f"),
-                            "수익률 (%)": st.column_config.NumberColumn("RET", disabled=True, format="%.2f %%"),
-                            "원화 수익률 (%)": st.column_config.NumberColumn("KRW RET", disabled=True, format="%.2f %%"),
-                            "매입 환율": st.column_config.NumberColumn("BUY FX", format="₩ %.1f"),
+                            "태그": st.column_config.SelectboxColumn("태그", options=["코어", "위성", "헷지", "현금", "단기픽"], required=True),
+                            "티커 (Ticker)": st.column_config.TextColumn("종목명"),
+                            "현재가 ($)": st.column_config.NumberColumn("현재가", disabled=True, format="$ %.2f"),
+                            "현재 환율": st.column_config.NumberColumn("현재 환율", disabled=True, format="₩ %.1f"),
+                            "수익률 (%)": st.column_config.NumberColumn("수익률", disabled=True, format="%.2f %%"),
+                            "원화 수익률 (%)": st.column_config.NumberColumn("원화 수익", disabled=True, format="%.2f %%"),
+                            "매입 환율": st.column_config.NumberColumn("매입 환율", format="₩ %.1f"),
                         }
                     )
                     base_cols = ["티커 (Ticker)", "수량 (주/달러)", "평균 단가 ($)", "매입 환율", "태그"]
@@ -958,26 +960,26 @@ def make_portfolio_page(acc_name):
                         
                         if tkr != "CASH" and cp > 0:
                             shares_to_trade = abs(diff) / cp
-                            if shares_to_trade < 1.0: action = "HOLD"
-                            elif diff > 0: action = f"BUY {shares_to_trade:.0f}"
-                            else: action = f"SELL {shares_to_trade:.0f}"
+                            if shares_to_trade < 1.0: action = "유지"
+                            elif diff > 0: action = f"매수 {shares_to_trade:.0f}주"
+                            else: action = f"매도 {shares_to_trade:.0f}주"
                         elif tkr == "CASH":
-                            if abs(diff) < 50: action = "HOLD"
-                            elif diff > 0: action = f"ADD ${diff:,.0f}"
-                            else: action = f"WITHDRAW ${abs(diff):,.0f}"
-                        else: action = "HOLD"
+                            if abs(diff) < 50: action = "유지"
+                            elif diff > 0: action = f"추가 ${diff:,.0f}"
+                            else: action = f"인출 ${abs(diff):,.0f}"
+                        else: action = "유지"
                         
                         if my_v > 0 or tw > 0: 
-                            status_d.append({"TICKER": tkr, "TARGET": f"{tw*100:.1f}%", "ACTUAL": f"{my_w:.1f}%", "ACTION": action})
+                            status_d.append({"종목": tkr, "목표비중": f"{tw*100:.1f}%", "현재비중": f"{my_w:.1f}%", "리밸런싱 액션": action})
                             
                     if status_d:
-                        status_df = pd.DataFrame(status_d).sort_values("TARGET", ascending=False)
+                        status_df = pd.DataFrame(status_d).sort_values("목표비중", ascending=False)
                         def color_act(val):
                             val_s = str(val)
-                            if 'BUY' in val_s or 'ADD' in val_s: return f'color: {C_UP}; font-weight:bold;'
-                            elif 'SELL' in val_s or 'WITHDRAW' in val_s: return f'color: {C_DOWN}; font-weight:bold;'
+                            if '매수' in val_s or '추가' in val_s: return f'color: {C_UP}; font-weight:bold;'
+                            elif '매도' in val_s or '인출' in val_s: return f'color: {C_DOWN}; font-weight:bold;'
                             return ''
-                        st.dataframe(status_df.style.map(color_act, subset=['ACTION']), use_container_width=True, hide_index=True)
+                        st.dataframe(status_df.style.map(color_act, subset=['리밸런싱 액션']), use_container_width=True, hide_index=True)
                 st.write("")
 
             elif block == "📈 성장 곡선":
@@ -1008,8 +1010,8 @@ def make_portfolio_page(acc_name):
                             hist_df = hist_df.resample('D').ffill()
 
                             fig_seed = go.Figure()
-                            fig_seed.add_trace(go.Scatter(x=hist_df.index, y=hist_df['equity'], name="TOTAL EQUITY", line=dict(color=C_UP, width=3, shape='hv'), mode='lines'))
-                            fig_seed.add_trace(go.Scatter(x=hist_df.index, y=hist_df['seed'], name="SEED", line=dict(color=C_DOWN, width=2, dash='dot', shape='hv'), mode='lines'))
+                            fig_seed.add_trace(go.Scatter(x=hist_df.index, y=hist_df['equity'], name="실제 총 평가액", line=dict(color=C_UP, width=3, shape='hv'), mode='lines'))
+                            fig_seed.add_trace(go.Scatter(x=hist_df.index, y=hist_df['seed'], name="투입 시드 원금", line=dict(color=C_DOWN, width=2, dash='dot', shape='hv'), mode='lines'))
                             
                             cust_s = THEME_LAYOUT.copy()
                             cust_s.update(height=350, hovermode="x unified", yaxis=dict(showgrid=True, autorange=True, rangemode="normal"))
