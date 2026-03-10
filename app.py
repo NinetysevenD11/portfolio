@@ -14,12 +14,12 @@ import os
 warnings.filterwarnings('ignore')
 
 # =====================================================================
-# [0] 시스템 설정 및 동적 테마 엔진 (에러 완벽 차단 로직)
+# [0] 시스템 기본 상수 및 데이터 저장 함수 (에러 해결: 최상단 배치)
 # =====================================================================
 st.set_page_config(page_title="AMLS 퀀트 포트폴리오", layout="wide", initial_sidebar_state="expanded")
 
-# 기존 오류 파일과의 충돌을 방지하기 위해 파일명을 v10으로 변경
 SETTINGS_FILE = "amls_settings_v10.json"
+ACCOUNTS_FILE = "amls_multi_accounts.json"
 REQUIRED_TICKERS = ["TQQQ", "QLD", "QQQ", "SOXL", "USD", "SSO", "GLD", "CASH"]
 
 def load_settings():
@@ -34,61 +34,112 @@ def save_settings(settings_data):
     with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
         json.dump(settings_data, f, ensure_ascii=False, indent=4)
 
+def load_accounts_data():
+    if os.path.exists(ACCOUNTS_FILE):
+        try:
+            with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except: return None
+    return None
+
+def save_accounts_data(data_dict):
+    with open(ACCOUNTS_FILE, "w", encoding="utf-8") as f:
+        json.dump(data_dict, f, ensure_ascii=False, indent=4)
+
+# =====================================================================
+# [1] 세션 스테이트 (초기화 및 마이그레이션)
+# =====================================================================
 if 'settings' not in st.session_state:
     st.session_state['settings'] = load_settings()
 
+if 'accounts' not in st.session_state:
+    loaded = load_accounts_data()
+    if not loaded:
+        loaded = {
+            "AMLS v4.3": {  
+                "portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS],
+                "history": [], "first_entry_date": None, "journal_text": "", "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0,
+                "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 기입표", "🍩 자산 배분 & 지침", "📈 성장 곡선", "📝 매매 일지"]
+            }
+        }
+    st.session_state['accounts'] = loaded
+
+needs_save = False
+if "기본 계좌 (AMLS)" in st.session_state['accounts']:
+    st.session_state['accounts']["AMLS v4.3"] = st.session_state['accounts'].pop("기본 계좌 (AMLS)")
+    needs_save = True
+
+for acc_name, acc_data in st.session_state['accounts'].items():
+    if "seed_history" not in acc_data: acc_data["seed_history"] = {}; needs_save = True
+    if "target_portfolio_value" not in acc_data: acc_data["target_portfolio_value"] = 100000.0; needs_save = True
+    if "layout_order" not in acc_data: 
+        acc_data["layout_order"] = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 기입표", "🍩 자산 배분 & 지침", "📈 성장 곡선", "📝 매매 일지"]
+        needs_save = True
+
+    existing_tickers = [item["티커 (Ticker)"] for item in acc_data["portfolio"]]
+    port_dict = {item["티커 (Ticker)"]: item for item in acc_data["portfolio"]}
+    new_port = []
+    for req_t in REQUIRED_TICKERS:
+        if req_t in port_dict: 
+            item = port_dict[req_t]
+            if "매입 환율" not in item: item["매입 환율"] = 0.0; needs_save = True
+            if "태그" not in item: item["태그"] = "코어" if req_t != "CASH" else "현금"; needs_save = True
+            new_port.append(item)
+        else: 
+            new_port.append({"티커 (Ticker)": req_t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어" if req_t != "CASH" else "현금"})
+            needs_save = True
+    acc_data["portfolio"] = new_port
+
+if needs_save: save_accounts_data(st.session_state['accounts'])
+
+
+# =====================================================================
+# [2] 동적 테마 엔진 (7가지 통합)
+# =====================================================================
 current_theme = st.session_state['settings'].get("theme", "애플 테마")
 
-# --- 🎨 7가지 테마별 기본(Base) 변수 세팅 ---
 if current_theme == "애플 테마":
     BASE_TEXT_COLOR = "#1d1d1f"; TEXT_SUB = "#8e8e93"
     PANEL_BG = "rgba(255,255,255,0.65)"; PANEL_BORDER = "1px solid rgba(255,255,255,0.5)"; PANEL_RADIUS = "16px"
     WIDGET_THEME = "light"
     C_UP = "#34c759"; C_DOWN = "#ff3b30"; C_WARN = "#ff9500"; C_SAFE = "#007aff"
     BASE_CHART_COLORS = {'TQQQ':'#ff3b30', 'SOXL':'#af52de', 'USD':'#5856d6', 'QLD':'#ff9500', 'SSO':'#ffcc00', 'QQQ':'#007aff', 'GLD':'#34c759', 'CASH':'#8e8e93'}
-    
 elif current_theme in ["1930년대 타자기 테마", "1920년대 타자기 테마"]:
     BASE_TEXT_COLOR = "#2c2a25"; TEXT_SUB = "#555555"
     PANEL_BG = "#dfd7c5"; PANEL_BORDER = "2px solid #2c2a25"; PANEL_RADIUS = "0px"
     WIDGET_THEME = "light"
     C_UP = "#000080"; C_DOWN = "#8b0000"; C_WARN = "#b8860b"; C_SAFE = "#006400"
     BASE_CHART_COLORS = {'TQQQ':'#8b0000', 'SOXL':'#556b2f', 'USD':'#8fbc8f', 'QLD':'#b8860b', 'SSO':'#cd853f', 'QQQ':'#000080', 'GLD':'#daa520', 'CASH':'#2f4f4f'}
-
 elif current_theme == "블룸버그 터미널 테마":
     BASE_TEXT_COLOR = "#00FF41"; TEXT_SUB = "#888888"
     PANEL_BG = "#050505"; PANEL_BORDER = "1px solid #333333"; PANEL_RADIUS = "0px"
     WIDGET_THEME = "dark"
     C_UP = "#00FF41"; C_DOWN = "#FF003C"; C_WARN = "#FFB000"; C_SAFE = "#00FFFF"
     BASE_CHART_COLORS = {'TQQQ':'#FF003C', 'SOXL':'#B900FF', 'USD':'#00FFFF', 'QLD':'#FF8A00', 'SSO':'#FFFF00', 'QQQ':'#00FF41', 'GLD':'#FFB000', 'CASH':'#888888'}
-
 elif current_theme == "카페 테마":
     BASE_TEXT_COLOR = "#5D4A44"; TEXT_SUB = "#A89B96"
     PANEL_BG = "#FFFFFF"; PANEL_BORDER = "2px solid #FFF0E5"; PANEL_RADIUS = "20px"
     WIDGET_THEME = "light"
     C_UP = "#FFB7B2"; C_DOWN = "#A1C9F1"; C_WARN = "#FFDAC1"; C_SAFE = "#B5EAD7"
     BASE_CHART_COLORS = {'TQQQ':'#FF9AA2', 'SOXL':'#C7CEEA', 'USD':'#E2F0CB', 'QLD':'#FFDAC1', 'SSO':'#FFB7B2', 'QQQ':'#A1C9F1', 'GLD':'#FCEBB6', 'CASH':'#B5EAD7'}
-
 elif current_theme == "2000년대 구글 감성 테마":
     BASE_TEXT_COLOR = "#000000"; TEXT_SUB = "#666666"
     PANEL_BG = "#F8F9FA"; PANEL_BORDER = "1px solid #CCCCCC"; PANEL_RADIUS = "0px"
     WIDGET_THEME = "light"
     C_UP = "#34A853"; C_DOWN = "#EA4335"; C_WARN = "#FBBC05"; C_SAFE = "#4285F4"
     BASE_CHART_COLORS = {'TQQQ':'#EA4335', 'SOXL':'#990099', 'USD':'#660099', 'QLD':'#FBBC05', 'SSO':'#F68B1F', 'QQQ':'#4285F4', 'GLD':'#F4B400', 'CASH':'#34A853'}
-
 elif current_theme == "월스트리트 저널 테마":
     BASE_TEXT_COLOR = "#1A1A1A"; TEXT_SUB = "#555555"
     PANEL_BG = "#FFFFFF"; PANEL_BORDER = "1px solid #1A1A1A"; PANEL_RADIUS = "0px"
     WIDGET_THEME = "light"
     C_UP = "#006400"; C_DOWN = "#8B0000"; C_WARN = "#B8860B"; C_SAFE = "#000080"
     BASE_CHART_COLORS = {'TQQQ':'#8B0000', 'SOXL':'#556b2f', 'USD':'#2F4F4F', 'QLD':'#B8860B', 'SSO':'#DAA520', 'QQQ':'#000080', 'GLD':'#BDB76B', 'CASH':'#696969'}
-
 elif current_theme == "Chat GPT 테마":
     BASE_TEXT_COLOR = "#ECECF1"; TEXT_SUB = "#8E8EA0"
     PANEL_BG = "#444654"; PANEL_BORDER = "1px solid #565869"; PANEL_RADIUS = "8px"
     WIDGET_THEME = "dark"
     C_UP = "#10A37F"; C_DOWN = "#EF4146"; C_WARN = "#F4AC36"; C_SAFE = "#2A85FF"
     BASE_CHART_COLORS = {'TQQQ':'#EF4146', 'SOXL':'#B582FF', 'USD':'#2A85FF', 'QLD':'#F4AC36', 'SSO':'#E8713A', 'QQQ':'#10A37F', 'GLD':'#F2C94C', 'CASH':'#565869'}
-
 else:
     BASE_TEXT_COLOR = "#1d1d1f"; TEXT_SUB = "#8e8e93"
     PANEL_BG = "rgba(255,255,255,0.65)"; PANEL_BORDER = "1px solid rgba(255,255,255,0.5)"; PANEL_RADIUS = "16px"
@@ -96,26 +147,22 @@ else:
     C_UP = "#34c759"; C_DOWN = "#ff3b30"; C_WARN = "#ff9500"; C_SAFE = "#007aff"
     BASE_CHART_COLORS = {'TQQQ':'#ff3b30', 'SOXL':'#af52de', 'USD':'#5856d6', 'QLD':'#ff9500', 'SSO':'#ffcc00', 'QQQ':'#007aff', 'GLD':'#34c759', 'CASH':'#8e8e93'}
 
-# [핵심 수리 완료] KeyError 방지를 위한 데이터 강제 주입 로직
-if "text_color" not in st.session_state['settings']:
-    st.session_state['settings']["text_color"] = BASE_TEXT_COLOR
-if "chart_colors" not in st.session_state['settings']:
-    st.session_state['settings']["chart_colors"] = BASE_CHART_COLORS.copy()
+# 데이터 강제 주입 로직 (에러 방지)
+if "text_color" not in st.session_state['settings']: st.session_state['settings']["text_color"] = BASE_TEXT_COLOR
+if "chart_colors" not in st.session_state['settings']: st.session_state['settings']["chart_colors"] = BASE_CHART_COLORS.copy()
 for tkr in REQUIRED_TICKERS:
-    if tkr not in st.session_state['settings']["chart_colors"]:
-        st.session_state['settings']["chart_colors"][tkr] = BASE_CHART_COLORS.get(tkr, "#888888")
+    if tkr not in st.session_state['settings']["chart_colors"]: st.session_state['settings']["chart_colors"][tkr] = BASE_CHART_COLORS.get(tkr, "#888888")
 
 TEXT_COLOR = st.session_state['settings']["text_color"]
 COLOR_PALETTE = st.session_state['settings']["chart_colors"]
 
-# --- Plotly 레이아웃 설정 ---
-if current_theme == "1930년대 타자기 테마" or current_theme == "월스트리트 저널 테마":
+# Plotly 레이아웃
+if current_theme in ["1930년대 타자기 테마", "월스트리트 저널 테마"]:
     THEME_LAYOUT = dict(template="simple_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0))
 elif current_theme in ["블룸버그 터미널 테마", "Chat GPT 테마"]:
     THEME_LAYOUT = dict(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='#333', zerolinecolor='#444'), yaxis=dict(showgrid=True, gridcolor='#333', zerolinecolor='#444'))
 else:
     THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.05)'), yaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.05)'))
-
 
 def apply_custom_css():
     css_base = ""
@@ -131,8 +178,8 @@ def apply_custom_css():
         input, textarea, select, div[data-baseweb="select"] > div {{ background-color: rgba(255, 255, 255, 0.5); backdrop-filter: blur(10px); color: {TEXT_COLOR}; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; }}
         [data-testid="stDataFrame"] {{ border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); background: rgba(255, 255, 255, 0.5); }}
         [data-testid="stSidebar"] {{ background: rgba(245, 245, 247, 0.7); backdrop-filter: blur(20px); border-right: 1px solid rgba(0,0,0,0.05); }}
-        button[data-baseweb="tab"][aria-selected="true"] {{ color: {TEXT_COLOR}; border-bottom-color: {TEXT_COLOR}; border-bottom-width: 2px; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none; color: {TEXT_COLOR}; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: #1d1d1f; border-bottom-color: #1d1d1f; border-bottom-width: 2px; }}
+        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none; color: #1d1d1f; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
         .sidebar-link:hover {{ background-color: rgba(0,0,0,0.05); transform: translateX(2px); }}
         """
     elif current_theme in ["1930년대 타자기 테마", "1920년대 타자기 테마"]:
@@ -177,7 +224,7 @@ def apply_custom_css():
         input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #FAFAFA; color: {TEXT_COLOR}; border: 2px solid #EAE3D9; border-radius: 12px; }}
         [data-testid="stDataFrame"] {{ border-radius: 16px; border: 2px solid #FFF0E5; }}
         [data-testid="stSidebar"] {{ background-color: #FFF6EC; border-right: 2px dashed #EAE3D9; }}
-        button[data-baseweb="tab"][aria-selected="true"] {{ color: {TEXT_COLOR}; border-bottom-color: {TEXT_COLOR}; border-bottom-width: 3px; font-weight: bold; }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: #FF9B94; border-bottom-color: #FF9B94; border-bottom-width: 3px; font-weight: bold; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none; color: {TEXT_COLOR}; font-weight: 700; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
         .sidebar-link:hover {{ background-color: #FFF0E5; transform: translateX(4px); }}
         """
@@ -187,7 +234,7 @@ def apply_custom_css():
         div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: #FFFFFF; border: 1px solid #CCCCCC; border-radius: 0px; box-shadow: none; padding: 1.5rem; }}
         .stButton>button {{ background-color: #F0F0F0; color: #000000; border: 1px solid #707070; border-radius: 2px; font-weight: normal; padding: 0.3rem 0.8rem; }}
         .stButton>button:hover {{ background-color: #E0E0E0; border: 1px solid #333333; }}
-        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #FFFFFF; color: {TEXT_COLOR}; border: 1px solid #999999; border-radius: 0px; font-family: Arial, sans-serif; }}
+        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #FFFFFF; color: #000000; border: 1px solid #999999; border-radius: 0px; font-family: Arial, sans-serif; }}
         [data-testid="stDataFrame"] {{ border-radius: 0px; border: 1px solid #999999; }}
         [data-testid="stSidebar"] {{ background-color: #F8F9FA; border-right: 1px solid #CCCCCC; }}
         button[data-baseweb="tab"] {{ color: #0000EE; text-decoration: underline; font-weight: normal; }}
@@ -207,8 +254,8 @@ def apply_custom_css():
         input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #FFFFFF; color: {TEXT_COLOR}; border: 1px solid #000000; border-radius: 0px; font-family: 'Arial', sans-serif; }}
         [data-testid="stDataFrame"] {{ border-radius: 0px; border: 1px solid #000000; }}
         [data-testid="stSidebar"] {{ background-color: #EBEBEB; border-right: 2px solid #000000; }}
-        button[data-baseweb="tab"][aria-selected="true"] {{ color: {TEXT_COLOR}; border-bottom: 3px solid #000000; font-weight: bold; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; text-decoration: none; color: {TEXT_COLOR}; font-weight: bold; font-size: 0.95rem; border-bottom: 1px dotted #CCC; }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: #000000; border-bottom: 3px solid #000000; font-weight: bold; }}
+        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; text-decoration: none; color: #000000; font-weight: bold; font-size: 0.95rem; border-bottom: 1px dotted #CCC; }}
         .sidebar-link:hover {{ background-color: #DDDDDD; }}
         """
         css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; border-top: 3px solid #000; font-family: 'Arial', sans-serif; }}"
@@ -243,61 +290,8 @@ def apply_custom_css():
 
 apply_custom_css()
 
-def load_accounts_data():
-    if os.path.exists(ACCOUNTS_FILE):
-        try:
-            with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except: return None
-    return None
-
-def save_accounts_data(data_dict):
-    with open(ACCOUNTS_FILE, "w", encoding="utf-8") as f:
-        json.dump(data_dict, f, ensure_ascii=False, indent=4)
-
-if 'accounts' not in st.session_state:
-    loaded = load_accounts_data()
-    if not loaded:
-        loaded = {
-            "AMLS v4.3": {  
-                "portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS],
-                "history": [], "first_entry_date": None, "journal_text": "", "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0,
-                "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 기입표", "🍩 자산 배분 & 지침", "📈 성장 곡선", "📝 매매 일지"]
-            }
-        }
-    st.session_state['accounts'] = loaded
-
-# 마이그레이션 로직
-needs_save = False
-if "기본 계좌 (AMLS)" in st.session_state['accounts']:
-    st.session_state['accounts']["AMLS v4.3"] = st.session_state['accounts'].pop("기본 계좌 (AMLS)")
-    needs_save = True
-
-for acc_name, acc_data in st.session_state['accounts'].items():
-    if "seed_history" not in acc_data: acc_data["seed_history"] = {}; needs_save = True
-    if "target_portfolio_value" not in acc_data: acc_data["target_portfolio_value"] = 100000.0; needs_save = True
-    if "layout_order" not in acc_data: 
-        acc_data["layout_order"] = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 기입표", "🍩 자산 배분 & 지침", "📈 성장 곡선", "📝 매매 일지"]
-        needs_save = True
-
-    existing_tickers = [item["티커 (Ticker)"] for item in acc_data["portfolio"]]
-    port_dict = {item["티커 (Ticker)"]: item for item in acc_data["portfolio"]}
-    new_port = []
-    for req_t in REQUIRED_TICKERS:
-        if req_t in port_dict: 
-            item = port_dict[req_t]
-            if "매입 환율" not in item: item["매입 환율"] = 0.0; needs_save = True
-            if "태그" not in item: item["태그"] = "코어" if req_t != "CASH" else "현금"; needs_save = True
-            new_port.append(item)
-        else: 
-            new_port.append({"티커 (Ticker)": req_t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어" if req_t != "CASH" else "현금"})
-            needs_save = True
-    acc_data["portfolio"] = new_port
-if needs_save: save_accounts_data(st.session_state['accounts'])
-
-
 # =====================================================================
-# [1] 글로벌 백엔드 함수
+# [3] 글로벌 백엔드 함수
 # =====================================================================
 @st.cache_data(ttl=3600)
 def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 1회"):
@@ -434,7 +428,7 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
 
 
 # =====================================================================
-# [2] 페이지 구성: 글로벌 마켓 대시보드
+# [4] 페이지 구성: 글로벌 마켓 대시보드
 # =====================================================================
 def page_market_dashboard():
     st.title("🌐 매크로 터미널")
@@ -486,7 +480,7 @@ def page_market_dashboard():
 
 
 # =====================================================================
-# [3] 페이지 구성: AMLS 백테스트
+# [5] 페이지 구성: AMLS 백테스트
 # =====================================================================
 def page_amls_backtest():
     st.title("🦅 전략 시뮬레이터")
@@ -565,7 +559,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [4] 페이지 구성: 내 포트폴리오 관리 (레이아웃 조절 가능 기능)
+# [6] 페이지 구성: 내 포트폴리오 관리 
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
@@ -574,10 +568,6 @@ def make_portfolio_page(acc_name):
         curr_acc_data = st.session_state['accounts'][acc_name]
         
         DEFAULT_LAYOUT = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 기입표", "🍩 배분 및 지침", "📈 성장 곡선", "📝 매매 일지"]
-        if "layout_order" not in curr_acc_data or not isinstance(curr_acc_data["layout_order"], list):
-            curr_acc_data["layout_order"] = DEFAULT_LAYOUT.copy()
-            save_accounts_data(st.session_state['accounts'])
-            
         current_layout = curr_acc_data["layout_order"]
         for item in DEFAULT_LAYOUT:
             if item not in current_layout: current_layout.append(item)
@@ -773,7 +763,7 @@ def make_portfolio_page(acc_name):
                         st.rerun()
                 with c_prog:
                     pb_bg = "rgba(0,0,0,0.1)" if WIDGET_THEME=="light" else "rgba(255,255,255,0.1)"
-                    st.markdown(f"""<div class='info-panel' style='padding:20px; margin-bottom:20px;'>
+                    st.markdown(f"""<div class='info-panel'>
 <div style='display:flex; justify-content:space-between; margin-bottom:8px; font-weight:bold; font-size:1.05rem;'>
 <span>현재: ${total_val_now:,.0f}</span>
 <span style='color:{C_DOWN};'>목표: ${target_val:,.0f}</span>
@@ -794,7 +784,7 @@ def make_portfolio_page(acc_name):
                     pn_col = C_UP if daily_diff > 0 else (C_DOWN if daily_diff < 0 else TEXT_COLOR)
                     pn_ico = "▲" if daily_diff > 0 else ("▼" if daily_diff < 0 else "-")
                     
-                    st.markdown(f"""<div class='info-panel' style='display:flex; justify-content:space-around; align-items:center; text-align:center; padding:15px;'>
+                    st.markdown(f"""<div class='info-panel' style='display:flex; justify-content:space-around; align-items:center; text-align:center;'>
 <div style='flex:1; border-right:1px dashed rgba(150,150,150,0.4);'>
 <div style='font-size:0.85rem; font-weight:bold; opacity:0.8; color:{TEXT_COLOR};'>💰 총 평가액 (Total)</div>
 <div style='font-size:1.6rem; font-weight:bold; margin-top:5px; color:{TEXT_COLOR};'>${total_val_now:,.0f}</div>
@@ -813,7 +803,7 @@ def make_portfolio_page(acc_name):
 
                 with col_ai:
                     app_reg = ms['regime']
-                    st.markdown(f"""<div class='info-panel' style='text-align:center; display:flex; flex-direction:column; justify-content:center; padding:15px;'>
+                    st.markdown(f"""<div class='info-panel' style='text-align:center; display:flex; flex-direction:column; justify-content:center;'>
 <div style='font-size:0.85rem; font-weight:bold; opacity:0.8; color:{TEXT_COLOR};'>AI 전략 국면</div>
 <div style='font-size:1.6rem; font-weight:bold; margin-top:5px; color:{TEXT_COLOR};'>Regime {app_reg}</div>
 <div style='font-size:0.8rem; font-weight:bold; color:{TEXT_COLOR};'>{ms['entry_grade'].split('(')[0].strip()}</div>
@@ -917,17 +907,17 @@ def make_portfolio_page(acc_name):
                     save_accounts_data(st.session_state['accounts']); st.rerun()
                 st.write("")
 
-            elif block == "🍩 배분 및 지침":
+            elif block == "🍩 자산 배분 & 지침":
                 col_pie, col_act = st.columns([1, 1.3])
                 with col_pie:
                     st.markdown("#### 🍩 자산 배분 비중")
                     with st.container(border=True):
                         if total_val_now > 0:
-                            fig = go.Figure(go.Pie(labels=list(asset_vals.keys()), values=list(asset_vals.values()), hole=0.6, marker=dict(colors=[st.session_state['settings']['chart_colors'].get(k, '#888') for k in asset_vals.keys()])))
+                            fig = go.Figure(go.Pie(labels=list(asset_vals.keys()), values=list(asset_vals.values()), hole=0.6, marker=dict(colors=[COLOR_PALETTE.get(k, '#888') for k in asset_vals.keys()])))
                             cust_p2 = THEME_LAYOUT.copy()
                             cust_p2.update(height=300, showlegend=False, margin=dict(t=10, b=10, l=10, r=10), annotations=[dict(text=f"100%", x=0.5, y=0.5, showarrow=False, font=dict(color=TEXT_COLOR, size=16))])
                             fig.update_layout(**cust_p2)
-                            fig.update_traces(textposition='inside', textinfo='percent+label', textfont_size=13, textfont_color="#fff" if current_theme in ["1930년대 타자기 테마", "월스트리트 저널 테마"] else TEXT_COLOR)
+                            fig.update_traces(textposition='inside', textinfo='percent+label', textfont_size=13, textfont_color="#fff" if current_theme in ["1930년대 타자기 테마", "1920년대 타자기 테마", "월스트리트 저널 테마"] else TEXT_COLOR)
                             st.plotly_chart(fig, use_container_width=True)
                 with col_act:
                     st.markdown("#### ⚖️ 리밸런싱 지침")
@@ -1031,7 +1021,7 @@ def page_manage_accounts():
     new_acc = st.text_input("새 계좌명")
     if st.button("개설", type="primary") and new_acc:
         if new_acc not in st.session_state['accounts']:
-            st.session_state['accounts'][new_acc] = {"portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS], "history": [{"Date": datetime.now().strftime("%Y-%m-%d"), "Log": "계좌 개설"}], "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0, "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 기입표", "🍩 배분 및 지침", "📈 성장 곡선", "📝 매매 일지"]}
+            st.session_state['accounts'][new_acc] = {"portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS], "history": [{"Date": datetime.now().strftime("%Y-%m-%d"), "Log": "계좌 개설"}], "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0, "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 기입표", "🍩 자산 배분 & 지침", "📈 성장 곡선", "📝 매매 일지"]}
             save_accounts_data(st.session_state['accounts']); st.rerun()
     st.divider()
     for acc in list(st.session_state['accounts'].keys()):
@@ -1048,7 +1038,7 @@ def page_strategy_specification():
 
 
 # =====================================================================
-# [5] 사이드바 설정 및 네비게이션
+# [7] 사이드바 설정 및 네비게이션
 # =====================================================================
 
 st.sidebar.markdown("---")
