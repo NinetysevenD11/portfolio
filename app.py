@@ -519,7 +519,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [4] 페이지 구성: 내 포트폴리오 관리 (통합 요약본 & 공간 절약)
+# [4] 페이지 구성: 내 포트폴리오 관리 
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
@@ -678,7 +678,7 @@ def make_portfolio_page(acc_name):
         st.session_state['accounts'][acc_name]["target_seed"] = auto_seed
         rebal_base = total_val_now if total_val_now > 0 else auto_seed
 
-        # 실제 자산 이력 자동 저장 (0이 아닐 때만 저장)
+        # 실제 자산 이력 자동 저장
         today_str = datetime.now().strftime("%Y-%m-%d")
         history_changed = False
         last_seed = curr_acc_data["seed_history"].get(today_str, {}).get("seed")
@@ -762,10 +762,9 @@ def make_portfolio_page(acc_name):
             
         st.write("")
         
-        # ------------------- 2. 공간 절약형 슬림 대시보드 (판독기 + 분석관 + 적합도) -------------------
+        # ------------------- 2, 3, 4번 슬림 통합 패널 -------------------
         st.markdown("#### ⚡ 실시간 시스템 분석관 요약")
         
-        # 1) SOXL 판독기 (한 줄)
         s_icon = "🟢 돌파(강세)" if ms['smh'] > ms['smh_ma50'] else "🔴 붕괴(약세)"
         r_icon = "🟢" if ms['smh_3m_ret'] > 0.05 else "🔴"
         rsi_icon = "🟢" if ms['smh_rsi'] > 50 else "🔴"
@@ -777,7 +776,6 @@ def make_portfolio_page(acc_name):
         </div>
         """, unsafe_allow_html=True)
 
-        # 2) AI 전략 분석관 Report (한 줄 요약)
         vix_c = ms['vix']; qqq_c = ms['qqq']; ma200_c = ms['ma200']
         if app_reg == 4:
             reg_title = "🚨 R4 (패닉 / 위기 국면)"
@@ -803,7 +801,6 @@ def make_portfolio_page(acc_name):
         </div>
         """, unsafe_allow_html=True)
 
-        # 3) 신규 자금 투입 가이드 (한 줄 요약)
         entry_g = ms['entry_grade']
         dur = ms['regime_duration']
         dir_map = {"ascending": "상향", "descending": "하향", "stable": "유지"}
@@ -935,7 +932,6 @@ def make_portfolio_page(acc_name):
                             hist_df.loc[fed_dt] = {"seed": auto_seed, "equity": auto_seed}
                             hist_df = hist_df.sort_index()
 
-                    # 비어있는 날짜를 앞의 데이터로 채워 연속적인 선을 생성 (Resampling 최적화)
                     hist_df = hist_df.resample('D').ffill()
 
                     fig_seed = go.Figure()
@@ -1011,24 +1007,23 @@ def page_strategy_specification():
 # [5] 사이드바 설정 및 네비게이션 라우팅
 # =====================================================================
 
-# 즐겨찾기 메뉴 사이드바 추가
 st.sidebar.markdown("---")
 st.sidebar.markdown("### ⭐ 즐겨찾기")
 st.sidebar.markdown("""
 <div style="display:flex; flex-direction:column; gap:4px;">
-    <div style="font-size:0.85rem; color:#A89B96; margin-top:8px; font-weight:bold;">📺 유튜브</div>
-    <a href="https://www.youtube.com/@JB_Insight" target="_blank" class="sidebar-link"><span>📊</span> JB 인사이트</a>
-    <a href="https://www.youtube.com/@odokgod" target="_blank" class="sidebar-link"><span>📻</span> 오독</a>
-    <a href="https://www.youtube.com/@TQQQCRAZY" target="_blank" class="sidebar-link"><span>🔥</span> TQQQ 미친놈</a>
-    <a href="https://www.youtube.com/@developmong" target="_blank" class="sidebar-link"><span>🐒</span> 디벨롭몽</a>
-
-    <div style="font-size:0.85rem; color:#A89B96; margin-top:12px; font-weight:bold;">📈 차트 분석</div>
-    <a href="https://kr.investing.com/" target="_blank" class="sidebar-link"><span>🌍</span> 인베스팅닷컴</a>
-    <a href="https://kr.tradingview.com/" target="_blank" class="sidebar-link"><span>📉</span> 트레이딩뷰</a>
-
-    <div style="font-size:0.85rem; color:#A89B96; margin-top:12px; font-weight:bold;">🤖 AI 도우미</div>
-    <a href="https://claude.ai/" target="_blank" class="sidebar-link"><span>🧠</span> 클로드</a>
-    <a href="https://gemini.google.com/" target="_blank" class="sidebar-link"><span>✨</span> 제미나이</a>
+<div style="font-size:0.85rem; color:#A89B96; margin-top:8px; font-weight:bold;">📺 유튜브</div>
+<a href="https://www.youtube.com/@JB_Insight" target="_blank" class="sidebar-link"><span>📊</span> JB 인사이트</a>
+<a href="https://www.youtube.com/@odokgod" target="_blank" class="sidebar-link"><span>📻</span> 오독</a>
+<a href="https://www.youtube.com/@TQQQCRAZY" target="_blank" class="sidebar-link"><span>🔥</span> TQQQ 미친놈</a>
+<a href="https://www.youtube.com/@developmong" target="_blank" class="sidebar-link"><span>🐒</span> 디벨롭몽</a>
+<br>
+<div style="font-size:0.85rem; color:#A89B96; margin-top:4px; font-weight:bold;">📈 차트 분석</div>
+<a href="https://kr.investing.com/" target="_blank" class="sidebar-link"><span>🌍</span> 인베스팅닷컴</a>
+<a href="https://kr.tradingview.com/" target="_blank" class="sidebar-link"><span>📉</span> 트레이딩뷰</a>
+<br>
+<div style="font-size:0.85rem; color:#A89B96; margin-top:4px; font-weight:bold;">🤖 AI 도우미</div>
+<a href="https://claude.ai/" target="_blank" class="sidebar-link"><span>🧠</span> 클로드</a>
+<a href="https://gemini.google.com/" target="_blank" class="sidebar-link"><span>✨</span> 제미나이</a>
 </div>
 """, unsafe_allow_html=True)
 st.sidebar.markdown("---")
