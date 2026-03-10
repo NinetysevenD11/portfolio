@@ -59,7 +59,7 @@ if 'accounts' not in st.session_state:
             "AMLS v4.3": {  
                 "portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS],
                 "history": [], "first_entry_date": None, "journal_text": "", "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0,
-                "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 성장 곡선", "📝 매매 일지"]
+                "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]
             }
         }
     st.session_state['accounts'] = loaded
@@ -73,7 +73,7 @@ for acc_name, acc_data in st.session_state['accounts'].items():
     if "seed_history" not in acc_data: acc_data["seed_history"] = {}; needs_save = True
     if "target_portfolio_value" not in acc_data: acc_data["target_portfolio_value"] = 100000.0; needs_save = True
     if "layout_order" not in acc_data: 
-        acc_data["layout_order"] = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 성장 곡선", "📝 매매 일지"]
+        acc_data["layout_order"] = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]
         needs_save = True
 
     existing_tickers = [item["티커 (Ticker)"] for item in acc_data["portfolio"]]
@@ -161,6 +161,7 @@ else:
     C_UP = "#34C759"; C_DOWN = "#FF3B30"; C_WARN = "#FF9500"; C_SAFE = "#007AFF"
     BASE_CHART_COLORS = {'TQQQ':'#FF3B30', 'SOXL':'#AF52DE', 'USD':'#5856D6', 'QLD':'#FF9500', 'SSO':'#FFCC00', 'QQQ':'#007AFF', 'GLD':'#34C759', 'CASH':'#8E8E93'}
 
+# 데이터 강제 주입 로직 (에러 방지)
 if "text_color" not in st.session_state['settings']: st.session_state['settings']["text_color"] = BASE_TEXT_COLOR
 if "chart_colors" not in st.session_state['settings']: st.session_state['settings']["chart_colors"] = BASE_CHART_COLORS.copy()
 for tkr in REQUIRED_TICKERS:
@@ -170,6 +171,7 @@ for tkr in REQUIRED_TICKERS:
 TEXT_COLOR = st.session_state['settings']["text_color"]
 COLOR_PALETTE = st.session_state['settings']["chart_colors"]
 
+# --- Plotly 레이아웃 설정 ---
 if current_theme in ["1930년대 타자기 테마", "월스트리트 저널 테마"]:
     THEME_LAYOUT = dict(template="simple_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0))
 elif current_theme in ["갤럭시 탭 테마"]:
@@ -189,15 +191,28 @@ def apply_custom_css():
         @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
         .stApp {{ background: radial-gradient(circle at 15% 50%, rgba(240, 244, 255, 1), rgba(255, 255, 255, 0)), radial-gradient(circle at 85% 30%, rgba(230, 240, 255, 1), rgba(255, 255, 255, 0)); background-color: #f5f5f7; font-family: 'Pretendard', sans-serif; color: {TEXT_COLOR}; letter-spacing: -0.01em; }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 20px; box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.06); padding: 1.5rem; transition: transform 0.2s ease, box-shadow 0.2s ease; }}
+        .stButton>button {{ background-color: rgba(255, 255, 255, 0.8); color: #007aff; border: 1px solid rgba(0, 122, 255, 0.3); border-radius: 12px; font-weight: 600; padding: 0.5rem 1rem; backdrop-filter: blur(10px); transition: all 0.2s; }}
+        .stButton>button:hover {{ background-color: #007aff; color: #ffffff; transform: scale(1.02); }}
+        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: rgba(255, 255, 255, 0.5); backdrop-filter: blur(10px); color: {TEXT_COLOR}; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; }}
+        [data-testid="stDataFrame"] {{ border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); background: rgba(255, 255, 255, 0.5); }}
+        [data-testid="stSidebar"] {{ background: rgba(245, 245, 247, 0.7); backdrop-filter: blur(20px); border-right: 1px solid rgba(0,0,0,0.05); }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: #1d1d1f; border-bottom-color: #1d1d1f; border-bottom-width: 2px; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none !important; color: {TEXT_COLOR}; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
         .sidebar-link:hover {{ background-color: rgba(0,0,0,0.05); transform: translateX(2px); }}
         """
+        
     elif current_theme == "아이패드 테마":
         css_base = f"""
         .stApp, html, body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #F2F2F7 !important; color: {TEXT_COLOR} !important; }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: {PANEL_BG} !important; border: {PANEL_BORDER} !important; border-radius: {PANEL_RADIUS} !important; box-shadow: 0 4px 20px rgba(0,0,0,0.05) !important; padding: 1.5rem !important; }}
+        .stButton>button {{ background-color: #F2F2F7 !important; color: #007aff !important; border: none !important; border-radius: 12px !important; font-weight: 600 !important; padding: 0.5rem 1rem !important; transition: all 0.2s; }}
+        .stButton>button:hover {{ background-color: #007aff !important; color: #ffffff !important; }}
+        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #F2F2F7 !important; color: {TEXT_COLOR} !important; border: none !important; border-radius: 10px !important; }}
+        [data-testid="stDataFrame"] {{ border-radius: 16px !important; border: 1px solid #E5E5EA !important; }}
+        [data-testid="stSidebar"] {{ background-color: #FFFFFF !important; border-right: 1px solid #E5E5EA !important; }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: #1d1d1f !important; border-bottom-color: #1d1d1f !important; border-bottom-width: 2px !important; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s; }}
-        .sidebar-link:hover {{ background-color: #E5E5EA; }}
+        .sidebar-link:hover {{ background-color: #F2F2F7; }}
         """
         css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }}"
 
@@ -206,6 +221,13 @@ def apply_custom_css():
         [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
         .stApp, html, body {{ font-family: 'Pretendard', sans-serif; background-color: #000000 !important; color: {TEXT_COLOR} !important; }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: {PANEL_BG} !important; border: {PANEL_BORDER} !important; border-radius: {PANEL_RADIUS} !important; padding: 1.5rem !important; box-shadow: none !important; }}
+        .stButton>button {{ background-color: #333333 !important; color: #FAFAFA !important; border: none !important; border-radius: 20px !important; font-weight: 600 !important; padding: 0.5rem 1rem !important; transition: all 0.2s; }}
+        .stButton>button:hover {{ background-color: #3E91FF !important; color: #ffffff !important; }}
+        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #2C2C2E !important; color: {TEXT_COLOR} !important; border: none !important; border-radius: 14px !important; }}
+        [data-testid="stDataFrame"] {{ border-radius: 20px !important; border: none !important; background-color: #1C1C1E !important; }}
+        [data-testid="stSidebar"] {{ background-color: #151515 !important; border-right: 1px solid #333333 !important; }}
+        button[data-baseweb="tab"] {{ color: #A0A0A0 !important; }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: #3E91FF !important; border-bottom-color: #3E91FF !important; border-bottom-width: 2px !important; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 14px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s; }}
         .sidebar-link:hover {{ background-color: #333333; }}
         """
@@ -215,6 +237,13 @@ def apply_custom_css():
         css_base = f"""
         .stApp, html, body {{ font-family: 'Calibri', 'Malgun Gothic', sans-serif; background-color: #F3F2F1 !important; color: {TEXT_COLOR} !important; }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: {PANEL_BG} !important; border: {PANEL_BORDER} !important; border-top: 3px solid #107C41 !important; border-radius: {PANEL_RADIUS} !important; padding: 1.5rem !important; box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important; }}
+        .stButton>button {{ background-color: #E1DFDD !important; color: #333333 !important; border: 1px solid #8A8886 !important; border-radius: 2px !important; font-weight: normal !important; padding: 0.3rem 0.8rem !important; }}
+        .stButton>button:hover {{ background-color: #C8C6C4 !important; }}
+        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #FFFFFF !important; color: {TEXT_COLOR} !important; border: 1px solid #8A8886 !important; border-radius: 0px !important; }}
+        [data-testid="stDataFrame"] {{ border-radius: 0px !important; border: 1px solid #D4D4D4 !important; }}
+        [data-testid="stSidebar"] {{ background-color: #FFFFFF !important; border-right: 1px solid #D4D4D4 !important; }}
+        button[data-baseweb="tab"] {{ color: #666666 !important; font-weight: normal !important; }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: #107C41 !important; border-bottom-color: #107C41 !important; border-bottom-width: 2px !important; font-weight: bold !important; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 6px 8px; margin-bottom: 2px; text-decoration: none !important; color: #0078D4 !important; font-family: 'Calibri', sans-serif; font-size: 0.95rem; border-bottom: 1px solid transparent; }}
         .sidebar-link:hover {{ border-bottom: 1px solid #0078D4; background-color: #F3F2F1; }}
         """
@@ -226,6 +255,12 @@ def apply_custom_css():
         [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
         .stApp, html, body {{ font-family: 'Special Elite', 'Courier New', monospace !important; background-color: #e4dccc !important; color: {TEXT_COLOR} !important; }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: #dfd7c5 !important; border: 2px solid {TEXT_COLOR} !important; border-radius: 0px !important; box-shadow: 4px 4px 0px {TEXT_COLOR} !important; padding: 1.5rem !important; }}
+        .stButton>button {{ background-color: #d1c7b3 !important; color: {TEXT_COLOR} !important; border: 2px solid {TEXT_COLOR} !important; border-radius: 0px !important; box-shadow: 2px 2px 0px {TEXT_COLOR} !important; font-weight: bold !important; text-transform: uppercase; transition: all 0.1s; }}
+        .stButton>button:active {{ box-shadow: 0px 0px 0px {TEXT_COLOR} !important; transform: translateY(2px) translateX(2px); }}
+        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #f0e9d8 !important; color: {TEXT_COLOR} !important; border: 1px dashed {TEXT_COLOR} !important; border-radius: 0px !important; font-family: 'Special Elite', monospace !important; }}
+        [data-testid="stDataFrame"] {{ border: 1px solid {TEXT_COLOR} !important; background-color: #f0e9d8 !important; border-radius: 0px !important; }}
+        [data-testid="stSidebar"] {{ background-color: #d1c7b3 !important; border-right: 3px double {TEXT_COLOR} !important; }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: {TEXT_COLOR} !important; border-bottom-color: {TEXT_COLOR} !important; border-bottom-width: 3px !important; font-weight: bold !important; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border: 1px solid transparent; border-radius: 0px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-weight: bold; font-size: 0.95rem; transition: background-color 0.2s; }}
         .sidebar-link:hover {{ background-color: rgba(0,0,0,0.1); border: 1px dashed {TEXT_COLOR}; }}
         """
@@ -236,6 +271,12 @@ def apply_custom_css():
         @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
         .stApp, html, body {{ font-family: 'Pretendard', sans-serif; background-color: #FFFBF0; color: {TEXT_COLOR}; letter-spacing: -0.01em; }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: #FFFFFF; border: 2px solid #FFF0E5; border-radius: 24px; box-shadow: 0 8px 20px rgba(210, 190, 175, 0.15); padding: 1.5rem; transition: transform 0.2s ease, box-shadow 0.2s ease; }}
+        .stButton>button {{ background-color: #FFB7B2; color: #FFFFFF; border: none; border-radius: 16px; font-weight: 700; padding: 0.6rem 1.2rem; box-shadow: 0 4px 0 #F29F9A; transition: all 0.2s; }}
+        .stButton>button:hover {{ background-color: #FFC4C0; transform: translateY(2px); box-shadow: 0 2px 0 #F29F9A; }}
+        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #FAFAFA; color: {TEXT_COLOR}; border: 2px solid #EAE3D9; border-radius: 12px; }}
+        [data-testid="stDataFrame"] {{ border-radius: 16px; border: 2px solid #FFF0E5; }}
+        [data-testid="stSidebar"] {{ background-color: #FFF6EC; border-right: 2px dashed #EAE3D9; }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: #FF9B94; border-bottom-color: #FF9B94; border-bottom-width: 3px; font-weight: bold; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-weight: 700; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
         .sidebar-link:hover {{ background-color: #FFF0E5; transform: translateX(4px); }}
         """
@@ -245,8 +286,16 @@ def apply_custom_css():
         css_base = f"""
         .stApp, html, body {{ font-family: Arial, Tahoma, sans-serif; background-color: #FFFFFF; color: {TEXT_COLOR}; }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: #FFFFFF; border: 1px solid #CCCCCC; border-radius: 0px; box-shadow: none; padding: 1.5rem; }}
+        .stButton>button {{ background-color: #F0F0F0; color: #000000; border: 1px solid #707070; border-radius: 2px; font-weight: normal; padding: 0.3rem 0.8rem; }}
+        .stButton>button:hover {{ background-color: #E0E0E0; border: 1px solid #333333; }}
+        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #FFFFFF; color: #000000; border: 1px solid #999999; border-radius: 0px; font-family: Arial, sans-serif; }}
+        [data-testid="stDataFrame"] {{ border-radius: 0px; border: 1px solid #999999; }}
+        [data-testid="stSidebar"] {{ background-color: #F8F9FA; border-right: 1px solid #CCCCCC; }}
+        button[data-baseweb="tab"] {{ color: #0000EE; text-decoration: underline; font-weight: normal; }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: {TEXT_COLOR}; text-decoration: none; border-bottom: none; font-weight: bold; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 6px 8px; margin-bottom: 2px; text-decoration: underline !important; color: #0000EE !important; font-family: Arial, sans-serif; font-size: 0.9rem; }}
         .sidebar-link:hover {{ color: #FF0000 !important; }}
+        .sidebar-link span {{ display: none; }}
         """
         css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; }}"
     
@@ -256,6 +305,12 @@ def apply_custom_css():
         [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
         .stApp, html, body {{ font-family: 'Playfair Display', serif; background-color: #F4F4F0 !important; color: {TEXT_COLOR}; }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: #FFFFFF; border: 1px solid #000000; border-radius: 0px; padding: 1.5rem; box-shadow: 3px 3px 0px rgba(0,0,0,0.1); border-top: 4px solid #000000; }}
+        .stButton>button {{ background-color: #000000; color: #FFFFFF; border: none; border-radius: 0px; font-weight: bold; font-family: 'Arial', sans-serif; text-transform: uppercase; }}
+        .stButton>button:hover {{ background-color: #333333; }}
+        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #FFFFFF; color: {TEXT_COLOR}; border: 1px solid #000000; border-radius: 0px; font-family: 'Arial', sans-serif; }}
+        [data-testid="stDataFrame"] {{ border-radius: 0px; border: 1px solid #000000; }}
+        [data-testid="stSidebar"] {{ background-color: #EBEBEB; border-right: 2px solid #000000; }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: #000000; border-bottom: 3px solid #000000; font-weight: bold; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; text-decoration: none !important; color: #000000 !important; font-weight: bold; font-size: 0.95rem; border-bottom: 1px dotted #CCC; }}
         .sidebar-link:hover {{ background-color: #DDDDDD; }}
         """
@@ -543,7 +598,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지 구성: 내 포트폴리오 관리
+# [6] 페이지 구성: 내 포트폴리오 관리 (목표 달성률 궤적 추적 차트 추가)
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
@@ -551,12 +606,14 @@ def make_portfolio_page(acc_name):
         
         curr_acc_data = st.session_state['accounts'][acc_name]
         
-        DEFAULT_LAYOUT = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 성장 곡선", "📝 매매 일지"]
+        # 기존 "📈 성장 곡선"을 "📈 목표 달성률 추이"로 마이그레이션
+        DEFAULT_LAYOUT = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]
         current_layout = curr_acc_data.get("layout_order", [])
         
         if "💼 기입표" in current_layout: current_layout[current_layout.index("💼 기입표")] = "💼 포트폴리오 & 리밸런싱"
         if "🍩 자산 배분 & 지침" in current_layout: current_layout.remove("🍩 자산 배분 & 지침")
         if "🍩 배분 및 지침" in current_layout: current_layout.remove("🍩 배분 및 지침")
+        if "📈 성장 곡선" in current_layout: current_layout[current_layout.index("📈 성장 곡선")] = "📈 목표 달성률 추이"
             
         for item in DEFAULT_LAYOUT:
             if item not in current_layout: current_layout.append(item)
@@ -614,7 +671,7 @@ def make_portfolio_page(acc_name):
             # 🔥 5일 대기 여부 판독
             is_waiting = (pend_v4_3 is not None and target_reg < current_v4_3)
 
-            # 🔥 현재 적용중인 레짐 체류 일수(기간) 계산
+            # 🔥 현재 적용중인 레짐 체류 일수 계산
             current_reg = applied_series.iloc[-1]
             regime_duration = 0
             for i in range(len(applied_series)-1, -1, -1):
@@ -628,7 +685,7 @@ def make_portfolio_page(acc_name):
 
             return {
                 'regime': applied_reg, 'target_regime': target_reg, 'is_waiting': is_waiting, 'wait_days': cnt_v4_3,
-                'regime_duration': regime_duration, # AI 분석관 브리핑용 체류 기간
+                'regime_duration': regime_duration,
                 'vix': today['^VIX'], 'qqq': today['QQQ'], 'ma200': ma200_s.iloc[-1], 'ma50': ma50_s.iloc[-1],
                 'smh': today['SMH'], 'smh_ma50': smh_ma50_s.iloc[-1], 'smh_3m_ret': smh_3m_ret_s.iloc[-1], 'smh_rsi': smh_rsi_s.iloc[-1],
                 'prices': today.to_dict(), 'prev_prices': yesterday.to_dict(), 'date': data.index[-1], 'usdkrw': current_usdkrw
@@ -724,6 +781,7 @@ def make_portfolio_page(acc_name):
         st.session_state['accounts'][acc_name]["target_seed"] = auto_seed
         rebal_base = total_val_now if total_val_now > 0 else auto_seed
 
+        # 매일 자동 스냅샷 기록 (목표 달성률 궤적 추적용)
         today_str = datetime.now().strftime("%Y-%m-%d")
         history_changed = False
         last_seed = curr_acc_data["seed_history"].get(today_str, {}).get("seed")
@@ -824,7 +882,7 @@ def make_portfolio_page(acc_name):
                 tgt_reg = ms['target_regime']
                 is_wait = ms['is_waiting']
                 wait_d = ms['wait_days']
-                dur = ms['regime_duration'] # 현재 국면의 체류 일수
+                dur = ms['regime_duration']
                 
                 vix_c = ms['vix']; qqq_c = ms['qqq']; ma200_c = ms['ma200']; smh_c = ms['smh']; smh_ma50_c = ms['smh_ma50']
                 
@@ -993,42 +1051,39 @@ def make_portfolio_page(acc_name):
                         st.dataframe(status_df.style.map(color_act, subset=['리밸런싱 액션']), use_container_width=True, hide_index=True)
                 st.write("")
 
-            elif block == "📈 성장 곡선":
-                st.markdown("**📈 자산 성장 곡선**")
+            # 🔥 목표 달성률 추이 그래프 (새로 적용됨)
+            elif block == "📈 목표 달성률 추이":
+                st.markdown("#### 📈 목표 달성률 추이")
                 hist_dict = curr_acc_data.get("seed_history", {})
-                if hist_dict:
+                target_val = curr_acc_data.get("target_portfolio_value", 100000.0)
+                
+                if hist_dict and target_val > 0:
                     with st.container(border=True):
                         hist_df = pd.DataFrame.from_dict(hist_dict, orient='index')
                         hist_df.index = pd.to_datetime(hist_df.index)
                         hist_df = hist_df.sort_index()
 
-                        fed_str = curr_acc_data.get("first_entry_date")
-                        col_date, _ = st.columns([1, 3])
-                        with col_date:
-                            default_date = pd.to_datetime(fed_str).date() if fed_str else (datetime.today() - timedelta(days=90)).date()
-                            u_date = st.date_input("기준일 설정", value=default_date, key=f"date_{acc_name}")
-                            if str(u_date) != str(fed_str)[:10]: 
-                                st.session_state['accounts'][acc_name]["first_entry_date"] = str(u_date)
-                                save_accounts_data(st.session_state['accounts'])
+                        # 목표 달성률(%) 계산
+                        hist_df['achieve_pct'] = (hist_df['equity'] / target_val) * 100
+
+                        fig_achieve = go.Figure()
+                        fig_achieve.add_trace(go.Scatter(
+                            x=hist_df.index, y=hist_df['achieve_pct'], 
+                            name="달성률", mode='lines+markers',
+                            line=dict(color=C_UP, width=3), 
+                            marker=dict(size=6),
+                            fill='tozeroy', fillcolor='rgba(0,0,0,0)'
+                        ))
+                        # 100% 도달 선
+                        fig_achieve.add_hline(y=100, line_dash="dash", line_color=C_DOWN, annotation_text="목표 달성 (100%)", annotation_position="top left")
                         
-                        try:
-                            if fed_str:
-                                fed_dt = pd.to_datetime(fed_str)
-                                if fed_dt < hist_df.index[0]:
-                                    hist_df.loc[fed_dt] = {"seed": auto_seed, "equity": auto_seed}
-                                    hist_df = hist_df.sort_index()
-
-                            hist_df = hist_df.resample('D').ffill()
-
-                            fig_seed = go.Figure()
-                            fig_seed.add_trace(go.Scatter(x=hist_df.index, y=hist_df['equity'], name="실제 총 평가액", line=dict(color=C_UP, width=3, shape='hv'), mode='lines'))
-                            fig_seed.add_trace(go.Scatter(x=hist_df.index, y=hist_df['seed'], name="투입 시드 원금", line=dict(color=C_DOWN, width=2, dash='dot', shape='hv'), mode='lines'))
-                            
-                            cust_s = THEME_LAYOUT.copy()
-                            cust_s.update(height=350, hovermode="x unified", yaxis=dict(showgrid=True, autorange=True, rangemode="normal"))
-                            fig_seed.update_layout(**cust_s)
-                            st.plotly_chart(fig_seed, use_container_width=True)
-                        except Exception as e: pass
+                        cust_s = THEME_LAYOUT.copy()
+                        cust_s.update(height=350, hovermode="x unified", yaxis=dict(showgrid=True, ticksuffix="%"))
+                        fig_achieve.update_layout(**cust_s)
+                        st.plotly_chart(fig_achieve, use_container_width=True)
+                        st.caption("💡 앱에 접속하실 때마다(혹은 아침에 확인하실 때) 자동으로 해당 날짜의 총 평가액을 스냅샷으로 저장하고, 설정된 목표 금액 대비 달성률(%) 궤적을 추적합니다.")
+                else:
+                    st.info("아직 충분한 자산 기록이 없거나 목표 금액이 설정되지 않았습니다.")
                 st.write("")
 
             elif block == "📝 매매 일지":
@@ -1053,7 +1108,7 @@ def page_manage_accounts():
     new_acc = st.text_input("새 계좌명")
     if st.button("개설", type="primary") and new_acc:
         if new_acc not in st.session_state['accounts']:
-            st.session_state['accounts'][new_acc] = {"portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS], "history": [{"Date": datetime.now().strftime("%Y-%m-%d"), "Log": "계좌 개설"}], "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0, "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 성장 곡선", "📝 매매 일지"]}
+            st.session_state['accounts'][new_acc] = {"portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS], "history": [{"Date": datetime.now().strftime("%Y-%m-%d"), "Log": "계좌 개설"}], "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0, "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]}
             save_accounts_data(st.session_state['accounts']); st.rerun()
     st.divider()
     for acc in list(st.session_state['accounts'].keys()):
