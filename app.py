@@ -18,7 +18,7 @@ warnings.filterwarnings('ignore')
 # =====================================================================
 st.set_page_config(page_title="AMLS 퀀트 포트폴리오", layout="wide", initial_sidebar_state="expanded")
 
-SETTINGS_FILE = "amls_settings_v8.json"
+SETTINGS_FILE = "amls_settings_v7.json"
 
 def load_settings():
     if os.path.exists(SETTINGS_FILE):
@@ -26,7 +26,7 @@ def load_settings():
             with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
         except: pass
-    return {"theme": "1930년대 타자기 테마"}
+    return {"theme": "애플 테마"}
 
 def save_settings(settings_data):
     with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
@@ -35,9 +35,7 @@ def save_settings(settings_data):
 if 'settings' not in st.session_state:
     st.session_state['settings'] = load_settings()
 
-current_theme = st.session_state['settings'].get("theme", "1930년대 타자기 테마")
-if current_theme == "1920년대 타자기 테마": # 이전 버전 호환
-    current_theme = "1930년대 타자기 테마"
+current_theme = st.session_state['settings'].get("theme", "애플 테마")
 
 # --- 🎨 테마별 변수 세팅 ---
 if current_theme == "애플 테마":
@@ -48,15 +46,7 @@ if current_theme == "애플 테마":
     COLOR_PALETTE = {'TQQQ':'#ff3b30', 'SOXL':'#af52de', 'USD':'#5856d6', 'QLD':'#ff9500', 'SSO':'#ffcc00', 'QQQ':'#007aff', 'GLD':'#34c759', 'CASH':'#8e8e93'}
     THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="'Pretendard', sans-serif", color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.05)', zerolinecolor='rgba(0,0,0,0.1)'), yaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.05)', zerolinecolor='rgba(0,0,0,0.1)'))
     
-elif current_theme == "1930년대 타자기 테마":
-    TEXT_COLOR = "#2c2a25"; TEXT_SUB = "#555555"
-    PANEL_BG = "#dfd7c5"; PANEL_BORDER = "2px solid #2c2a25"; PANEL_RADIUS = "0px"
-    WIDGET_THEME = "light"
-    C_UP = "#000080"; C_DOWN = "#8b0000"; C_WARN = "#b8860b"; C_SAFE = "#006400"
-    COLOR_PALETTE = {'TQQQ':'#8b0000', 'SOXL':'#556b2f', 'USD':'#8fbc8f', 'QLD':'#b8860b', 'SSO':'#cd853f', 'QQQ':'#000080', 'GLD':'#daa520', 'CASH':'#2f4f4f'}
-    THEME_LAYOUT = dict(template="simple_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="'Special Elite', 'Courier New', monospace", color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='#d1c7b3', zerolinecolor='#2c2a25'), yaxis=dict(showgrid=True, gridcolor='#d1c7b3', zerolinecolor='#2c2a25'))
-
-elif current_theme == "블룸버그 터미널 테마":
+elif current_theme == "1920년대 타자기 테마":
     TEXT_COLOR = "#00FF41"; TEXT_SUB = "#888888"
     PANEL_BG = "#050505"; PANEL_BORDER = "1px solid #333333"; PANEL_RADIUS = "0px"
     WIDGET_THEME = "dark"
@@ -112,38 +102,22 @@ def apply_custom_css():
         [data-testid="stDataFrame"] {{ border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); background: rgba(255, 255, 255, 0.5); }}
         [data-testid="stSidebar"] {{ background: rgba(245, 245, 247, 0.7); backdrop-filter: blur(20px); border-right: 1px solid rgba(0,0,0,0.05); }}
         button[data-baseweb="tab"][aria-selected="true"] {{ color: #1d1d1f; border-bottom-color: #1d1d1f; border-bottom-width: 2px; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none; color: {TEXT_COLOR}; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
+        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none; color: #1d1d1f; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
         .sidebar-link:hover {{ background-color: rgba(0,0,0,0.05); transform: translateX(2px); }}
         """
-    elif current_theme == "1930년대 타자기 테마":
-        css_base = f"""
-        @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
-        [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
-        .stApp, html, body {{ font-family: 'Special Elite', 'Courier New', monospace !important; background-color: #e4dccc !important; color: {TEXT_COLOR} !important; }}
-        div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: #dfd7c5 !important; border: 2px solid {TEXT_COLOR} !important; border-radius: 0px !important; box-shadow: 4px 4px 0px {TEXT_COLOR} !important; padding: 1.5rem !important; }}
-        .stButton>button {{ background-color: #d1c7b3 !important; color: {TEXT_COLOR} !important; border: 2px solid {TEXT_COLOR} !important; border-radius: 0px !important; box-shadow: 2px 2px 0px {TEXT_COLOR} !important; font-weight: bold !important; text-transform: uppercase; transition: all 0.1s; }}
-        .stButton>button:active {{ box-shadow: 0px 0px 0px {TEXT_COLOR} !important; transform: translateY(2px) translateX(2px); }}
-        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #f0e9d8 !important; color: {TEXT_COLOR} !important; border: 1px dashed {TEXT_COLOR} !important; border-radius: 0px !important; font-family: 'Special Elite', monospace !important; }}
-        [data-testid="stDataFrame"] {{ border: 1px solid {TEXT_COLOR} !important; background-color: #f0e9d8 !important; border-radius: 0px !important; }}
-        [data-testid="stSidebar"] {{ background-color: #d1c7b3 !important; border-right: 3px double {TEXT_COLOR} !important; }}
-        button[data-baseweb="tab"][aria-selected="true"] {{ color: {TEXT_COLOR} !important; border-bottom-color: {TEXT_COLOR} !important; border-bottom-width: 3px !important; font-weight: bold !important; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border: 1px solid transparent; border-radius: 0px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-weight: bold; font-size: 0.95rem; transition: background-color 0.2s; }}
-        .sidebar-link:hover {{ background-color: rgba(0,0,0,0.1); border: 1px dashed {TEXT_COLOR}; }}
-        """
-        css_panel = f".info-panel {{ background: #dfd7c5; border: 2px solid {TEXT_COLOR}; border-radius: 0px; padding: 16px; height: 100%; box-shadow: 4px 4px 0px {TEXT_COLOR}; }}"
-    elif current_theme == "블룸버그 터미널 테마":
+    elif current_theme == "1920년대 타자기 테마":
         css_base = f"""
         @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-        [data-testid="stAppViewContainer"], [data-testid="stHeader"], .stApp {{ background-color: #000000 !important; background-image: none !important; }}
-        html, body {{ font-family: 'Share Tech Mono', monospace !important; background-color: #000000 !important; color: {TEXT_COLOR} !important; letter-spacing: 0.05em; }}
-        div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: #050505 !important; border: 1px solid #333333 !important; border-radius: 0px !important; box-shadow: none !important; padding: 1.5rem !important; }}
-        .stButton>button {{ background-color: #000000 !important; color: {TEXT_COLOR} !important; border: 1px solid {TEXT_COLOR} !important; border-radius: 0px !important; font-weight: normal !important; text-transform: uppercase; transition: all 0.1s; }}
-        .stButton>button:hover {{ background-color: {TEXT_COLOR} !important; color: #000000 !important; box-shadow: 0 0 8px {TEXT_COLOR} !important; }}
-        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #000000 !important; color: {TEXT_COLOR} !important; border: 1px solid #444444 !important; border-radius: 0px !important; font-family: 'Share Tech Mono', monospace !important; }}
-        [data-testid="stDataFrame"] {{ border-radius: 0px !important; border: 1px solid #333333 !important; background: #000000 !important; }}
-        [data-testid="stSidebar"] {{ background-color: #050505 !important; border-right: 1px solid #333333 !important; }}
-        button[data-baseweb="tab"][aria-selected="true"] {{ color: {TEXT_COLOR} !important; border-bottom-color: {TEXT_COLOR} !important; border-bottom-width: 2px !important; text-shadow: 0 0 5px {TEXT_COLOR}; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border: 1px solid transparent; border-radius: 0px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-size: 0.95rem; transition: background-color 0.1s; }}
+        [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
+        .stApp, html, body {{ font-family: 'Share Tech Mono', monospace; background-color: #000000 !important; color: {TEXT_COLOR}; }}
+        div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: #050505; border: 1px solid #333333; border-radius: 0px; padding: 1.5rem; }}
+        .stButton>button {{ background-color: #000000; color: {TEXT_COLOR}; border: 1px solid {TEXT_COLOR}; border-radius: 0px; text-transform: uppercase; transition: all 0.1s; }}
+        .stButton>button:hover {{ background-color: {TEXT_COLOR}; color: #000000; box-shadow: 0 0 8px {TEXT_COLOR}; }}
+        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #000000; color: {TEXT_COLOR}; border: 1px solid #444444; border-radius: 0px; font-family: 'Share Tech Mono', monospace; }}
+        [data-testid="stDataFrame"] {{ border-radius: 0px; border: 1px solid #333333; background: #000000; }}
+        [data-testid="stSidebar"] {{ background-color: #050505; border-right: 1px solid #333333; }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: {TEXT_COLOR}; border-bottom-color: {TEXT_COLOR}; border-bottom-width: 2px; text-shadow: 0 0 5px {TEXT_COLOR}; }}
+        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border: 1px solid transparent; border-radius: 0px; text-decoration: none; color: {TEXT_COLOR}; font-size: 0.95rem; transition: background-color 0.1s; }}
         .sidebar-link:hover {{ background-color: rgba(0, 255, 65, 0.1); border: 1px dashed {TEXT_COLOR}; }}
         """
         css_panel = f".info-panel {{ background: #050505; border: 1px solid #333333; border-radius: 0px; padding: 16px; height: 100%; box-shadow: none; }}"
@@ -187,10 +161,12 @@ def apply_custom_css():
         input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #FFFFFF; color: {TEXT_COLOR}; border: 1px solid #000000; border-radius: 0px; font-family: 'Arial', sans-serif; }}
         [data-testid="stDataFrame"] {{ border-radius: 0px; border: 1px solid #000000; }}
         [data-testid="stSidebar"] {{ background-color: #EBEBEB; border-right: 2px solid #000000; }}
+        h1, h2, h3, h4 {{ font-family: 'Playfair Display', serif; text-transform: uppercase; border-bottom: 2px solid #000000; padding-bottom: 5px; font-weight: bold; }}
         button[data-baseweb="tab"][aria-selected="true"] {{ color: #000000; border-bottom: 3px solid #000000; font-weight: bold; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; text-decoration: none; color: #000000; font-weight: bold; font-size: 0.95rem; border-bottom: 1px dotted #CCC; }}
         .sidebar-link:hover {{ background-color: #DDDDDD; }}
         """
+        css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; border-top: 3px solid #000; font-family: 'Arial', sans-serif; }}"
     elif current_theme == "Chat GPT 테마":
         css_base = f"""
         @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
@@ -203,6 +179,7 @@ def apply_custom_css():
         input:focus, textarea:focus {{ border-color: #10A37F !important; box-shadow: 0 0 0 1px #10A37F !important; }}
         [data-testid="stDataFrame"] {{ border-radius: 8px !important; border: 1px solid #565869 !important; background: #40414F !important; }}
         [data-testid="stSidebar"] {{ background-color: #202123 !important; border-right: 1px solid #4D4D4F !important; }}
+        h1, h2, h3, h4 {{ color: #ECECF1 !important; border-bottom: 1px solid #565869; padding-bottom: 5px; }}
         button[data-baseweb="tab"] {{ color: #8E8EA0 !important; font-weight: normal !important; }}
         button[data-baseweb="tab"][aria-selected="true"] {{ color: #ECECF1 !important; border-bottom-color: #10A37F !important; border-bottom-width: 2px !important; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 6px; text-decoration: none !important; color: #ECECF1 !important; font-weight: 500; font-size: 0.95rem; transition: background-color 0.2s; }}
@@ -520,7 +497,7 @@ def page_amls_backtest():
             fig_p = go.Figure(go.Pie(labels=list(w.keys()), values=list(w.values()), hole=0.5, marker=dict(colors=[COLOR_PALETTE.get(k.split('/')[0], '#888') for k in w.keys()])))
             cust_p = THEME_LAYOUT.copy(); cust_p.update(title=f"R{r}", title_x=0.5, height=250, margin=dict(t=40,b=10,l=10,r=10), showlegend=False)
             fig_p.update_layout(**cust_p)
-            fig_p.update_traces(textinfo='label+percent', textposition='inside', textfont=dict(color=TEXT_COLOR if current_theme not in ["1930년대 타자기 테마", "월스트리트 저널 테마"] else "#ffffff", size=11))
+            fig_p.update_traces(textinfo='label+percent', textposition='inside', textfont=dict(color=TEXT_COLOR if current_theme not in ["1920년대 타자기 테마", "월스트리트 저널 테마", "블룸버그 터미널 테마", "Chat GPT 테마"] else "#ffffff", size=11))
             col.plotly_chart(fig_p, use_container_width=True)
 
     with tab2:
@@ -547,7 +524,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [4] 페이지 구성: 내 포트폴리오 관리 (레이아웃 조절 가능 기능)
+# [4] 페이지 구성: 내 포트폴리오 관리
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
@@ -767,30 +744,34 @@ def make_portfolio_page(acc_name):
                 st.write("")
 
             elif block == "📊 실시간 요약":
-                st.markdown(f"#### 📊 실시간 요약 (기준: {price_label})")
-                m1, m2, m3, m4 = st.columns(4)
-                with m1:
-                    st.markdown(f"""<div class='info-panel' style='text-align:center;'>
-<div style='font-size:0.85rem; font-weight:bold; opacity:0.8; color:{TEXT_COLOR};'>💰 총 평가액 (Total)</div>
-<div style='font-size:1.6rem; font-weight:bold; margin-top:5px; color:{TEXT_COLOR};'>${total_val_now:,.0f}</div>
-</div>""", unsafe_allow_html=True)
-                with m2:
+                st.markdown(f"#### 📊 자산 및 시황 요약 (기준: {price_label})")
+                
+                col_group, col_ai = st.columns([3, 1])
+                
+                with col_group:
                     pn_col = C_UP if daily_diff > 0 else (C_DOWN if daily_diff < 0 else TEXT_COLOR)
                     pn_ico = "▲" if daily_diff > 0 else ("▼" if daily_diff < 0 else "-")
-                    st.markdown(f"""<div class='info-panel' style='text-align:center;'>
+                    
+                    st.markdown(f"""<div class='info-panel' style='display:flex; justify-content:space-around; align-items:center; text-align:center; padding:15px;'>
+<div style='flex:1; border-right:1px dashed rgba(150,150,150,0.4);'>
+<div style='font-size:0.85rem; font-weight:bold; opacity:0.8; color:{TEXT_COLOR};'>💰 총 평가액 (Total)</div>
+<div style='font-size:1.6rem; font-weight:bold; margin-top:5px; color:{TEXT_COLOR};'>${total_val_now:,.0f}</div>
+</div>
+<div style='flex:1; border-right:1px dashed rgba(150,150,150,0.4);'>
 <div style='font-size:0.85rem; font-weight:bold; opacity:0.8; color:{TEXT_COLOR};'>일간 손익 (Daily)</div>
 <div style='color:{pn_col}; font-size:1.6rem; font-weight:bold; margin-top:5px;'>{pn_ico} {abs(daily_diff_pct):.2f}%</div>
 <div style='color:{pn_col}; font-size:0.8rem;'>({daily_diff:+.0f} $)</div>
-</div>""", unsafe_allow_html=True)
-                with m3:
-                    st.markdown(f"""<div class='info-panel' style='text-align:center;'>
+</div>
+<div style='flex:1;'>
 <div style='font-size:0.85rem; font-weight:bold; opacity:0.8; color:{TEXT_COLOR};'>👑 포트폴리오 MVP</div>
 <div style='font-size:1.6rem; font-weight:bold; margin-top:5px; color:{TEXT_COLOR};'>{best_ticker}</div>
 <div style='font-size:0.8rem; font-weight:bold; color:{TEXT_COLOR};'>수익률 {best_ret:+.1f}%</div>
+</div>
 </div>""", unsafe_allow_html=True)
-                with m4:
+
+                with col_ai:
                     app_reg = ms['regime']
-                    st.markdown(f"""<div class='info-panel' style='text-align:center;'>
+                    st.markdown(f"""<div class='info-panel' style='text-align:center; display:flex; flex-direction:column; justify-content:center; padding:15px;'>
 <div style='font-size:0.85rem; font-weight:bold; opacity:0.8; color:{TEXT_COLOR};'>AI 전략 국면</div>
 <div style='font-size:1.6rem; font-weight:bold; margin-top:5px; color:{TEXT_COLOR};'>Regime {app_reg}</div>
 <div style='font-size:0.8rem; font-weight:bold; color:{TEXT_COLOR};'>{ms['entry_grade'].split('(')[0].strip()}</div>
@@ -904,7 +885,7 @@ def make_portfolio_page(acc_name):
                             cust_p2 = THEME_LAYOUT.copy()
                             cust_p2.update(height=300, showlegend=False, margin=dict(t=10, b=10, l=10, r=10), annotations=[dict(text=f"100%", x=0.5, y=0.5, showarrow=False, font=dict(color=TEXT_COLOR, size=16))])
                             fig.update_layout(**cust_p2)
-                            fig.update_traces(textposition='inside', textinfo='percent+label', textfont_size=13, textfont_color="#fff" if current_theme in ["1930년대 타자기 테마", "월스트리트 저널 테마"] else TEXT_COLOR)
+                            fig.update_traces(textposition='inside', textinfo='percent+label', textfont_size=13, textfont_color="#fff" if current_theme in ["1920년대 타자기 테마", "월스트리트 저널 테마", "블룸버그 터미널 테마", "Chat GPT 테마"] else TEXT_COLOR)
                             st.plotly_chart(fig, use_container_width=True)
                 with col_act:
                     st.markdown("#### ⚖️ 리밸런싱 지침")
