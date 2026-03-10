@@ -146,21 +146,27 @@ def apply_cafe_style_professional():
         font-weight: 600 !important;
     }}
 
-    /* 우측 즐겨찾기 링크용 호버 스타일 */
-    .quick-link {{
-        display: block;
-        font-size: 0.95rem;
-        color: #5D4A44;
-        text-decoration: none;
-        margin-top: 4px;
-        padding: 6px 10px;
-        border-radius: 8px;
-        transition: background-color 0.2s, color 0.2s;
-    }}
-    .quick-link:hover {{
-        background-color: #FFF0E5;
-        color: #000000;
+    /* 왼쪽 사이드바 즐겨찾기 링크 스타일 */
+    .sidebar-link {{
+        display: flex;
+        align-items: center;
+        padding: 10px 12px;
+        margin-bottom: 6px;
+        border-radius: 12px;
+        text-decoration: none !important;
+        color: #5D4A44 !important;
         font-weight: 700;
+        font-size: 0.95rem;
+        background-color: transparent;
+        transition: background-color 0.2s, transform 0.1s;
+    }}
+    .sidebar-link:hover {{
+        background-color: #FFF0E5;
+        transform: translateX(4px);
+    }}
+    .sidebar-link span {{
+        margin-right: 10px;
+        font-size: 1.2rem;
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -513,11 +519,11 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [4] 페이지 구성: 내 포트폴리오 관리 
+# [4] 페이지 구성: 내 포트폴리오 관리 (통합 요약본 & 공간 절약)
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
-        st.title(f"💼 {acc_name}")
+        st.title(f"💼 {acc_name} 포트폴리오")
         st.markdown("포트폴리오 자산을 기입하고 실시간 AI 리밸런싱 신호를 확인하세요.")
         
         curr_acc_data = st.session_state['accounts'][acc_name]
@@ -756,84 +762,60 @@ def make_portfolio_page(acc_name):
             
         st.write("")
         
-        # ------------------- 2, 3, 4번 슬림 통합 패널 & 즐겨찾기 링크 -------------------
-        col_indi, col_link = st.columns([3.5, 1.2])
+        # ------------------- 2. 공간 절약형 슬림 대시보드 (판독기 + 분석관 + 적합도) -------------------
+        st.markdown("#### ⚡ 실시간 시스템 분석관 요약")
+        
+        # 1) SOXL 판독기 (한 줄)
+        s_icon = "🟢 돌파(강세)" if ms['smh'] > ms['smh_ma50'] else "🔴 붕괴(약세)"
+        r_icon = "🟢" if ms['smh_3m_ret'] > 0.05 else "🔴"
+        rsi_icon = "🟢" if ms['smh_rsi'] > 50 else "🔴"
+        
+        st.markdown(f"""
+        <div style='display:flex; justify-content:space-between; align-items:center; background:#FFFFFF; padding:12px 20px; border-radius:12px; border:1px solid #EAE3D9; margin-bottom:12px;'>
+            <div style='font-weight:800; color:#000000; font-size:1.0rem;'>⚡ SOXL(반도체) 판독기</div>
+            <div style='font-size:0.95rem; color:#5D4A44; font-weight:600;'>단기추세(50MA): {s_icon} &nbsp;|&nbsp; 3M수익률: {r_icon} {ms['smh_3m_ret']*100:+.1f}% &nbsp;|&nbsp; RSI(14): {rsi_icon} {ms['smh_rsi']:.1f}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        with col_indi:
-            st.markdown("#### ⚡ 실시간 시스템 분석관 요약")
-            
-            # [컴팩트] 2. SOXL 판독기
-            s_icon = "🟢 돌파(강세)" if ms['smh'] > ms['smh_ma50'] else "🔴 붕괴(약세)"
-            r_icon = "🟢" if ms['smh_3m_ret'] > 0.05 else "🔴"
-            rsi_icon = "🟢" if ms['smh_rsi'] > 50 else "🔴"
-            
-            st.markdown(f"""
-            <div style='display:flex; justify-content:space-between; align-items:center; background:#FFFFFF; padding:12px 20px; border-radius:12px; border:1px solid #EAE3D9; margin-bottom:12px;'>
-                <div style='font-weight:800; color:#000000; font-size:1.0rem;'>⚡ SOXL(반도체) 판독기</div>
-                <div style='font-size:0.95rem; color:#5D4A44; font-weight:600;'>단기추세(50MA): {s_icon} &nbsp;|&nbsp; 3M수익률: {r_icon} {ms['smh_3m_ret']*100:+.1f}% &nbsp;|&nbsp; RSI(14): {rsi_icon} {ms['smh_rsi']:.1f}</div>
-            </div>
-            """, unsafe_allow_html=True)
+        # 2) AI 전략 분석관 Report (한 줄 요약)
+        vix_c = ms['vix']; qqq_c = ms['qqq']; ma200_c = ms['ma200']
+        if app_reg == 4:
+            reg_title = "🚨 R4 (패닉 / 위기 국면)"
+            reg_txt = f"VIX({vix_c:.1f})가 40을 돌파했습니다. 레버리지를 전량 청산하고 안전 자산(GLD, CASH)으로 대피하십시오."
+            text_color_reg = "#D9534F"
+        elif app_reg == 3:
+            reg_title = "⚠️ R3 (장기 하락장)"
+            reg_txt = f"나스닥({qqq_c:.0f})이 200일선({ma200_c:.0f})을 하향 이탈했습니다. 방어 태세(GLD 50%)를 유지하십시오."
+            text_color_reg = "#D9534F"
+        elif app_reg == 1:
+            reg_title = "🔥 R1 (골디락스 강세장)"
+            reg_txt = f"정배열 및 VIX({vix_c:.1f}) 안정화가 확인되었습니다. 3배 레버리지 비중을 늘릴 최적기입니다."
+            text_color_reg = "#5B8FB9"
+        else:
+            reg_title = "🛡️ R2 (보통 / 조정 국면)"
+            reg_txt = f"완벽한 상승 조건이 아닙니다. 3배 레버리지를 축소하고 2배수(QLD/SSO)로 속도를 조절하세요."
+            text_color_reg = "#5D4A44"
 
-            # [컴팩트] 3. AI 분석관 Report
-            vix_c = ms['vix']; qqq_c = ms['qqq']; ma200_c = ms['ma200']
-            if app_reg == 4:
-                reg_title = "🚨 R4 (패닉 / 위기 국면)"
-                reg_txt = f"VIX({vix_c:.1f})가 40을 돌파했습니다. 레버리지를 전량 청산하고 안전 자산(GLD, CASH)으로 대피하십시오."
-                text_color_reg = "#D9534F"
-            elif app_reg == 3:
-                reg_title = "⚠️ R3 (장기 하락장)"
-                reg_txt = f"나스닥({qqq_c:.0f})이 200일선({ma200_c:.0f})을 하향 이탈했습니다. 방어 태세(GLD 50%)를 유지하십시오."
-                text_color_reg = "#D9534F"
-            elif app_reg == 1:
-                reg_title = "🔥 R1 (골디락스 강세장)"
-                reg_txt = f"정배열 및 VIX({vix_c:.1f}) 안정화가 확인되었습니다. 3배 레버리지 비중을 늘릴 최적기입니다."
-                text_color_reg = "#5B8FB9"
-            else:
-                reg_title = "🛡️ R2 (보통 / 조정 국면)"
-                reg_txt = f"완벽한 상승 조건이 아닙니다. 3배 레버리지를 축소하고 2배수(QLD/SSO)로 속도를 조절하세요."
-                text_color_reg = "#5D4A44"
+        st.markdown(f"""
+        <div style='background:#FAFAFA; padding:12px 20px; border-radius:12px; border:1px solid #EAE3D9; margin-bottom:12px;'>
+            <span style='font-weight:800; color:{text_color_reg}; margin-right:12px; font-size:1.0rem;'>🤖 AI 전략 분석: {reg_title}</span>
+            <span style='color:#000000; font-size:0.95rem;'>{reg_txt}</span>
+        </div>
+        """, unsafe_allow_html=True)
 
-            st.markdown(f"""
-            <div style='background:#FAFAFA; padding:12px 20px; border-radius:12px; border:1px solid #EAE3D9; margin-bottom:12px;'>
-                <span style='font-weight:800; color:{text_color_reg}; margin-right:12px; font-size:1.0rem;'>🤖 AI 전략 분석: {reg_title}</span>
-                <span style='color:#000000; font-size:0.95rem;'>{reg_txt}</span>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # [컴팩트] 4. 신규 자금 투입 적합도
-            entry_g = ms['entry_grade']
-            dur = ms['regime_duration']
-            dir_map = {"ascending": "상향", "descending": "하향", "stable": "유지"}
-            direction_kr = dir_map.get(ms['regime_direction'], "알 수 없음")
-            
-            st.markdown(f"""
-            <div style='background:#FFFFFF; padding:12px 20px; border-radius:12px; border:1px solid #EAE3D9; margin-bottom:12px;'>
-                <span style='font-weight:800; color:#A89B96; margin-right:12px; font-size:1.0rem;'>🌱 신규 투입 가이드:</span>
-                <span style='color:#000000; font-size:1.05rem; font-weight:800; margin-right:15px;'>{entry_g}</span>
-                <span style='color:#5D4A44; font-size:0.95rem;'>전환방향: <b>{direction_kr}</b> &nbsp;|&nbsp; 현재 국면 체류: <b>{dur}일차</b></span>
-            </div>
-            """, unsafe_allow_html=True)
-
-        with col_link:
-            st.markdown("""
-            <div style='background:#FFFFFF; padding:15px 20px; border-radius:16px; border:2px solid #FFF0E5; box-shadow: 0 4px 10px rgba(210, 190, 175, 0.1); height:100%;'>
-                <div style='font-size:1.1rem; font-weight:800; color:#000000; margin-bottom:8px; border-bottom:2px dashed #FFF0E5; padding-bottom:8px;'>⭐ 자주 가는 사이트</div>
-                
-                <div style='font-size:0.85rem; font-weight:800; color:#A89B96; margin-top:12px;'>📺 유튜브</div>
-                <a class='quick-link' href='https://www.youtube.com/@JB_Insight' target='_blank'>1) JB</a>
-                <a class='quick-link' href='https://www.youtube.com/@odokgod' target='_blank'>2) 오독</a>
-                <a class='quick-link' href='https://www.youtube.com/@TQQQCRAZY' target='_blank'>3) TQQQ미친놈</a>
-                <a class='quick-link' href='https://www.youtube.com/@developmong' target='_blank'>4) 디벨롭몽</a>
-
-                <div style='font-size:0.85rem; font-weight:800; color:#A89B96; margin-top:16px;'>📈 차트 분석</div>
-                <a class='quick-link' href='https://kr.investing.com/' target='_blank'>1) 인베스팅닷컴</a>
-                <a class='quick-link' href='https://kr.tradingview.com/' target='_blank'>2) 트레이딩뷰</a>
-
-                <div style='font-size:0.85rem; font-weight:800; color:#A89B96; margin-top:16px;'>🤖 AI 도우미</div>
-                <a class='quick-link' href='https://claude.ai/' target='_blank'>1) 클로드 (Claude)</a>
-                <a class='quick-link' href='https://gemini.google.com/' target='_blank'>2) 제미나이 (Gemini)</a>
-            </div>
-            """, unsafe_allow_html=True)
+        # 3) 신규 자금 투입 가이드 (한 줄 요약)
+        entry_g = ms['entry_grade']
+        dur = ms['regime_duration']
+        dir_map = {"ascending": "상향", "descending": "하향", "stable": "유지"}
+        direction_kr = dir_map.get(ms['regime_direction'], "알 수 없음")
+        
+        st.markdown(f"""
+        <div style='background:#FFFFFF; padding:12px 20px; border-radius:12px; border:1px solid #EAE3D9; margin-bottom:12px;'>
+            <span style='font-weight:800; color:#A89B96; margin-right:12px; font-size:1.0rem;'>🌱 신규 투입 가이드:</span>
+            <span style='color:#000000; font-size:1.05rem; font-weight:800; margin-right:15px;'>{entry_g}</span>
+            <span style='color:#5D4A44; font-size:0.95rem;'>전환방향: <b>{direction_kr}</b> &nbsp;|&nbsp; 현재 국면 체류: <b>{dur}일차</b></span>
+        </div>
+        """, unsafe_allow_html=True)
 
         st.write("")
         st.divider()
@@ -954,7 +936,6 @@ def make_portfolio_page(acc_name):
                             hist_df = hist_df.sort_index()
 
                     # 비어있는 날짜를 앞의 데이터로 채워 연속적인 선을 생성 (Resampling 최적화)
-                    # 이를 통해 점으로 끊어지지 않고 온전한 선형 곡선이 그려집니다.
                     hist_df = hist_df.resample('D').ffill()
 
                     fig_seed = go.Figure()
@@ -1029,6 +1010,28 @@ def page_strategy_specification():
 # =====================================================================
 # [5] 사이드바 설정 및 네비게이션 라우팅
 # =====================================================================
+
+# 즐겨찾기 메뉴 사이드바 추가
+st.sidebar.markdown("---")
+st.sidebar.markdown("### ⭐ 즐겨찾기")
+st.sidebar.markdown("""
+<div style="display:flex; flex-direction:column; gap:4px;">
+    <div style="font-size:0.85rem; color:#A89B96; margin-top:8px; font-weight:bold;">📺 유튜브</div>
+    <a href="https://www.youtube.com/@JB_Insight" target="_blank" class="sidebar-link"><span>📊</span> JB 인사이트</a>
+    <a href="https://www.youtube.com/@odokgod" target="_blank" class="sidebar-link"><span>📻</span> 오독</a>
+    <a href="https://www.youtube.com/@TQQQCRAZY" target="_blank" class="sidebar-link"><span>🔥</span> TQQQ 미친놈</a>
+    <a href="https://www.youtube.com/@developmong" target="_blank" class="sidebar-link"><span>🐒</span> 디벨롭몽</a>
+
+    <div style="font-size:0.85rem; color:#A89B96; margin-top:12px; font-weight:bold;">📈 차트 분석</div>
+    <a href="https://kr.investing.com/" target="_blank" class="sidebar-link"><span>🌍</span> 인베스팅닷컴</a>
+    <a href="https://kr.tradingview.com/" target="_blank" class="sidebar-link"><span>📉</span> 트레이딩뷰</a>
+
+    <div style="font-size:0.85rem; color:#A89B96; margin-top:12px; font-weight:bold;">🤖 AI 도우미</div>
+    <a href="https://claude.ai/" target="_blank" class="sidebar-link"><span>🧠</span> 클로드</a>
+    <a href="https://gemini.google.com/" target="_blank" class="sidebar-link"><span>✨</span> 제미나이</a>
+</div>
+""", unsafe_allow_html=True)
+st.sidebar.markdown("---")
 
 with st.sidebar.expander("🎨 테마 및 색상 설정"):
     st.markdown("**기본 글씨 색상**")
