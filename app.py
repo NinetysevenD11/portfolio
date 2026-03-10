@@ -10,19 +10,16 @@ from datetime import datetime, timedelta
 import warnings
 import json
 import os
-import requests
-from io import StringIO
-import copy
-import time
 
 warnings.filterwarnings('ignore')
 
 # =====================================================================
-# [0] 시스템 설정, 데이터 관리 및 블룸버그 레트로 터미널 테마 주입
+# [0] 시스템 설정, 데이터 관리 및 블룸버그 터미널 테마 강제 주입
 # =====================================================================
 st.set_page_config(page_title="AMLS QUANT TERMINAL", layout="wide", initial_sidebar_state="expanded")
 
-SETTINGS_FILE = "amls_settings.json"
+# 기존 설정 파일과 충돌하지 않도록 레트로 전용 설정 파일 생성
+SETTINGS_FILE = "amls_settings_retro.json"
 
 def load_settings():
     if os.path.exists(SETTINGS_FILE):
@@ -30,7 +27,7 @@ def load_settings():
             with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
         except: pass
-    # 기본 터미널 색상: Matrix Green (#00FF41)
+    # 블룸버그 터미널 기본 색상: Matrix Green (#00FF41)
     return {
         "text_color": "#00FF41",
         "chart_colors": {
@@ -54,14 +51,20 @@ def apply_retro_terminal_style():
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
-/* 터미널 기본 배경 (완전한 블랙) 및 모노스페이스 폰트 */
-.stApp, html, body, [class*="css"] {{
+/* Streamlit 기본 바탕화면 완전 블랙 강제 */
+[data-testid="stAppViewContainer"], [data-testid="stHeader"], .stApp {{
+    background-color: #000000 !important;
+    background-image: none !important;
+}}
+
+html, body, [class*="css"] {{
     font-family: 'Share Tech Mono', 'Courier New', Courier, monospace !important;
     background-color: #000000 !important;
     color: {text_color} !important;
     letter-spacing: 0.05em;
 }}
 
+/* 텍스트 강제 덮어쓰기 */
 div[data-testid="stMetricValue"] > div,
 div[data-testid="stMetricDelta"] > div,
 p, h1, h2, h3, h4, h5, h6, span, label, .stMarkdown {{
@@ -69,6 +72,7 @@ p, h1, h2, h3, h4, h5, h6, span, label, .stMarkdown {{
     word-break: keep-all !important;
     overflow-wrap: break-word !important;
     font-family: 'Share Tech Mono', 'Courier New', monospace !important;
+    color: {text_color} !important;
 }}
 
 /* 컨테이너 및 카드: 각진 모서리와 실선 테두리 */
@@ -96,9 +100,6 @@ div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38
     color: #000000 !important;
     box-shadow: 0 0 8px {text_color} !important;
 }}
-.stButton>button:active {{
-    transform: translateY(2px);
-}}
 
 /* 입력창 터미널 스타일 */
 input, textarea, select, div[data-baseweb="select"] > div {{
@@ -123,7 +124,7 @@ input:focus, textarea:focus {{
 
 /* 사이드바 */
 [data-testid="stSidebar"] {{
-    background-color: #0a0a0a !important;
+    background-color: #050505 !important;
     border-right: 1px solid #333333 !important;
 }}
 
@@ -153,7 +154,7 @@ div[data-testid="stMetricLabel"] {{
     font-size: 0.95rem !important;
 }}
 
-/* 사이드바 즐겨찾기 링크 스타일 (터미널 호버) */
+/* 사이드바 링크 스타일 */
 .sidebar-link {{
     display: flex;
     align-items: center;
@@ -177,9 +178,11 @@ div[data-testid="stMetricLabel"] {{
     font-size: 1.1rem;
 }}
 
-/* 타이틀 이중선 및 네온 텍스트 */
 h1, h2, h3, h4 {{
     text-transform: uppercase;
+}}
+hr {{
+    border-color: #333333 !important;
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -189,8 +192,8 @@ apply_retro_terminal_style()
 # Plotly 차트 레이아웃 (완전한 다크 & 네온 그리드)
 RETRO_LAYOUT = dict(
     template="plotly_dark",
-    paper_bgcolor="#000000",
-    plot_bgcolor="#000000",
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
     font=dict(family="'Share Tech Mono', monospace", color=st.session_state['settings']['text_color'], size=13),
     margin=dict(l=0, r=0, t=30, b=0),
     xaxis=dict(showgrid=True, gridcolor='#222222', zerolinecolor='#444444'),
@@ -222,7 +225,7 @@ if 'accounts' not in st.session_state:
     if not loaded:
         loaded = {
             "AMLS v4.3": {  
-                "portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS],
+                "portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "CORE"} for t in REQUIRED_TICKERS],
                 "history": [], "first_entry_date": None, "journal_text": "", "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0
             }
         }
@@ -249,10 +252,10 @@ for acc_name, acc_data in st.session_state['accounts'].items():
         if req_t in port_dict: 
             item = port_dict[req_t]
             if "매입 환율" not in item: item["매입 환율"] = 0.0; needs_save = True
-            if "태그" not in item: item["태그"] = "코어" if req_t != "CASH" else "현금"; needs_save = True
+            if "태그" not in item: item["태그"] = "CORE" if req_t != "CASH" else "CASH"; needs_save = True
             new_port.append(item)
         else: 
-            new_port.append({"티커 (Ticker)": req_t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어" if req_t != "CASH" else "현금"})
+            new_port.append({"티커 (Ticker)": req_t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "CORE" if req_t != "CASH" else "CASH"})
             needs_save = True
     acc_data["portfolio"] = new_port
 if needs_save: save_accounts_data(st.session_state['accounts'])
@@ -381,8 +384,8 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
         elif "3주 1회" in rebal_freq and days_since_v4_3 >= 15: rebal_v4_3 = True
         if rebal_v4_3:
             weights_v4_3 = get_v4_3_weights(sig_r_v4_3, use_soxl)
-            log_type = "SHIFT" if sig_r_v4_3 != df['Signal_Regime_v4_3'].iloc[i-1] else f"SCHED ({rebal_freq.split(' ')[0]})"
-            semi_target = "SOXL (3x)" if use_soxl and sig_r_v4_3 == 1 else ("USD (2x)" if sig_r_v4_3 in [1, 2] else "-")
+            log_type = "SHIFT" if sig_r_v4_3 != df['Signal_Regime_v4_3'].iloc[i-1] else f"SCHED"
+            semi_target = "SOXL" if use_soxl and sig_r_v4_3 == 1 else ("USD" if sig_r_v4_3 in [1, 2] else "-")
             logs.append({"DATE": today.strftime('%Y-%m-%d'), "EVENT": log_type, "REGIME": f"R{int(sig_r_v4_3)}", "SEMI": semi_target, "EQUITY": ports['AMLS v4.3']})
             days_since_v4_3 = 0
 
@@ -400,7 +403,6 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
 # =====================================================================
 def page_market_dashboard():
     st.title("> MACRO TERMINAL")
-    
     components.html("""<div class="tradingview-widget-container" style="border-radius: 0px; overflow: hidden; border: 1px solid #333;">
 <div class="tradingview-widget-container__widget"></div>
 <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
@@ -453,7 +455,6 @@ def page_market_dashboard():
 # =====================================================================
 def page_amls_backtest():
     st.title("> BACKTEST ENGINE")
-    st.markdown("HISTORICAL SIMULATION OF STRATEGY RULES.")
 
     st.sidebar.header("⚙️ PARAMS")
     BACKTEST_START = st.sidebar.date_input("START DATE", datetime(2018, 1, 1))
@@ -539,7 +540,7 @@ def make_portfolio_page(acc_name):
         
         curr_acc_data = st.session_state['accounts'][acc_name]
         pf_df = pd.DataFrame(curr_acc_data["portfolio"])
-        for col in ["수량 (주/달러)", "평균 단가 ($)", "매입 환율", "목표가 ($)"]:
+        for col in ["수량 (주/달러)", "평균 단가 ($)", "매입 환율"]:
             if col in pf_df.columns: pf_df[col] = pf_df[col].astype(float)
 
         @st.cache_data(ttl=1800)
@@ -706,7 +707,6 @@ def make_portfolio_page(acc_name):
                 st.rerun()
                 
         with c_prog:
-            # 띄어쓰기 제거
             st.markdown(f"""<div style='background:#000; padding:15px; border:1px solid {text_col}; margin-bottom:20px;'>
 <div style='display:flex; justify-content:space-between; margin-bottom:5px; color:{text_col}; font-weight:bold;'>
 <span>CURRENT: ${total_val_now:,.0f}</span>
@@ -771,7 +771,6 @@ def make_portfolio_page(acc_name):
         entry_txt = ms['entry_grade']
         dot_c = C_UP if "OPTIMAL" in entry_txt or "SUITABLE" in entry_txt else (C_WARN if "CAUTION" in entry_txt else C_DOWN)
         
-        # 띄어쓰기 제거
         st.markdown(f"""<div style='display:flex; gap:10px; margin-bottom:20px; align-items:stretch;'>
 <div style='flex: 1.2; background:#050505; padding:15px; border:1px solid #333;'>
 <div style='font-size:0.8rem; color:#888; margin-bottom:8px;'>[SOXL SCANNER]</div>
@@ -949,7 +948,7 @@ def page_manage_accounts():
     new_acc = st.text_input("NEW DB NAME")
     if st.button("CREATE DB", type="primary") and new_acc:
         if new_acc not in st.session_state['accounts']:
-            st.session_state['accounts'][new_acc] = {"portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어" if t != "CASH" else "현금"} for t in REQUIRED_TICKERS], "history": [{"Date": datetime.now().strftime("%Y-%m-%d"), "Log": "DB CREATED"}], "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0}
+            st.session_state['accounts'][new_acc] = {"portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "CORE" if t != "CASH" else "CASH"} for t in REQUIRED_TICKERS], "history": [{"Date": datetime.now().strftime("%Y-%m-%d"), "Log": "DB CREATED"}], "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0}
             save_accounts_data(st.session_state['accounts']); st.rerun()
     st.divider()
     for acc in list(st.session_state['accounts'].keys()):
@@ -987,8 +986,7 @@ def page_strategy_specification():
 # =====================================================================
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("<div style='font-size:1.1rem; font-weight:700; color:"+st.session_state['settings']['text_color']+"; margin-bottom:10px;'>[ QUICK LINKS ]</div>", unsafe_allow_html=True)
-# 마크다운 버그를 막기 위해 띄어쓰기 전부 제거
+st.sidebar.markdown(f"<div style='font-size:1.1rem; font-weight:700; color:{st.session_state['settings']['text_color']}; margin-bottom:10px;'>[ QUICK LINKS ]</div>", unsafe_allow_html=True)
 st.sidebar.markdown(f"""<div style="display:flex; flex-direction:column; gap:2px;">
 <div style="font-size:0.8rem; color:#888; font-weight:normal; margin-top:5px;">YOUTUBE</div>
 <a href="https://www.youtube.com/@JB_Insight" target="_blank" class="sidebar-link"><span>📊</span> JB INSIGHT</a>
