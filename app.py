@@ -491,7 +491,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [4] 페이지 구성: 내 포트폴리오 관리 (실제 시드 트래킹 최적화 & 로그 확장)
+# [4] 페이지 구성: 내 포트폴리오 관리 (요청사항 완벽 복구 반영)
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
@@ -551,15 +551,15 @@ def make_portfolio_page(acc_name):
                 if regime_duration <= 10: entry_grade = "최적 진입 구간"
                 elif regime_duration <= 30: entry_grade = "진입 적합"
                 elif regime_duration <= 60: entry_grade = "진입 가능 (장기 체류)"
-                else: entry_grade = "진입 주의 — 전환 리스크"
+                else: entry_grade = "진입 주의 (전환 리스크)"
             elif regime_direction == "descending":
-                if regime_duration <= 5: entry_grade = "진입 보류 — 하락 전환 직후"
-                elif regime_duration <= 20: entry_grade = "진입 주의 — 추가 하락 가능"
-                else: entry_grade = "바닥 탐색 — 상향 전환 대기"
+                if regime_duration <= 5: entry_grade = "진입 보류 (하락 전환 직후)"
+                elif regime_duration <= 20: entry_grade = "진입 주의 (추가 하락 가능)"
+                else: entry_grade = "바닥 탐색 (상향 전환 대기)"
             else:
                 if regime_duration <= 30: entry_grade = "진입 적합"
                 elif regime_duration <= 60: entry_grade = "진입 가능 (장기 체류)"
-                else: entry_grade = "진입 주의 — 전환 리스크"
+                else: entry_grade = "진입 주의 (전환 리스크)"
 
             return {
                 'regime': reg, 'vix': today['^VIX'], 'qqq': today['QQQ'], 'ma200': ma200, 'ma50': ma50,
@@ -656,59 +656,146 @@ def make_portfolio_page(acc_name):
         st.session_state['accounts'][acc_name]["target_seed"] = auto_seed
         rebal_base = total_val_now if total_val_now > 0 else auto_seed
 
-        # --- [NEW] 실제 자산 이력 자동 저장 ---
+        # 실제 자산 이력 자동 저장
         today_str = datetime.now().strftime("%Y-%m-%d")
         history_changed = False
         last_seed = curr_acc_data["seed_history"].get(today_str, {}).get("seed")
         last_equity = curr_acc_data["seed_history"].get(today_str, {}).get("equity")
         
-        # 오늘 날짜에 변화가 생겼거나 처음 기록되는 경우 업데이트
         if last_seed != auto_seed or last_equity != total_val_now:
             curr_acc_data["seed_history"][today_str] = {"seed": auto_seed, "equity": total_val_now}
             history_changed = True
-            
-        if history_changed:
-            save_accounts_data(st.session_state['accounts'])
+        if history_changed: save_accounts_data(st.session_state['accounts'])
 
 
-        # ------------------- 상단 요약 대시보드 -------------------
+        # ------------------- 1. 상단 요약 대시보드 -------------------
         st.markdown(f"#### 📊 실시간 시장 인텔리전스 (기준: {price_label})")
-        text_color = st.session_state['settings']['text_color']
+        # 요청사항 1번 적용: 파스텔톤 말고 완전한 검정색(#000000) 강제 주입
         m1, m2, m3, m4 = st.columns(4)
         with m1:
             st.markdown(f"""
             <div style='background:#FFFFFF; border-radius:20px; padding:15px; border:2px solid #FFF0E5; text-align:center;'>
-                <div style='color:#A89B96; font-size:0.9rem; font-weight:700;'>💰 총 평가액 (Total Equity)</div>
-                <div style='color:{text_color}; font-size:1.8rem; font-weight:800; margin-top:5px;'>${total_val_now:,.0f}</div>
+                <div style='color:#000000; font-size:0.9rem; font-weight:700;'>💰 총 평가액 (Total Equity)</div>
+                <div style='color:#000000; font-size:1.8rem; font-weight:800; margin-top:5px;'>${total_val_now:,.0f}</div>
             </div>""", unsafe_allow_html=True)
         with m2:
-            pn_col = C_UP if daily_diff > 0 else (C_DOWN if daily_diff < 0 else '#A89B96')
+            pn_col = "#000000"  # 검정색 강제
             pn_ico = "📈" if daily_diff > 0 else ("📉" if daily_diff < 0 else "➖")
             st.markdown(f"""
             <div style='background:#FFFFFF; border-radius:20px; padding:15px; border:2px solid #FFF0E5; text-align:center;'>
-                <div style='color:#A89B96; font-size:0.9rem; font-weight:700;'>{pn_ico} 일간 손익 (Daily PnL)</div>
+                <div style='color:#000000; font-size:0.9rem; font-weight:700;'>{pn_ico} 일간 손익 (Daily PnL)</div>
                 <div style='color:{pn_col}; font-size:1.8rem; font-weight:800; margin-top:5px;'>{daily_diff_pct:+.2f}%</div>
                 <div style='color:{pn_col}; font-size:0.85rem;'>({daily_diff:+.0f} USD)</div>
             </div>""", unsafe_allow_html=True)
         with m3:
             st.markdown(f"""
             <div style='background:#FFFFFF; border-radius:20px; padding:15px; border:2px solid #FFF0E5; text-align:center;'>
-                <div style='color:#A89B96; font-size:0.9rem; font-weight:700;'>👑 포트폴리오 MVP</div>
-                <div style='color:#FFB7B2; font-size:1.8rem; font-weight:800; margin-top:5px;'>{best_ticker}</div>
-                <div style='color:#A89B96; font-size:0.85rem;'>수익률: {best_ret:+.1f}%</div>
+                <div style='color:#000000; font-size:0.9rem; font-weight:700;'>👑 포트폴리오 MVP</div>
+                <div style='color:#000000; font-size:1.8rem; font-weight:800; margin-top:5px;'>{best_ticker}</div>
+                <div style='color:#000000; font-size:0.85rem;'>수익률: {best_ret:+.1f}%</div>
             </div>""", unsafe_allow_html=True)
         with m4:
             app_reg = ms['regime']
             ico_r = "🔥" if app_reg==1 else "🛡️" if app_reg==2 else "⚠️" if app_reg==3 else "🚨"
             st.markdown(f"""
             <div style='background:#FFFFFF; border-radius:20px; padding:15px; border:2px solid #FFF0E5; text-align:center;'>
-                <div style='color:#A89B96; font-size:0.9rem; font-weight:700;'>{ico_r} AI 전략 분석관</div>
-                <div style='color:{text_color}; font-size:1.8rem; font-weight:800; margin-top:5px;'>Regime {app_reg}</div>
-                <div style='color:#8B7D77; font-size:0.85rem;'>{ms['entry_grade']}</div>
+                <div style='color:#000000; font-size:0.9rem; font-weight:700;'>{ico_r} AI 전략 분석관</div>
+                <div style='color:#000000; font-size:1.8rem; font-weight:800; margin-top:5px;'>Regime {app_reg}</div>
+                <div style='color:#000000; font-size:0.85rem;'>{ms['entry_grade']}</div>
             </div>""", unsafe_allow_html=True)
             
         st.write("")
         st.divider()
+
+        # ------------------- 2. SOXL 진입 판독기 (복구) -------------------
+        st.markdown("#### ⚡ 반도체 3배(SOXL) 진입 판독기")
+        col_s1, col_s2, col_s3 = st.columns(3)
+        with col_s1:
+            s_icon = "🟢" if ms['smh'] > ms['smh_ma50'] else "🔴"
+            st.info(f"**{s_icon} 단기 추세 (50일선)**\n\n`{'돌파 (강세)' if ms['smh'] > ms['smh_ma50'] else '붕괴 (약세)'}`")
+        with col_s2:
+            ret_val = ms['smh_3m_ret'] * 100
+            r_icon = "🟢" if ret_val > 5.0 else "🔴"
+            st.info(f"**{r_icon} 3개월 누적 수익률**\n\n`{ret_val:+.2f}%` (기준: > 5%)")
+        with col_s3:
+            rsi_val = ms['smh_rsi']
+            rsi_icon = "🟢" if rsi_val > 50 else "🔴"
+            st.info(f"**{rsi_icon} 상대강도지수 (RSI 14)**\n\n`{rsi_val:.1f}` (기준: > 50)")
+
+        st.write("")
+        
+        # ------------------- 3. AMLS AI 전략 분석관 (실시간 동적 판단 복구) -------------------
+        st.markdown("#### 🤖 AMLS AI 전략 분석관 Report")
+        with st.container(border=True):
+            app_reg = ms['regime']
+            vix_c = ms['vix']
+            qqq_c = ms['qqq']
+            ma200_c = ms['ma200']
+            
+            if app_reg == 4:
+                reg_title = "🚨 Regime 4 (패닉 / 위기 국면)"
+                reg_reason = f"현재 VIX 지수가 **{vix_c:.2f}**로 위험 기준치인 40을 초과하여 시장이 극심한 공포 상태에 빠져있다고 판단했습니다."
+                reg_action = "모든 주식 포지션을 전량 청산하고 즉시 안전 자산인 현금 및 금(GLD)으로 대피하십시오."
+                text_color_reg = "#D9534F"
+            elif app_reg == 3:
+                reg_title = "⚠️ Regime 3 (장기 하락장)"
+                reg_reason = f"VIX 지수는 40 미만이나, 나스닥(QQQ) 현재가(**{qqq_c:.2f}**)가 장기 생명선인 200일 이동평균선(**{ma200_c:.2f}**)을 하향 이탈한 것으로 확인되었습니다."
+                reg_action = "하락 추세가 컨펌되었으므로 레버리지 상품을 전량 청산하고 방어 태세(GLD 50%)를 굳건히 유지하십시오."
+                text_color_reg = "#D9534F"
+            elif app_reg == 1:
+                reg_title = "🔥 Regime 1 (완벽한 골디락스 강세장)"
+                reg_reason = f"나스닥이 200일선 위에 위치하며, 50일선이 200일선 위에 있는 정배열 상태입니다. 또한 VIX 지수가 **{vix_c:.2f}**로 25 미만을 기록해 매우 안정적입니다."
+                reg_action = "모든 상승 조건이 갖춰졌습니다. 적극적인 3배 레버리지(TQQQ, SOXL) 베팅을 통해 자산을 폭발적으로 증식시킬 최적의 구간입니다."
+                text_color_reg = "#A3B18A"
+            else:
+                reg_title = "🛡️ Regime 2 (보통 / 조정 국면)"
+                reg_reason = f"위기나 장기 하락장은 아니지만, 나스닥의 단기 모멘텀(정배열)이 꺾였거나 VIX 지수가 다소 높아(25~40 사이) 완벽한 강세장 조건을 충족하지 못했습니다."
+                reg_action = "상승 추세는 살아있으나 변동성이 확대되었습니다. 과도한 3배 레버리지를 축소하고 2배수(QLD/SSO)로 속도를 조절하세요."
+                text_color_reg = "#E2A76F"
+            
+            st.markdown(f"<h5 style='color:{text_color_reg}; font-weight:bold;'>{reg_title}</h5>", unsafe_allow_html=True)
+            st.markdown(f"**판단 근거:** {reg_reason}")
+            st.markdown(f"**전략 지침:** {reg_action}")
+
+        st.write("")
+
+        # ------------------- 4. 신규 자금 투입 적합도 (구조화 복구) -------------------
+        st.markdown("#### 🌱 신규 자금 투입 적합도 가이드")
+        with st.container(border=True):
+            entry_g = ms['entry_grade']
+            dur = ms['regime_duration']
+            direction = ms['regime_direction']
+            
+            dir_map = {"ascending": "📈 상향 전환 (위험 → 안전)", "descending": "📉 하향 전환 (안전 → 위험)", "stable": "➡️ 안정 (현재 상태 유지 중)"}
+            direction_kr = dir_map.get(direction, "알 수 없음")
+            
+            # 총평 로직 세분화
+            if direction == 'ascending' and dur <= 10:
+                summary_text = "현재 상향 전환 초입입니다. 시장이 턴어라운드하고 있으므로 새롭게 투자금을 넣기 가장 유리하고 완벽한 타이밍입니다. 과감한 진입을 고려하세요."
+            elif direction == 'ascending':
+                summary_text = "상향 전환 후 안정된 구간입니다. 신규 진입에 적합하며, 계획된 비중대로 분할 매수하기 좋은 시기입니다."
+            elif direction == 'descending' and dur <= 5:
+                summary_text = "하향 전환 직후입니다. 추가적인 하락 충격이 발생할 수 있으므로 신규 자금 투입을 보류하고 시장을 관망하세요."
+            elif direction == 'descending' and dur <= 20:
+                summary_text = "하락 추세가 진행 중입니다. 바닥이 확인되지 않았으므로 신규 진입은 신중해야 합니다."
+            elif direction == 'descending':
+                summary_text = "오랜 기간 하락했습니다. 슬슬 바닥 탐색 구간일 수 있으나, 다음 상향 전환 신호가 뜰 때까지 대기하는 것이 가장 안전합니다."
+            elif dur > 60:
+                summary_text = "현재 레짐이 매우 오래 지속되고 있습니다. 추세 전환(Reversal) 리스크가 누적되어 있으므로, 신규 진입 시 소규모 분할 진입을 권장합니다."
+            else:
+                summary_text = "현재 레짐이 안정적으로 유지되고 있습니다. 전략의 룰에 맞춰 평소처럼 정상적으로 자금을 운용하시면 됩니다."
+
+            c_e1, c_e2, c_e3 = st.columns(3)
+            c_e1.markdown(f"**1️⃣ 투입 신호:**<br><span style='font-size:1.2rem; font-weight:bold; color:{st.session_state['settings']['text_color']};'>{entry_g}</span>", unsafe_allow_html=True)
+            c_e2.markdown(f"**2️⃣ 전환 방향:**<br><span style='font-size:1.1rem;'>{direction_kr}</span>", unsafe_allow_html=True)
+            c_e3.markdown(f"**3️⃣ 체류 일자:**<br><span style='font-size:1.1rem;'>현재 국면 진입 후 **{dur}일차**</span>", unsafe_allow_html=True)
+            
+            st.markdown("---")
+            st.markdown(f"**4️⃣ 종합 평가 (Analyst View):**<br>{summary_text}", unsafe_allow_html=True)
+
+        st.write("")
+        st.divider()
+
 
         # ------------------- 데이터 테이블 -------------------
         st.markdown(f"#### 💼 포트폴리오 기입표 (더블클릭하여 수정하세요)")
@@ -751,9 +838,9 @@ def make_portfolio_page(acc_name):
                 if total_val_now > 0:
                     fig = go.Figure(go.Pie(labels=list(asset_vals.keys()), values=list(asset_vals.values()), hole=0.6, marker=dict(colors=[st.session_state['settings']['chart_colors'].get(k, '#EAE3D9') for k in asset_vals.keys()])))
                     cust_p2 = CUTE_LAYOUT.copy()
-                    cust_p2.update(height=300, showlegend=False, margin=dict(t=10, b=10, l=10, r=10), annotations=[dict(text=f"Total<br><b style='font-size:1.2rem; color:{text_color};'>100%</b>", x=0.5, y=0.5, showarrow=False)])
+                    cust_p2.update(height=300, showlegend=False, margin=dict(t=10, b=10, l=10, r=10), annotations=[dict(text=f"Total<br><b style='font-size:1.2rem; color:{st.session_state['settings']['text_color']};'>100%</b>", x=0.5, y=0.5, showarrow=False)])
                     fig.update_layout(**cust_p2)
-                    fig.update_traces(textposition='inside', textinfo='percent+label', textfont_size=13, textfont_color=text_color)
+                    fig.update_traces(textposition='inside', textinfo='percent+label', textfont_size=13, textfont_color=st.session_state['settings']['text_color'])
                     st.plotly_chart(fig, use_container_width=True)
                 else:
                     st.markdown("<div style='height: 300px; display: flex; align-items: center; justify-content: center; color: #A89B96;'>자산 데이터를 입력하면 차트가 표시됩니다.</div>", unsafe_allow_html=True)
@@ -811,7 +898,6 @@ def make_portfolio_page(acc_name):
                 hist_df.index = pd.to_datetime(hist_df.index)
                 hist_df = hist_df.sort_index()
 
-                # 초기 시작일이 있고 데이터가 오늘 하루뿐이라면 시작일부터 이어줍니다.
                 fed_str = curr_acc_data.get("first_entry_date")
                 col_date, _ = st.columns([1, 3])
                 with col_date:
@@ -829,11 +915,7 @@ def make_portfolio_page(acc_name):
                             hist_df = hist_df.sort_index()
 
                     fig_seed = go.Figure()
-                    
-                    # 실제 총 자산 곡선 (물결선 없이 꽉 차게)
                     fig_seed.add_trace(go.Scatter(x=hist_df.index, y=hist_df['equity'], name="실제 총 평가액", line=dict(color=C_UP, width=3), mode='lines+markers', marker=dict(size=6)))
-                    
-                    # 실제 투입 시드 원금 곡선
                     fig_seed.add_trace(go.Scatter(x=hist_df.index, y=hist_df['seed'], name="투입 시드 원금", line=dict(color=C_DOWN, width=2, dash='dot'), mode='lines+markers'))
                     
                     cust_s = CUTE_LAYOUT.copy()
@@ -841,13 +923,7 @@ def make_portfolio_page(acc_name):
                         height=350, 
                         yaxis_title="자산 규모 ($)", 
                         hovermode="x unified",
-                        yaxis=dict(
-                            showgrid=True, 
-                            gridcolor='#F5F0EA', 
-                            zerolinecolor='#EAE3D9',
-                            autorange=True, # 데이터 범위에 맞춰 Y축 자동 스케일링 (빈 공간 삭제)
-                            rangemode="normal"
-                        )
+                        yaxis=dict(showgrid=True, gridcolor='#F5F0EA', zerolinecolor='#EAE3D9', autorange=True, rangemode="normal")
                     )
                     fig_seed.update_layout(**cust_s)
                     st.plotly_chart(fig_seed, use_container_width=True)
