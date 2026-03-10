@@ -14,11 +14,11 @@ import os
 warnings.filterwarnings('ignore')
 
 # =====================================================================
-# [0] 시스템 설정 및 동적 테마 엔진
+# [0] 시스템 설정 및 동적 테마 엔진 확장
 # =====================================================================
 st.set_page_config(page_title="AMLS 퀀트 포트폴리오", layout="wide", initial_sidebar_state="expanded")
 
-SETTINGS_FILE = "amls_settings_v6.json"
+SETTINGS_FILE = "amls_settings_v7.json"
 
 def load_settings():
     if os.path.exists(SETTINGS_FILE):
@@ -37,43 +37,66 @@ if 'settings' not in st.session_state:
 
 current_theme = st.session_state['settings'].get("theme", "애플 테마")
 
-# --- 테마별 변수 세팅 ---
+# --- 🎨 테마별 변수 세팅 ---
 if current_theme == "애플 테마":
-    TEXT_COLOR = "#1d1d1f"
+    TEXT_COLOR = "#1d1d1f"; TEXT_SUB = "#8e8e93"
+    PANEL_BG = "rgba(255,255,255,0.65)"; PANEL_BORDER = "1px solid rgba(255,255,255,0.5)"; PANEL_RADIUS = "16px"
+    WIDGET_THEME = "light"
     C_UP = "#34c759"; C_DOWN = "#ff3b30"; C_WARN = "#ff9500"; C_SAFE = "#007aff"
     COLOR_PALETTE = {'TQQQ':'#ff3b30', 'SOXL':'#af52de', 'USD':'#5856d6', 'QLD':'#ff9500', 'SSO':'#ffcc00', 'QQQ':'#007aff', 'GLD':'#34c759', 'CASH':'#8e8e93'}
     THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="'Pretendard', sans-serif", color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.05)', zerolinecolor='rgba(0,0,0,0.1)'), yaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.05)', zerolinecolor='rgba(0,0,0,0.1)'))
     
 elif current_theme == "1920년대 타자기 테마":
-    TEXT_COLOR = "#2c2a25"
-    C_UP = "#000080"; C_DOWN = "#8b0000"; C_WARN = "#b8860b"; C_SAFE = "#006400"
-    COLOR_PALETTE = {'TQQQ':'#8b0000', 'SOXL':'#556b2f', 'USD':'#8fbc8f', 'QLD':'#b8860b', 'SSO':'#cd853f', 'QQQ':'#000080', 'GLD':'#daa520', 'CASH':'#2f4f4f'}
-    THEME_LAYOUT = dict(template="simple_white", paper_bgcolor="#e4dccc", plot_bgcolor="#dfd7c5", font=dict(family="'Special Elite', 'Courier New', monospace", color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0))
+    TEXT_COLOR = "#00FF41"; TEXT_SUB = "#888888"
+    PANEL_BG = "#050505"; PANEL_BORDER = "1px solid #333333"; PANEL_RADIUS = "0px"
+    WIDGET_THEME = "dark"
+    C_UP = "#00FF41"; C_DOWN = "#FF003C"; C_WARN = "#FFB000"; C_SAFE = "#00FFFF"
+    COLOR_PALETTE = {'TQQQ':'#FF003C', 'SOXL':'#B900FF', 'USD':'#00FFFF', 'QLD':'#FF8A00', 'SSO':'#FFFF00', 'QQQ':'#00FF41', 'GLD':'#FFB000', 'CASH':'#888888'}
+    THEME_LAYOUT = dict(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="'Share Tech Mono', monospace", color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='#222', zerolinecolor='#444'), yaxis=dict(showgrid=True, gridcolor='#222', zerolinecolor='#444'))
 
 elif current_theme == "카페 테마":
-    TEXT_COLOR = "#5D4A44"
+    TEXT_COLOR = "#5D4A44"; TEXT_SUB = "#A89B96"
+    PANEL_BG = "#FFFFFF"; PANEL_BORDER = "2px solid #FFF0E5"; PANEL_RADIUS = "20px"
+    WIDGET_THEME = "light"
     C_UP = "#FFB7B2"; C_DOWN = "#A1C9F1"; C_WARN = "#FFDAC1"; C_SAFE = "#B5EAD7"
     COLOR_PALETTE = {'TQQQ':'#FF9AA2', 'SOXL':'#C7CEEA', 'USD':'#E2F0CB', 'QLD':'#FFDAC1', 'SSO':'#FFB7B2', 'QQQ':'#A1C9F1', 'GLD':'#FCEBB6', 'CASH':'#B5EAD7'}
     THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="'Pretendard', sans-serif", color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='#F5F0EA', zerolinecolor='#EAE3D9'), yaxis=dict(showgrid=True, gridcolor='#F5F0EA', zerolinecolor='#EAE3D9'))
 
 elif current_theme == "2000년대 구글 감성 테마":
-    TEXT_COLOR = "#000000"
+    TEXT_COLOR = "#000000"; TEXT_SUB = "#666666"
+    PANEL_BG = "#F8F9FA"; PANEL_BORDER = "1px solid #CCCCCC"; PANEL_RADIUS = "0px"
+    WIDGET_THEME = "light"
     C_UP = "#34A853"; C_DOWN = "#EA4335"; C_WARN = "#FBBC05"; C_SAFE = "#4285F4"
     COLOR_PALETTE = {'TQQQ':'#EA4335', 'SOXL':'#990099', 'USD':'#660099', 'QLD':'#FBBC05', 'SSO':'#F68B1F', 'QQQ':'#4285F4', 'GLD':'#F4B400', 'CASH':'#34A853'}
-    THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF", font=dict(family="Arial, Tahoma, sans-serif", color=TEXT_COLOR, size=12), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='#E0E0E0', zerolinecolor='#CCCCCC'), yaxis=dict(showgrid=True, gridcolor='#E0E0E0', zerolinecolor='#CCCCCC'))
+    THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Arial, Tahoma, sans-serif", color=TEXT_COLOR, size=12), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='#E0E0E0', zerolinecolor='#CCCCCC'), yaxis=dict(showgrid=True, gridcolor='#E0E0E0', zerolinecolor='#CCCCCC'))
+
+elif current_theme == "월스트리트 저널 테마":
+    TEXT_COLOR = "#1A1A1A"; TEXT_SUB = "#555555"
+    PANEL_BG = "#FFFFFF"; PANEL_BORDER = "1px solid #1A1A1A"; PANEL_RADIUS = "0px"
+    WIDGET_THEME = "light"
+    C_UP = "#006400"; C_DOWN = "#8B0000"; C_WARN = "#B8860B"; C_SAFE = "#000080"
+    COLOR_PALETTE = {'TQQQ':'#8B0000', 'SOXL':'#556b2f', 'USD':'#2F4F4F', 'QLD':'#B8860B', 'SSO':'#DAA520', 'QQQ':'#000080', 'GLD':'#BDB76B', 'CASH':'#696969'}
+    THEME_LAYOUT = dict(template="simple_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="'Playfair Display', serif", color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='#E0E0E0', zerolinecolor='#1A1A1A'), yaxis=dict(showgrid=True, gridcolor='#E0E0E0', zerolinecolor='#1A1A1A'))
+
+elif current_theme == "Chat GPT 테마":
+    TEXT_COLOR = "#ECECF1"; TEXT_SUB = "#8E8EA0"
+    PANEL_BG = "#444654"; PANEL_BORDER = "1px solid #565869"; PANEL_RADIUS = "8px"
+    WIDGET_THEME = "dark"
+    C_UP = "#10A37F"; C_DOWN = "#EF4146"; C_WARN = "#F4AC36"; C_SAFE = "#2A85FF"
+    COLOR_PALETTE = {'TQQQ':'#EF4146', 'SOXL':'#B582FF', 'USD':'#2A85FF', 'QLD':'#F4AC36', 'SSO':'#E8713A', 'QQQ':'#10A37F', 'GLD':'#F2C94C', 'CASH':'#565869'}
+    THEME_LAYOUT = dict(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="'Pretendard', sans-serif", color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='#565869', zerolinecolor='#565869'), yaxis=dict(showgrid=True, gridcolor='#565869', zerolinecolor='#565869'))
 
 
 def apply_custom_css():
     css_base = ""
-    css_panel = ""
+    css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }}"
     
     if current_theme == "애플 테마":
         css_base = f"""
         @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
         .stApp {{ background: radial-gradient(circle at 15% 50%, rgba(240, 244, 255, 1), rgba(255, 255, 255, 0)), radial-gradient(circle at 85% 30%, rgba(230, 240, 255, 1), rgba(255, 255, 255, 0)); background-color: #f5f5f7; font-family: 'Pretendard', sans-serif; color: {TEXT_COLOR}; letter-spacing: -0.01em; }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 20px; box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.06); padding: 1.5rem; transition: transform 0.2s ease, box-shadow 0.2s ease; }}
-        div[data-testid="stVerticalBlockBorderWrapper"] > div:hover {{ box-shadow: 0 8px 32px -1px rgba(0, 0, 0, 0.1); }}
-        .stButton>button {{ background-color: rgba(255, 255, 255, 0.8); color: #007aff; border: 1px solid rgba(0, 122, 255, 0.3); border-radius: 12px; font-weight: 600; padding: 0.5rem 1rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); backdrop-filter: blur(10px); transition: all 0.2s; }}
+        .stButton>button {{ background-color: rgba(255, 255, 255, 0.8); color: #007aff; border: 1px solid rgba(0, 122, 255, 0.3); border-radius: 12px; font-weight: 600; padding: 0.5rem 1rem; backdrop-filter: blur(10px); transition: all 0.2s; }}
         .stButton>button:hover {{ background-color: #007aff; color: #ffffff; transform: scale(1.02); }}
         input, textarea, select, div[data-baseweb="select"] > div {{ background-color: rgba(255, 255, 255, 0.5); backdrop-filter: blur(10px); color: {TEXT_COLOR}; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; }}
         [data-testid="stDataFrame"] {{ border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); background: rgba(255, 255, 255, 0.5); }}
@@ -82,31 +105,27 @@ def apply_custom_css():
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none; color: #1d1d1f; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
         .sidebar-link:hover {{ background-color: rgba(0,0,0,0.05); transform: translateX(2px); }}
         """
-        css_panel = ".info-panel { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(20px); border: 1px solid rgba(0,0,0,0.1); border-radius: 16px; padding: 16px; height: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }"
-        
     elif current_theme == "1920년대 타자기 테마":
         css_base = f"""
-        @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
-        .stApp, html, body {{ font-family: 'Special Elite', 'Courier New', monospace; background-color: #e4dccc; color: {TEXT_COLOR}; }}
-        div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: #dfd7c5; border: 2px solid {TEXT_COLOR}; border-radius: 0px; box-shadow: 4px 4px 0px {TEXT_COLOR}; padding: 1.5rem; }}
-        .stButton>button {{ background-color: #d1c7b3; color: {TEXT_COLOR}; border: 2px solid {TEXT_COLOR}; border-radius: 0px; box-shadow: 2px 2px 0px {TEXT_COLOR}; font-weight: bold; text-transform: uppercase; transition: all 0.1s; }}
-        .stButton>button:active {{ box-shadow: 0px 0px 0px {TEXT_COLOR}; transform: translateY(2px) translateX(2px); }}
-        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #f0e9d8; color: {TEXT_COLOR}; border: 1px dashed {TEXT_COLOR}; border-radius: 0px; font-family: 'Special Elite', monospace; }}
-        [data-testid="stDataFrame"] {{ border: 1px solid {TEXT_COLOR}; background-color: #f0e9d8; border-radius: 0px; }}
-        [data-testid="stSidebar"] {{ background-color: #d1c7b3; border-right: 3px double {TEXT_COLOR}; }}
-        h1, h2, h3, h4 {{ text-transform: uppercase; border-bottom: 2px solid {TEXT_COLOR}; padding-bottom: 5px; }}
-        button[data-baseweb="tab"][aria-selected="true"] {{ color: {TEXT_COLOR}; border-bottom-color: {TEXT_COLOR}; border-bottom-width: 3px; font-weight: bold; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border: 1px solid transparent; border-radius: 0px; text-decoration: none; color: {TEXT_COLOR}; font-weight: bold; font-size: 0.95rem; transition: background-color 0.2s; }}
-        .sidebar-link:hover {{ background-color: rgba(0,0,0,0.1); border: 1px dashed {TEXT_COLOR}; }}
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+        [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
+        .stApp, html, body {{ font-family: 'Share Tech Mono', monospace; background-color: #000000 !important; color: {TEXT_COLOR}; }}
+        div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: #050505; border: 1px solid #333333; border-radius: 0px; padding: 1.5rem; }}
+        .stButton>button {{ background-color: #000000; color: {TEXT_COLOR}; border: 1px solid {TEXT_COLOR}; border-radius: 0px; text-transform: uppercase; transition: all 0.1s; }}
+        .stButton>button:hover {{ background-color: {TEXT_COLOR}; color: #000000; box-shadow: 0 0 8px {TEXT_COLOR}; }}
+        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #000000; color: {TEXT_COLOR}; border: 1px solid #444444; border-radius: 0px; font-family: 'Share Tech Mono', monospace; }}
+        [data-testid="stDataFrame"] {{ border-radius: 0px; border: 1px solid #333333; background: #000000; }}
+        [data-testid="stSidebar"] {{ background-color: #050505; border-right: 1px solid #333333; }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: {TEXT_COLOR}; border-bottom-color: {TEXT_COLOR}; border-bottom-width: 2px; text-shadow: 0 0 5px {TEXT_COLOR}; }}
+        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border: 1px solid transparent; border-radius: 0px; text-decoration: none; color: {TEXT_COLOR}; font-size: 0.95rem; transition: background-color 0.1s; }}
+        .sidebar-link:hover {{ background-color: rgba(0, 255, 65, 0.1); border: 1px dashed {TEXT_COLOR}; }}
         """
-        css_panel = f".info-panel {{ background: #dfd7c5; border: 1px solid {TEXT_COLOR}; border-radius: 0px; padding: 16px; height: 100%; box-shadow: 2px 2px 0px {TEXT_COLOR}; }}"
-        
+        css_panel = f".info-panel {{ background: #050505; border: 1px solid #333333; border-radius: 0px; padding: 16px; height: 100%; box-shadow: none; }}"
     elif current_theme == "카페 테마":
         css_base = f"""
         @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
         .stApp, html, body {{ font-family: 'Pretendard', sans-serif; background-color: #FFFBF0; color: {TEXT_COLOR}; letter-spacing: -0.01em; }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: #FFFFFF; border: 2px solid #FFF0E5; border-radius: 24px; box-shadow: 0 8px 20px rgba(210, 190, 175, 0.15); padding: 1.5rem; transition: transform 0.2s ease, box-shadow 0.2s ease; }}
-        div[data-testid="stVerticalBlockBorderWrapper"] > div:hover {{ transform: translateY(-2px); box-shadow: 0 12px 28px rgba(210, 190, 175, 0.25); }}
         .stButton>button {{ background-color: #FFB7B2; color: #FFFFFF; border: none; border-radius: 16px; font-weight: 700; padding: 0.6rem 1.2rem; box-shadow: 0 4px 0 #F29F9A; transition: all 0.2s; }}
         .stButton>button:hover {{ background-color: #FFC4C0; transform: translateY(2px); box-shadow: 0 2px 0 #F29F9A; }}
         input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #FAFAFA; color: {TEXT_COLOR}; border: 2px solid #EAE3D9; border-radius: 12px; }}
@@ -116,9 +135,7 @@ def apply_custom_css():
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none; color: {TEXT_COLOR}; font-weight: 700; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
         .sidebar-link:hover {{ background-color: #FFF0E5; transform: translateX(4px); }}
         """
-        css_panel = ".info-panel { background: #FFFFFF; border: 2px solid #FFF0E5; border-radius: 20px; padding: 16px; height: 100%; box-shadow: 0 4px 12px rgba(210,190,175,0.1); }"
-        
-    else: # 2000년대 구글 감성 테마
+    elif current_theme == "2000년대 구글 감성 테마":
         css_base = f"""
         .stApp, html, body {{ font-family: Arial, Tahoma, sans-serif; background-color: #FFFFFF; color: {TEXT_COLOR}; }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: #FFFFFF; border: 1px solid #CCCCCC; border-radius: 0px; box-shadow: none; padding: 1.5rem; }}
@@ -127,14 +144,47 @@ def apply_custom_css():
         input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #FFFFFF; color: #000000; border: 1px solid #999999; border-radius: 0px; font-family: Arial, sans-serif; }}
         [data-testid="stDataFrame"] {{ border-radius: 0px; border: 1px solid #999999; }}
         [data-testid="stSidebar"] {{ background-color: #F8F9FA; border-right: 1px solid #CCCCCC; }}
-        h1, h2, h3, h4 {{ color: #000000; border-bottom: 1px solid #EEEEEE; padding-bottom: 5px; }}
         button[data-baseweb="tab"] {{ color: #0000EE; text-decoration: underline; font-weight: normal; }}
         button[data-baseweb="tab"][aria-selected="true"] {{ color: #000000; text-decoration: none; border-bottom: none; font-weight: bold; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 6px 8px; margin-bottom: 2px; text-decoration: underline; color: #0000EE; font-family: Arial, sans-serif; font-size: 0.9rem; }}
         .sidebar-link:hover {{ color: #FF0000; }}
         .sidebar-link span {{ display: none; }}
         """
-        css_panel = ".info-panel { background: #F8F9FA; border: 1px solid #CCCCCC; border-radius: 0px; padding: 16px; height: 100%; }"
+    elif current_theme == "월스트리트 저널 테마":
+        css_base = f"""
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
+        [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
+        .stApp, html, body {{ font-family: 'Playfair Display', serif; background-color: #F4F4F0 !important; color: {TEXT_COLOR}; }}
+        div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: #FFFFFF; border: 1px solid #000000; border-radius: 0px; padding: 1.5rem; box-shadow: 3px 3px 0px rgba(0,0,0,0.1); border-top: 4px solid #000000; }}
+        .stButton>button {{ background-color: #000000; color: #FFFFFF; border: none; border-radius: 0px; font-weight: bold; font-family: 'Arial', sans-serif; text-transform: uppercase; }}
+        .stButton>button:hover {{ background-color: #333333; }}
+        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #FFFFFF; color: {TEXT_COLOR}; border: 1px solid #000000; border-radius: 0px; font-family: 'Arial', sans-serif; }}
+        [data-testid="stDataFrame"] {{ border-radius: 0px; border: 1px solid #000000; }}
+        [data-testid="stSidebar"] {{ background-color: #EBEBEB; border-right: 2px solid #000000; }}
+        h1, h2, h3, h4 {{ font-family: 'Playfair Display', serif; text-transform: uppercase; border-bottom: 2px solid #000000; padding-bottom: 5px; font-weight: bold; }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: #000000; border-bottom: 3px solid #000000; font-weight: bold; }}
+        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; text-decoration: none; color: #000000; font-weight: bold; font-size: 0.95rem; border-bottom: 1px dotted #CCC; }}
+        .sidebar-link:hover {{ background-color: #DDDDDD; }}
+        """
+        css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; border-top: 3px solid #000; font-family: 'Arial', sans-serif; }}"
+    elif current_theme == "Chat GPT 테마":
+        css_base = f"""
+        @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+        [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
+        .stApp, html, body {{ font-family: 'Pretendard', sans-serif; background-color: #343541 !important; color: {TEXT_COLOR} !important; }}
+        div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: #444654 !important; border: 1px solid #565869 !important; border-radius: 8px !important; padding: 1.5rem !important; }}
+        .stButton>button {{ background-color: #10A37F !important; color: #FFFFFF !important; border: none !important; border-radius: 6px !important; font-weight: 600 !important; transition: background-color 0.2s; }}
+        .stButton>button:hover {{ background-color: #1A7F64 !important; }}
+        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #40414F !important; color: {TEXT_COLOR} !important; border: 1px solid #565869 !important; border-radius: 6px !important; }}
+        input:focus, textarea:focus {{ border-color: #10A37F !important; box-shadow: 0 0 0 1px #10A37F !important; }}
+        [data-testid="stDataFrame"] {{ border-radius: 8px !important; border: 1px solid #565869 !important; background: #40414F !important; }}
+        [data-testid="stSidebar"] {{ background-color: #202123 !important; border-right: 1px solid #4D4D4F !important; }}
+        h1, h2, h3, h4 {{ color: #ECECF1 !important; border-bottom: 1px solid #565869; padding-bottom: 5px; }}
+        button[data-baseweb="tab"] {{ color: #8E8EA0 !important; font-weight: normal !important; }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: #ECECF1 !important; border-bottom-color: #10A37F !important; border-bottom-width: 2px !important; }}
+        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 6px; text-decoration: none !important; color: #ECECF1 !important; font-weight: 500; font-size: 0.95rem; transition: background-color 0.2s; }}
+        .sidebar-link:hover {{ background-color: #2A2B32; }}
+        """
 
     st.markdown(f"""
     <style>
@@ -175,6 +225,7 @@ if 'accounts' not in st.session_state:
         }
     st.session_state['accounts'] = loaded
 
+# 마이그레이션 로직
 needs_save = False
 if "기본 계좌 (AMLS)" in st.session_state['accounts']:
     st.session_state['accounts']["AMLS v4.3"] = st.session_state['accounts'].pop("기본 계좌 (AMLS)")
@@ -343,20 +394,21 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
 def page_market_dashboard():
     st.title("🌐 매크로 터미널")
     
-    components.html("""<div class="tradingview-widget-container" style="border-radius: 8px; overflow: hidden; border: 1px solid rgba(0,0,0,0.1);">
+    # 마크다운/HTML 버그 방지 띄어쓰기 제거
+    components.html(f"""<div class="tradingview-widget-container" style="border-radius: {PANEL_RADIUS}; overflow: hidden; border: {PANEL_BORDER};">
 <div class="tradingview-widget-container__widget"></div>
 <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-{
+{{
 "symbols": [
-{"proName": "FOREXCOM:SPXUSD", "title": "S&P 500"},
-{"proName": "FOREXCOM:NSXUSD", "title": "NASDAQ 100"},
-{"description": "TQQQ", "proName": "NASDAQ:TQQQ"},
-{"description": "SOXL", "proName": "ARCA:SOXL"},
-{"description": "USD/KRW", "proName": "FX_IDC:USDKRW"},
-{"description": "GOLD", "proName": "OANDA:XAUUSD"}
+{{"proName": "FOREXCOM:SPXUSD", "title": "S&P 500"}},
+{{"proName": "FOREXCOM:NSXUSD", "title": "NASDAQ 100"}},
+{{"description": "TQQQ", "proName": "NASDAQ:TQQQ"}},
+{{"description": "SOXL", "proName": "ARCA:SOXL"}},
+{{"description": "USD/KRW", "proName": "FX_IDC:USDKRW"}},
+{{"description": "GOLD", "proName": "OANDA:XAUUSD"}}
 ],
-"showSymbolLogo": true, "colorTheme": "light", "locale": "kr"
-}
+"showSymbolLogo": true, "colorTheme": "{WIDGET_THEME}", "locale": "kr"
+}}
 </script>
 </div>""", height=70)
 
@@ -384,8 +436,8 @@ def page_market_dashboard():
     with col_right:
         with st.container(border=True):
             st.markdown("##### 🗺️ S&P 500 히트맵")
-            components.html("""<div style="border-radius: 8px; overflow: hidden; height: 100%;">
-<iframe src="https://www.tradingview.com/embed-widget-stock-heatmap/?locale=kr#%7B%22dataSource%22%3A%22SPX500%22%2C%22blockSize%22%3A%22market_cap_basic%22%2C%22blockColor%22%3A%22change%22%2C%22grouping%22%3A%22sector%22%2C%22colorTheme%22%3A%22light%22%7D" width="100%" height="450" frameborder="0"></iframe>
+            components.html(f"""<div style="border-radius: {PANEL_RADIUS}; overflow: hidden; height: 100%;">
+<iframe src="https://www.tradingview.com/embed-widget-stock-heatmap/?locale=kr#%7B%22dataSource%22%3A%22SPX500%22%2C%22blockSize%22%3A%22market_cap_basic%22%2C%22blockColor%22%3A%22change%22%2C%22grouping%22%3A%22sector%22%2C%22colorTheme%22%3A%22{WIDGET_THEME}%22%7D" width="100%" height="450" frameborder="0"></iframe>
 </div>""", height=460)
 
 
@@ -442,7 +494,7 @@ def page_amls_backtest():
             fig_p = go.Figure(go.Pie(labels=list(w.keys()), values=list(w.values()), hole=0.5, marker=dict(colors=[COLOR_PALETTE.get(k.split('/')[0], '#888') for k in w.keys()])))
             cust_p = THEME_LAYOUT.copy(); cust_p.update(title=f"R{r}", title_x=0.5, height=250, margin=dict(t=40,b=10,l=10,r=10), showlegend=False)
             fig_p.update_layout(**cust_p)
-            fig_p.update_traces(textinfo='label+percent', textposition='inside', textfont=dict(color=TEXT_COLOR, size=11))
+            fig_p.update_traces(textinfo='label+percent', textposition='inside', textfont=dict(color=TEXT_COLOR if current_theme not in ["1920년대 타자기 테마"] else "#ffffff", size=11))
             col.plotly_chart(fig_p, use_container_width=True)
 
     with tab2:
@@ -469,7 +521,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [4] 페이지 구성: 내 포트폴리오 관리 (그리드 레이아웃 적용)
+# [4] 페이지 구성: 내 포트폴리오 관리
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
@@ -641,12 +693,13 @@ def make_portfolio_page(acc_name):
                 st.rerun()
                 
         with c_prog:
+            pb_bg = "rgba(0,0,0,0.1)" if WIDGET_THEME=="light" else "rgba(255,255,255,0.1)"
             st.markdown(f"""<div class='info-panel' style='padding:20px; margin-bottom:20px;'>
 <div style='display:flex; justify-content:space-between; margin-bottom:8px; font-weight:bold; font-size:1.05rem;'>
 <span>현재: ${total_val_now:,.0f}</span>
 <span style='color:{C_DOWN};'>목표: ${target_val:,.0f}</span>
 </div>
-<div style='background-color:rgba(150,150,150,0.2); border-radius:8px; height:16px; width:100%; position:relative; overflow:hidden;'>
+<div style='background-color:{pb_bg}; border-radius:8px; height:16px; width:100%; position:relative; overflow:hidden;'>
 <div style='background-color:{C_UP}; width:{min(100.0, progress_pct)}%; height:100%; border-radius:8px;'></div>
 </div>
 <div style='text-align:right; margin-top:5px; font-weight:bold;'>{progress_pct:.2f}%</div>
@@ -687,13 +740,11 @@ def make_portfolio_page(acc_name):
         app_reg = ms['regime']
         vix_c = ms['vix']; qqq_c = ms['qqq']; ma200_c = ms['ma200']; smh_c = ms['smh']; smh_ma50_c = ms['smh_ma50']
         
-        # SOXL 상세 텍스트
         s_stat = f"<span style='color:{C_UP}; font-weight:bold;'>돌파</span>" if smh_c > smh_ma50_c else f"<span style='color:{C_DOWN}; font-weight:bold;'>붕괴</span>"
         r_stat = f"<span style='color:{C_UP}; font-weight:bold;'>통과</span>" if ms['smh_3m_ret'] > 0.05 else f"<span style='color:{C_DOWN}; font-weight:bold;'>미달</span>"
         rsi_stat = f"<span style='color:{C_UP}; font-weight:bold;'>통과</span>" if ms['smh_rsi'] > 50 else f"<span style='color:{C_DOWN}; font-weight:bold;'>미달</span>"
         soxl_res = f"<span style='color:{C_UP}; font-weight:bold;'>SOXL 편입 승인</span>" if (smh_c > smh_ma50_c and ms['smh_3m_ret'] > 0.05 and ms['smh_rsi'] > 50) else f"<span style='color:{C_WARN}; font-weight:bold;'>USD(2X) 방어 유지</span>"
 
-        # AI 상세 텍스트
         if app_reg == 1:
             reg_t = f"<span style='color:{C_UP}; font-weight:bold;'>[R1: 완벽한 강세장]</span>"
             reg_d = f"VIX({vix_c:.1f}) 안정권 및 나스닥({qqq_c:.0f}) 정배열 유지. 하방 리스크가 제한적이므로 3배 레버리지를 가동해 상승분을 캡처하십시오."
@@ -707,7 +758,6 @@ def make_portfolio_page(acc_name):
             reg_t = f"<span style='color:{C_DOWN}; font-weight:bold;'>[R4: 시스템 패닉]</span>"
             reg_d = f"VIX({vix_c:.1f}) 40 돌파. 시장이 이성을 상실한 시스템 리스크 구간입니다. 주식을 전량 매도하고 안전자산으로 대피하십시오."
 
-        # 투입 가이드 상세 텍스트
         entry_g = ms['entry_grade']
         dur = ms['regime_duration']
         direction = ms['regime_direction']
@@ -722,7 +772,6 @@ def make_portfolio_page(acc_name):
         elif dur > 60: summ = "레짐 장기화로 추세 반전 리스크 누적. 보수적인 소규모 분할 진입을 추천합니다."
         else: summ = "레짐 안정적. 시스템 룰에 맞춰 평소처럼 자금을 정상 운용하십시오."
 
-        # 마크다운 띄어쓰기 완전 삭제
         st.markdown(f"""<div class='info-grid'>
 <div class='info-panel'>
 <div style='font-weight:bold; margin-bottom:8px; border-bottom:1px solid currentColor; padding-bottom:4px; opacity:0.8;'>⚡ SOXL 진입 판독기</div>
@@ -919,12 +968,12 @@ def page_strategy_specification():
 
 
 # =====================================================================
-# [5] 사이드바 (테마 변경 및 링크 - HTML 버그 완전 수정)
+# [5] 사이드바 (테마 변경 및 링크 완전 수정)
 # =====================================================================
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🎨 테마 설정")
-theme_list = ["애플 테마", "1920년대 타자기 테마", "카페 테마", "2000년대 구글 감성 테마"]
+theme_list = ["애플 테마", "1920년대 타자기 테마", "카페 테마", "2000년대 구글 감성 테마", "월스트리트 저널 테마", "Chat GPT 테마"]
 selected_theme = st.sidebar.selectbox("테마를 선택하세요", theme_list, index=theme_list.index(current_theme))
 if selected_theme != current_theme:
     st.session_state['settings']['theme'] = selected_theme
@@ -932,18 +981,17 @@ if selected_theme != current_theme:
 
 st.sidebar.markdown("---")
 
-# 띄어쓰기 전부 삭제하여 마크다운 버그 원천 차단
 st.sidebar.markdown(f"<div style='font-size:1.1rem; font-weight:700; color:{TEXT_COLOR}; margin-bottom:10px;'>⭐ 즐겨찾기</div>", unsafe_allow_html=True)
 st.sidebar.markdown(f"""<div style="display:flex; flex-direction:column; gap:2px;">
-<div style="font-size:0.8rem; font-weight:bold; margin-top:5px;">유튜브</div>
+<div style="font-size:0.8rem; font-weight:bold; margin-top:5px; color:{TEXT_SUB};">유튜브</div>
 <a href="https://www.youtube.com/@JB_Insight" target="_blank" class="sidebar-link"><span>📊</span> JB 인사이트</a>
 <a href="https://www.youtube.com/@odokgod" target="_blank" class="sidebar-link"><span>📻</span> 오독</a>
 <a href="https://www.youtube.com/@TQQQCRAZY" target="_blank" class="sidebar-link"><span>🔥</span> TQQQ 미친놈</a>
 <a href="https://www.youtube.com/@developmong" target="_blank" class="sidebar-link"><span>🐒</span> 디벨롭몽</a>
-<div style="font-size:0.8rem; font-weight:bold; margin-top:15px;">차트 분석</div>
+<div style="font-size:0.8rem; font-weight:bold; margin-top:15px; color:{TEXT_SUB};">차트 분석</div>
 <a href="https://kr.investing.com/" target="_blank" class="sidebar-link"><span>🌍</span> 인베스팅닷컴</a>
 <a href="https://kr.tradingview.com/" target="_blank" class="sidebar-link"><span>📉</span> 트레이딩뷰</a>
-<div style="font-size:0.8rem; font-weight:bold; margin-top:15px;">AI 도우미</div>
+<div style="font-size:0.8rem; font-weight:bold; margin-top:15px; color:{TEXT_SUB};">AI 도우미</div>
 <a href="https://claude.ai/" target="_blank" class="sidebar-link"><span>🧠</span> 클로드</a>
 <a href="https://gemini.google.com/" target="_blank" class="sidebar-link"><span>✨</span> 제미나이</a>
 </div>""", unsafe_allow_html=True)
