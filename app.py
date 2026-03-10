@@ -486,7 +486,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [4] 페이지 구성: 내 포트폴리오 관리
+# [4] 페이지 구성: 내 포트폴리오 관리 (종합 세트 - 기울기 최적화)
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
@@ -800,13 +800,43 @@ def make_portfolio_page(acc_name):
                     if not bench_data.empty:
                         bench_series = bench_data.iloc[:, 0] if isinstance(bench_data, pd.DataFrame) else bench_data
                         bench_series = bench_series[bench_series.index >= chart_start_ts]
+                        
+                        # 가상 궤적 계산 (현재 총 시드 기준)
                         seed_curve = (bench_series / bench_series.iloc[0]) * auto_seed
                         
                         fig_seed = go.Figure()
-                        fig_seed.add_trace(go.Scatter(x=seed_curve.index, y=seed_curve.values, name="운용 시드 궤적", line=dict(color=C_SAFE, width=3), fill='tozeroy', fillcolor='rgba(181, 234, 215, 0.2)'))
-                        fig_seed.add_trace(go.Scatter(x=seed_curve.index, y=[auto_seed]*len(seed_curve), name="현재 시드 원금", line=dict(color=C_UP, width=2, dash='dot')))
+                        
+                        # 가상 궤적 (기울기 최적화 - fill 삭제 및 자동 스케일링)
+                        fig_seed.add_trace(go.Scatter(
+                            x=seed_curve.index, 
+                            y=seed_curve.values, 
+                            name="가상 궤적 (QQQ 연동)", 
+                            line=dict(color=C_SAFE, width=3)
+                            # 'fill'을 삭제하여 기울기 변화를 선명하게 표현
+                        ))
+                        
+                        # 현재 시드 원금 (기준선)
+                        fig_seed.add_trace(go.Scatter(
+                            x=seed_curve.index, 
+                            y=[auto_seed]*len(seed_curve), 
+                            name="현재 시드 원금", 
+                            line=dict(color=C_UP, width=2, dash='dot')
+                        ))
+                        
                         cust_s = CUTE_LAYOUT.copy()
-                        cust_s.update(height=300, yaxis_title="자산 규모 ($)", hovermode="x unified")
+                        cust_s.update(
+                            height=300, 
+                            yaxis_title="자산 규모 ($)", 
+                            hovermode="x unified",
+                            # Y축 최적화: 데이터 최솟값 부근에서 자동 스케일링 시작
+                            yaxis=dict(
+                                showgrid=True, 
+                                gridcolor='#F5F0EA', 
+                                zerolinecolor='#EAE3D9',
+                                autorange=True, # 자동 스케일링
+                                rangemode="normal" # 0을 강제하지 않고 데이터 범위에 맞춤
+                            )
+                        )
                         fig_seed.update_layout(**cust_s)
                         st.plotly_chart(fig_seed, use_container_width=True)
                 except Exception as e: pass
