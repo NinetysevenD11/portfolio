@@ -18,48 +18,70 @@ import time
 warnings.filterwarnings('ignore')
 
 # =====================================================================
-# [0] 시스템 기본 설정 및 데이터 관리 & 부드러운 UI 렌더링
+# [0] 시스템 설정, 데이터 관리 및 커스텀 테마 주입
 # =====================================================================
 st.set_page_config(page_title="AMLS 퀀트 관제탑", layout="wide", initial_sidebar_state="expanded")
 
+SETTINGS_FILE = "amls_settings.json"
+
+def load_settings():
+    if os.path.exists(SETTINGS_FILE):
+        try:
+            with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except: pass
+    return {
+        "text_color": "#5D4A44",
+        "chart_colors": {
+            "TQQQ": "#FF9AA2", "SOXL": "#C7CEEA", "USD": "#E2F0CB",
+            "QLD": "#FFDAC1", "SSO": "#FFB7B2", "QQQ": "#A1C9F1",
+            "GLD": "#FCEBB6", "CASH": "#B5EAD7"
+        }
+    }
+
+def save_settings(settings_data):
+    with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
+        json.dump(settings_data, f, ensure_ascii=False, indent=4)
+
+if 'settings' not in st.session_state:
+    st.session_state['settings'] = load_settings()
+
 def apply_cafe_style_professional():
-    st.markdown("""
+    text_color = st.session_state['settings']['text_color']
+    
+    st.markdown(f"""
     <style>
     @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
-    /* 배경은 포근한 크림 아이보리, 텍스트는 부드러운 코코아 브라운 */
-    html, body, [class*="css"] {
+    html, body, [class*="css"] {{
         font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif !important;
         background-color: #FFFBF0 !important; 
-        color: #5D4A44 !important; 
+        color: {text_color} !important; 
         letter-spacing: -0.01em;
-    }
+    }}
 
-    /* 글씨 잘림 방지 */
     div[data-testid="stMetricValue"] > div,
     div[data-testid="stMetricDelta"] > div,
-    p, h1, h2, h3, h4, h5, h6, span, label, .stMarkdown {
+    p, h1, h2, h3, h4, h5, h6, span, label, .stMarkdown {{
         white-space: normal !important;
         word-break: keep-all !important;
         overflow-wrap: break-word !important;
-    }
+    }}
 
-    /* 컨테이너 및 카드: 동글동글한 모서리와 푹신한 그림자 */
-    div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {
+    div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{
         background-color: #FFFFFF !important;
         border: 2px solid #FFF0E5 !important;
         border-radius: 24px !important;
         box-shadow: 0 8px 20px rgba(210, 190, 175, 0.15) !important;
         padding: 1.5rem !important;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    div[data-testid="stVerticalBlockBorderWrapper"] > div:hover {
+    }}
+    div[data-testid="stVerticalBlockBorderWrapper"] > div:hover {{
         transform: translateY(-2px);
         box-shadow: 0 12px 28px rgba(210, 190, 175, 0.25) !important;
-    }
+    }}
 
-    /* 버튼: 말랑말랑한 젤리 느낌의 파스텔 톤 */
-    .stButton>button {
+    .stButton>button {{
         background-color: #FFB7B2 !important;
         color: #FFFFFF !important;
         border: none !important;
@@ -68,98 +90,80 @@ def apply_cafe_style_professional():
         padding: 0.6rem 1.2rem !important;
         transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
         box-shadow: 0 4px 0 #F29F9A !important;
-    }
-    .stButton>button:hover {
+    }}
+    .stButton>button:hover {{
         background-color: #FFC4C0 !important;
         transform: translateY(2px) !important;
         box-shadow: 0 2px 0 #F29F9A !important;
-    }
-    .stButton>button:active {
+    }}
+    .stButton>button:active {{
         transform: translateY(4px) !important;
         box-shadow: 0 0 0 #F29F9A !important;
-    }
+    }}
 
-    /* 텍스트 입력창 */
-    input, textarea, select, div[data-baseweb="select"] > div {
+    input, textarea, select, div[data-baseweb="select"] > div {{
         background-color: #FAFAFA !important;
-        color: #5D4A44 !important;
+        color: {text_color} !important;
         border: 2px solid #EAE3D9 !important;
         border-radius: 12px !important;
-    }
-    input:focus, textarea:focus {
+    }}
+    input:focus, textarea:focus {{
         border-color: #FFB7B2 !important;
         box-shadow: 0 0 0 3px rgba(255, 183, 178, 0.2) !important;
-    }
+    }}
 
-    /* 데이터프레임 둥글게 */
-    [data-testid="stDataFrame"] {
+    [data-testid="stDataFrame"] {{
         border-radius: 16px !important;
         overflow: hidden !important;
         border: 2px solid #FFF0E5 !important;
-    }
+    }}
 
-    /* 사이드바 */
-    [data-testid="stSidebar"] {
+    [data-testid="stSidebar"] {{
         background-color: #FFF6EC !important;
         border-right: 2px dashed #EAE3D9 !important;
-    }
+    }}
 
-    /* 탭 스타일 */
-    button[data-baseweb="tab"] {
+    button[data-baseweb="tab"] {{
         color: #A89B96 !important;
         font-weight: 700 !important;
         font-size: 1.1rem !important;
         background-color: transparent !important;
-    }
-    button[data-baseweb="tab"][aria-selected="true"] {
+    }}
+    button[data-baseweb="tab"][aria-selected="true"] {{
         color: #FF9B94 !important;
         border-bottom-color: #FF9B94 !important;
         border-bottom-width: 3px !important;
-    }
+    }}
     
-    /* 이모지 및 메트릭 강조 */
-    div[data-testid="stMetricValue"] {
+    div[data-testid="stMetricValue"] {{
         font-weight: 800 !important;
         font-size: 2rem !important;
-        color: #5D4A44 !important;
-    }
-    div[data-testid="stMetricLabel"] {
+        color: {text_color} !important;
+    }}
+    div[data-testid="stMetricLabel"] {{
         color: #A89B96 !important;
         font-size: 1rem !important;
         font-weight: 600 !important;
-    }
+    }}
     </style>
     """, unsafe_allow_html=True)
 
 apply_cafe_style_professional()
 
-# 파스텔톤 차트 레이아웃
 CUTE_LAYOUT = dict(
     template="plotly_white",
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="'Pretendard', sans-serif", color="#8B7D77", size=13),
+    font=dict(family="'Pretendard', sans-serif", color=st.session_state['settings']['text_color'], size=13),
     margin=dict(l=0, r=0, t=30, b=0),
     xaxis=dict(showgrid=True, gridcolor='#F5F0EA', zerolinecolor='#EAE3D9'),
     yaxis=dict(showgrid=True, gridcolor='#F5F0EA', zerolinecolor='#EAE3D9')
 )
 
-# 부드러운 컬러 팔레트
-C_UP = "#FFB7B2"     # 상승/매수 톤
-C_DOWN = "#A1C9F1"   # 하락/매도 톤
-C_WARN = "#FFDAC1"   
-C_SAFE = "#B5EAD7"   
-
-COLOR_PALETTE = {
-    'TQQQ': '#FF9AA2',      
-    'SOXL/USD': '#C7CEEA',  
-    'USD': '#E2F0CB',       
-    'QLD': '#FFDAC1',       
-    'SSO': '#FFB7B2',       
-    'QQQ': '#A1C9F1',       
-    'GLD': '#FCEBB6',       
-    'CASH': '#B5EAD7'       
-}
+C_UP = "#FFB7B2"
+C_DOWN = "#A1C9F1"
+C_WARN = "#FFDAC1"
+C_SAFE = "#B5EAD7"
 
 ACCOUNTS_FILE = "amls_multi_accounts.json"
 REQUIRED_TICKERS = ["TQQQ", "QLD", "QQQ", "SOXL", "USD", "SSO", "GLD", "CASH"]
@@ -182,20 +186,22 @@ if 'accounts' not in st.session_state:
         loaded = {
             "기본 계좌 (AMLS)": {
                 "portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "목표가 ($)": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS],
-                "history": [], "first_entry_date": None, "journal_text": "", "target_seed": 10000.0
+                "history": [], "first_entry_date": None, "journal_text": "", "target_seed": 10000.0, "seed_history": {}
             }
         }
     st.session_state['accounts'] = loaded
 
-# [마이그레이션] 새로운 필드 유지
+# 마이그레이션
 needs_save = False
 for acc_name, acc_data in st.session_state['accounts'].items():
+    if "seed_history" not in acc_data:
+        acc_data["seed_history"] = {}
+        needs_save = True
+
     existing_tickers = [item["티커 (Ticker)"] for item in acc_data["portfolio"]]
     missing_tickers = [t for t in REQUIRED_TICKERS if t not in existing_tickers]
-    
     port_dict = {item["티커 (Ticker)"]: item for item in acc_data["portfolio"]}
     new_port = []
-    
     for req_t in REQUIRED_TICKERS:
         if req_t in port_dict: 
             item = port_dict[req_t]
@@ -206,7 +212,6 @@ for acc_name, acc_data in st.session_state['accounts'].items():
         else: 
             new_port.append({"티커 (Ticker)": req_t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "목표가 ($)": 0.0, "태그": "코어" if req_t != "CASH" else "현금"})
             needs_save = True
-            
     acc_data["portfolio"] = new_port
 if needs_save: save_accounts_data(st.session_state['accounts'])
 
@@ -455,10 +460,10 @@ def page_amls_backtest():
         
         for i, col in enumerate([c1, c2, c3, c4]):
             r = i+1; w = {k:v for k,v in get_w(r).items() if v>0}
-            fig_p = go.Figure(go.Pie(labels=list(w.keys()), values=list(w.values()), hole=0.5, marker=dict(colors=[COLOR_PALETTE.get(k.split('/')[0], '#EAE3D9') for k in w.keys()])))
+            fig_p = go.Figure(go.Pie(labels=list(w.keys()), values=list(w.values()), hole=0.5, marker=dict(colors=[st.session_state['settings']['chart_colors'].get(k.split('/')[0], '#EAE3D9') for k in w.keys()])))
             cust_p = CUTE_LAYOUT.copy(); cust_p.update(title=f"Regime {r}", title_x=0.5, height=250, margin=dict(t=40,b=10,l=10,r=10), showlegend=False)
             fig_p.update_layout(**cust_p)
-            fig_p.update_traces(textinfo='label+percent', textposition='inside', textfont=dict(color='#5D4A44', size=12))
+            fig_p.update_traces(textinfo='label+percent', textposition='inside', textfont=dict(color=st.session_state['settings']['text_color'], size=12))
             col.plotly_chart(fig_p, use_container_width=True)
 
     with tab2:
@@ -482,11 +487,11 @@ def page_amls_backtest():
         log_df = pd.DataFrame(logs)[::-1]
         if not log_df.empty:
             log_df['평가액'] = log_df['평가액'].apply(lambda x: f"${x:,.0f}")
-            st.dataframe(log_df, hide_index=True, use_container_width=True)
+            st.dataframe(log_df, hide_index=True, use_container_width=True, height=400)
 
 
 # =====================================================================
-# [4] 페이지 구성: 내 포트폴리오 관리 (종합 세트 - 기울기 최적화)
+# [4] 페이지 구성: 내 포트폴리오 관리 (실제 시드 트래킹 최적화 & 로그 확장)
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
@@ -651,14 +656,30 @@ def make_portfolio_page(acc_name):
         st.session_state['accounts'][acc_name]["target_seed"] = auto_seed
         rebal_base = total_val_now if total_val_now > 0 else auto_seed
 
+        # --- [NEW] 실제 자산 이력 자동 저장 ---
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        history_changed = False
+        last_seed = curr_acc_data["seed_history"].get(today_str, {}).get("seed")
+        last_equity = curr_acc_data["seed_history"].get(today_str, {}).get("equity")
+        
+        # 오늘 날짜에 변화가 생겼거나 처음 기록되는 경우 업데이트
+        if last_seed != auto_seed or last_equity != total_val_now:
+            curr_acc_data["seed_history"][today_str] = {"seed": auto_seed, "equity": total_val_now}
+            history_changed = True
+            
+        if history_changed:
+            save_accounts_data(st.session_state['accounts'])
+
+
         # ------------------- 상단 요약 대시보드 -------------------
         st.markdown(f"#### 📊 실시간 시장 인텔리전스 (기준: {price_label})")
+        text_color = st.session_state['settings']['text_color']
         m1, m2, m3, m4 = st.columns(4)
         with m1:
             st.markdown(f"""
             <div style='background:#FFFFFF; border-radius:20px; padding:15px; border:2px solid #FFF0E5; text-align:center;'>
                 <div style='color:#A89B96; font-size:0.9rem; font-weight:700;'>💰 총 평가액 (Total Equity)</div>
-                <div style='color:#5D4A44; font-size:1.8rem; font-weight:800; margin-top:5px;'>${total_val_now:,.0f}</div>
+                <div style='color:{text_color}; font-size:1.8rem; font-weight:800; margin-top:5px;'>${total_val_now:,.0f}</div>
             </div>""", unsafe_allow_html=True)
         with m2:
             pn_col = C_UP if daily_diff > 0 else (C_DOWN if daily_diff < 0 else '#A89B96')
@@ -682,14 +703,14 @@ def make_portfolio_page(acc_name):
             st.markdown(f"""
             <div style='background:#FFFFFF; border-radius:20px; padding:15px; border:2px solid #FFF0E5; text-align:center;'>
                 <div style='color:#A89B96; font-size:0.9rem; font-weight:700;'>{ico_r} AI 전략 분석관</div>
-                <div style='color:#5D4A44; font-size:1.8rem; font-weight:800; margin-top:5px;'>Regime {app_reg}</div>
+                <div style='color:{text_color}; font-size:1.8rem; font-weight:800; margin-top:5px;'>Regime {app_reg}</div>
                 <div style='color:#8B7D77; font-size:0.85rem;'>{ms['entry_grade']}</div>
             </div>""", unsafe_allow_html=True)
             
         st.write("")
         st.divider()
 
-        # ------------------- 데이터 테이블 & 목표가 게이지 -------------------
+        # ------------------- 데이터 테이블 -------------------
         st.markdown(f"#### 💼 포트폴리오 기입표 (더블클릭하여 수정하세요)")
         
         def color_y(val):
@@ -728,11 +749,11 @@ def make_portfolio_page(acc_name):
             st.markdown("#### 🍩 자산 배분 비중 (Allocation)")
             with st.container(border=True):
                 if total_val_now > 0:
-                    fig = go.Figure(go.Pie(labels=list(asset_vals.keys()), values=list(asset_vals.values()), hole=0.6, marker=dict(colors=[COLOR_PALETTE.get(k, '#EAE3D9') for k in asset_vals.keys()])))
+                    fig = go.Figure(go.Pie(labels=list(asset_vals.keys()), values=list(asset_vals.values()), hole=0.6, marker=dict(colors=[st.session_state['settings']['chart_colors'].get(k, '#EAE3D9') for k in asset_vals.keys()])))
                     cust_p2 = CUTE_LAYOUT.copy()
-                    cust_p2.update(height=300, showlegend=False, margin=dict(t=10, b=10, l=10, r=10), annotations=[dict(text=f"Total<br><b style='font-size:1.2rem; color:#5D4A44;'>100%</b>", x=0.5, y=0.5, showarrow=False)])
+                    cust_p2.update(height=300, showlegend=False, margin=dict(t=10, b=10, l=10, r=10), annotations=[dict(text=f"Total<br><b style='font-size:1.2rem; color:{text_color};'>100%</b>", x=0.5, y=0.5, showarrow=False)])
                     fig.update_layout(**cust_p2)
-                    fig.update_traces(textposition='inside', textinfo='percent+label', textfont_size=13, textfont_color='#5D4A44')
+                    fig.update_traces(textposition='inside', textinfo='percent+label', textfont_size=13, textfont_color=text_color)
                     st.plotly_chart(fig, use_container_width=True)
                 else:
                     st.markdown("<div style='height: 300px; display: flex; align-items: center; justify-content: center; color: #A89B96;'>자산 데이터를 입력하면 차트가 표시됩니다.</div>", unsafe_allow_html=True)
@@ -781,64 +802,55 @@ def make_portfolio_page(acc_name):
                     st.dataframe(status_df.style.map(color_act, subset=['액션 (Action)']), use_container_width=True, hide_index=True)
 
         st.write("")
-        st.markdown("**[ 📈 운용 시드(Target Seed) 성장 곡선 ]**")
+        st.markdown("**[ 📈 내 실제 자산 성장 곡선 ]**")
         
-        if auto_seed > 0:
+        hist_dict = curr_acc_data.get("seed_history", {})
+        if hist_dict:
             with st.container(border=True):
+                hist_df = pd.DataFrame.from_dict(hist_dict, orient='index')
+                hist_df.index = pd.to_datetime(hist_df.index)
+                hist_df = hist_df.sort_index()
+
+                # 초기 시작일이 있고 데이터가 오늘 하루뿐이라면 시작일부터 이어줍니다.
                 fed_str = curr_acc_data.get("first_entry_date")
-                default_date = pd.to_datetime(fed_str).date() if fed_str else (datetime.today() - timedelta(days=90)).date()
                 col_date, _ = st.columns([1, 3])
                 with col_date:
-                    u_date = st.date_input("투자 시작일", value=default_date, key=f"date_{acc_name}")
+                    default_date = pd.to_datetime(fed_str).date() if fed_str else (datetime.today() - timedelta(days=90)).date()
+                    u_date = st.date_input("최초 투자 시작일", value=default_date, key=f"date_{acc_name}")
                     if str(u_date) != str(fed_str)[:10]: 
                         st.session_state['accounts'][acc_name]["first_entry_date"] = str(u_date)
                         save_accounts_data(st.session_state['accounts'])
                 
                 try:
-                    chart_start_ts = pd.Timestamp(u_date)
-                    bench_data = yf.download("QQQ", start=(chart_start_ts - timedelta(days=5)).strftime('%Y-%m-%d'), progress=False)['Close'].ffill()
-                    if not bench_data.empty:
-                        bench_series = bench_data.iloc[:, 0] if isinstance(bench_data, pd.DataFrame) else bench_data
-                        bench_series = bench_series[bench_series.index >= chart_start_ts]
-                        
-                        # 가상 궤적 계산 (현재 총 시드 기준)
-                        seed_curve = (bench_series / bench_series.iloc[0]) * auto_seed
-                        
-                        fig_seed = go.Figure()
-                        
-                        # 가상 궤적 (기울기 최적화 - fill 삭제 및 자동 스케일링)
-                        fig_seed.add_trace(go.Scatter(
-                            x=seed_curve.index, 
-                            y=seed_curve.values, 
-                            name="가상 궤적 (QQQ 연동)", 
-                            line=dict(color=C_SAFE, width=3)
-                            # 'fill'을 삭제하여 기울기 변화를 선명하게 표현
-                        ))
-                        
-                        # 현재 시드 원금 (기준선)
-                        fig_seed.add_trace(go.Scatter(
-                            x=seed_curve.index, 
-                            y=[auto_seed]*len(seed_curve), 
-                            name="현재 시드 원금", 
-                            line=dict(color=C_UP, width=2, dash='dot')
-                        ))
-                        
-                        cust_s = CUTE_LAYOUT.copy()
-                        cust_s.update(
-                            height=300, 
-                            yaxis_title="자산 규모 ($)", 
-                            hovermode="x unified",
-                            # Y축 최적화: 데이터 최솟값 부근에서 자동 스케일링 시작
-                            yaxis=dict(
-                                showgrid=True, 
-                                gridcolor='#F5F0EA', 
-                                zerolinecolor='#EAE3D9',
-                                autorange=True, # 자동 스케일링
-                                rangemode="normal" # 0을 강제하지 않고 데이터 범위에 맞춤
-                            )
+                    if fed_str and len(hist_df) == 1:
+                        fed_dt = pd.to_datetime(fed_str)
+                        if fed_dt < hist_df.index[0]:
+                            hist_df.loc[fed_dt] = {"seed": auto_seed, "equity": auto_seed}
+                            hist_df = hist_df.sort_index()
+
+                    fig_seed = go.Figure()
+                    
+                    # 실제 총 자산 곡선 (물결선 없이 꽉 차게)
+                    fig_seed.add_trace(go.Scatter(x=hist_df.index, y=hist_df['equity'], name="실제 총 평가액", line=dict(color=C_UP, width=3), mode='lines+markers', marker=dict(size=6)))
+                    
+                    # 실제 투입 시드 원금 곡선
+                    fig_seed.add_trace(go.Scatter(x=hist_df.index, y=hist_df['seed'], name="투입 시드 원금", line=dict(color=C_DOWN, width=2, dash='dot'), mode='lines+markers'))
+                    
+                    cust_s = CUTE_LAYOUT.copy()
+                    cust_s.update(
+                        height=350, 
+                        yaxis_title="자산 규모 ($)", 
+                        hovermode="x unified",
+                        yaxis=dict(
+                            showgrid=True, 
+                            gridcolor='#F5F0EA', 
+                            zerolinecolor='#EAE3D9',
+                            autorange=True, # 데이터 범위에 맞춰 Y축 자동 스케일링 (빈 공간 삭제)
+                            rangemode="normal"
                         )
-                        fig_seed.update_layout(**cust_s)
-                        st.plotly_chart(fig_seed, use_container_width=True)
+                    )
+                    fig_seed.update_layout(**cust_s)
+                    st.plotly_chart(fig_seed, use_container_width=True)
                 except Exception as e: pass
 
         st.write("")
@@ -846,11 +858,11 @@ def make_portfolio_page(acc_name):
         with col_log1:
             st.markdown("**[ 📝 매매 복기 일지 ]**")
             def save_j(): st.session_state['accounts'][acc_name]["journal_text"] = st.session_state[f"j_{acc_name}"]; save_accounts_data(st.session_state['accounts'])
-            st.text_area("시장의 주요 이슈와 매매 감정을 자유롭게 기록하세요.", value=curr_acc_data.get('journal_text', ''), key=f"j_{acc_name}", height=150, on_change=save_j, label_visibility="collapsed")
+            st.text_area("시장의 주요 이슈와 매매 감정을 상세하게 기록하세요.", value=curr_acc_data.get('journal_text', ''), key=f"j_{acc_name}", height=400, on_change=save_j, label_visibility="collapsed")
         with col_log2:
             st.markdown("**[ 🔔 시스템 로그 ]**")
             history = curr_acc_data.get('history', [])
-            if history: st.dataframe(pd.DataFrame(history)[::-1], hide_index=True, use_container_width=True, height=150)
+            if history: st.dataframe(pd.DataFrame(history)[::-1], hide_index=True, use_container_width=True, height=400)
 
     page_func.__name__ = f"pf_{abs(hash(acc_name))}"
     return page_func
@@ -862,7 +874,7 @@ def page_manage_accounts():
     new_acc = st.text_input("신규 계좌 이름")
     if st.button("🚀 계좌 개설", type="primary") and new_acc:
         if new_acc not in st.session_state['accounts']:
-            st.session_state['accounts'][new_acc] = {"portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "목표가 ($)": 0.0, "태그": "코어" if t != "CASH" else "현금"} for t in REQUIRED_TICKERS], "history": [{"Date": datetime.now().strftime("%Y-%m-%d"), "Log": "✨ 계좌 개설"}], "target_seed": 10000.0}
+            st.session_state['accounts'][new_acc] = {"portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "목표가 ($)": 0.0, "태그": "코어" if t != "CASH" else "현금"} for t in REQUIRED_TICKERS], "history": [{"Date": datetime.now().strftime("%Y-%m-%d"), "Log": "✨ 계좌 개설"}], "target_seed": 10000.0, "seed_history": {}}
             save_accounts_data(st.session_state['accounts']); st.rerun()
     st.divider()
     for acc in list(st.session_state['accounts'].keys()):
@@ -896,8 +908,31 @@ def page_strategy_specification():
 
 
 # =====================================================================
-# [5] 네비게이션 라우팅
+# [5] 사이드바 설정 및 네비게이션 라우팅
 # =====================================================================
+
+with st.sidebar.expander("🎨 테마 및 색상 설정"):
+    st.markdown("**기본 글씨 색상**")
+    new_text_color = st.color_picker("기본 글씨", st.session_state['settings']['text_color'])
+    if new_text_color != st.session_state['settings']['text_color']:
+        st.session_state['settings']['text_color'] = new_text_color
+        save_settings(st.session_state['settings']); st.rerun()
+        
+    st.markdown("---")
+    st.markdown("📈 **포트폴리오 차트 색상**")
+    for tkr in st.session_state['settings']['chart_colors']:
+        new_c = st.color_picker(f"{tkr} 파이 조각", st.session_state['settings']['chart_colors'][tkr])
+        if new_c != st.session_state['settings']['chart_colors'][tkr]:
+            st.session_state['settings']['chart_colors'][tkr] = new_c
+            save_settings(st.session_state['settings']); st.rerun()
+
+with st.sidebar.expander("💾 백업 및 복구"):
+    st.download_button("📥 백업 파일 다운로드", data=json.dumps(st.session_state['accounts']), file_name="amls_backup.json")
+    up_f = st.file_uploader("📤 백업 파일 불러오기", type=['json'])
+    if up_f and st.button("⚠️ 현재 데이터에 덮어쓰기"):
+        st.session_state['accounts'] = json.load(up_f)
+        save_accounts_data(st.session_state['accounts']); st.rerun()
+
 pages = {
     "메인 뷰": [st.Page(page_market_dashboard, title="마켓 터미널", icon="🌐"), st.Page(page_amls_backtest, title="백테스트 시뮬레이터", icon="🦅")],
     "나의 포트폴리오": [],
@@ -908,13 +943,6 @@ for name in st.session_state['accounts'].keys():
     pages["나의 포트폴리오"].append(st.Page(make_portfolio_page(name), title=name, icon="💼"))
 
 pages["설정 및 문서"].append(st.Page(page_manage_accounts, title="계좌 관리", icon="⚙️"))
-
-with st.sidebar.expander("💾 백업 및 복구"):
-    st.download_button("📥 백업 파일 다운로드", data=json.dumps(st.session_state['accounts']), file_name="amls_backup.json")
-    up_f = st.file_uploader("📤 백업 파일 불러오기", type=['json'])
-    if up_f and st.button("⚠️ 현재 데이터에 덮어쓰기"):
-        st.session_state['accounts'] = json.load(up_f)
-        save_accounts_data(st.session_state['accounts']); st.rerun()
 
 pg = st.navigation(pages)
 pg.run()
