@@ -173,14 +173,14 @@ if 'accounts' not in st.session_state:
     loaded = load_accounts_data()
     if not loaded:
         loaded = {
-            "AMLS v4.3": {  # 기존 '기본 계좌 (AMLS)'에서 변경
-                "portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "목표가 ($)": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS],
-                "history": [], "first_entry_date": None, "journal_text": "", "target_seed": 10000.0, "seed_history": {}
+            "AMLS v4.3": {  
+                "portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS],
+                "history": [], "first_entry_date": None, "journal_text": "", "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0
             }
         }
     st.session_state['accounts'] = loaded
 
-# 마이그레이션 로직 (이름 변경 및 필드 추가)
+# 마이그레이션 로직 (이름 변경 및 전체 목표 자산 필드 추가)
 needs_save = False
 if "기본 계좌 (AMLS)" in st.session_state['accounts']:
     st.session_state['accounts']["AMLS v4.3"] = st.session_state['accounts'].pop("기본 계좌 (AMLS)")
@@ -190,6 +190,9 @@ for acc_name, acc_data in st.session_state['accounts'].items():
     if "seed_history" not in acc_data:
         acc_data["seed_history"] = {}
         needs_save = True
+    if "target_portfolio_value" not in acc_data:
+        acc_data["target_portfolio_value"] = 100000.0
+        needs_save = True
 
     existing_tickers = [item["티커 (Ticker)"] for item in acc_data["portfolio"]]
     port_dict = {item["티커 (Ticker)"]: item for item in acc_data["portfolio"]}
@@ -198,11 +201,10 @@ for acc_name, acc_data in st.session_state['accounts'].items():
         if req_t in port_dict: 
             item = port_dict[req_t]
             if "매입 환율" not in item: item["매입 환율"] = 0.0; needs_save = True
-            if "목표가 ($)" not in item: item["목표가 ($)"] = 0.0; needs_save = True
             if "태그" not in item: item["태그"] = "코어" if req_t != "CASH" else "현금"; needs_save = True
             new_port.append(item)
         else: 
-            new_port.append({"티커 (Ticker)": req_t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "목표가 ($)": 0.0, "태그": "코어" if req_t != "CASH" else "현금"})
+            new_port.append({"티커 (Ticker)": req_t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어" if req_t != "CASH" else "현금"})
             needs_save = True
     acc_data["portfolio"] = new_port
 if needs_save: save_accounts_data(st.session_state['accounts'])
@@ -483,17 +485,16 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [4] 페이지 구성: 내 포트폴리오 관리 (요청사항 완벽 복구 반영)
+# [4] 페이지 구성: 내 포트폴리오 관리 (요청사항 3가지 완벽 반영)
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
-        # 제목 수정 반영 (유치한 '관제탑' 삭제)
-        st.title(f"💼 {acc_name} 포트폴리오")
+        st.title(f"💼 {acc_name}")
         st.markdown("포트폴리오 자산을 기입하고 실시간 AI 리밸런싱 신호를 확인하세요.")
         
         curr_acc_data = st.session_state['accounts'][acc_name]
         pf_df = pd.DataFrame(curr_acc_data["portfolio"])
-        for col in ["수량 (주/달러)", "평균 단가 ($)", "매입 환율", "목표가 ($)"]:
+        for col in ["수량 (주/달러)", "평균 단가 ($)", "매입 환율"]:
             if col in pf_df.columns: pf_df[col] = pf_df[col].astype(float)
 
         @st.cache_data(ttl=1800)
@@ -617,12 +618,6 @@ def make_portfolio_page(acc_name):
             return (now_krw - buy_krw) / buy_krw * 100
         disp_df["원화 수익률 (%)"] = disp_df.apply(cy_krw, axis=1)
 
-        def target_prog(row):
-            if row["목표가 ($)"] <= 0 or row["티커 (Ticker)"] == "CASH": return 0.0
-            p = (row["현재가 ($)"] / row["목표가 ($)"]) * 100
-            return min(p, 100.0) 
-        disp_df["달성률 (%)"] = disp_df.apply(target_prog, axis=1)
-
         total_val_now = 0.0; total_val_yest = 0.0; auto_seed = 0.0
         best_ticker = "데이터 없음"; best_ret = -999.0
         asset_vals = {}
@@ -649,7 +644,7 @@ def make_portfolio_page(acc_name):
         st.session_state['accounts'][acc_name]["target_seed"] = auto_seed
         rebal_base = total_val_now if total_val_now > 0 else auto_seed
 
-        # 실제 자산 이력 자동 저장 (0이 아닐 때만 저장하여 차트 붕괴 방지)
+        # 실제 자산 이력 자동 저장 (0이 아닐 때만 저장)
         today_str = datetime.now().strftime("%Y-%m-%d")
         history_changed = False
         last_seed = curr_acc_data["seed_history"].get(today_str, {}).get("seed")
@@ -662,9 +657,42 @@ def make_portfolio_page(acc_name):
         if history_changed: save_accounts_data(st.session_state['accounts'])
 
 
+        # ------------------- 0. 최상단 목표 자산 달성률 바 -------------------
+        target_val = curr_acc_data.get("target_portfolio_value", 100000.0)
+        progress_pct = (total_val_now / target_val) * 100 if target_val > 0 else 0.0
+        
+        st.markdown("#### 🎯 나의 목표 자산 달성률")
+        c_prog, c_set = st.columns([4, 1.2])
+        with c_set:
+            new_target = st.number_input("목표 금액 설정 ($)", min_value=0.0, value=float(target_val), step=10000.0, format="%.0f")
+            if new_target != target_val:
+                st.session_state['accounts'][acc_name]["target_portfolio_value"] = new_target
+                save_accounts_data(st.session_state['accounts'])
+                target_val = new_target
+                progress_pct = (total_val_now / target_val) * 100 if target_val > 0 else 0.0
+                st.rerun()
+                
+        with c_prog:
+            st.markdown(f"""
+            <div style='background:#FFFFFF; padding:20px; border-radius:20px; border:2px solid #FFF0E5; box-shadow: 0 4px 12px rgba(210, 190, 175, 0.1);'>
+                <div style='display:flex; justify-content:space-between; margin-bottom:12px;'>
+                    <span style='color:#5D4A44; font-weight:800; font-size:1.1rem;'>현재: ${total_val_now:,.0f}</span>
+                    <span style='color:#A89B96; font-weight:700; font-size:1.1rem;'>목표: ${target_val:,.0f}</span>
+                </div>
+                <div style='background-color:#F5F0EA; border-radius:12px; height:24px; width:100%; position:relative; overflow:hidden;'>
+                    <div style='background-color:{C_UP}; width:{min(100.0, progress_pct)}%; height:100%; transition:width 0.8s ease;'></div>
+                </div>
+                <div style='text-align:center; margin-top:12px; font-size:1.5rem; font-weight:800; color:#000000;'>
+                    {progress_pct:.2f}% 달성! 🚀
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        st.write("")
+        st.divider()
+
         # ------------------- 1. 상단 요약 대시보드 -------------------
         st.markdown(f"#### 📊 실시간 시장 인텔리전스 (기준: {price_label})")
-        # 요청사항 1번 적용: 파스텔톤 말고 완전한 검정색(#000000) 강제 주입
         m1, m2, m3, m4 = st.columns(4)
         with m1:
             st.markdown(f"""
@@ -673,7 +701,7 @@ def make_portfolio_page(acc_name):
                 <div style='color:#000000; font-size:1.8rem; font-weight:800; margin-top:5px;'>${total_val_now:,.0f}</div>
             </div>""", unsafe_allow_html=True)
         with m2:
-            pn_col = "#000000"  # 검정색 강제
+            pn_col = "#000000"
             pn_ico = "📈" if daily_diff > 0 else ("📉" if daily_diff < 0 else "➖")
             st.markdown(f"""
             <div style='background:#FFFFFF; border-radius:20px; padding:15px; border:2px solid #FFF0E5; text-align:center;'>
@@ -701,7 +729,7 @@ def make_portfolio_page(acc_name):
         st.write("")
         st.divider()
 
-        # ------------------- 2. SOXL 진입 판독기 (카페 감성 복구) -------------------
+        # ------------------- 2. SOXL 진입 판독기 -------------------
         st.markdown("#### ⚡ 반도체 3배(SOXL) 진입 판독기")
         s_icon = "🟢" if ms['smh'] > ms['smh_ma50'] else "🔴"
         r_icon = "🟢" if ms['smh_3m_ret'] > 0.05 else "🔴"
@@ -726,7 +754,7 @@ def make_portfolio_page(acc_name):
 
         st.write("")
         
-        # ------------------- 3. AMLS AI 전략 분석관 (실시간 동적 판단 & 디자인 적용) -------------------
+        # ------------------- 3. AMLS AI 전략 분석관 -------------------
         st.markdown("#### 🤖 AMLS AI 전략 분석관 Report")
         app_reg = ms['regime']
         vix_c = ms['vix']
@@ -764,7 +792,7 @@ def make_portfolio_page(acc_name):
 
         st.write("")
 
-        # ------------------- 4. 신규 자금 투입 적합도 (구조화 및 디자인 복구) -------------------
+        # ------------------- 4. 신규 자금 투입 적합도 가이드 -------------------
         st.markdown("#### 🌱 신규 자금 투입 적합도 가이드")
         entry_g = ms['entry_grade']
         dur = ms['regime_duration']
@@ -827,7 +855,7 @@ def make_portfolio_page(acc_name):
         ed_disp = st.data_editor(
             disp_df.style.map(color_y, subset=["수익률 (%)", "원화 수익률 (%)"]), 
             num_rows="dynamic", use_container_width=True, height=380,
-            column_order=["태그", "티커 (Ticker)", "수량 (주/달러)", "평균 단가 ($)", "매입 환율", "현재가 ($)", "수익률 (%)", "원화 수익률 (%)", "목표가 ($)", "달성률 (%)"],
+            column_order=["태그", "티커 (Ticker)", "수량 (주/달러)", "평균 단가 ($)", "매입 환율", "현재가 ($)", "수익률 (%)", "원화 수익률 (%)"],
             column_config={
                 "태그": st.column_config.SelectboxColumn("태그 🏷️", help="포지션의 성격을 선택하세요.", options=["코어", "위성", "헷지", "현금", "단기픽"], required=True),
                 "티커 (Ticker)": st.column_config.TextColumn("종목명 🏷️"),
@@ -835,12 +863,10 @@ def make_portfolio_page(acc_name):
                 "현재 환율": st.column_config.NumberColumn("현재 환율 💱", disabled=True, format="₩ %.1f"),
                 "수익률 (%)": st.column_config.NumberColumn("수익률 📈", disabled=True, format="%.2f %%"),
                 "원화 수익률 (%)": st.column_config.NumberColumn("원화 수익률 🇰🇷", disabled=True, format="%.2f %%"),
-                "목표가 ($)": st.column_config.NumberColumn("목표가 🎯", format="$ %.2f", help="매도 목표가를 입력하세요."),
-                "달성률 (%)": st.column_config.ProgressColumn("목표 달성률 (%)", help="현재가가 목표가에 얼마나 도달했는지 나타냅니다.", min_value=0, max_value=100, format="%f%%"),
                 "매입 환율": st.column_config.NumberColumn("매입 환율 💱", format="₩ %.1f"),
             }
         )
-        base_cols = ["티커 (Ticker)", "수량 (주/달러)", "평균 단가 ($)", "매입 환율", "목표가 ($)", "태그"]
+        base_cols = ["티커 (Ticker)", "수량 (주/달러)", "평균 단가 ($)", "매입 환율", "태그"]
         if not ed_disp[base_cols].equals(pf_df[base_cols]):
             st.session_state['accounts'][acc_name]["portfolio"] = ed_disp[base_cols].to_dict(orient="records")
             save_accounts_data(st.session_state['accounts']); st.rerun()
@@ -932,7 +958,7 @@ def make_portfolio_page(acc_name):
                             hist_df.loc[fed_dt] = {"seed": auto_seed, "equity": auto_seed}
                             hist_df = hist_df.sort_index()
 
-                    # [NEW] 비어있는 날짜를 앞의 데이터로 채워 연속적인 선을 생성 (Resampling)
+                    # 비어있는 날짜를 앞의 데이터로 채워 연속적인 선을 생성 (Resampling 최적화)
                     hist_df = hist_df.resample('D').ffill()
 
                     fig_seed = go.Figure()
@@ -971,7 +997,7 @@ def page_manage_accounts():
     new_acc = st.text_input("신규 계좌 이름")
     if st.button("🚀 계좌 개설", type="primary") and new_acc:
         if new_acc not in st.session_state['accounts']:
-            st.session_state['accounts'][new_acc] = {"portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "목표가 ($)": 0.0, "태그": "코어" if t != "CASH" else "현금"} for t in REQUIRED_TICKERS], "history": [{"Date": datetime.now().strftime("%Y-%m-%d"), "Log": "✨ 계좌 개설"}], "target_seed": 10000.0, "seed_history": {}}
+            st.session_state['accounts'][new_acc] = {"portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어" if t != "CASH" else "현금"} for t in REQUIRED_TICKERS], "history": [{"Date": datetime.now().strftime("%Y-%m-%d"), "Log": "✨ 계좌 개설"}], "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0}
             save_accounts_data(st.session_state['accounts']); st.rerun()
     st.divider()
     for acc in list(st.session_state['accounts'].keys()):
