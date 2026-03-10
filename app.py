@@ -14,7 +14,7 @@ import os
 warnings.filterwarnings('ignore')
 
 # =====================================================================
-# [0] 시스템 설정 및 동적 테마 엔진 확장
+# [0] 시스템 설정 및 동적 테마 엔진
 # =====================================================================
 st.set_page_config(page_title="AMLS 퀀트 포트폴리오", layout="wide", initial_sidebar_state="expanded")
 
@@ -220,12 +220,13 @@ if 'accounts' not in st.session_state:
         loaded = {
             "AMLS v4.3": {  
                 "portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS],
-                "history": [], "first_entry_date": None, "journal_text": "", "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0
+                "history": [], "first_entry_date": None, "journal_text": "", "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0,
+                "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 기입표", "🍩 자산 배분 & 지침", "📈 성장 곡선", "📝 매매 일지"]
             }
         }
     st.session_state['accounts'] = loaded
 
-# 마이그레이션 로직
+# 마이그레이션 로직 (이름 변경 및 필드 추가)
 needs_save = False
 if "기본 계좌 (AMLS)" in st.session_state['accounts']:
     st.session_state['accounts']["AMLS v4.3"] = st.session_state['accounts'].pop("기본 계좌 (AMLS)")
@@ -234,6 +235,9 @@ if "기본 계좌 (AMLS)" in st.session_state['accounts']:
 for acc_name, acc_data in st.session_state['accounts'].items():
     if "seed_history" not in acc_data: acc_data["seed_history"] = {}; needs_save = True
     if "target_portfolio_value" not in acc_data: acc_data["target_portfolio_value"] = 100000.0; needs_save = True
+    if "layout_order" not in acc_data: 
+        acc_data["layout_order"] = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 기입표", "🍩 자산 배분 & 지침", "📈 성장 곡선", "📝 매매 일지"]
+        needs_save = True
 
     existing_tickers = [item["티커 (Ticker)"] for item in acc_data["portfolio"]]
     port_dict = {item["티커 (Ticker)"]: item for item in acc_data["portfolio"]}
@@ -394,7 +398,6 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
 def page_market_dashboard():
     st.title("🌐 매크로 터미널")
     
-    # 마크다운/HTML 버그 방지 띄어쓰기 제거
     components.html(f"""<div class="tradingview-widget-container" style="border-radius: {PANEL_RADIUS}; overflow: hidden; border: {PANEL_BORDER};">
 <div class="tradingview-widget-container__widget"></div>
 <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
@@ -521,13 +524,27 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [4] 페이지 구성: 내 포트폴리오 관리
+# [4] 페이지 구성: 내 포트폴리오 관리 (레이아웃 조절 가능 기능)
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
         st.title(f"💼 {acc_name}")
         
         curr_acc_data = st.session_state['accounts'][acc_name]
+        
+        # 기본 블록 설정 확인 및 적용
+        DEFAULT_LAYOUT = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 기입표", "🍩 배분 및 지침", "📈 성장 곡선", "📝 매매 일지"]
+        if "layout_order" not in curr_acc_data or not isinstance(curr_acc_data["layout_order"], list):
+            curr_acc_data["layout_order"] = DEFAULT_LAYOUT.copy()
+            save_accounts_data(st.session_state['accounts'])
+            
+        # 기존 버전에 없는 레이아웃 요소 복구
+        current_layout = curr_acc_data["layout_order"]
+        for item in DEFAULT_LAYOUT:
+            if item not in current_layout: current_layout.append(item)
+        current_layout = [x for x in current_layout if x in DEFAULT_LAYOUT] # 유효하지 않은 항목 제거
+        curr_acc_data["layout_order"] = current_layout
+
         pf_df = pd.DataFrame(curr_acc_data["portfolio"])
         for col in ["수량 (주/달러)", "평균 단가 ($)", "매입 환율"]:
             if col in pf_df.columns: pf_df[col] = pf_df[col].astype(float)
@@ -680,21 +697,45 @@ def make_portfolio_page(acc_name):
         if history_changed: save_accounts_data(st.session_state['accounts'])
 
 
-        # ------------------- 0. 달성률 바 -------------------
-        target_val = curr_acc_data.get("target_portfolio_value", 100000.0)
-        progress_pct = (total_val_now / target_val) * 100 if target_val > 0 else 0.0
-        
-        c_prog, c_set = st.columns([4, 1.2])
-        with c_set:
-            new_target = st.number_input("목표 금액 설정", min_value=0.0, value=float(target_val), step=10000.0, format="%.0f")
-            if new_target != target_val:
-                st.session_state['accounts'][acc_name]["target_portfolio_value"] = new_target
-                save_accounts_data(st.session_state['accounts'])
-                st.rerun()
+        # -------------------------------------------------------------
+        # 레이아웃 편집기 UI (끌어다 놓기를 대체하는 순서 변경 버튼)
+        # -------------------------------------------------------------
+        with st.expander("🛠️ 화면 레이아웃 편집 (내 맘대로 배치하기)"):
+            st.markdown("자주 보는 위젯의 우선순위를 위아래 버튼으로 조정하세요. 설정된 순서는 계좌에 영구 저장됩니다.")
+            for i, block_name in enumerate(current_layout):
+                c_name, c_up, c_dn = st.columns([6, 1, 1])
+                c_name.markdown(f"<div style='padding-top:5px; font-weight:bold;'>{i+1}. {block_name}</div>", unsafe_allow_html=True)
+                if c_up.button("▲ 올리기", key=f"up_{i}_{acc_name}") and i > 0:
+                    current_layout[i], current_layout[i-1] = current_layout[i-1], current_layout[i]
+                    curr_acc_data["layout_order"] = current_layout
+                    save_accounts_data(st.session_state['accounts']); st.rerun()
+                if c_dn.button("▼ 내리기", key=f"dn_{i}_{acc_name}") and i < len(current_layout)-1:
+                    current_layout[i], current_layout[i+1] = current_layout[i+1], current_layout[i]
+                    curr_acc_data["layout_order"] = current_layout
+                    save_accounts_data(st.session_state['accounts']); st.rerun()
+
+        st.write("")
+
+        # -------------------------------------------------------------
+        # 동적 레이아웃 렌더링 루프
+        # -------------------------------------------------------------
+        for block in current_layout:
+            
+            if block == "🎯 목표 달성률":
+                target_val = curr_acc_data.get("target_portfolio_value", 100000.0)
+                progress_pct = (total_val_now / target_val) * 100 if target_val > 0 else 0.0
                 
-        with c_prog:
-            pb_bg = "rgba(0,0,0,0.1)" if WIDGET_THEME=="light" else "rgba(255,255,255,0.1)"
-            st.markdown(f"""<div class='info-panel' style='padding:20px; margin-bottom:20px;'>
+                st.markdown("#### 🎯 포트폴리오 목표 달성률")
+                c_prog, c_set = st.columns([4, 1.2])
+                with c_set:
+                    new_target = st.number_input("목표 금액 설정", min_value=0.0, value=float(target_val), step=10000.0, format="%.0f", key=f"tgt_{acc_name}")
+                    if new_target != target_val:
+                        st.session_state['accounts'][acc_name]["target_portfolio_value"] = new_target
+                        save_accounts_data(st.session_state['accounts'])
+                        st.rerun()
+                with c_prog:
+                    pb_bg = "rgba(0,0,0,0.1)" if WIDGET_THEME=="light" else "rgba(255,255,255,0.1)"
+                    st.markdown(f"""<div class='info-panel' style='padding:20px; margin-bottom:20px;'>
 <div style='display:flex; justify-content:space-between; margin-bottom:8px; font-weight:bold; font-size:1.05rem;'>
 <span>현재: ${total_val_now:,.0f}</span>
 <span style='color:{C_DOWN};'>목표: ${target_val:,.0f}</span>
@@ -704,75 +745,77 @@ def make_portfolio_page(acc_name):
 </div>
 <div style='text-align:right; margin-top:5px; font-weight:bold;'>{progress_pct:.2f}%</div>
 </div>""", unsafe_allow_html=True)
+                st.write("")
 
-        # ------------------- 1. 상단 요약 -------------------
-        m1, m2, m3, m4 = st.columns(4)
-        with m1:
-            st.markdown(f"""<div class='info-panel' style='text-align:center;'>
+            elif block == "📊 실시간 요약":
+                st.markdown(f"#### 📊 실시간 요약 (기준: {price_label})")
+                m1, m2, m3, m4 = st.columns(4)
+                with m1:
+                    st.markdown(f"""<div class='info-panel' style='text-align:center;'>
 <div style='font-size:0.85rem; font-weight:bold; opacity:0.8;'>💰 총 평가액 (Total)</div>
 <div style='font-size:1.6rem; font-weight:bold; margin-top:5px;'>${total_val_now:,.0f}</div>
 </div>""", unsafe_allow_html=True)
-        with m2:
-            pn_col = C_UP if daily_diff > 0 else (C_DOWN if daily_diff < 0 else TEXT_COLOR)
-            pn_ico = "▲" if daily_diff > 0 else ("▼" if daily_diff < 0 else "-")
-            st.markdown(f"""<div class='info-panel' style='text-align:center;'>
+                with m2:
+                    pn_col = C_UP if daily_diff > 0 else (C_DOWN if daily_diff < 0 else TEXT_COLOR)
+                    pn_ico = "▲" if daily_diff > 0 else ("▼" if daily_diff < 0 else "-")
+                    st.markdown(f"""<div class='info-panel' style='text-align:center;'>
 <div style='font-size:0.85rem; font-weight:bold; opacity:0.8;'>일간 손익 (Daily)</div>
 <div style='color:{pn_col}; font-size:1.6rem; font-weight:bold; margin-top:5px;'>{pn_ico} {abs(daily_diff_pct):.2f}%</div>
 <div style='color:{pn_col}; font-size:0.8rem;'>({daily_diff:+.0f} $)</div>
 </div>""", unsafe_allow_html=True)
-        with m3:
-            st.markdown(f"""<div class='info-panel' style='text-align:center;'>
+                with m3:
+                    st.markdown(f"""<div class='info-panel' style='text-align:center;'>
 <div style='font-size:0.85rem; font-weight:bold; opacity:0.8;'>👑 포트폴리오 MVP</div>
 <div style='font-size:1.6rem; font-weight:bold; margin-top:5px;'>{best_ticker}</div>
 <div style='font-size:0.8rem; font-weight:bold;'>수익률 {best_ret:+.1f}%</div>
 </div>""", unsafe_allow_html=True)
-        with m4:
-            app_reg = ms['regime']
-            st.markdown(f"""<div class='info-panel' style='text-align:center;'>
+                with m4:
+                    app_reg = ms['regime']
+                    st.markdown(f"""<div class='info-panel' style='text-align:center;'>
 <div style='font-size:0.85rem; font-weight:bold; opacity:0.8;'>AI 전략 국면</div>
 <div style='font-size:1.6rem; font-weight:bold; margin-top:5px;'>Regime {app_reg}</div>
 <div style='font-size:0.8rem; font-weight:bold;'>{ms['entry_grade'].split('(')[0].strip()}</div>
 </div>""", unsafe_allow_html=True)
-            
-        st.write("")
-        
-        # ------------------- 2, 3, 4번 최소화 + 내용 꽉 채운 3등분 그리드 -------------------
-        app_reg = ms['regime']
-        vix_c = ms['vix']; qqq_c = ms['qqq']; ma200_c = ms['ma200']; smh_c = ms['smh']; smh_ma50_c = ms['smh_ma50']
-        
-        s_stat = f"<span style='color:{C_UP}; font-weight:bold;'>돌파</span>" if smh_c > smh_ma50_c else f"<span style='color:{C_DOWN}; font-weight:bold;'>붕괴</span>"
-        r_stat = f"<span style='color:{C_UP}; font-weight:bold;'>통과</span>" if ms['smh_3m_ret'] > 0.05 else f"<span style='color:{C_DOWN}; font-weight:bold;'>미달</span>"
-        rsi_stat = f"<span style='color:{C_UP}; font-weight:bold;'>통과</span>" if ms['smh_rsi'] > 50 else f"<span style='color:{C_DOWN}; font-weight:bold;'>미달</span>"
-        soxl_res = f"<span style='color:{C_UP}; font-weight:bold;'>SOXL 편입 승인</span>" if (smh_c > smh_ma50_c and ms['smh_3m_ret'] > 0.05 and ms['smh_rsi'] > 50) else f"<span style='color:{C_WARN}; font-weight:bold;'>USD(2X) 방어 유지</span>"
+                st.write("")
+                
+            elif block == "⚡ 시스템 분석관":
+                st.markdown("#### ⚡ 실시간 시스템 분석관 요약")
+                app_reg = ms['regime']
+                vix_c = ms['vix']; qqq_c = ms['qqq']; ma200_c = ms['ma200']; smh_c = ms['smh']; smh_ma50_c = ms['smh_ma50']
+                
+                s_stat = f"<span style='color:{C_UP}; font-weight:bold;'>돌파</span>" if smh_c > smh_ma50_c else f"<span style='color:{C_DOWN}; font-weight:bold;'>붕괴</span>"
+                r_stat = f"<span style='color:{C_UP}; font-weight:bold;'>통과</span>" if ms['smh_3m_ret'] > 0.05 else f"<span style='color:{C_DOWN}; font-weight:bold;'>미달</span>"
+                rsi_stat = f"<span style='color:{C_UP}; font-weight:bold;'>통과</span>" if ms['smh_rsi'] > 50 else f"<span style='color:{C_DOWN}; font-weight:bold;'>미달</span>"
+                soxl_res = f"<span style='color:{C_UP}; font-weight:bold;'>SOXL 편입 승인</span>" if (smh_c > smh_ma50_c and ms['smh_3m_ret'] > 0.05 and ms['smh_rsi'] > 50) else f"<span style='color:{C_WARN}; font-weight:bold;'>USD(2X) 방어 유지</span>"
 
-        if app_reg == 1:
-            reg_t = f"<span style='color:{C_UP}; font-weight:bold;'>[R1: 완벽한 강세장]</span>"
-            reg_d = f"VIX({vix_c:.1f}) 안정권 및 나스닥({qqq_c:.0f}) 정배열 유지. 하방 리스크가 제한적이므로 3배 레버리지를 가동해 상승분을 캡처하십시오."
-        elif app_reg == 2:
-            reg_t = f"<span style='color:{C_WARN}; font-weight:bold;'>[R2: 조정/경계]</span>"
-            reg_d = f"장기 추세는 유효하나 VIX({vix_c:.1f})가 상승했거나 단기 모멘텀이 약화되었습니다. 과도한 레버리지를 2배수 이하로 축소하십시오."
-        elif app_reg == 3:
-            reg_t = f"<span style='color:{C_DOWN}; font-weight:bold;'>[R3: 장기 하락장]</span>"
-            reg_d = f"나스닥({qqq_c:.0f})이 200일선({ma200_c:.0f})을 하향 이탈했습니다. 하락 추세가 컨펌되었으니 레버리지 청산 후 GLD로 방어하십시오."
-        else:
-            reg_t = f"<span style='color:{C_DOWN}; font-weight:bold;'>[R4: 시스템 패닉]</span>"
-            reg_d = f"VIX({vix_c:.1f}) 40 돌파. 시장이 이성을 상실한 시스템 리스크 구간입니다. 주식을 전량 매도하고 안전자산으로 대피하십시오."
+                if app_reg == 1:
+                    reg_t = f"<span style='color:{C_UP}; font-weight:bold;'>[R1: 완벽한 강세장]</span>"
+                    reg_d = f"VIX({vix_c:.1f}) 안정권 및 나스닥({qqq_c:.0f}) 정배열 유지. 하방 리스크가 제한적이므로 3배 레버리지를 가동해 상승분을 캡처하십시오."
+                elif app_reg == 2:
+                    reg_t = f"<span style='color:{C_WARN}; font-weight:bold;'>[R2: 조정/경계]</span>"
+                    reg_d = f"장기 추세는 유효하나 VIX({vix_c:.1f})가 상승했거나 단기 모멘텀이 약화되었습니다. 과도한 레버리지를 2배수 이하로 축소하십시오."
+                elif app_reg == 3:
+                    reg_t = f"<span style='color:{C_DOWN}; font-weight:bold;'>[R3: 장기 하락장]</span>"
+                    reg_d = f"나스닥({qqq_c:.0f})이 200일선({ma200_c:.0f})을 하향 이탈했습니다. 하락 추세가 컨펌되었으니 레버리지 청산 후 GLD로 방어하십시오."
+                else:
+                    reg_t = f"<span style='color:{C_DOWN}; font-weight:bold;'>[R4: 시스템 패닉]</span>"
+                    reg_d = f"VIX({vix_c:.1f}) 40 돌파. 시장이 이성을 상실한 시스템 리스크 구간입니다. 주식을 전량 매도하고 안전자산으로 대피하십시오."
 
-        entry_g = ms['entry_grade']
-        dur = ms['regime_duration']
-        direction = ms['regime_direction']
-        dir_map = {"ascending": "상향 전환", "descending": "하향 전환", "stable": "현재 상태 유지"}
-        dir_kr = dir_map.get(direction, "-")
-        dot_c = C_UP if "최적" in entry_g or "적합" in entry_g else (C_WARN if "주의" in entry_g or "탐색" in entry_g else C_DOWN)
-        
-        if direction == 'ascending' and dur <= 10: summ = "상향 전환 직후 골든타임. 진입 비중 확대를 적극 권장합니다."
-        elif direction == 'ascending': summ = "상승 추세 안정화. 계획된 비중대로 편안하게 분할 매수하십시오."
-        elif direction == 'descending' and dur <= 20: summ = "하향 전환 발생. 추가 하락 우려가 있으므로 신규 매수를 전면 보류하십시오."
-        elif direction == 'descending': summ = "장기 하락 중. 완벽한 상승 신호(R2 이상)가 뜰 때까지 현금을 대기하십시오."
-        elif dur > 60: summ = "레짐 장기화로 추세 반전 리스크 누적. 보수적인 소규모 분할 진입을 추천합니다."
-        else: summ = "레짐 안정적. 시스템 룰에 맞춰 평소처럼 자금을 정상 운용하십시오."
+                entry_g = ms['entry_grade']
+                dur = ms['regime_duration']
+                direction = ms['regime_direction']
+                dir_map = {"ascending": "상향 전환", "descending": "하향 전환", "stable": "현재 상태 유지"}
+                dir_kr = dir_map.get(direction, "-")
+                dot_c = C_UP if "최적" in entry_g or "적합" in entry_g else (C_WARN if "주의" in entry_g or "탐색" in entry_g else C_DOWN)
+                
+                if direction == 'ascending' and dur <= 10: summ = "상향 전환 직후 골든타임. 진입 비중 확대를 적극 권장합니다."
+                elif direction == 'ascending': summ = "상승 추세 안정화. 계획된 비중대로 편안하게 분할 매수하십시오."
+                elif direction == 'descending' and dur <= 20: summ = "하향 전환 발생. 추가 하락 우려가 있으므로 신규 매수를 전면 보류하십시오."
+                elif direction == 'descending': summ = "장기 하락 중. 완벽한 상승 신호(R2 이상)가 뜰 때까지 현금을 대기하십시오."
+                elif dur > 60: summ = "레짐 장기화로 추세 반전 리스크 누적. 보수적인 소규모 분할 진입을 추천합니다."
+                else: summ = "레짐 안정적. 시스템 룰에 맞춰 평소처럼 자금을 정상 운용하십시오."
 
-        st.markdown(f"""<div class='info-grid'>
+                st.markdown(f"""<div class='info-grid'>
 <div class='info-panel'>
 <div style='font-weight:bold; margin-bottom:8px; border-bottom:1px solid currentColor; padding-bottom:4px; opacity:0.8;'>⚡ SOXL 진입 판독기</div>
 <div style='font-size:0.85rem; line-height:1.6;'>
@@ -802,144 +845,139 @@ def make_portfolio_page(acc_name):
 </div>
 </div>
 </div>""", unsafe_allow_html=True)
+                st.write("")
 
-        st.markdown("---")
+            elif block == "💼 기입표":
+                st.markdown(f"#### 💼 포트폴리오 기입표")
+                def color_y(val):
+                    if isinstance(val, (int, float)):
+                        if val > 0: return f'color: {C_UP}; font-weight: bold;'
+                        elif val < 0: return f'color: {C_DOWN}; font-weight: bold;'
+                    return ''
 
-        # ------------------- 데이터 테이블 -------------------
-        st.markdown(f"#### 💼 포트폴리오 기입표")
-        
-        def color_y(val):
-            if isinstance(val, (int, float)):
-                if val > 0: return f'color: {C_UP}; font-weight: bold;'
-                elif val < 0: return f'color: {C_DOWN}; font-weight: bold;'
-            return ''
+                ed_disp = st.data_editor(
+                    disp_df.style.map(color_y, subset=["수익률 (%)", "원화 수익률 (%)"]), 
+                    num_rows="dynamic", use_container_width=True, height=350, key=f"ed_{acc_name}",
+                    column_order=["태그", "티커 (Ticker)", "수량 (주/달러)", "평균 단가 ($)", "매입 환율", "현재가 ($)", "수익률 (%)", "원화 수익률 (%)"],
+                    column_config={
+                        "태그": st.column_config.SelectboxColumn("태그", options=["코어", "위성", "헷지", "현금", "단기픽"], required=True),
+                        "티커 (Ticker)": st.column_config.TextColumn("종목명"),
+                        "현재가 ($)": st.column_config.NumberColumn("현재가 💵", disabled=True, format="$ %.2f"),
+                        "현재 환율": st.column_config.NumberColumn("현재 환율 💱", disabled=True, format="₩ %.1f"),
+                        "수익률 (%)": st.column_config.NumberColumn("수익률 📈", disabled=True, format="%.2f %%"),
+                        "원화 수익률 (%)": st.column_config.NumberColumn("원화 수익률 🇰🇷", disabled=True, format="%.2f %%"),
+                        "매입 환율": st.column_config.NumberColumn("매입 환율 💱", format="₩ %.1f"),
+                    }
+                )
+                base_cols = ["티커 (Ticker)", "수량 (주/달러)", "평균 단가 ($)", "매입 환율", "태그"]
+                if not ed_disp[base_cols].equals(pf_df[base_cols]):
+                    st.session_state['accounts'][acc_name]["portfolio"] = ed_disp[base_cols].to_dict(orient="records")
+                    save_accounts_data(st.session_state['accounts']); st.rerun()
+                st.write("")
 
-        ed_disp = st.data_editor(
-            disp_df.style.map(color_y, subset=["수익률 (%)", "원화 수익률 (%)"]), 
-            num_rows="dynamic", use_container_width=True, height=350,
-            column_order=["태그", "티커 (Ticker)", "수량 (주/달러)", "평균 단가 ($)", "매입 환율", "현재가 ($)", "수익률 (%)", "원화 수익률 (%)"],
-            column_config={
-                "태그": st.column_config.SelectboxColumn("태그", options=["코어", "위성", "헷지", "현금", "단기픽"], required=True),
-                "티커 (Ticker)": st.column_config.TextColumn("종목명"),
-                "현재가 ($)": st.column_config.NumberColumn("현재가 💵", disabled=True, format="$ %.2f"),
-                "현재 환율": st.column_config.NumberColumn("현재 환율 💱", disabled=True, format="₩ %.1f"),
-                "수익률 (%)": st.column_config.NumberColumn("수익률 📈", disabled=True, format="%.2f %%"),
-                "원화 수익률 (%)": st.column_config.NumberColumn("원화 수익률 🇰🇷", disabled=True, format="%.2f %%"),
-                "매입 환율": st.column_config.NumberColumn("매입 환율 💱", format="₩ %.1f"),
-            }
-        )
-        base_cols = ["티커 (Ticker)", "수량 (주/달러)", "평균 단가 ($)", "매입 환율", "태그"]
-        if not ed_disp[base_cols].equals(pf_df[base_cols]):
-            st.session_state['accounts'][acc_name]["portfolio"] = ed_disp[base_cols].to_dict(orient="records")
-            save_accounts_data(st.session_state['accounts']); st.rerun()
+            elif block == "🍩 자산 배분 & 지침":
+                col_pie, col_act = st.columns([1, 1.3])
+                with col_pie:
+                    st.markdown("#### 🍩 자산 배분 비중")
+                    with st.container(border=True):
+                        if total_val_now > 0:
+                            fig = go.Figure(go.Pie(labels=list(asset_vals.keys()), values=list(asset_vals.values()), hole=0.6, marker=dict(colors=[st.session_state['settings']['chart_colors'].get(k, '#888') for k in asset_vals.keys()])))
+                            cust_p2 = THEME_LAYOUT.copy()
+                            cust_p2.update(height=300, showlegend=False, margin=dict(t=10, b=10, l=10, r=10), annotations=[dict(text=f"100%", x=0.5, y=0.5, showarrow=False, font=dict(color=TEXT_COLOR, size=16))])
+                            fig.update_layout(**cust_p2)
+                            fig.update_traces(textposition='inside', textinfo='percent+label', textfont_size=13, textfont_color="#fff" if current_theme in ["1920년대 타자기 테마", "월스트리트 저널 테마"] else TEXT_COLOR)
+                            st.plotly_chart(fig, use_container_width=True)
+                with col_act:
+                    st.markdown("#### ⚖️ 리밸런싱 지침")
+                    with st.container(border=True):
+                        status_d = []
+                        smh_cond = (ms['smh'] > ms['smh_ma50']) and (ms['smh_3m_ret'] > 0.05) and (ms['smh_rsi'] > 50)
+                        def get_w_local(reg, usx):
+                            w = {t: 0.0 for t in REQUIRED_TICKERS}; semi = 'SOXL' if usx else 'USD'
+                            if reg == 1: w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'], w['CASH'] = 0.30, 0.20, 0.20, 0.15, 0.10, 0.05
+                            elif reg == 2: w['QLD'], w['SSO'], w['GLD'], w['USD'], w['QQQ'], w['CASH'] = 0.30, 0.25, 0.20, 0.10, 0.05, 0.10
+                            elif reg == 3: w['GLD'], w['CASH'], w['QQQ'] = 0.50, 0.35, 0.15
+                            elif reg == 4: w['GLD'], w['CASH'], w['QQQ'] = 0.50, 0.40, 0.10
+                            return {k: v for k, v in w.items() if v > 0}
+                            
+                        target_w_dict = get_w_local(ms['regime'], smh_cond)
+                        all_tkrs = set([t for t in asset_vals.keys()] + list(target_w_dict.keys()))
+                        for tkr in all_tkrs:
+                            tkr = tkr.upper()
+                            my_v = asset_vals.get(tkr, 0.0); my_w = (my_v / total_val_now * 100) if total_val_now > 0 else 0.0
+                            tw = target_w_dict.get(tkr, 0.0); tv = rebal_base * tw; diff = tv - my_v; cp = live_prices.get(tkr, 0.0)
+                            if tkr != "CASH" and cp > 0:
+                                shares_to_trade = abs(diff) / cp
+                                if shares_to_trade < 1.0: action = "HOLD"
+                                elif diff > 0: action = f"BUY {shares_to_trade:.0f}"
+                                else: action = f"SELL {shares_to_trade:.0f}"
+                            elif tkr == "CASH":
+                                if abs(diff) < 50: action = "HOLD"
+                                elif diff > 0: action = f"ADD ${diff:,.0f}"
+                                else: action = f"WITHDRAW ${abs(diff):,.0f}"
+                            else: action = "HOLD"
+                            
+                            if my_v > 0 or tw > 0: status_d.append({"TICKER": tkr, "TARGET": f"{tw*100:.1f}%", "ACTUAL": f"{my_w:.1f}%", "ACTION": action})
+                                
+                        if status_d:
+                            status_df = pd.DataFrame(status_d).sort_values("TARGET", ascending=False)
+                            def color_act(val):
+                                val_s = str(val)
+                                if 'BUY' in val_s or 'ADD' in val_s: return f'color: {C_UP}; font-weight:bold;'
+                                elif 'SELL' in val_s or 'WITHDRAW' in val_s: return f'color: {C_DOWN}; font-weight:bold;'
+                                return ''
+                            st.dataframe(status_df.style.map(color_act, subset=['ACTION']), use_container_width=True, hide_index=True)
+                st.write("")
 
-        st.write("")
+            elif block == "📈 성장 곡선":
+                st.markdown("**📈 자산 성장 곡선**")
+                hist_dict = curr_acc_data.get("seed_history", {})
+                if hist_dict:
+                    with st.container(border=True):
+                        hist_df = pd.DataFrame.from_dict(hist_dict, orient='index')
+                        hist_df.index = pd.to_datetime(hist_df.index)
+                        hist_df = hist_df.sort_index()
 
-        # ------------------- 파이차트 & 리밸런싱 -------------------
-        col_pie, col_act = st.columns([1, 1.3])
-        
-        with col_pie:
-            st.markdown("#### 🍩 자산 배분 비중")
-            with st.container(border=True):
-                if total_val_now > 0:
-                    fig = go.Figure(go.Pie(labels=list(asset_vals.keys()), values=list(asset_vals.values()), hole=0.6, marker=dict(colors=[st.session_state['settings']['chart_colors'].get(k, '#888') for k in asset_vals.keys()])))
-                    cust_p2 = THEME_LAYOUT.copy()
-                    cust_p2.update(height=300, showlegend=False, margin=dict(t=10, b=10, l=10, r=10), annotations=[dict(text=f"100%", x=0.5, y=0.5, showarrow=False, font=dict(color=TEXT_COLOR, size=16))])
-                    fig.update_layout(**cust_p2)
-                    fig.update_traces(textposition='inside', textinfo='percent+label', textfont_size=13, textfont_color="#fff" if current_theme=="1920년대 타자기 테마" else TEXT_COLOR)
-                    st.plotly_chart(fig, use_container_width=True)
-
-        with col_act:
-            st.markdown("#### ⚖️ 리밸런싱 지침")
-            with st.container(border=True):
-                status_d = []
-                smh_cond = (ms['smh'] > ms['smh_ma50']) and (ms['smh_3m_ret'] > 0.05) and (ms['smh_rsi'] > 50)
-                def get_w_local(reg, usx):
-                    w = {t: 0.0 for t in REQUIRED_TICKERS}; semi = 'SOXL' if usx else 'USD'
-                    if reg == 1: w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'], w['CASH'] = 0.30, 0.20, 0.20, 0.15, 0.10, 0.05
-                    elif reg == 2: w['QLD'], w['SSO'], w['GLD'], w['USD'], w['QQQ'], w['CASH'] = 0.30, 0.25, 0.20, 0.10, 0.05, 0.10
-                    elif reg == 3: w['GLD'], w['CASH'], w['QQQ'] = 0.50, 0.35, 0.15
-                    elif reg == 4: w['GLD'], w['CASH'], w['QQQ'] = 0.50, 0.40, 0.10
-                    return {k: v for k, v in w.items() if v > 0}
-                    
-                target_w_dict = get_w_local(ms['regime'], smh_cond)
-                all_tkrs = set([t for t in asset_vals.keys()] + list(target_w_dict.keys()))
-                for tkr in all_tkrs:
-                    tkr = tkr.upper()
-                    my_v = asset_vals.get(tkr, 0.0); my_w = (my_v / total_val_now * 100) if total_val_now > 0 else 0.0
-                    tw = target_w_dict.get(tkr, 0.0); tv = rebal_base * tw; diff = tv - my_v; cp = live_prices.get(tkr, 0.0)
-                    
-                    if tkr != "CASH" and cp > 0:
-                        shares_to_trade = abs(diff) / cp
-                        if shares_to_trade < 1.0: action = "HOLD"
-                        elif diff > 0: action = f"BUY {shares_to_trade:.0f}"
-                        else: action = f"SELL {shares_to_trade:.0f}"
-                    elif tkr == "CASH":
-                        if abs(diff) < 50: action = "HOLD"
-                        elif diff > 0: action = f"ADD ${diff:,.0f}"
-                        else: action = f"WITHDRAW ${abs(diff):,.0f}"
-                    else: action = "HOLD"
-                    
-                    if my_v > 0 or tw > 0: 
-                        status_d.append({"TICKER": tkr, "TARGET": f"{tw*100:.1f}%", "ACTUAL": f"{my_w:.1f}%", "ACTION": action})
+                        fed_str = curr_acc_data.get("first_entry_date")
+                        col_date, _ = st.columns([1, 3])
+                        with col_date:
+                            default_date = pd.to_datetime(fed_str).date() if fed_str else (datetime.today() - timedelta(days=90)).date()
+                            u_date = st.date_input("기준일 설정", value=default_date, key=f"date_{acc_name}")
+                            if str(u_date) != str(fed_str)[:10]: 
+                                st.session_state['accounts'][acc_name]["first_entry_date"] = str(u_date)
+                                save_accounts_data(st.session_state['accounts'])
                         
-                if status_d:
-                    status_df = pd.DataFrame(status_d).sort_values("TARGET", ascending=False)
-                    def color_act(val):
-                        val_s = str(val)
-                        if 'BUY' in val_s or 'ADD' in val_s: return f'color: {C_UP}; font-weight:bold;'
-                        elif 'SELL' in val_s or 'WITHDRAW' in val_s: return f'color: {C_DOWN}; font-weight:bold;'
-                        return ''
-                    st.dataframe(status_df.style.map(color_act, subset=['ACTION']), use_container_width=True, hide_index=True)
+                        try:
+                            if fed_str:
+                                fed_dt = pd.to_datetime(fed_str)
+                                if fed_dt < hist_df.index[0]:
+                                    hist_df.loc[fed_dt] = {"seed": auto_seed, "equity": auto_seed}
+                                    hist_df = hist_df.sort_index()
 
-        st.write("")
-        st.markdown("**📈 자산 성장 곡선**")
-        
-        hist_dict = curr_acc_data.get("seed_history", {})
-        if hist_dict:
-            with st.container(border=True):
-                hist_df = pd.DataFrame.from_dict(hist_dict, orient='index')
-                hist_df.index = pd.to_datetime(hist_df.index)
-                hist_df = hist_df.sort_index()
+                            hist_df = hist_df.resample('D').ffill()
 
-                fed_str = curr_acc_data.get("first_entry_date")
-                col_date, _ = st.columns([1, 3])
-                with col_date:
-                    default_date = pd.to_datetime(fed_str).date() if fed_str else (datetime.today() - timedelta(days=90)).date()
-                    u_date = st.date_input("기준일 설정", value=default_date, key=f"date_{acc_name}")
-                    if str(u_date) != str(fed_str)[:10]: 
-                        st.session_state['accounts'][acc_name]["first_entry_date"] = str(u_date)
-                        save_accounts_data(st.session_state['accounts'])
-                
-                try:
-                    if fed_str:
-                        fed_dt = pd.to_datetime(fed_str)
-                        if fed_dt < hist_df.index[0]:
-                            hist_df.loc[fed_dt] = {"seed": auto_seed, "equity": auto_seed}
-                            hist_df = hist_df.sort_index()
+                            fig_seed = go.Figure()
+                            fig_seed.add_trace(go.Scatter(x=hist_df.index, y=hist_df['equity'], name="TOTAL EQUITY", line=dict(color=C_UP, width=3, shape='hv'), mode='lines'))
+                            fig_seed.add_trace(go.Scatter(x=hist_df.index, y=hist_df['seed'], name="SEED", line=dict(color=C_DOWN, width=2, dash='dot', shape='hv'), mode='lines'))
+                            
+                            cust_s = THEME_LAYOUT.copy()
+                            cust_s.update(height=350, hovermode="x unified", yaxis=dict(showgrid=True, autorange=True, rangemode="normal"))
+                            fig_seed.update_layout(**cust_s)
+                            st.plotly_chart(fig_seed, use_container_width=True)
+                        except Exception as e: pass
+                st.write("")
 
-                    hist_df = hist_df.resample('D').ffill()
-
-                    fig_seed = go.Figure()
-                    fig_seed.add_trace(go.Scatter(x=hist_df.index, y=hist_df['equity'], name="TOTAL EQUITY", line=dict(color=C_UP, width=3, shape='hv'), mode='lines'))
-                    fig_seed.add_trace(go.Scatter(x=hist_df.index, y=hist_df['seed'], name="SEED", line=dict(color=C_DOWN, width=2, dash='dot', shape='hv'), mode='lines'))
-                    
-                    cust_s = THEME_LAYOUT.copy()
-                    cust_s.update(height=350, hovermode="x unified", yaxis=dict(showgrid=True, autorange=True, rangemode="normal"))
-                    fig_seed.update_layout(**cust_s)
-                    st.plotly_chart(fig_seed, use_container_width=True)
-                except Exception as e: pass
-
-        st.write("")
-        col_log1, col_log2 = st.columns([1.5, 1])
-        with col_log1:
-            st.markdown("**📝 매매 일지**")
-            def save_j(): st.session_state['accounts'][acc_name]["journal_text"] = st.session_state[f"j_{acc_name}"]; save_accounts_data(st.session_state['accounts'])
-            st.text_area("LOG...", value=curr_acc_data.get('journal_text', ''), key=f"j_{acc_name}", height=300, on_change=save_j, label_visibility="collapsed")
-        with col_log2:
-            st.markdown("**🔔 시스템 로그**")
-            history = curr_acc_data.get('history', [])
-            if history: st.dataframe(pd.DataFrame(history)[::-1], hide_index=True, use_container_width=True, height=300)
+            elif block == "📝 매매 일지":
+                col_log1, col_log2 = st.columns([1.5, 1])
+                with col_log1:
+                    st.markdown("**📝 매매 일지**")
+                    def save_j(): st.session_state['accounts'][acc_name]["journal_text"] = st.session_state[f"j_{acc_name}"]; save_accounts_data(st.session_state['accounts'])
+                    st.text_area("LOG...", value=curr_acc_data.get('journal_text', ''), key=f"j_{acc_name}", height=300, on_change=save_j, label_visibility="collapsed")
+                with col_log2:
+                    st.markdown("**🔔 시스템 로그**")
+                    history = curr_acc_data.get('history', [])
+                    if history: st.dataframe(pd.DataFrame(history)[::-1], hide_index=True, use_container_width=True, height=300)
+                st.write("")
 
     page_func.__name__ = f"pf_{abs(hash(acc_name))}"
     return page_func
@@ -951,7 +989,7 @@ def page_manage_accounts():
     new_acc = st.text_input("새 계좌명")
     if st.button("개설", type="primary") and new_acc:
         if new_acc not in st.session_state['accounts']:
-            st.session_state['accounts'][new_acc] = {"portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS], "history": [{"Date": datetime.now().strftime("%Y-%m-%d"), "Log": "계좌 개설"}], "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0}
+            st.session_state['accounts'][new_acc] = {"portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS], "history": [{"Date": datetime.now().strftime("%Y-%m-%d"), "Log": "계좌 개설"}], "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0, "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 기입표", "🍩 자산 배분 & 지침", "📈 성장 곡선", "📝 매매 일지"]}
             save_accounts_data(st.session_state['accounts']); st.rerun()
     st.divider()
     for acc in list(st.session_state['accounts'].keys()):
@@ -968,7 +1006,7 @@ def page_strategy_specification():
 
 
 # =====================================================================
-# [5] 사이드바 (테마 변경 및 링크 완전 수정)
+# [5] 사이드바 설정 및 네비게이션
 # =====================================================================
 
 st.sidebar.markdown("---")
@@ -996,6 +1034,21 @@ st.sidebar.markdown(f"""<div style="display:flex; flex-direction:column; gap:2px
 <a href="https://gemini.google.com/" target="_blank" class="sidebar-link"><span>✨</span> 제미나이</a>
 </div>""", unsafe_allow_html=True)
 st.sidebar.markdown("---")
+
+with st.sidebar.expander("🎨 테마 색상 설정"):
+    st.markdown("**기본 텍스트**")
+    new_text_color = st.color_picker("색상", st.session_state['settings']['text_color'])
+    if new_text_color != st.session_state['settings']['text_color']:
+        st.session_state['settings']['text_color'] = new_text_color
+        save_settings(st.session_state['settings']); st.rerun()
+        
+    st.markdown("---")
+    st.markdown("📈 **파이 차트 조각**")
+    for tkr in st.session_state['settings']['chart_colors']:
+        new_c = st.color_picker(f"{tkr}", st.session_state['settings']['chart_colors'][tkr])
+        if new_c != st.session_state['settings']['chart_colors'][tkr]:
+            st.session_state['settings']['chart_colors'][tkr] = new_c
+            save_settings(st.session_state['settings']); st.rerun()
 
 with st.sidebar.expander("💾 백업 및 복구"):
     st.download_button("📥 백업 다운로드", data=json.dumps(st.session_state['accounts']), file_name="amls_backup.json")
