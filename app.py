@@ -18,7 +18,7 @@ import time
 warnings.filterwarnings('ignore')
 
 # =====================================================================
-# [0] 시스템 설정, 데이터 관리 및 애플 글래스모피즘 테마 주입
+# [0] 시스템 설정, 데이터 관리 및 커스텀 테마 주입
 # =====================================================================
 st.set_page_config(page_title="AMLS 퀀트 포트폴리오", layout="wide", initial_sidebar_state="expanded")
 
@@ -50,138 +50,132 @@ def apply_apple_glass_style():
     text_color = st.session_state['settings']['text_color']
     
     st.markdown(f"""
-    <style>
-    @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+<style>
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
-    /* 애플풍 은은한 그라데이션 배경 */
-    .stApp {{
-        background: radial-gradient(circle at 15% 50%, rgba(240, 244, 255, 1), rgba(255, 255, 255, 0)), 
-                    radial-gradient(circle at 85% 30%, rgba(230, 240, 255, 1), rgba(255, 255, 255, 0)) !important;
-        background-color: #f5f5f7 !important;
-        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-        color: {text_color} !important;
-        letter-spacing: -0.01em;
-    }}
+.stApp {{
+    background: radial-gradient(circle at 15% 50%, rgba(240, 244, 255, 1), rgba(255, 255, 255, 0)), 
+                radial-gradient(circle at 85% 30%, rgba(230, 240, 255, 1), rgba(255, 255, 255, 0)) !important;
+    background-color: #f5f5f7 !important;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    color: {text_color} !important;
+    letter-spacing: -0.01em;
+}}
 
-    div[data-testid="stMetricValue"] > div,
-    div[data-testid="stMetricDelta"] > div,
-    p, h1, h2, h3, h4, h5, h6, span, label, .stMarkdown {{
-        white-space: normal !important;
-        word-break: keep-all !important;
-        overflow-wrap: break-word !important;
-    }}
+div[data-testid="stMetricValue"] > div,
+div[data-testid="stMetricDelta"] > div,
+p, h1, h2, h3, h4, h5, h6, span, label, .stMarkdown {{
+    white-space: normal !important;
+    word-break: keep-all !important;
+    overflow-wrap: break-word !important;
+}}
 
-    /* 글래스모피즘 카드 스타일 */
-    div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{
-        background: rgba(255, 255, 255, 0.65) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.5) !important;
-        border-radius: 20px !important;
-        box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.06) !important;
-        padding: 1.5rem !important;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }}
-    div[data-testid="stVerticalBlockBorderWrapper"] > div:hover {{
-        box-shadow: 0 8px 32px -1px rgba(0, 0, 0, 0.1) !important;
-    }}
+div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{
+    background: rgba(255, 255, 255, 0.65) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.06) !important;
+    padding: 1.5rem !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}}
+div[data-testid="stVerticalBlockBorderWrapper"] > div:hover {{
+    box-shadow: 0 8px 32px -1px rgba(0, 0, 0, 0.1) !important;
+}}
 
-    /* 애플 스타일 버튼 */
-    .stButton>button {{
-        background-color: rgba(255, 255, 255, 0.8) !important;
-        color: #007aff !important;
-        border: 1px solid rgba(0, 122, 255, 0.3) !important;
-        border-radius: 12px !important;
-        font-weight: 600 !important;
-        padding: 0.5rem 1rem !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
-        backdrop-filter: blur(10px);
-        transition: all 0.2s;
-    }}
-    .stButton>button:hover {{
-        background-color: #007aff !important;
-        color: #ffffff !important;
-        transform: scale(1.02);
-    }}
+.stButton>button {{
+    background-color: rgba(255, 255, 255, 0.8) !important;
+    color: #007aff !important;
+    border: 1px solid rgba(0, 122, 255, 0.3) !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    padding: 0.5rem 1rem !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+    backdrop-filter: blur(10px);
+    transition: all 0.2s;
+}}
+.stButton>button:hover {{
+    background-color: #007aff !important;
+    color: #ffffff !important;
+    transform: scale(1.02);
+}}
 
-    /* 입력창 글래스 스타일 */
-    input, textarea, select, div[data-baseweb="select"] > div {{
-        background-color: rgba(255, 255, 255, 0.5) !important;
-        backdrop-filter: blur(10px) !important;
-        color: {text_color} !important;
-        border: 1px solid rgba(0,0,0,0.1) !important;
-        border-radius: 12px !important;
-    }}
-    input:focus, textarea:focus {{
-        border-color: #007aff !important;
-        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2) !important;
-    }}
+input, textarea, select, div[data-baseweb="select"] > div {{
+    background-color: rgba(255, 255, 255, 0.5) !important;
+    backdrop-filter: blur(10px) !important;
+    color: {text_color} !important;
+    border: 1px solid rgba(0,0,0,0.1) !important;
+    border-radius: 12px !important;
+}}
+input:focus, textarea:focus {{
+    border-color: #007aff !important;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2) !important;
+}}
 
-    [data-testid="stDataFrame"] {{
-        border-radius: 16px !important;
-        overflow: hidden !important;
-        border: 1px solid rgba(0,0,0,0.05) !important;
-        background: rgba(255, 255, 255, 0.5) !important;
-    }}
+[data-testid="stDataFrame"] {{
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(0,0,0,0.05) !important;
+    background: rgba(255, 255, 255, 0.5) !important;
+}}
 
-    [data-testid="stSidebar"] {{
-        background: rgba(245, 245, 247, 0.7) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border-right: 1px solid rgba(0,0,0,0.05) !important;
-    }}
+[data-testid="stSidebar"] {{
+    background: rgba(245, 245, 247, 0.7) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-right: 1px solid rgba(0,0,0,0.05) !important;
+}}
 
-    button[data-baseweb="tab"] {{
-        color: #8e8e93 !important;
-        font-weight: 600 !important;
-        font-size: 1.05rem !important;
-        background-color: transparent !important;
-    }}
-    button[data-baseweb="tab"][aria-selected="true"] {{
-        color: #1d1d1f !important;
-        border-bottom-color: #1d1d1f !important;
-        border-bottom-width: 2px !important;
-    }}
-    
-    div[data-testid="stMetricValue"] {{
-        font-weight: 700 !important;
-        font-size: 2rem !important;
-        color: {text_color} !important;
-    }}
-    div[data-testid="stMetricLabel"] {{
-        color: #8e8e93 !important;
-        font-size: 0.95rem !important;
-        font-weight: 500 !important;
-    }}
+button[data-baseweb="tab"] {{
+    color: #8e8e93 !important;
+    font-weight: 600 !important;
+    font-size: 1.05rem !important;
+    background-color: transparent !important;
+}}
+button[data-baseweb="tab"][aria-selected="true"] {{
+    color: #1d1d1f !important;
+    border-bottom-color: #1d1d1f !important;
+    border-bottom-width: 2px !important;
+}}
 
-    /* 사이드바 즐겨찾기 링크 스타일 */
-    .sidebar-link {{
-        display: flex;
-        align-items: center;
-        padding: 8px 12px;
-        margin-bottom: 4px;
-        border-radius: 10px;
-        text-decoration: none !important;
-        color: #1d1d1f !important;
-        font-weight: 600;
-        font-size: 0.95rem;
-        background-color: transparent;
-        transition: background-color 0.2s, transform 0.1s;
-    }}
-    .sidebar-link:hover {{
-        background-color: rgba(0,0,0,0.05);
-        transform: translateX(2px);
-    }}
-    .sidebar-link span {{
-        margin-right: 10px;
-        font-size: 1.1rem;
-    }}
-    </style>
+div[data-testid="stMetricValue"] {{
+    font-weight: 700 !important;
+    font-size: 2rem !important;
+    color: {text_color} !important;
+}}
+div[data-testid="stMetricLabel"] {{
+    color: #8e8e93 !important;
+    font-size: 0.95rem !important;
+    font-weight: 500 !important;
+}}
+
+.sidebar-link {{
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    border-radius: 10px;
+    text-decoration: none !important;
+    color: #1d1d1f !important;
+    font-weight: 600;
+    font-size: 0.95rem;
+    background-color: transparent;
+    transition: background-color 0.2s, transform 0.1s;
+}}
+.sidebar-link:hover {{
+    background-color: rgba(0,0,0,0.05);
+    transform: translateX(2px);
+}}
+.sidebar-link span {{
+    margin-right: 10px;
+    font-size: 1.1rem;
+}}
+</style>
     """, unsafe_allow_html=True)
 
 apply_apple_glass_style()
 
-# Plotly 차트 레이아웃 (투명 배경으로 글래스 느낌 유지)
 GLASS_LAYOUT = dict(
     template="plotly_white",
     paper_bgcolor="rgba(0,0,0,0)",
@@ -192,10 +186,10 @@ GLASS_LAYOUT = dict(
     yaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.05)', zerolinecolor='rgba(0,0,0,0.1)')
 )
 
-C_UP = "#34c759"     # Apple Green
-C_DOWN = "#ff3b30"   # Apple Red
-C_WARN = "#ff9500"   # Apple Orange
-C_SAFE = "#007aff"   # Apple Blue
+C_UP = "#34c759"
+C_DOWN = "#ff3b30"
+C_WARN = "#ff9500"
+C_SAFE = "#007aff"
 
 ACCOUNTS_FILE = "amls_multi_accounts.json"
 REQUIRED_TICKERS = ["TQQQ", "QLD", "QQQ", "SOXL", "USD", "SSO", "GLD", "CASH"]
@@ -223,7 +217,6 @@ if 'accounts' not in st.session_state:
         }
     st.session_state['accounts'] = loaded
 
-# 마이그레이션 로직
 needs_save = False
 if "기본 계좌 (AMLS)" in st.session_state['accounts']:
     st.session_state['accounts']["AMLS v4.3"] = st.session_state['accounts'].pop("기본 계좌 (AMLS)")
@@ -395,24 +388,24 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
 # =====================================================================
 def page_market_dashboard():
     st.title("🌐 글로벌 매크로 터미널")
-    components.html("""
-    <div class="tradingview-widget-container" style="border-radius: 16px; overflow: hidden; border: 1px solid rgba(0,0,0,0.05);">
-      <div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-      {
-      "symbols": [
-        {"proName": "FOREXCOM:SPXUSD", "title": "S&P 500"},
-        {"proName": "FOREXCOM:NSXUSD", "title": "NASDAQ 100"},
-        {"description": "TQQQ", "proName": "NASDAQ:TQQQ"},
-        {"description": "SOXL", "proName": "ARCA:SOXL"},
-        {"description": "USD/KRW", "proName": "FX_IDC:USDKRW"},
-        {"description": "GOLD", "proName": "OANDA:XAUUSD"}
-      ],
-      "showSymbolLogo": true, "colorTheme": "light", "locale": "kr"
-    }
-      </script>
-    </div>
-    """, height=70)
+    
+    # 띄어쓰기 없이 HTML 삽입
+    components.html("""<div class="tradingview-widget-container" style="border-radius: 16px; overflow: hidden; border: 1px solid rgba(0,0,0,0.05);">
+<div class="tradingview-widget-container__widget"></div>
+<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+{
+"symbols": [
+{"proName": "FOREXCOM:SPXUSD", "title": "S&P 500"},
+{"proName": "FOREXCOM:NSXUSD", "title": "NASDAQ 100"},
+{"description": "TQQQ", "proName": "NASDAQ:TQQQ"},
+{"description": "SOXL", "proName": "ARCA:SOXL"},
+{"description": "USD/KRW", "proName": "FX_IDC:USDKRW"},
+{"description": "GOLD", "proName": "OANDA:XAUUSD"}
+],
+"showSymbolLogo": true, "colorTheme": "light", "locale": "kr"
+}
+</script>
+</div>""", height=70)
 
     col_left, col_right = st.columns([1, 1.8])
     with col_left:
@@ -439,11 +432,9 @@ def page_market_dashboard():
     with col_right:
         with st.container(border=True):
             st.markdown("##### 🗺️ S&P 500 섹터 맵")
-            components.html("""
-            <div style="border-radius: 16px; overflow: hidden; height: 100%;">
-            <iframe src="https://www.tradingview.com/embed-widget-stock-heatmap/?locale=kr#%7B%22dataSource%22%3A%22SPX500%22%2C%22blockSize%22%3A%22market_cap_basic%22%2C%22blockColor%22%3A%22change%22%2C%22grouping%22%3A%22sector%22%2C%22colorTheme%22%3A%22light%22%7D" width="100%" height="450" frameborder="0"></iframe>
-            </div>
-            """, height=460)
+            components.html("""<div style="border-radius: 16px; overflow: hidden; height: 100%;">
+<iframe src="https://www.tradingview.com/embed-widget-stock-heatmap/?locale=kr#%7B%22dataSource%22%3A%22SPX500%22%2C%22blockSize%22%3A%22market_cap_basic%22%2C%22blockColor%22%3A%22change%22%2C%22grouping%22%3A%22sector%22%2C%22colorTheme%22%3A%22light%22%7D" width="100%" height="450" frameborder="0"></iframe>
+</div>""", height=460)
 
 
 # =====================================================================
@@ -527,16 +518,16 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [4] 페이지 구성: 내 포트폴리오 관리 (미니멀 분석관 요약 폼)
+# [4] 페이지 구성: 내 포트폴리오 관리 (미니멀 분석관 요약 폼 적용)
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
         st.title(f"💼 {acc_name}")
-        st.markdown("나만의 포트폴리오를 우아하게 관리하세요.")
+        st.markdown("나만의 포트폴리오를 스마트하게 관리하세요.")
         
         curr_acc_data = st.session_state['accounts'][acc_name]
         pf_df = pd.DataFrame(curr_acc_data["portfolio"])
-        for col in ["수량 (주/달러)", "평균 단가 ($)", "매입 환율"]:
+        for col in ["수량 (주/달러)", "평균 단가 ($)", "매입 환율", "목표가 ($)"]:
             if col in pf_df.columns: pf_df[col] = pf_df[col].astype(float)
 
         @st.cache_data(ttl=1800)
@@ -706,19 +697,19 @@ def make_portfolio_page(acc_name):
                 
         with c_prog:
             st.markdown(f"""
-            <div style='background:rgba(255,255,255,0.6); backdrop-filter:blur(10px); padding:20px; border-radius:20px; border:1px solid rgba(255,255,255,0.5);'>
-                <div style='display:flex; justify-content:space-between; margin-bottom:10px;'>
-                    <span style='color:#1d1d1f; font-weight:700; font-size:1.05rem;'>현재: ${total_val_now:,.0f}</span>
-                    <span style='color:#8e8e93; font-weight:600; font-size:1.05rem;'>목표: ${target_val:,.0f}</span>
-                </div>
-                <div style='background-color:rgba(0,0,0,0.05); border-radius:12px; height:18px; width:100%; position:relative; overflow:hidden;'>
-                    <div style='background:linear-gradient(90deg, #34c759, #32d74b); width:{min(100.0, progress_pct)}%; height:100%; border-radius:12px; transition:width 0.8s ease;'></div>
-                </div>
-                <div style='text-align:right; margin-top:8px; font-size:0.95rem; font-weight:700; color:#007aff;'>
-                    {progress_pct:.2f}%
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+<div style='background:rgba(255,255,255,0.6); backdrop-filter:blur(10px); padding:20px; border-radius:20px; border:1px solid rgba(255,255,255,0.5); box-shadow: 0 4px 12px rgba(0,0,0,0.05);'>
+<div style='display:flex; justify-content:space-between; margin-bottom:10px;'>
+<span style='color:#1d1d1f; font-weight:700; font-size:1.05rem;'>현재: ${total_val_now:,.0f}</span>
+<span style='color:#8e8e93; font-weight:600; font-size:1.05rem;'>목표: ${target_val:,.0f}</span>
+</div>
+<div style='background-color:rgba(0,0,0,0.05); border-radius:12px; height:18px; width:100%; position:relative; overflow:hidden;'>
+<div style='background:linear-gradient(90deg, #34c759, #32d74b); width:{min(100.0, progress_pct)}%; height:100%; border-radius:12px; transition:width 0.8s ease;'></div>
+</div>
+<div style='text-align:right; margin-top:8px; font-size:0.95rem; font-weight:700; color:#007aff;'>
+{progress_pct:.2f}%
+</div>
+</div>
+""", unsafe_allow_html=True)
             
         st.write("")
         st.divider()
@@ -728,52 +719,49 @@ def make_portfolio_page(acc_name):
         m1, m2, m3, m4 = st.columns(4)
         with m1:
             st.markdown(f"""
-            <div style='background:rgba(255,255,255,0.6); backdrop-filter:blur(10px); border-radius:16px; padding:15px; border:1px solid rgba(255,255,255,0.5); text-align:center;'>
-                <div style='color:#8e8e93; font-size:0.85rem; font-weight:600;'>💰 총 평가액 (Total Equity)</div>
-                <div style='color:#1d1d1f; font-size:1.6rem; font-weight:700; margin-top:5px;'>${total_val_now:,.0f}</div>
-            </div>""", unsafe_allow_html=True)
+<div style='background:rgba(255,255,255,0.6); backdrop-filter:blur(10px); border-radius:16px; padding:15px; border:1px solid rgba(255,255,255,0.5); text-align:center;'>
+<div style='color:#8e8e93; font-size:0.85rem; font-weight:600;'>💰 총 평가액 (Total Equity)</div>
+<div style='color:#1d1d1f; font-size:1.6rem; font-weight:700; margin-top:5px;'>${total_val_now:,.0f}</div>
+</div>""", unsafe_allow_html=True)
         with m2:
             pn_col = C_UP if daily_diff > 0 else (C_DOWN if daily_diff < 0 else '#8e8e93')
             pn_ico = "▲" if daily_diff > 0 else ("▼" if daily_diff < 0 else "-")
             st.markdown(f"""
-            <div style='background:rgba(255,255,255,0.6); backdrop-filter:blur(10px); border-radius:16px; padding:15px; border:1px solid rgba(255,255,255,0.5); text-align:center;'>
-                <div style='color:#8e8e93; font-size:0.85rem; font-weight:600;'>일간 손익 (Daily PnL)</div>
-                <div style='color:{pn_col}; font-size:1.6rem; font-weight:700; margin-top:5px;'>{pn_ico} {abs(daily_diff_pct):.2f}%</div>
-                <div style='color:{pn_col}; font-size:0.8rem;'>({daily_diff:+.0f} $)</div>
-            </div>""", unsafe_allow_html=True)
+<div style='background:rgba(255,255,255,0.6); backdrop-filter:blur(10px); border-radius:16px; padding:15px; border:1px solid rgba(255,255,255,0.5); text-align:center;'>
+<div style='color:#8e8e93; font-size:0.85rem; font-weight:600;'>일간 손익 (Daily PnL)</div>
+<div style='color:{pn_col}; font-size:1.6rem; font-weight:700; margin-top:5px;'>{pn_ico} {abs(daily_diff_pct):.2f}%</div>
+<div style='color:{pn_col}; font-size:0.8rem;'>({daily_diff:+.0f} $)</div>
+</div>""", unsafe_allow_html=True)
         with m3:
             st.markdown(f"""
-            <div style='background:rgba(255,255,255,0.6); backdrop-filter:blur(10px); border-radius:16px; padding:15px; border:1px solid rgba(255,255,255,0.5); text-align:center;'>
-                <div style='color:#8e8e93; font-size:0.85rem; font-weight:600;'>👑 포트폴리오 MVP</div>
-                <div style='color:#1d1d1f; font-size:1.6rem; font-weight:700; margin-top:5px;'>{best_ticker}</div>
-                <div style='color:#007aff; font-size:0.8rem; font-weight:600;'>수익률 {best_ret:+.1f}%</div>
-            </div>""", unsafe_allow_html=True)
+<div style='background:rgba(255,255,255,0.6); backdrop-filter:blur(10px); border-radius:16px; padding:15px; border:1px solid rgba(255,255,255,0.5); text-align:center;'>
+<div style='color:#8e8e93; font-size:0.85rem; font-weight:600;'>👑 포트폴리오 MVP</div>
+<div style='color:#1d1d1f; font-size:1.6rem; font-weight:700; margin-top:5px;'>{best_ticker}</div>
+<div style='color:#007aff; font-size:0.8rem; font-weight:600;'>수익률 {best_ret:+.1f}%</div>
+</div>""", unsafe_allow_html=True)
         with m4:
             app_reg = ms['regime']
             st.markdown(f"""
-            <div style='background:rgba(255,255,255,0.6); backdrop-filter:blur(10px); border-radius:16px; padding:15px; border:1px solid rgba(255,255,255,0.5); text-align:center;'>
-                <div style='color:#8e8e93; font-size:0.85rem; font-weight:600;'>AI 전략 국면</div>
-                <div style='color:#1d1d1f; font-size:1.6rem; font-weight:700; margin-top:5px;'>Regime {app_reg}</div>
-                <div style='color:#8e8e93; font-size:0.8rem; font-weight:600;'>{ms['entry_grade'].split('(')[0].strip()}</div>
-            </div>""", unsafe_allow_html=True)
+<div style='background:rgba(255,255,255,0.6); backdrop-filter:blur(10px); border-radius:16px; padding:15px; border:1px solid rgba(255,255,255,0.5); text-align:center;'>
+<div style='color:#8e8e93; font-size:0.85rem; font-weight:600;'>AI 전략 국면</div>
+<div style='color:#1d1d1f; font-size:1.6rem; font-weight:700; margin-top:5px;'>Regime {app_reg}</div>
+<div style='color:#8e8e93; font-size:0.8rem; font-weight:600;'>{ms['entry_grade'].split('(')[0].strip()}</div>
+</div>""", unsafe_allow_html=True)
             
         st.write("")
         
-        # ------------------- 2, 3, 4번 '최소화 + 최소 시각화' 패널 -------------------
+        # ------------------- 2, 3, 4번 '최소화 + 최소 시각화' 패널 (마크다운 버그 수정본) -------------------
         st.markdown("#### ⚡ 실시간 시스템 분석관 요약")
         
-        # SOXL 상태 색상 (통과면 파란색/초록색, 아니면 빨간색/회색)
         c_s = "#34c759" if ms['smh'] > ms['smh_ma50'] else "#ff3b30"
         c_r = "#34c759" if ms['smh_3m_ret'] > 0.05 else "#ff3b30"
         c_rsi = "#34c759" if ms['smh_rsi'] > 50 else "#ff3b30"
 
-        # 국면별 배지 색상
         if app_reg == 1: badge_bg = "#34c759"; badge_txt = "R1 (강세)"; r_desc = "VIX 안정 & 정배열. 3배 레버리지 비중 확대 최적기."
         elif app_reg == 2: badge_bg = "#ff9500"; badge_txt = "R2 (조정)"; r_desc = "모멘텀 둔화. 2배수로 레버리지 축소 권장."
         elif app_reg == 3: badge_bg = "#ff3b30"; badge_txt = "R3 (약세)"; r_desc = "나스닥 200MA 붕괴. 레버리지 청산 & 금(GLD) 50% 방어."
         else: badge_bg = "#5856d6"; badge_txt = "R4 (위기)"; r_desc = "VIX 40 돌파 패닉. 즉시 주식 전량 매도 및 현금 대피."
 
-        # 투입 가이드 상태점
         entry_txt = ms['entry_grade']
         if "최적" in entry_txt or "적합" in entry_txt: dot_c = "#34c759"
         elif "가능" in entry_txt or "탐색" in entry_txt: dot_c = "#ff9500"
@@ -781,38 +769,34 @@ def make_portfolio_page(acc_name):
         dir_map = {"ascending": "상향", "descending": "하향", "stable": "유지"}
         direction_kr = dir_map.get(ms['regime_direction'], "알 수 없음")
 
-        st.markdown(f"""
-        <div style='display:flex; gap:15px; margin-bottom:20px; align-items:stretch;'>
-            
-            <div style='flex: 1.2; background:rgba(255,255,255,0.6); backdrop-filter:blur(10px); padding:16px; border-radius:16px; border:1px solid rgba(255,255,255,0.5);'>
-                <div style='font-size:0.85rem; color:#8e8e93; font-weight:600; margin-bottom:10px;'>SOXL 진입 판독기</div>
-                <div style='display:flex; gap:8px;'>
-                    <span style='background:{c_s}; color:#fff; font-size:0.75rem; font-weight:700; padding:4px 10px; border-radius:12px;'>50MA</span>
-                    <span style='background:{c_r}; color:#fff; font-size:0.75rem; font-weight:700; padding:4px 10px; border-radius:12px;'>3M 수익</span>
-                    <span style='background:{c_rsi}; color:#fff; font-size:0.75rem; font-weight:700; padding:4px 10px; border-radius:12px;'>RSI 14</span>
-                </div>
-            </div>
-
-            <div style='flex: 2; background:rgba(255,255,255,0.6); backdrop-filter:blur(10px); padding:16px; border-radius:16px; border:1px solid rgba(255,255,255,0.5);'>
-                <div style='font-size:0.85rem; color:#8e8e93; font-weight:600; margin-bottom:8px;'>AI 전략 분석관</div>
-                <div style='display:flex; align-items:center; gap:10px;'>
-                    <span style='background:{badge_bg}; color:#fff; font-size:0.85rem; font-weight:700; padding:4px 12px; border-radius:8px;'>{badge_txt}</span>
-                    <span style='font-size:0.95rem; color:#1d1d1f;'>{r_desc}</span>
-                </div>
-            </div>
-
-            <div style='flex: 1.2; background:rgba(255,255,255,0.6); backdrop-filter:blur(10px); padding:16px; border-radius:16px; border:1px solid rgba(255,255,255,0.5);'>
-                <div style='font-size:0.85rem; color:#8e8e93; font-weight:600; margin-bottom:8px;'>신규 자금 투입 가이드</div>
-                <div style='display:flex; align-items:center; gap:8px;'>
-                    <div style='width:10px; height:10px; border-radius:50%; background-color:{dot_c};'></div>
-                    <span style='font-size:1.0rem; font-weight:700; color:#1d1d1f;'>{entry_txt.split('(')[0].strip()}</span>
-                </div>
-                <div style='font-size:0.8rem; color:#8e8e93; margin-top:4px;'>
-                    방향: <b>{direction_kr}</b> &nbsp;|&nbsp; 체류: <b>{ms['regime_duration']}일</b>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        # 띄어쓰기 완전 제거하여 마크다운 버그 방지
+        st.markdown(f"""<div style='display:flex; gap:15px; margin-bottom:20px; align-items:stretch;'>
+<div style='flex: 1.2; background:rgba(255,255,255,0.6); backdrop-filter:blur(10px); padding:16px; border-radius:16px; border:1px solid rgba(255,255,255,0.5);'>
+<div style='font-size:0.85rem; color:#8e8e93; font-weight:600; margin-bottom:10px;'>SOXL 진입 판독기</div>
+<div style='display:flex; gap:8px;'>
+<span style='background:{c_s}; color:#fff; font-size:0.75rem; font-weight:700; padding:4px 10px; border-radius:12px;'>50MA</span>
+<span style='background:{c_r}; color:#fff; font-size:0.75rem; font-weight:700; padding:4px 10px; border-radius:12px;'>3M 수익</span>
+<span style='background:{c_rsi}; color:#fff; font-size:0.75rem; font-weight:700; padding:4px 10px; border-radius:12px;'>RSI 14</span>
+</div>
+</div>
+<div style='flex: 2; background:rgba(255,255,255,0.6); backdrop-filter:blur(10px); padding:16px; border-radius:16px; border:1px solid rgba(255,255,255,0.5);'>
+<div style='font-size:0.85rem; color:#8e8e93; font-weight:600; margin-bottom:8px;'>AI 전략 분석관</div>
+<div style='display:flex; align-items:center; gap:10px;'>
+<span style='background:{badge_bg}; color:#fff; font-size:0.85rem; font-weight:700; padding:4px 12px; border-radius:8px;'>{badge_txt}</span>
+<span style='font-size:0.95rem; color:#1d1d1f;'>{r_desc}</span>
+</div>
+</div>
+<div style='flex: 1.2; background:rgba(255,255,255,0.6); backdrop-filter:blur(10px); padding:16px; border-radius:16px; border:1px solid rgba(255,255,255,0.5);'>
+<div style='font-size:0.85rem; color:#8e8e93; font-weight:600; margin-bottom:8px;'>신규 자금 투입 가이드</div>
+<div style='display:flex; align-items:center; gap:8px;'>
+<div style='width:10px; height:10px; border-radius:50%; background-color:{dot_c};'></div>
+<span style='font-size:1.0rem; font-weight:700; color:#1d1d1f;'>{entry_txt.split('(')[0].strip()}</span>
+</div>
+<div style='font-size:0.8rem; color:#8e8e93; margin-top:4px;'>
+방향: <b>{direction_kr}</b> &nbsp;|&nbsp; 체류: <b>{ms['regime_duration']}일</b>
+</div>
+</div>
+</div>""", unsafe_allow_html=True)
 
         st.divider()
 
@@ -1008,23 +992,21 @@ def page_strategy_specification():
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("<div style='font-size:1.1rem; font-weight:700; color:#1d1d1f; margin-bottom:10px;'>⭐ 즐겨찾기</div>", unsafe_allow_html=True)
-st.sidebar.markdown("""
-<div style="display:flex; flex-direction:column; gap:2px;">
-    <div style="font-size:0.8rem; color:#8e8e93; font-weight:600; margin-top:5px;">유튜브</div>
-    <a href="https://www.youtube.com/@JB_Insight" target="_blank" class="sidebar-link"><span>📊</span> JB 인사이트</a>
-    <a href="https://www.youtube.com/@odokgod" target="_blank" class="sidebar-link"><span>📻</span> 오독</a>
-    <a href="https://www.youtube.com/@TQQQCRAZY" target="_blank" class="sidebar-link"><span>🔥</span> TQQQ 미친놈</a>
-    <a href="https://www.youtube.com/@developmong" target="_blank" class="sidebar-link"><span>🐒</span> 디벨롭몽</a>
+st.sidebar.markdown("""<div style="display:flex; flex-direction:column; gap:2px;">
+<div style="font-size:0.8rem; color:#8e8e93; font-weight:600; margin-top:5px;">유튜브</div>
+<a href="https://www.youtube.com/@JB_Insight" target="_blank" class="sidebar-link"><span>📊</span> JB 인사이트</a>
+<a href="https://www.youtube.com/@odokgod" target="_blank" class="sidebar-link"><span>📻</span> 오독</a>
+<a href="https://www.youtube.com/@TQQQCRAZY" target="_blank" class="sidebar-link"><span>🔥</span> TQQQ 미친놈</a>
+<a href="https://www.youtube.com/@developmong" target="_blank" class="sidebar-link"><span>🐒</span> 디벨롭몽</a>
 
-    <div style="font-size:0.8rem; color:#8e8e93; font-weight:600; margin-top:15px;">차트 분석</div>
-    <a href="https://kr.investing.com/" target="_blank" class="sidebar-link"><span>🌍</span> 인베스팅닷컴</a>
-    <a href="https://kr.tradingview.com/" target="_blank" class="sidebar-link"><span>📉</span> 트레이딩뷰</a>
+<div style="font-size:0.8rem; color:#8e8e93; font-weight:600; margin-top:15px;">차트 분석</div>
+<a href="https://kr.investing.com/" target="_blank" class="sidebar-link"><span>🌍</span> 인베스팅닷컴</a>
+<a href="https://kr.tradingview.com/" target="_blank" class="sidebar-link"><span>📉</span> 트레이딩뷰</a>
 
-    <div style="font-size:0.8rem; color:#8e8e93; font-weight:600; margin-top:15px;">AI 도우미</div>
-    <a href="https://claude.ai/" target="_blank" class="sidebar-link"><span>🧠</span> 클로드</a>
-    <a href="https://gemini.google.com/" target="_blank" class="sidebar-link"><span>✨</span> 제미나이</a>
-</div>
-""", unsafe_allow_html=True)
+<div style="font-size:0.8rem; color:#8e8e93; font-weight:600; margin-top:15px;">AI 도우미</div>
+<a href="https://claude.ai/" target="_blank" class="sidebar-link"><span>🧠</span> 클로드</a>
+<a href="https://gemini.google.com/" target="_blank" class="sidebar-link"><span>✨</span> 제미나이</a>
+</div>""", unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
 with st.sidebar.expander("🎨 테마 색상 설정"):
