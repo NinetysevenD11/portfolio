@@ -14,11 +14,13 @@ import os
 warnings.filterwarnings('ignore')
 
 # =====================================================================
-# [0] 시스템 설정 및 동적 테마 엔진
+# [0] 시스템 설정 및 동적 테마 엔진 (에러 완벽 차단 로직)
 # =====================================================================
 st.set_page_config(page_title="AMLS 퀀트 포트폴리오", layout="wide", initial_sidebar_state="expanded")
 
-SETTINGS_FILE = "amls_settings_v9.json"
+# 기존 오류 파일과의 충돌을 방지하기 위해 파일명을 v10으로 변경
+SETTINGS_FILE = "amls_settings_v10.json"
+REQUIRED_TICKERS = ["TQQQ", "QLD", "QQQ", "SOXL", "USD", "SSO", "GLD", "CASH"]
 
 def load_settings():
     if os.path.exists(SETTINGS_FILE):
@@ -37,70 +39,83 @@ if 'settings' not in st.session_state:
 
 current_theme = st.session_state['settings'].get("theme", "애플 테마")
 
-# --- 🎨 7가지 테마별 변수 세팅 (누락 오류 완벽 해결) ---
+# --- 🎨 7가지 테마별 기본(Base) 변수 세팅 ---
 if current_theme == "애플 테마":
-    TEXT_COLOR = "#1d1d1f"; TEXT_SUB = "#8e8e93"
+    BASE_TEXT_COLOR = "#1d1d1f"; TEXT_SUB = "#8e8e93"
     PANEL_BG = "rgba(255,255,255,0.65)"; PANEL_BORDER = "1px solid rgba(255,255,255,0.5)"; PANEL_RADIUS = "16px"
     WIDGET_THEME = "light"
     C_UP = "#34c759"; C_DOWN = "#ff3b30"; C_WARN = "#ff9500"; C_SAFE = "#007aff"
-    COLOR_PALETTE = {'TQQQ':'#ff3b30', 'SOXL':'#af52de', 'USD':'#5856d6', 'QLD':'#ff9500', 'SSO':'#ffcc00', 'QQQ':'#007aff', 'GLD':'#34c759', 'CASH':'#8e8e93'}
-    THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="'Pretendard', sans-serif", color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.05)', zerolinecolor='rgba(0,0,0,0.1)'), yaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.05)', zerolinecolor='rgba(0,0,0,0.1)'))
+    BASE_CHART_COLORS = {'TQQQ':'#ff3b30', 'SOXL':'#af52de', 'USD':'#5856d6', 'QLD':'#ff9500', 'SSO':'#ffcc00', 'QQQ':'#007aff', 'GLD':'#34c759', 'CASH':'#8e8e93'}
     
 elif current_theme in ["1930년대 타자기 테마", "1920년대 타자기 테마"]:
-    TEXT_COLOR = "#2c2a25"; TEXT_SUB = "#555555"
+    BASE_TEXT_COLOR = "#2c2a25"; TEXT_SUB = "#555555"
     PANEL_BG = "#dfd7c5"; PANEL_BORDER = "2px solid #2c2a25"; PANEL_RADIUS = "0px"
     WIDGET_THEME = "light"
     C_UP = "#000080"; C_DOWN = "#8b0000"; C_WARN = "#b8860b"; C_SAFE = "#006400"
-    COLOR_PALETTE = {'TQQQ':'#8b0000', 'SOXL':'#556b2f', 'USD':'#8fbc8f', 'QLD':'#b8860b', 'SSO':'#cd853f', 'QQQ':'#000080', 'GLD':'#daa520', 'CASH':'#2f4f4f'}
-    THEME_LAYOUT = dict(template="simple_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="'Special Elite', 'Courier New', monospace", color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='#d1c7b3', zerolinecolor='#2c2a25'), yaxis=dict(showgrid=True, gridcolor='#d1c7b3', zerolinecolor='#2c2a25'))
+    BASE_CHART_COLORS = {'TQQQ':'#8b0000', 'SOXL':'#556b2f', 'USD':'#8fbc8f', 'QLD':'#b8860b', 'SSO':'#cd853f', 'QQQ':'#000080', 'GLD':'#daa520', 'CASH':'#2f4f4f'}
 
 elif current_theme == "블룸버그 터미널 테마":
-    TEXT_COLOR = "#00FF41"; TEXT_SUB = "#888888"
+    BASE_TEXT_COLOR = "#00FF41"; TEXT_SUB = "#888888"
     PANEL_BG = "#050505"; PANEL_BORDER = "1px solid #333333"; PANEL_RADIUS = "0px"
     WIDGET_THEME = "dark"
     C_UP = "#00FF41"; C_DOWN = "#FF003C"; C_WARN = "#FFB000"; C_SAFE = "#00FFFF"
-    COLOR_PALETTE = {'TQQQ':'#FF003C', 'SOXL':'#B900FF', 'USD':'#00FFFF', 'QLD':'#FF8A00', 'SSO':'#FFFF00', 'QQQ':'#00FF41', 'GLD':'#FFB000', 'CASH':'#888888'}
-    THEME_LAYOUT = dict(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="'Share Tech Mono', monospace", color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='#222', zerolinecolor='#444'), yaxis=dict(showgrid=True, gridcolor='#222', zerolinecolor='#444'))
+    BASE_CHART_COLORS = {'TQQQ':'#FF003C', 'SOXL':'#B900FF', 'USD':'#00FFFF', 'QLD':'#FF8A00', 'SSO':'#FFFF00', 'QQQ':'#00FF41', 'GLD':'#FFB000', 'CASH':'#888888'}
 
 elif current_theme == "카페 테마":
-    TEXT_COLOR = "#5D4A44"; TEXT_SUB = "#A89B96"
+    BASE_TEXT_COLOR = "#5D4A44"; TEXT_SUB = "#A89B96"
     PANEL_BG = "#FFFFFF"; PANEL_BORDER = "2px solid #FFF0E5"; PANEL_RADIUS = "20px"
     WIDGET_THEME = "light"
     C_UP = "#FFB7B2"; C_DOWN = "#A1C9F1"; C_WARN = "#FFDAC1"; C_SAFE = "#B5EAD7"
-    COLOR_PALETTE = {'TQQQ':'#FF9AA2', 'SOXL':'#C7CEEA', 'USD':'#E2F0CB', 'QLD':'#FFDAC1', 'SSO':'#FFB7B2', 'QQQ':'#A1C9F1', 'GLD':'#FCEBB6', 'CASH':'#B5EAD7'}
-    THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="'Pretendard', sans-serif", color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='#F5F0EA', zerolinecolor='#EAE3D9'), yaxis=dict(showgrid=True, gridcolor='#F5F0EA', zerolinecolor='#EAE3D9'))
+    BASE_CHART_COLORS = {'TQQQ':'#FF9AA2', 'SOXL':'#C7CEEA', 'USD':'#E2F0CB', 'QLD':'#FFDAC1', 'SSO':'#FFB7B2', 'QQQ':'#A1C9F1', 'GLD':'#FCEBB6', 'CASH':'#B5EAD7'}
 
 elif current_theme == "2000년대 구글 감성 테마":
-    TEXT_COLOR = "#000000"; TEXT_SUB = "#666666"
+    BASE_TEXT_COLOR = "#000000"; TEXT_SUB = "#666666"
     PANEL_BG = "#F8F9FA"; PANEL_BORDER = "1px solid #CCCCCC"; PANEL_RADIUS = "0px"
     WIDGET_THEME = "light"
     C_UP = "#34A853"; C_DOWN = "#EA4335"; C_WARN = "#FBBC05"; C_SAFE = "#4285F4"
-    COLOR_PALETTE = {'TQQQ':'#EA4335', 'SOXL':'#990099', 'USD':'#660099', 'QLD':'#FBBC05', 'SSO':'#F68B1F', 'QQQ':'#4285F4', 'GLD':'#F4B400', 'CASH':'#34A853'}
-    THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Arial, Tahoma, sans-serif", color=TEXT_COLOR, size=12), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='#E0E0E0', zerolinecolor='#CCCCCC'), yaxis=dict(showgrid=True, gridcolor='#E0E0E0', zerolinecolor='#CCCCCC'))
+    BASE_CHART_COLORS = {'TQQQ':'#EA4335', 'SOXL':'#990099', 'USD':'#660099', 'QLD':'#FBBC05', 'SSO':'#F68B1F', 'QQQ':'#4285F4', 'GLD':'#F4B400', 'CASH':'#34A853'}
 
 elif current_theme == "월스트리트 저널 테마":
-    TEXT_COLOR = "#1A1A1A"; TEXT_SUB = "#555555"
+    BASE_TEXT_COLOR = "#1A1A1A"; TEXT_SUB = "#555555"
     PANEL_BG = "#FFFFFF"; PANEL_BORDER = "1px solid #1A1A1A"; PANEL_RADIUS = "0px"
     WIDGET_THEME = "light"
     C_UP = "#006400"; C_DOWN = "#8B0000"; C_WARN = "#B8860B"; C_SAFE = "#000080"
-    COLOR_PALETTE = {'TQQQ':'#8B0000', 'SOXL':'#556b2f', 'USD':'#2F4F4F', 'QLD':'#B8860B', 'SSO':'#DAA520', 'QQQ':'#000080', 'GLD':'#BDB76B', 'CASH':'#696969'}
-    THEME_LAYOUT = dict(template="simple_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="'Playfair Display', serif", color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='#E0E0E0', zerolinecolor='#1A1A1A'), yaxis=dict(showgrid=True, gridcolor='#E0E0E0', zerolinecolor='#1A1A1A'))
+    BASE_CHART_COLORS = {'TQQQ':'#8B0000', 'SOXL':'#556b2f', 'USD':'#2F4F4F', 'QLD':'#B8860B', 'SSO':'#DAA520', 'QQQ':'#000080', 'GLD':'#BDB76B', 'CASH':'#696969'}
 
 elif current_theme == "Chat GPT 테마":
-    TEXT_COLOR = "#ECECF1"; TEXT_SUB = "#8E8EA0"
+    BASE_TEXT_COLOR = "#ECECF1"; TEXT_SUB = "#8E8EA0"
     PANEL_BG = "#444654"; PANEL_BORDER = "1px solid #565869"; PANEL_RADIUS = "8px"
     WIDGET_THEME = "dark"
     C_UP = "#10A37F"; C_DOWN = "#EF4146"; C_WARN = "#F4AC36"; C_SAFE = "#2A85FF"
-    COLOR_PALETTE = {'TQQQ':'#EF4146', 'SOXL':'#B582FF', 'USD':'#2A85FF', 'QLD':'#F4AC36', 'SSO':'#E8713A', 'QQQ':'#10A37F', 'GLD':'#F2C94C', 'CASH':'#565869'}
-    THEME_LAYOUT = dict(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="'Pretendard', sans-serif", color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='#565869', zerolinecolor='#565869'), yaxis=dict(showgrid=True, gridcolor='#565869', zerolinecolor='#565869'))
+    BASE_CHART_COLORS = {'TQQQ':'#EF4146', 'SOXL':'#B582FF', 'USD':'#2A85FF', 'QLD':'#F4AC36', 'SSO':'#E8713A', 'QQQ':'#10A37F', 'GLD':'#F2C94C', 'CASH':'#565869'}
 
-else: # 안전장치 (Fallback)
-    TEXT_COLOR = "#1d1d1f"; TEXT_SUB = "#8e8e93"
+else:
+    BASE_TEXT_COLOR = "#1d1d1f"; TEXT_SUB = "#8e8e93"
     PANEL_BG = "rgba(255,255,255,0.65)"; PANEL_BORDER = "1px solid rgba(255,255,255,0.5)"; PANEL_RADIUS = "16px"
     WIDGET_THEME = "light"
     C_UP = "#34c759"; C_DOWN = "#ff3b30"; C_WARN = "#ff9500"; C_SAFE = "#007aff"
-    COLOR_PALETTE = {'TQQQ':'#ff3b30', 'SOXL':'#af52de', 'USD':'#5856d6', 'QLD':'#ff9500', 'SSO':'#ffcc00', 'QQQ':'#007aff', 'GLD':'#34c759', 'CASH':'#8e8e93'}
-    THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="'Pretendard', sans-serif", color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0))
+    BASE_CHART_COLORS = {'TQQQ':'#ff3b30', 'SOXL':'#af52de', 'USD':'#5856d6', 'QLD':'#ff9500', 'SSO':'#ffcc00', 'QQQ':'#007aff', 'GLD':'#34c759', 'CASH':'#8e8e93'}
+
+# [핵심 수리 완료] KeyError 방지를 위한 데이터 강제 주입 로직
+if "text_color" not in st.session_state['settings']:
+    st.session_state['settings']["text_color"] = BASE_TEXT_COLOR
+if "chart_colors" not in st.session_state['settings']:
+    st.session_state['settings']["chart_colors"] = BASE_CHART_COLORS.copy()
+for tkr in REQUIRED_TICKERS:
+    if tkr not in st.session_state['settings']["chart_colors"]:
+        st.session_state['settings']["chart_colors"][tkr] = BASE_CHART_COLORS.get(tkr, "#888888")
+
+TEXT_COLOR = st.session_state['settings']["text_color"]
+COLOR_PALETTE = st.session_state['settings']["chart_colors"]
+
+# --- Plotly 레이아웃 설정 ---
+if current_theme == "1930년대 타자기 테마" or current_theme == "월스트리트 저널 테마":
+    THEME_LAYOUT = dict(template="simple_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0))
+elif current_theme in ["블룸버그 터미널 테마", "Chat GPT 테마"]:
+    THEME_LAYOUT = dict(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='#333', zerolinecolor='#444'), yaxis=dict(showgrid=True, gridcolor='#333', zerolinecolor='#444'))
+else:
+    THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.05)'), yaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.05)'))
+
 
 def apply_custom_css():
     css_base = ""
@@ -116,8 +131,8 @@ def apply_custom_css():
         input, textarea, select, div[data-baseweb="select"] > div {{ background-color: rgba(255, 255, 255, 0.5); backdrop-filter: blur(10px); color: {TEXT_COLOR}; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; }}
         [data-testid="stDataFrame"] {{ border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); background: rgba(255, 255, 255, 0.5); }}
         [data-testid="stSidebar"] {{ background: rgba(245, 245, 247, 0.7); backdrop-filter: blur(20px); border-right: 1px solid rgba(0,0,0,0.05); }}
-        button[data-baseweb="tab"][aria-selected="true"] {{ color: #1d1d1f; border-bottom-color: #1d1d1f; border-bottom-width: 2px; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none; color: #1d1d1f; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: {TEXT_COLOR}; border-bottom-color: {TEXT_COLOR}; border-bottom-width: 2px; }}
+        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none; color: {TEXT_COLOR}; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
         .sidebar-link:hover {{ background-color: rgba(0,0,0,0.05); transform: translateX(2px); }}
         """
     elif current_theme in ["1930년대 타자기 테마", "1920년대 타자기 테마"]:
@@ -162,7 +177,7 @@ def apply_custom_css():
         input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #FAFAFA; color: {TEXT_COLOR}; border: 2px solid #EAE3D9; border-radius: 12px; }}
         [data-testid="stDataFrame"] {{ border-radius: 16px; border: 2px solid #FFF0E5; }}
         [data-testid="stSidebar"] {{ background-color: #FFF6EC; border-right: 2px dashed #EAE3D9; }}
-        button[data-baseweb="tab"][aria-selected="true"] {{ color: #FF9B94; border-bottom-color: #FF9B94; border-bottom-width: 3px; font-weight: bold; }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: {TEXT_COLOR}; border-bottom-color: {TEXT_COLOR}; border-bottom-width: 3px; font-weight: bold; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none; color: {TEXT_COLOR}; font-weight: 700; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
         .sidebar-link:hover {{ background-color: #FFF0E5; transform: translateX(4px); }}
         """
@@ -172,11 +187,11 @@ def apply_custom_css():
         div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: #FFFFFF; border: 1px solid #CCCCCC; border-radius: 0px; box-shadow: none; padding: 1.5rem; }}
         .stButton>button {{ background-color: #F0F0F0; color: #000000; border: 1px solid #707070; border-radius: 2px; font-weight: normal; padding: 0.3rem 0.8rem; }}
         .stButton>button:hover {{ background-color: #E0E0E0; border: 1px solid #333333; }}
-        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #FFFFFF; color: #000000; border: 1px solid #999999; border-radius: 0px; font-family: Arial, sans-serif; }}
+        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #FFFFFF; color: {TEXT_COLOR}; border: 1px solid #999999; border-radius: 0px; font-family: Arial, sans-serif; }}
         [data-testid="stDataFrame"] {{ border-radius: 0px; border: 1px solid #999999; }}
         [data-testid="stSidebar"] {{ background-color: #F8F9FA; border-right: 1px solid #CCCCCC; }}
         button[data-baseweb="tab"] {{ color: #0000EE; text-decoration: underline; font-weight: normal; }}
-        button[data-baseweb="tab"][aria-selected="true"] {{ color: #000000; text-decoration: none; border-bottom: none; font-weight: bold; }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: {TEXT_COLOR}; text-decoration: none; border-bottom: none; font-weight: bold; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 6px 8px; margin-bottom: 2px; text-decoration: underline; color: #0000EE; font-family: Arial, sans-serif; font-size: 0.9rem; }}
         .sidebar-link:hover {{ color: #FF0000; }}
         .sidebar-link span {{ display: none; }}
@@ -192,8 +207,8 @@ def apply_custom_css():
         input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #FFFFFF; color: {TEXT_COLOR}; border: 1px solid #000000; border-radius: 0px; font-family: 'Arial', sans-serif; }}
         [data-testid="stDataFrame"] {{ border-radius: 0px; border: 1px solid #000000; }}
         [data-testid="stSidebar"] {{ background-color: #EBEBEB; border-right: 2px solid #000000; }}
-        button[data-baseweb="tab"][aria-selected="true"] {{ color: #000000; border-bottom: 3px solid #000000; font-weight: bold; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; text-decoration: none; color: #000000; font-weight: bold; font-size: 0.95rem; border-bottom: 1px dotted #CCC; }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: {TEXT_COLOR}; border-bottom: 3px solid #000000; font-weight: bold; }}
+        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; text-decoration: none; color: {TEXT_COLOR}; font-weight: bold; font-size: 0.95rem; border-bottom: 1px dotted #CCC; }}
         .sidebar-link:hover {{ background-color: #DDDDDD; }}
         """
         css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; border-top: 3px solid #000; font-family: 'Arial', sans-serif; }}"
@@ -210,12 +225,10 @@ def apply_custom_css():
         [data-testid="stDataFrame"] {{ border-radius: 8px !important; border: 1px solid #565869 !important; background: #40414F !important; }}
         [data-testid="stSidebar"] {{ background-color: #202123 !important; border-right: 1px solid #4D4D4F !important; }}
         button[data-baseweb="tab"] {{ color: #8E8EA0 !important; font-weight: normal !important; }}
-        button[data-baseweb="tab"][aria-selected="true"] {{ color: #ECECF1 !important; border-bottom-color: #10A37F !important; border-bottom-width: 2px !important; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 6px; text-decoration: none !important; color: #ECECF1 !important; font-weight: 500; font-size: 0.95rem; transition: background-color 0.2s; }}
+        button[data-baseweb="tab"][aria-selected="true"] {{ color: {TEXT_COLOR} !important; border-bottom-color: #10A37F !important; border-bottom-width: 2px !important; }}
+        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 6px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-weight: 500; font-size: 0.95rem; transition: background-color 0.2s; }}
         .sidebar-link:hover {{ background-color: #2A2B32; }}
         """
-    else:
-        css_base = "" # Fallback
 
     st.markdown(f"""
     <style>
@@ -229,9 +242,6 @@ def apply_custom_css():
     """, unsafe_allow_html=True)
 
 apply_custom_css()
-
-ACCOUNTS_FILE = "amls_multi_accounts.json"
-REQUIRED_TICKERS = ["TQQQ", "QLD", "QQQ", "SOXL", "USD", "SSO", "GLD", "CASH"]
 
 def load_accounts_data():
     if os.path.exists(ACCOUNTS_FILE):
@@ -257,8 +267,12 @@ if 'accounts' not in st.session_state:
         }
     st.session_state['accounts'] = loaded
 
-# 마이그레이션
+# 마이그레이션 로직
 needs_save = False
+if "기본 계좌 (AMLS)" in st.session_state['accounts']:
+    st.session_state['accounts']["AMLS v4.3"] = st.session_state['accounts'].pop("기본 계좌 (AMLS)")
+    needs_save = True
+
 for acc_name, acc_data in st.session_state['accounts'].items():
     if "seed_history" not in acc_data: acc_data["seed_history"] = {}; needs_save = True
     if "target_portfolio_value" not in acc_data: acc_data["target_portfolio_value"] = 100000.0; needs_save = True
@@ -551,7 +565,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [4] 페이지 구성: 내 포트폴리오 관리
+# [4] 페이지 구성: 내 포트폴리오 관리 (레이아웃 조절 가능 기능)
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
@@ -725,7 +739,7 @@ def make_portfolio_page(acc_name):
         # -------------------------------------------------------------
         # 레이아웃 편집기 UI
         # -------------------------------------------------------------
-        with st.expander("🛠️ 화면 레이아웃 편집 (내 맘대로 배치하기)"):
+        with st.expander("🛠️ 화면 레이아웃 편집 (위아래로 순서 변경)"):
             for i, block_name in enumerate(current_layout):
                 c_name, c_up, c_dn = st.columns([6, 1, 1])
                 c_name.markdown(f"<div style='padding-top:5px; font-weight:bold;'>{i+1}. {block_name}</div>", unsafe_allow_html=True)
