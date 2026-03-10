@@ -18,97 +18,136 @@ import time
 warnings.filterwarnings('ignore')
 
 # =====================================================================
-# [0] 시스템 기본 설정 및 데이터 관리 & 1920s 빈티지 스타일 주입
+# [0] 시스템 기본 설정 및 데이터 관리 & 트렌디한 핀테크 UI/UX 주입
 # =====================================================================
 st.set_page_config(page_title="AMLS 퀀트 관제탑", layout="wide", initial_sidebar_state="expanded")
 
-def apply_vintage_style():
+def apply_trendy_style():
     st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+    /* 트렌디한 웹/앱 표준 폰트 'Pretendard' 적용 */
+    @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
-    /* 전체 배경 및 폰트 설정 (오래된 종이 질감과 잉크 색상) */
     html, body, [class*="css"] {
-        font-family: 'Special Elite', 'Courier New', Courier, monospace !important;
-        background-color: #e4dccc !important; 
-        color: #2c2a25 !important;
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif !important;
+        background-color: #0B0E14 !important; /* 깊고 세련된 다크 네이비 배경 */
+        color: #E2E8F0 !important;
+        letter-spacing: -0.02em;
     }
 
-    /* 컨테이너 및 테두리 설정 (두꺼운 타자기 라인) */
-    .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3, div[data-testid="stVerticalBlockBorderWrapper"] > div {
-        background-color: #dfd7c5 !important;
-        border: 2px solid #2c2a25 !important;
-        border-radius: 0px !important;
-        box-shadow: 4px 4px 0px #2c2a25 !important;
+    /* 글씨 잘림 방지 (반응형 줄바꿈 강제 적용) */
+    div[data-testid="stMetricValue"] > div,
+    div[data-testid="stMetricDelta"] > div,
+    p, h1, h2, h3, h4, h5, h6, span, label, .stMarkdown {
+        white-space: normal !important;
+        word-break: keep-all !important;
+        overflow-wrap: break-word !important;
     }
 
-    /* 버튼 스타일 (기계식 타자기 키 느낌) */
+    /* 컨테이너 및 카드 스타일 (글래스모피즘 & 부드러운 라운딩) */
+    div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {
+        background-color: #151A23 !important;
+        border: 1px solid #2A3143 !important;
+        border-radius: 16px !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+        padding: 1.2rem !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    div[data-testid="stVerticalBlockBorderWrapper"] > div:hover {
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    /* 버튼 스타일 (그라데이션 & 입체감) */
     .stButton>button {
-        background-color: #d1c7b3 !important;
-        color: #2c2a25 !important;
-        border: 2px solid #2c2a25 !important;
-        border-radius: 0px !important;
-        box-shadow: 2px 2px 0px #2c2a25 !important;
-        font-weight: bold;
-        text-transform: uppercase;
-        transition: all 0.1s ease-in-out;
+        background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 10px !important;
+        font-weight: 600 !important;
+        padding: 0.5rem 1rem !important;
+        transition: all 0.2s ease !important;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
     }
-    .stButton>button:active {
-        box-shadow: 0px 0px 0px #2c2a25 !important;
-        transform: translateY(2px) translateX(2px);
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5) !important;
+        filter: brightness(1.1);
     }
 
     /* 텍스트 입력창 및 선택창 */
     input, textarea, select, div[data-baseweb="select"] > div {
-        background-color: #f0e9d8 !important;
-        color: #2c2a25 !important;
-        border: 1px dashed #2c2a25 !important;
-        border-radius: 0px !important;
-        font-family: 'Special Elite', 'Courier New', Courier, monospace !important;
+        background-color: #1E2532 !important;
+        color: #F8FAFC !important;
+        border: 1px solid #334155 !important;
+        border-radius: 10px !important;
+    }
+    input:focus, textarea:focus {
+        border-color: #3B82F6 !important;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
     }
 
-    /* 데이터프레임 (타자기 문서 느낌) */
+    /* 데이터프레임 (모던 테이블) */
     [data-testid="stDataFrame"] {
-        border: 1px solid #2c2a25 !important;
-        background-color: #f0e9d8 !important;
+        border-radius: 12px !important;
+        overflow: hidden !important;
+        border: 1px solid #2A3143 !important;
     }
 
     /* 사이드바 */
     [data-testid="stSidebar"] {
-        background-color: #d1c7b3 !important;
-        border-right: 3px double #2c2a25 !important;
+        background-color: #0F131A !important;
+        border-right: 1px solid #1E2532 !important;
     }
 
-    /* 제목선 (이중선 강조) */
-    h1, h2, h3 {
-        border-bottom: 3px double #2c2a25;
-        padding-bottom: 8px;
-        text-transform: uppercase;
+    /* 메트릭 텍스트 스타일링 */
+    div[data-testid="stMetricValue"] {
+        font-weight: 700 !important;
+        font-size: 1.8rem !important;
+        color: #FFFFFF !important;
+    }
+    div[data-testid="stMetricLabel"] {
+        color: #94A3B8 !important;
+        font-size: 0.9rem !important;
+        font-weight: 500 !important;
     }
     
-    /* 메트릭 값 */
-    div[data-testid="stMetricValue"] {
-        font-weight: bold !important;
-        color: #1a1916 !important;
+    /* 탭 스타일 */
+    button[data-baseweb="tab"] {
+        color: #94A3B8 !important;
+        font-weight: 600 !important;
+        background-color: transparent !important;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #3B82F6 !important;
+        border-bottom-color: #3B82F6 !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-apply_vintage_style()
+apply_trendy_style()
 
-# Plotly 차트용 공통 빈티지 레이아웃 설정
-VINTAGE_LAYOUT = dict(
-    template="simple_white",
-    paper_bgcolor="#e4dccc",
-    plot_bgcolor="#dfd7c5",
-    font=dict(family="'Special Elite', 'Courier New', Courier, monospace", color="#2c2a25"),
-    margin=dict(l=0, r=0, t=30, b=0)
+# Plotly 차트용 공통 트렌디 레이아웃 설정 (배경 투명화로 카드에 스며들게 함)
+TRENDY_LAYOUT = dict(
+    template="plotly_dark",
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
+    font=dict(family="'Pretendard', sans-serif", color="#94A3B8"),
+    margin=dict(l=0, r=0, t=30, b=0),
+    xaxis=dict(showgrid=True, gridcolor='#2A3143'),
+    yaxis=dict(showgrid=True, gridcolor='#2A3143')
 )
-# 빈티지 색상 팔레트
-C_UP = "#000080" # Navy
-C_DOWN = "#8b0000" # Dark Red
-C_WARN = "#b8860b" # Dark Goldenrod
-C_SAFE = "#006400" # Dark Green
+
+# 모던 차트 컬러 팔레트 (네온 & 파스텔 톤)
+COLOR_PALETTE = {
+    'TQQQ': '#FF3B30',      # Neon Red
+    'SOXL/USD': '#AF52DE',  # Purple
+    'USD': '#BF5AF2',       # Light Purple
+    'QLD': '#FF9500',       # Orange
+    'SSO': '#FFCC00',       # Yellow
+    'QQQ': '#0A84FF',       # Blue
+    'GLD': '#FFD60A',       # Gold
+    'CASH': '#30D158'       # Green
+}
 
 ACCOUNTS_FILE = "amls_multi_accounts.json"
 REQUIRED_TICKERS = ["TQQQ", "QLD", "QQQ", "SOXL", "USD", "SSO", "GLD", "CASH"]
@@ -295,9 +334,9 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
         
         if rebal_v4_3:
             weights_v4_3 = get_v4_3_weights(sig_r_v4_3, use_soxl)
-            log_type = "TYPE: REGIME SHIFT" if sig_r_v4_3 != df['Signal_Regime_v4_3'].iloc[i-1] else f"TYPE: SCHEDULED ({rebal_freq.split(' ')[0]})"
+            log_type = "🚨 레짐 전환" if sig_r_v4_3 != df['Signal_Regime_v4_3'].iloc[i-1] else f"🔄 정기 ({rebal_freq.split(' ')[0]})"
             semi_target = "SOXL (3x)" if use_soxl and sig_r_v4_3 == 1 else ("USD (2x)" if sig_r_v4_3 in [1, 2] else "-")
-            logs.append({"DATE": today.strftime('%Y-%m-%d'), "TYPE": log_type, "REGIME": f"R{int(sig_r_v4_3)}", "SEMI_SLOT": semi_target, "EQUITY": ports['AMLS v4.3']})
+            logs.append({"날짜": today.strftime('%Y-%m-%d'), "유형": log_type, "국면": f"R{int(sig_r_v4_3)}", "반도체": semi_target, "평가액": ports['AMLS v4.3']})
             days_since_v4_3 = 0
 
     for s in ports: df[f'{s}_Value'] = hists[s]
@@ -316,9 +355,9 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
 # [2] 페이지 구성: 글로벌 마켓 대시보드
 # =====================================================================
 def page_market_dashboard():
-    st.title("🌐 TELEGRAPH: GLOBAL MACRO")
+    st.title("🌐 글로벌 매크로 & 마켓 터미널")
     components.html("""
-    <div class="tradingview-widget-container">
+    <div class="tradingview-widget-container" style="border-radius: 12px; overflow: hidden;">
       <div class="tradingview-widget-container__widget"></div>
       <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
       {
@@ -330,7 +369,7 @@ def page_market_dashboard():
         {"description": "USD/KRW", "proName": "FX_IDC:USDKRW"},
         {"description": "GOLD", "proName": "OANDA:XAUUSD"}
       ],
-      "showSymbolLogo": false, "colorTheme": "light", "locale": "kr"
+      "showSymbolLogo": true, "colorTheme": "dark", "locale": "kr"
     }
       </script>
     </div>
@@ -339,7 +378,7 @@ def page_market_dashboard():
     col_left, col_right = st.columns([1, 1.8])
     with col_left:
         with st.container(border=True):
-            st.markdown("##### 📈 TELEGRAM: INDEX STATUS")
+            st.markdown("##### 📈 주요 지수 현황판")
             tickers = ['^GSPC', '^IXIC', '^VIX', 'USDKRW=X']
             indices_df = yf.download(tickers, start=datetime.today()-timedelta(days=365), progress=False)['Close'].ffill()
             if not indices_df.empty:
@@ -347,23 +386,24 @@ def page_market_dashboard():
                 c1.metric("S&P 500", f"{latest.get('^GSPC', 0):,.0f}", f"{(latest.get('^GSPC',0)/prev.get('^GSPC',1)-1)*100:+.2f}%")
                 c2.metric("NASDAQ", f"{latest.get('^IXIC', 0):,.0f}", f"{(latest.get('^IXIC',0)/prev.get('^IXIC',1)-1)*100:+.2f}%")
                 c3, c4 = st.columns(2)
-                c3.metric("VIX (FEAR INDEX)", f"{latest.get('^VIX', 0):,.2f}", f"{(latest.get('^VIX',0)/prev.get('^VIX',1)-1)*100:+.2f}%", delta_color="inverse")
-                c4.metric("USD/KRW RATE", f"₩{latest.get('USDKRW=X', 0):,.1f}", f"{(latest.get('USDKRW=X',0)/prev.get('USDKRW=X',1)-1)*100:+.2f}%", delta_color="inverse")
+                c3.metric("VIX (공포지수)", f"{latest.get('^VIX', 0):,.2f}", f"{(latest.get('^VIX',0)/prev.get('^VIX',1)-1)*100:+.2f}%", delta_color="inverse")
+                c4.metric("USD/KRW 환율", f"₩{latest.get('USDKRW=X', 0):,.1f}", f"{(latest.get('USDKRW=X',0)/prev.get('USDKRW=X',1)-1)*100:+.2f}%", delta_color="inverse")
                 
                 fig = go.Figure()
-                fig.add_trace(go.Scatter(x=indices_df.index, y=indices_df['^GSPC']/indices_df['^GSPC'].iloc[0]*100, name="S&P 500", line=dict(color=C_UP)))
-                fig.add_trace(go.Scatter(x=indices_df.index, y=indices_df['^IXIC']/indices_df['^IXIC'].iloc[0]*100, name="NASDAQ", line=dict(color=C_DOWN)))
-                
-                custom_layout = VINTAGE_LAYOUT.copy()
-                custom_layout.update(height=240, showlegend=False)
-                fig.update_layout(**custom_layout)
+                fig.add_trace(go.Scatter(x=indices_df.index, y=indices_df['^GSPC']/indices_df['^GSPC'].iloc[0]*100, name="S&P 500", line=dict(color='#0A84FF', width=2)))
+                fig.add_trace(go.Scatter(x=indices_df.index, y=indices_df['^IXIC']/indices_df['^IXIC'].iloc[0]*100, name="NASDAQ", line=dict(color='#FF3B30', width=2)))
+                custom_l = TRENDY_LAYOUT.copy()
+                custom_l.update(height=240, showlegend=False)
+                fig.update_layout(**custom_l)
                 st.plotly_chart(fig, use_container_width=True)
 
     with col_right:
         with st.container(border=True):
-            st.markdown("##### 🗺️ S&P 500 SECTOR MAP")
+            st.markdown("##### 🗺️ S&P 500 섹터 맵")
             components.html("""
-            <iframe src="https://www.tradingview.com/embed-widget-stock-heatmap/?locale=kr#%7B%22dataSource%22%3A%22SPX500%22%2C%22blockSize%22%3A%22market_cap_basic%22%2C%22blockColor%22%3A%22change%22%2C%22grouping%22%3A%22sector%22%2C%22colorTheme%22%3A%22light%22%7D" width="100%" height="450" frameborder="0"></iframe>
+            <div style="border-radius: 12px; overflow: hidden; height: 100%;">
+            <iframe src="https://www.tradingview.com/embed-widget-stock-heatmap/?locale=kr#%7B%22dataSource%22%3A%22SPX500%22%2C%22blockSize%22%3A%22market_cap_basic%22%2C%22blockColor%22%3A%22change%22%2C%22grouping%22%3A%22sector%22%2C%22colorTheme%22%3A%22dark%22%7D" width="100%" height="450" frameborder="0"></iframe>
+            </div>
             """, height=460)
 
 
@@ -371,17 +411,17 @@ def page_market_dashboard():
 # [3] 페이지 구성: AMLS 백테스트 (티어시트)
 # =====================================================================
 def page_amls_backtest():
-    st.title("🦅 AMLS QUANT SIMULATOR (TEARSHEET)")
-    st.markdown("PAPER TAPE SIMULATION OF HISTORICAL DATA.")
+    st.title("🦅 AMLS 퀀트 백테스트 엔진 (Tearsheet)")
+    st.markdown("다양한 시장 조건과 벤치마크(QQQ, QLD, TQQQ)를 비교 분석하는 전문가용 시뮬레이터입니다.")
 
-    st.sidebar.header("⚙️ PAPER PUNCH PARAMETERS")
-    BACKTEST_START = st.sidebar.date_input("START DATE", datetime(2018, 1, 1))
-    BACKTEST_END = st.sidebar.date_input("END DATE", datetime.today())
-    INITIAL_CAPITAL = st.sidebar.number_input("INITIAL CAPITAL ($)", value=10000, step=1000)
-    MONTHLY_CONTRIBUTION = st.sidebar.number_input("MONTHLY ADD ($)", value=2000, step=500)
-    REBAL_FREQ = st.sidebar.selectbox("🔄 REBALANCING FREQ", ["월 1회", "주 1회 (5거래일)", "2주 1회 (10거래일)", "3주 1회 (15거래일)"], index=0)
+    st.sidebar.header("⚙️ 백테스트 파라미터")
+    BACKTEST_START = st.sidebar.date_input("시작일", datetime(2018, 1, 1))
+    BACKTEST_END = st.sidebar.date_input("종료일", datetime.today())
+    INITIAL_CAPITAL = st.sidebar.number_input("초기 자본금 ($)", value=10000, step=1000)
+    MONTHLY_CONTRIBUTION = st.sidebar.number_input("매월 추가 적립금 ($)", value=2000, step=500)
+    REBAL_FREQ = st.sidebar.selectbox("🔄 정기 리밸런싱 주기", ["월 1회", "주 1회 (5거래일)", "2주 1회 (10거래일)", "3주 1회 (15거래일)"], index=0)
 
-    with st.spinner('PUNCHING CARDS. PLEASE WAIT...'):
+    with st.spinner('방대한 시장 데이터를 연산 중입니다. 잠시만 기다려주세요...'):
         df, logs, tickers = load_amls_backtest_data(BACKTEST_START, BACKTEST_END, INITIAL_CAPITAL, MONTHLY_CONTRIBUTION, REBAL_FREQ)
     
     def calc_metrics(series, invested_series):
@@ -400,67 +440,69 @@ def page_amls_backtest():
     for s in strats:
         fv, tr, cagr, mdd, shp = calc_metrics(df[f'{s}_Value'], df['Invested'])
         metrics_data.append({
-            "STRATEGY": s,
-            "FINAL EQUITY": f"${fv:,.0f}",
-            "TOTAL RETURN": f"{tr*100:+.1f}%",
-            "CAGR": f"{cagr*100:.1f}%",
-            "MAX DRAWDOWN": f"{mdd*100:.1f}%",
-            "SHARPE RATIO": f"{shp:.2f}"
+            "전략/종목": s,
+            "최종 평가금액": f"${fv:,.0f}",
+            "누적 수익률": f"{tr*100:+.1f}%",
+            "연평균(CAGR)": f"{cagr*100:.1f}%",
+            "최대 낙폭(MDD)": f"{mdd*100:.1f}%",
+            "샤프 지수": f"{shp:.2f}"
         })
-    metrics_df = pd.DataFrame(metrics_data).set_index("STRATEGY")
+    metrics_df = pd.DataFrame(metrics_data).set_index("전략/종목")
 
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 METRICS", "📈 EQUITY CURVE", "🗓️ YEARLY", "📝 PUNCH LOG"])
+    tab1, tab2, tab3, tab4 = st.tabs(["📊 성과 비교 요약", "📈 자산 추이 및 낙폭", "🗓️ 연도별 분석", "📝 매매 로그"])
 
     with tab1:
-        st.markdown("#### 🏆 CORE PERFORMANCE LEDGER")
-        st.info(f"**TOTAL INVESTED:** ${df['Invested'].iloc[-1]:,.0f} (INIT {INITIAL_CAPITAL} + {MONTHLY_CONTRIBUTION}/mo)")
+        st.markdown("#### 🏆 핵심 퍼포먼스 비교표")
+        st.info(f"**투입 원금 총합:** ${df['Invested'].iloc[-1]:,.0f} (초기 {INITIAL_CAPITAL} + 매월 {MONTHLY_CONTRIBUTION} 적립)")
         st.dataframe(metrics_df, use_container_width=True)
 
-        st.markdown("#### 🥧 AMLS v4.3 ALLOCATION RULEBOOK")
+        st.markdown("#### 🥧 AMLS v4.3 국면별 자산 배분 비중")
         c1, c2, c3, c4 = st.columns(4)
         def get_w(reg):
             if reg == 1: return {'TQQQ':30, 'SOXL/USD':20, 'QLD':20, 'SSO':15, 'GLD':10, 'CASH':5}
             elif reg == 2: return {'QLD':30, 'SSO':25, 'GLD':20, 'USD':10, 'QQQ':5, 'CASH':10}
             elif reg == 3: return {'GLD':50, 'CASH':35, 'QQQ':15}
             elif reg == 4: return {'GLD':50, 'CASH':40, 'QQQ':10}
-        colors = {'TQQQ':'#8b0000', 'SOXL/USD':'#556b2f', 'USD':'#8fbc8f', 'QLD':'#b8860b', 'SSO':'#cd853f', 'QQQ':'#000080', 'GLD':'#daa520', 'CASH':'#2f4f4f'}
         
         for i, col in enumerate([c1, c2, c3, c4]):
             r = i+1; w = {k:v for k,v in get_w(r).items() if v>0}
-            fig_p = go.Figure(go.Pie(labels=list(w.keys()), values=list(w.values()), hole=0.5, marker=dict(colors=[colors.get(k, '#000') for k in w.keys()])))
-            custom_layout = VINTAGE_LAYOUT.copy()
-            custom_layout.update(title=f"REGIME {r}", title_x=0.5, height=250, showlegend=False)
-            fig_p.update_layout(**custom_layout)
-            fig_p.update_traces(textinfo='label+percent', textposition='inside')
+            fig_p = go.Figure(go.Pie(labels=list(w.keys()), values=list(w.values()), hole=0.6, marker=dict(colors=[COLOR_PALETTE.get(k.split('/')[0], '#555') for k in w.keys()])))
+            cust_p = TRENDY_LAYOUT.copy()
+            cust_p.update(title=f"Regime {r}", title_x=0.5, height=250, margin=dict(t=40,b=10,l=10,r=10), showlegend=False)
+            fig_p.update_layout(**cust_p)
+            fig_p.update_traces(textinfo='label+percent', textposition='inside', textfont=dict(color='white', size=11), hoverinfo='label+percent')
             col.plotly_chart(fig_p, use_container_width=True)
 
     with tab2:
-        st.markdown("#### 📈 EQUITY GROWTH")
-        use_log = st.checkbox("LOGARITHMIC SCALE", value=False)
+        st.markdown("#### 📈 자산 성장 곡선")
+        use_log = st.checkbox("Y축 로그 스케일 적용", value=False)
         fig_eq = go.Figure()
-        colors_line = {'AMLS v4.3': '#006400', 'QQQ': '#000080', 'QLD': '#b8860b', 'TQQQ': '#8b0000'}
-        for s in strats:
-            fig_eq.add_trace(go.Scatter(x=df.index, y=df[f'{s}_Value'], name=s, line=dict(color=colors_line[s], width=3 if 'AMLS' in s else 1.5)))
-        fig_eq.add_trace(go.Scatter(x=df.index, y=df['Invested'], name='INVESTED', line=dict(color='#555555', width=2, dash='dot')))
+        
+        fig_eq.add_trace(go.Scatter(x=df.index, y=df['AMLS v4.3_Value'], name='AMLS v4.3', line=dict(color='#30D158', width=3)))
+        fig_eq.add_trace(go.Scatter(x=df.index, y=df['QQQ_Value'], name='QQQ', line=dict(color='#0A84FF', width=1.5)))
+        fig_eq.add_trace(go.Scatter(x=df.index, y=df['QLD_Value'], name='QLD', line=dict(color='#FF9500', width=1.5)))
+        fig_eq.add_trace(go.Scatter(x=df.index, y=df['TQQQ_Value'], name='TQQQ', line=dict(color='#FF3B30', width=1.5)))
+        fig_eq.add_trace(go.Scatter(x=df.index, y=df['Invested'], name='원금 (Invested)', line=dict(color='#94A3B8', width=2, dash='dot')))
+        
         if use_log: fig_eq.update_yaxes(type="log")
-        custom_layout = VINTAGE_LAYOUT.copy()
-        custom_layout.update(height=450, hovermode="x unified", legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
-        fig_eq.update_layout(**custom_layout)
+        cust_eq = TRENDY_LAYOUT.copy()
+        cust_eq.update(height=450, hovermode="x unified", legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+        fig_eq.update_layout(**cust_eq)
         st.plotly_chart(fig_eq, use_container_width=True)
 
-        st.markdown("#### 📉 DRAWDOWN ANALYSIS")
+        st.markdown("#### 📉 전략별 최대 낙폭 (Under Water)")
         fig_dd = go.Figure()
-        for s in strats:
+        for s, c in zip(strats, ['#30D158', '#0A84FF', '#FF9500', '#FF3B30']):
             dd = (df[f'{s}_Value'] / df[f'{s}_Value'].cummax() - 1) * 100
-            fig_dd.add_trace(go.Scatter(x=df.index, y=dd, name=f'{s} DD', line=dict(color=colors_line[s], width=2 if 'AMLS' in s else 1)))
-        fig_dd.add_hline(y=-30, line_dash="dash", line_color="#8b0000", annotation_text="DANGER LINE -30%")
-        custom_layout_dd = VINTAGE_LAYOUT.copy()
-        custom_layout_dd.update(height=300, hovermode="x unified")
-        fig_dd.update_layout(**custom_layout_dd)
+            fig_dd.add_trace(go.Scatter(x=df.index, y=dd, name=f'{s} DD', line=dict(color=c, width=2 if 'AMLS' in s else 1), fill='tozeroy' if 'AMLS' in s else 'none', fillcolor=f'rgba(48, 209, 88, 0.1)'))
+        fig_dd.add_hline(y=-30, line_dash="dash", line_color="#FF3B30", annotation_text="-30% 위험선", annotation_font_color="#FF3B30")
+        cust_dd = TRENDY_LAYOUT.copy()
+        cust_dd.update(height=300, hovermode="x unified")
+        fig_dd.update_layout(**cust_dd)
         st.plotly_chart(fig_dd, use_container_width=True)
 
     with tab3:
-        st.markdown("#### 🗓️ YEARLY RETURNS LEDGER")
+        st.markdown("#### 🗓️ 연도별 누적 수익률 비교")
         years = df.index.year.unique()
         yr_data = []
         for y in years:
@@ -474,21 +516,21 @@ def page_amls_backtest():
         yr_df = pd.DataFrame(yr_data).set_index("Year")
         
         fig_yr = go.Figure()
-        for s in strats:
-            fig_yr.add_trace(go.Bar(name=s, x=yr_df.index, y=yr_df[s], marker_color=colors_line[s]))
-        custom_layout_yr = VINTAGE_LAYOUT.copy()
-        custom_layout_yr.update(barmode='group', height=400, yaxis_title="RETURN (%)")
-        fig_yr.update_layout(**custom_layout_yr)
+        for s, c in zip(strats, ['#30D158', '#0A84FF', '#FF9500', '#FF3B30']):
+            fig_yr.add_trace(go.Bar(name=s, x=yr_df.index, y=yr_df[s], marker_color=c, marker_line_color='rgba(0,0,0,0)', marker_line_width=0))
+        cust_yr = TRENDY_LAYOUT.copy()
+        cust_yr.update(barmode='group', height=400, yaxis_title="수익률 (%)", bargap=0.15)
+        fig_yr.update_layout(**cust_yr)
         st.plotly_chart(fig_yr, use_container_width=True)
         
         st.dataframe(yr_df.style.format("{:.1f}%"), use_container_width=True)
 
     with tab4:
-        st.markdown("#### 📝 TYPEWRITER REBALANCING LOG")
-        st.caption(f"FREQ APPLIED: **{REBAL_FREQ}**")
+        st.markdown("#### 📝 시스템 리밸런싱 로그")
+        st.caption(f"적용된 정기 리밸런싱 주기: **{REBAL_FREQ}**")
         log_df = pd.DataFrame(logs)[::-1]
         if not log_df.empty:
-            log_df['EQUITY'] = log_df['EQUITY'].apply(lambda x: f"${x:,.0f}")
+            log_df['평가액'] = log_df['평가액'].apply(lambda x: f"${x:,.0f}")
             st.dataframe(log_df, hide_index=True, use_container_width=True)
 
 
@@ -497,7 +539,7 @@ def page_amls_backtest():
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
-        st.title(f"🏦 LEDGER: {acc_name}")
+        st.title(f"🏦 {acc_name} 포트폴리오 관제탑")
         curr_acc_data = st.session_state['accounts'][acc_name]
         pf_df = pd.DataFrame(curr_acc_data["portfolio"])
         pf_df["수량 (주/달러)"] = pf_df["수량 (주/달러)"].astype(float)
@@ -554,18 +596,18 @@ def make_portfolio_page(acc_name):
             else: regime_direction = "stable"
 
             if regime_direction == "ascending":
-                if regime_duration <= 10: entry_grade = "OPTIMAL ENTRY"
-                elif regime_duration <= 30: entry_grade = "GOOD ENTRY"
-                elif regime_duration <= 60: entry_grade = "OKAY (LONG DURATION)"
-                else: entry_grade = "CAUTION: REVERSAL RISK"
+                if regime_duration <= 10: entry_grade = "최적 진입 구간"
+                elif regime_duration <= 30: entry_grade = "진입 적합"
+                elif regime_duration <= 60: entry_grade = "진입 가능 (장기 체류)"
+                else: entry_grade = "진입 주의 — 전환 리스크"
             elif regime_direction == "descending":
-                if regime_duration <= 5: entry_grade = "HOLD: FRESH DOWNTURN"
-                elif regime_duration <= 20: entry_grade = "CAUTION: MORE DOWN"
-                else: entry_grade = "BOTTOM FISHING"
+                if regime_duration <= 5: entry_grade = "진입 보류 — 하락 전환 직후"
+                elif regime_duration <= 20: entry_grade = "진입 주의 — 추가 하락 가능"
+                else: entry_grade = "바닥 탐색 — 상향 전환 대기"
             else:
-                if regime_duration <= 30: entry_grade = "GOOD ENTRY"
-                elif regime_duration <= 60: entry_grade = "OKAY (LONG DURATION)"
-                else: entry_grade = "CAUTION: REVERSAL RISK"
+                if regime_duration <= 30: entry_grade = "진입 적합"
+                elif regime_duration <= 60: entry_grade = "진입 가능 (장기 체류)"
+                else: entry_grade = "진입 주의 — 전환 리스크"
 
             return {
                 'regime': reg, 'vix': today['^VIX'], 'qqq': today['QQQ'], 'ma200': ma200, 'ma50': ma50,
@@ -586,7 +628,7 @@ def make_portfolio_page(acc_name):
             except:
                 return None
 
-        with st.spinner("TRANSMITTING TELEGRAPH SIGNALS..."): 
+        with st.spinner("시장 데이터 동기화 및 AI 분석 중..."): 
             ms = get_market_status()
             rt_prices = get_realtime_prices()
 
@@ -606,31 +648,31 @@ def make_portfolio_page(acc_name):
             from datetime import timezone
             now_utc = datetime.now(timezone.utc)
             et_hour = (now_utc.hour - 5) % 24 
-            if 4 <= et_hour < 9.5: price_label = "PRE-MARKET"
-            elif 9.5 <= et_hour < 16: price_label = "LIVE TRADING"
-            elif 16 <= et_hour < 20: price_label = "AFTER-HOURS"
-            else: price_label = "LIVE"
+            if 4 <= et_hour < 9.5: price_label = "프리마켓"
+            elif 9.5 <= et_hour < 16: price_label = "장중 실시간"
+            elif 16 <= et_hour < 20: price_label = "애프터마켓"
+            else: price_label = "실시간"
         else:
-            price_label = "CLOSED"
+            price_label = "종가"
 
-        st.markdown("### 📡 MARKET INTELLIGENCE TICKER")
+        st.markdown("### 📡 실시간 시장 인텔리전스 (Market Intelligence)")
         with st.container(border=True):
-            st.markdown(f"**DATE:** {ms['date'].strftime('%Y-%m-%d')} | 💹 **{price_label}** QUOTES")
+            st.markdown(f"**기준일:** {ms['date'].strftime('%Y-%m-%d')} | 💹 **{price_label}** 가격 기준")
             
             col1, col2, col3 = st.columns(3)
             
             with col1:
                 vix_val = ms['vix']
                 fig_vix = go.Figure(go.Indicator(
-                    mode = "gauge+number", value = vix_val, title = {'text': "VIX (FEAR INDEX)", 'font': {'size': 14, 'color': '#2c2a25'}},
-                    number = {'font': {'color': '#2c2a25'}},
+                    mode = "gauge+number", value = vix_val, title = {'text': "시장 공포탐욕 지수 (VIX)", 'font': {'size': 14, 'color': '#94A3B8'}},
+                    number = {'font': {'color': '#FFF'}},
                     gauge = {
-                        'axis': {'range': [0, 80], 'tickwidth': 1, 'tickcolor': "#2c2a25"},
-                        'bar': {'color': "#2c2a25", 'thickness': 0.2},
-                        'steps': [{'range': [0, 25], 'color': "#8fbc8f"}, {'range': [25, 40], 'color': "#daa520"}, {'range': [40, 80], 'color': "#8b0000"}],
-                        'threshold': {'line': {'color': "#2c2a25", 'width': 4}, 'thickness': 0.75, 'value': 40}
+                        'axis': {'range': [0, 80], 'tickwidth': 1, 'tickcolor': "#2A3143"},
+                        'bar': {'color': "#FFF", 'thickness': 0.15},
+                        'steps': [{'range': [0, 25], 'color': "rgba(48, 209, 88, 0.4)"}, {'range': [25, 40], 'color': "rgba(255, 149, 0, 0.4)"}, {'range': [40, 80], 'color': "rgba(255, 59, 48, 0.4)"}],
+                        'threshold': {'line': {'color': "#FF3B30", 'width': 4}, 'thickness': 0.75, 'value': 40}
                     }))
-                cust_l = VINTAGE_LAYOUT.copy()
+                cust_l = TRENDY_LAYOUT.copy()
                 cust_l.update(height=240, margin=dict(l=30, r=30, t=50, b=20))
                 fig_vix.update_layout(**cust_l)
                 st.plotly_chart(fig_vix, use_container_width=True)
@@ -638,13 +680,13 @@ def make_portfolio_page(acc_name):
             with col2:
                 q_dist = (ms['qqq'] / ms['ma200'] - 1) * 100
                 fig_qqq = go.Figure(go.Indicator(
-                    mode = "gauge+number", value = q_dist, number={'suffix': "%", 'valueformat': "+.1f", 'font': {'color': '#2c2a25'}},
-                    title = {'text': "QQQ 200MA DISTANCE", 'font': {'size': 14, 'color': '#2c2a25'}},
+                    mode = "gauge+number", value = q_dist, number={'suffix': "%", 'valueformat': "+.1f", 'font': {'color': '#FFF'}},
+                    title = {'text': "QQQ 200일선 이격도", 'font': {'size': 14, 'color': '#94A3B8'}},
                     gauge = {
-                        'axis': {'range': [-30, 30], 'tickwidth': 1, 'tickcolor': "#2c2a25"},
-                        'bar': {'color': "#2c2a25", 'thickness': 0.2},
-                        'steps': [{'range': [-30, 0], 'color': "#8b0000"}, {'range': [0, 30], 'color': "#8fbc8f"}],
-                        'threshold': {'line': {'color': "#2c2a25", 'width': 4}, 'thickness': 0.75, 'value': 0}
+                        'axis': {'range': [-30, 30], 'tickwidth': 1, 'tickcolor': "#2A3143"},
+                        'bar': {'color': "#FFF", 'thickness': 0.15},
+                        'steps': [{'range': [-30, 0], 'color': "rgba(255, 59, 48, 0.4)"}, {'range': [0, 30], 'color': "rgba(48, 209, 88, 0.4)"}],
+                        'threshold': {'line': {'color': "#FFD60A", 'width': 4}, 'thickness': 0.75, 'value': 0}
                     }))
                 fig_qqq.update_layout(**cust_l)
                 st.plotly_chart(fig_qqq, use_container_width=True)
@@ -652,82 +694,102 @@ def make_portfolio_page(acc_name):
             with col3:
                 rsi_val = ms['smh_rsi']
                 fig_rsi = go.Figure(go.Indicator(
-                    mode = "gauge+number", value = rsi_val, title = {'text': "SEMI (SMH) RSI", 'font': {'size': 14, 'color': '#2c2a25'}},
-                    number = {'font': {'color': '#2c2a25'}},
+                    mode = "gauge+number", value = rsi_val, title = {'text': "반도체(SMH) RSI 모멘텀", 'font': {'size': 14, 'color': '#94A3B8'}},
+                    number = {'font': {'color': '#FFF'}},
                     gauge = {
-                        'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#2c2a25"},
-                        'bar': {'color': "#2c2a25", 'thickness': 0.2},
-                        'steps': [{'range': [0, 30], 'color': "#8b0000"}, {'range': [30, 50], 'color': "#daa520"}, {'range': [50, 100], 'color': "#000080"}],
-                        'threshold': {'line': {'color': "#2c2a25", 'width': 4}, 'thickness': 0.75, 'value': 50}
+                        'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#2A3143"},
+                        'bar': {'color': "#FFF", 'thickness': 0.15},
+                        'steps': [{'range': [0, 30], 'color': "rgba(255, 59, 48, 0.4)"}, {'range': [30, 50], 'color': "rgba(255, 149, 0, 0.4)"}, {'range': [50, 100], 'color': "rgba(10, 132, 255, 0.4)"}],
+                        'threshold': {'line': {'color': "#30D158", 'width': 4}, 'thickness': 0.75, 'value': 50}
                     }))
                 fig_rsi.update_layout(**cust_l)
                 st.plotly_chart(fig_rsi, use_container_width=True)
 
             st.divider()
 
-            st.markdown("#### ⚡ SEMI 3X (SOXL) ENTRY LOGIC")
+            st.markdown("#### ⚡ 반도체 3배(SOXL) 진입 판독기")
             col_s1, col_s2, col_s3 = st.columns(3)
             with col_s1:
-                s_icon = "[Y]" if ms['smh'] > ms['smh_ma50'] else "[N]"
-                st.info(f"**{s_icon} SHORT TREND (50MA)**\n\n`{'BROKEN UP' if ms['smh'] > ms['smh_ma50'] else 'BROKEN DOWN'}`")
+                s_icon = "🟢" if ms['smh'] > ms['smh_ma50'] else "🔴"
+                st.info(f"**{s_icon} 단기 추세 (50일선)**\n\n`{'돌파 (강세)' if ms['smh'] > ms['smh_ma50'] else '붕괴 (약세)'}`")
             with col_s2:
                 ret_val = ms['smh_3m_ret'] * 100
-                r_icon = "[Y]" if ret_val > 5.0 else "[N]"
-                st.info(f"**{r_icon} 3M CUMULATIVE RET**\n\n`{ret_val:+.2f}%` (REQ: > 5%)")
+                r_icon = "🟢" if ret_val > 5.0 else "🔴"
+                st.info(f"**{r_icon} 3개월 누적 수익률**\n\n`{ret_val:+.2f}%` (기준: > 5%)")
             with col_s3:
-                rsi_icon = "[Y]" if rsi_val > 50 else "[N]"
-                st.info(f"**{rsi_icon} RELATIVE STRENGTH (RSI)**\n\n`{rsi_val:.1f}` (REQ: > 50)")
+                rsi_icon = "🟢" if rsi_val > 50 else "🔴"
+                st.info(f"**{rsi_icon} 상대강도지수 (RSI 14)**\n\n`{rsi_val:.1f}` (기준: > 50)")
 
             st.divider()
 
-            st.markdown("##### 🤖 AMLS QUANT ANALYST REPORT")
+            st.markdown("##### 🤖 AMLS AI 전략 분석관 Report")
             app_reg = ms['regime']
             
             col_a1, col_a2 = st.columns([1, 4])
             with col_a1:
-                bg_color = "#8b0000" if app_reg >= 3 else "#8fbc8f"
-                border_color = "#2c2a25"
-                st.markdown(f"<div style='text-align: center; padding: 20px; border-radius: 0px; background-color: {bg_color}; border: 3px double {border_color};'><h1 style='color: white; margin:0;'>R{app_reg}</h1><p style='color: white; margin:0;'>CURRENT REGIME</p></div>", unsafe_allow_html=True)
+                bg_color = "linear-gradient(135deg, #FF3B30 0%, #D70015 100%)" if app_reg >= 3 else "linear-gradient(135deg, #30D158 0%, #248A3D 100%)"
+                st.markdown(f"<div style='text-align: center; padding: 20px; border-radius: 12px; background: {bg_color}; box-shadow: 0 4px 15px rgba(0,0,0,0.3);'><h1 style='color: white; margin:0; font-size:2.5rem;'>R{app_reg}</h1><p style='color: rgba(255,255,255,0.8); margin:0; font-weight:600;'>현재 국면</p></div>", unsafe_allow_html=True)
             with col_a2:
                 if app_reg == 4:
-                    st.error("🚨 **[PANIC] DANGER LEVEL MAX.** VIX > 40. LIQUIDATE EQUITY. MOVE TO GLD & CASH IMMEDIATELY.")
+                    st.error("🚨 **[초비상] 패닉장 도래!** VIX 지수가 40을 돌파했습니다. 시스템이 시장의 붕괴를 감지했습니다. 모든 주식 포지션을 전량 청산하고 즉시 **현금 및 금(GLD)**으로 대피하십시오.")
                 elif app_reg == 3:
-                    st.warning("⚠️ **[WARNING] BEAR MARKET CONFIRMED.** NASDAQ < 200MA. MAINTAIN DEFENSIVE POSTURE (GLD 50%).")
+                    st.warning("⚠️ **[경고] 장기 하락장 진입.** 나스닥이 생명선인 200일 이동평균선을 하향 이탈했습니다. 하락 추세가 컨펌되었으므로, 레버리지 상품을 청산하고 방어 태세(GLD 50%)를 굳건히 하십시오.")
                 elif app_reg == 1:
-                    st.success("🔥 **[BULL] GOLDILOCKS ASCENT.** VIX STABLE. MA ALIGNED. DEPLOY 3X LEVERAGE FOR MAXIMUM VELOCITY.")
+                    st.success("🔥 **[강세] 완벽한 골디락스 상승장.** VIX가 안정적이고 이평선이 정배열을 이뤘습니다. 적극적인 **3배 레버리지(TQQQ, SOXL) 베팅**을 통해 자산을 폭발적으로 증식시킬 최적의 구간입니다.")
                 else:
-                    st.info("🛡️ **[CORRECTION] SECURE MARGIN.** TREND ALIVE BUT VOLATILE. REDUCE TO 2X LEVERAGE.")
+                    st.info("🛡️ **[조정] 안전 마진 확보 구간.** 상승 추세는 살아있으나 변동성이 확대되거나 단기 모멘텀이 꺾였습니다. 과도한 레버리지를 축소하고 QLD/SSO 등 2배수로 속도를 조절하세요.")
 
             st.divider()
-            st.markdown("##### 🚦 NEW CAPITAL ENTRY SIGNAL")
+            st.markdown("##### 🚦 신규 자금 투입 적합도 (New Entry Signal)")
             entry_g = ms['entry_grade']
             dur = ms['regime_duration']
             direction = ms['regime_direction']
             prev_r = ms['prev_regime']
-            reg_names = {1: 'R1 BULL', 2: 'R2 NORM', 3: 'R3 BEAR', 4: 'R4 CRASH'}
-            dir_arrows = {'ascending': 'UP', 'descending': 'DOWN', 'stable': 'FLAT'}
+            reg_names = {1: 'R1 강세', 2: 'R2 보통', 3: 'R3 약세', 4: 'R4 위기'}
+            dir_arrows = {'ascending': '📈 상향', 'descending': '📉 하향', 'stable': '➡️ 유지'}
 
-            sig_color = '#2c2a25' # 빈티지니까 색상보다는 선 굵기와 배경으로
-            sig_bg = "#dfd7c5"
+            if '최적' in entry_g or ('적합' in entry_g and '주의' not in entry_g):
+                sig_color, sig_icon = '#30D158', '🟢'
+            elif '가능' in entry_g:
+                sig_color, sig_icon = '#FFD60A', '🟡'
+            elif '보류' in entry_g or '주의' in entry_g:
+                sig_color, sig_icon = '#FF9500', '🟠'
+            elif '바닥' in entry_g or '대기' in entry_g:
+                sig_color, sig_icon = '#0A84FF', '🔵'
+            else:
+                sig_color, sig_icon = '#FF3B30', '🔴'
 
             col_sig, col_detail = st.columns([1, 2.5])
             with col_sig:
                 st.markdown(f"""
-                <div style="text-align:center; padding:16px; border:3px double {sig_color}; background:{sig_bg};">
-                    <div style="font-size:13px; font-weight:bold;">ENTRY SIGNAL TAPE</div>
-                    <div style="font-size:22px; font-weight:bold; margin:6px 0;">{entry_g}</div>
-                    <div style="font-size:12px;">DUR: {dur} DAYS | {reg_names.get(prev_r,'')} -> {reg_names.get(app_reg,'')}</div>
+                <div style="text-align:center; padding:16px; border-radius:12px; background:rgba(255,255,255,0.03); border:1px solid {sig_color}50; box-shadow: inset 0 0 20px {sig_color}10;">
+                    <div style="font-size:13px; color:#94A3B8; font-weight:500;">신규 자금 투입 신호</div>
+                    <div style="font-size:20px; font-weight:700; color:{sig_color}; margin:8px 0;">{sig_icon} {entry_g}</div>
+                    <div style="font-size:12px; color:#64748B;">체류 {dur}일 | {reg_names.get(prev_r,'')} → {reg_names.get(app_reg,'')}</div>
                 </div>
                 """, unsafe_allow_html=True)
             with col_detail:
-                st.markdown(f"**SHIFT DIR:** {dir_arrows.get(direction, '')} &nbsp; | &nbsp; **STAY DUR:** {dur} DAYS")
-                st.info("ANALYST NOTE: READ TAPE CAREFULLY BEFORE INJECTING FRESH CAPITAL.")
+                st.markdown(f"**전환 방향:** {dir_arrows.get(direction, '')} ({reg_names.get(prev_r,'')} → {reg_names.get(app_reg,'')}) &nbsp; | &nbsp; **체류:** {dur}일차")
+                if direction == 'ascending' and dur <= 10:
+                    st.success("**상향 전환 초입.** 신규 진입에 가장 유리한 타이밍입니다.")
+                elif direction == 'ascending':
+                    st.success("**상향 전환 안정 구간.** 신규 진입에 적합합니다.")
+                elif direction == 'descending' and dur <= 5:
+                    st.error("**하향 전환 직후.** 신규 진입을 보류하세요. 기존 보유자는 리밸런싱을 진행하세요.")
+                elif direction == 'descending' and dur <= 20:
+                    st.warning("**하향 전환 진행 중.** 추가 하락 가능성이 있으므로 신규 진입에 신중하세요.")
+                elif direction == 'descending':
+                    st.info("**바닥 탐색 구간.** 다음 상향 전환(R3→R2 또는 R2→R1) 신호를 기다리세요.")
+                elif dur > 60:
+                    st.warning("**장기 체류 중.** 전환 리스크가 누적되고 있으므로 소규모 분할 진입을 권장합니다.")
+                else:
+                    st.info("**안정 체류 구간.** 현재 레짐에서 정상적으로 운용 가능합니다.")
 
         st.write("")
         c_h1, c_h2 = st.columns([5, 1])
-        with c_h1: st.markdown(f"**[ 💼 PORTFOLIO LEDGER ]**")
+        with c_h1: st.markdown(f"**[ 💼 포트폴리오 기입표 및 실시간 수익률 ]**")
         with c_h2:
-            if st.button("🔄 CLEAR TAPE", use_container_width=True):
+            if st.button("🔄 숫자 리셋", use_container_width=True):
                 st.session_state['accounts'][acc_name]["portfolio"] = [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0} for t in REQUIRED_TICKERS]
                 save_accounts_data(st.session_state['accounts']); st.rerun()
 
@@ -752,13 +814,13 @@ def make_portfolio_page(acc_name):
 
         def color_y(val):
             if isinstance(val, (int, float)):
-                if val > 0: return 'color: #000080; font-weight: bold;'
-                elif val < 0: return 'color: #8b0000; font-weight: bold;'
+                if val > 0: return 'color: #30D158; font-weight: bold;'
+                elif val < 0: return 'color: #FF3B30; font-weight: bold;'
             return ''
 
-        c_t, c_c = st.columns([1.2, 1])
+        c_t, c_c = st.columns([1.3, 1])
         with c_t:
-            st.caption(f"💡 DOUBLE CLICK TO TYPE. (LIVE QT: {price_label})")
+            st.caption(f"💡 더블 클릭하여 수량, 평단가, 환율을 입력하세요. (현재가 기준: {price_label})")
             ed_disp = st.data_editor(
                 disp_df.style.map(color_y, subset=["수익률 (%)", "원화 수익률 (%)"]), 
                 num_rows="dynamic", use_container_width=True, height=350,
@@ -784,14 +846,15 @@ def make_portfolio_page(acc_name):
             
             total_val = sum(asset_vals.values())
             if total_val > 0:
-                fig = go.Figure(go.Pie(labels=list(asset_vals.keys()), values=list(asset_vals.values()), hole=0.6, marker=dict(colors=['#556b2f','#8b0000','#b8860b','#000080','#daa520'])))
-                cust_p = VINTAGE_LAYOUT.copy()
-                cust_p.update(height=320, showlegend=False, annotations=[dict(text=f"TOTAL EQUITY<br><b>${total_val:,.0f}</b>", x=0.5, y=0.5, font_size=16, font=dict(family="'Special Elite', Courier", color="#2c2a25"), showarrow=False)])
-                fig.update_layout(**cust_p)
+                fig = go.Figure(go.Pie(labels=list(asset_vals.keys()), values=list(asset_vals.values()), hole=0.6, marker=dict(colors=[COLOR_PALETTE.get(k, '#555') for k in asset_vals.keys()])))
+                cust_p2 = TRENDY_LAYOUT.copy()
+                cust_p2.update(height=320, showlegend=False, annotations=[dict(text=f"총 평가액<br><b style='font-size:1.5rem;'>${total_val:,.0f}</b>", x=0.5, y=0.5, font_size=14, showarrow=False, font=dict(color="#FFF"))])
+                fig.update_layout(**cust_p2)
+                fig.update_traces(textposition='inside', textinfo='percent+label', textfont_size=12)
                 st.plotly_chart(fig, use_container_width=True)
 
         st.write("")
-        st.markdown("**[ 🎯 REBALANCING DIRECTIVE ]**")
+        st.markdown("**[ 🎯 리밸런싱 액션 지침 ]**")
         auto_seed = 0.0
         for _, row in ed_disp.iterrows():
             qty = float(row["수량 (주/달러)"] if pd.notna(row["수량 (주/달러)"]) else 0)
@@ -804,8 +867,8 @@ def make_portfolio_page(acc_name):
 
         rebal_base = total_val if total_val > 0 else auto_seed
         col_m1, col_m2 = st.columns(2)
-        col_m1.metric("💰 BOOK COST", f"${auto_seed:,.2f}")
-        col_m2.metric("📊 TARGET BASE (LIVE)", f"${rebal_base:,.2f}")
+        col_m1.metric("💰 투입 원금 (원가 합산)", f"${auto_seed:,.2f}")
+        col_m2.metric("📊 리밸런싱 기준액 (현재 평가)", f"${rebal_base:,.2f}")
 
         status_d = []
         smh_cond = (ms['smh'] > ms['smh_ma50']) and (ms['smh_3m_ret'] > 0.05) and (ms['smh_rsi'] > 50)
@@ -835,42 +898,43 @@ def make_portfolio_page(acc_name):
                 shares_to_trade = abs(diff) / cp
                 krw_amt = abs(diff) * current_usdkrw if current_usdkrw > 0 else 0
                 if shares_to_trade < 1.0:
-                    action = "HOLD"
+                    action = "✅ 적정 (유지)"
                 elif diff > 0:
-                    action = f"BUY {shares_to_trade:.0f} SHS (${diff:,.0f})"
+                    action = f"🟢 {shares_to_trade:.0f}주 매수 (${diff:,.0f}, ₩{krw_amt:,.0f})"
                 else:
-                    action = f"SELL {shares_to_trade:.0f} SHS (${abs(diff):,.0f})"
+                    action = f"🔴 {shares_to_trade:.0f}주 매도 (${abs(diff):,.0f}, ₩{krw_amt:,.0f})"
             elif tkr == "CASH":
-                if abs(diff) < 50: action = "HOLD"
-                elif diff > 0: action = f"ADD ${diff:,.0f}"
-                else: action = f"WITHDRAW ${abs(diff):,.0f}"
+                krw_amt = abs(diff) * current_usdkrw if current_usdkrw > 0 else 0
+                if abs(diff) < 50: action = "✅ 적정 (유지)"
+                elif diff > 0: action = f"🟢 ${diff:,.0f} 추가 (₩{krw_amt:,.0f})"
+                else: action = f"🔴 ${abs(diff):,.0f} 인출 (₩{krw_amt:,.0f})"
             else:
-                action = "HOLD"
+                action = "✅ 적정 (유지)"
             
             if my_v > 0 or tw > 0: 
-                status_d.append({"TICKER": tkr, "TARGET %": f"{tw*100:.1f}%", "ACTUAL %": f"{my_w:.1f}%", "TARGET $": f"${tv:,.0f}", "ACTUAL $": f"${my_v:,.0f}", "ACTION": action})
+                status_d.append({"종목": tkr, "목표비중": f"{tw*100:.1f}%", "현재비중": f"{my_w:.1f}%", "목표액($)": f"${tv:,.0f}", "현재액($)": f"${my_v:,.0f}", "목표액(₩)": f"₩{tv*current_usdkrw:,.0f}" if current_usdkrw > 0 else "-", "액션": action})
                 
         if status_d:
-            status_df = pd.DataFrame(status_d).sort_values("TARGET %", ascending=False)
+            status_df = pd.DataFrame(status_d).sort_values("목표비중", ascending=False)
             fig_comp = go.Figure(data=[
-                go.Bar(name='ACTUAL', x=list(status_df['TICKER']), y=[float(str(x).replace('%','')) for x in status_df['ACTUAL %']], marker_color='#8b0000'),
-                go.Bar(name='TARGET', x=list(status_df['TICKER']), y=[float(str(x).replace('%','')) for x in status_df['TARGET %']], marker_color='#000080')
+                go.Bar(name='현재 비중', x=list(status_df['종목']), y=[float(str(x).replace('%','')) for x in status_df['현재비중']], marker_color='#3B82F6', marker_line_width=0, opacity=0.8),
+                go.Bar(name='목표 비중', x=list(status_df['종목']), y=[float(str(x).replace('%','')) for x in status_df['목표비중']], marker_color='#10B981', marker_line_width=0)
             ])
-            cust_b = VINTAGE_LAYOUT.copy()
-            cust_b.update(barmode='group', height=250, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+            cust_b = TRENDY_LAYOUT.copy()
+            cust_b.update(barmode='group', height=250, bargap=0.2, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
             fig_comp.update_layout(**cust_b)
             st.plotly_chart(fig_comp, use_container_width=True)
 
             def color_act(val):
                 val_s = str(val)
-                if 'BUY' in val_s or 'ADD' in val_s: return 'color: #000080; font-weight: bold;'
-                elif 'SELL' in val_s or 'WITHDRAW' in val_s: return 'color: #8b0000; font-weight: bold;'
+                if '매수' in val_s or '추가' in val_s: return 'color: #30D158; font-weight: 700;'
+                elif '매도' in val_s or '인출' in val_s: return 'color: #FF3B30; font-weight: 700;'
                 return ''
-            st.dataframe(status_df.style.map(color_act, subset=['ACTION']), use_container_width=True, hide_index=True)
+            st.dataframe(status_df.style.map(color_act, subset=['액션']), use_container_width=True, hide_index=True)
 
 
         st.write("")
-        st.markdown("**[ 📈 BOOK VALUE TRAJECTORY ]**")
+        st.markdown("**[ 📈 운용 시드(Target Seed) 성장 곡선 ]**")
         
         if auto_seed > 0:
             with st.container(border=True):
@@ -878,7 +942,7 @@ def make_portfolio_page(acc_name):
                 default_date = pd.to_datetime(fed_str).date() if fed_str else (datetime.today() - timedelta(days=90)).date()
                 col_date, _ = st.columns([1, 3])
                 with col_date:
-                    u_date = st.date_input("INCEPTION DATE", value=default_date, key=f"date_{acc_name}")
+                    u_date = st.date_input("투자 시작일 (시뮬레이션 기점)", value=default_date, key=f"date_{acc_name}")
                     if str(u_date) != str(fed_str)[:10]: 
                         st.session_state['accounts'][acc_name]["first_entry_date"] = str(u_date)
                         save_accounts_data(st.session_state['accounts'])
@@ -896,10 +960,10 @@ def make_portfolio_page(acc_name):
                         seed_curve = (bench_series / bench_series.iloc[0]) * auto_seed
                         
                         fig_seed = go.Figure()
-                        fig_seed.add_trace(go.Scatter(x=seed_curve.index, y=seed_curve.values, name="SEED TRAJECTORY", line=dict(color='#000080', width=3), fill='tozeroy', fillcolor='rgba(0, 0, 128, 0.1)'))
-                        fig_seed.add_trace(go.Scatter(x=seed_curve.index, y=[auto_seed]*len(seed_curve), name="ORIGINAL SEED", line=dict(color='#8b0000', width=2, dash='dot')))
-                        cust_s = VINTAGE_LAYOUT.copy()
-                        cust_s.update(height=350, yaxis_title="EQUITY ($)", hovermode="x unified")
+                        fig_seed.add_trace(go.Scatter(x=seed_curve.index, y=seed_curve.values, name="운용 시드 궤적", line=dict(color='#0A84FF', width=3), fill='tozeroy', fillcolor='rgba(10, 132, 255, 0.15)'))
+                        fig_seed.add_trace(go.Scatter(x=seed_curve.index, y=[auto_seed]*len(seed_curve), name="현재 시드 원금", line=dict(color='#FF3B30', width=2, dash='dot')))
+                        cust_s = TRENDY_LAYOUT.copy()
+                        cust_s.update(height=350, yaxis_title="운용 자산 ($)", hovermode="x unified")
                         fig_seed.update_layout(**cust_s)
                         st.plotly_chart(fig_seed, use_container_width=True)
                 except Exception as e: pass
@@ -907,11 +971,11 @@ def make_portfolio_page(acc_name):
         st.write("")
         col_log1, col_log2 = st.columns([1.5, 1])
         with col_log1:
-            st.markdown("**[ TRADER'S DIARY ]**")
+            st.markdown("**[ 매매 복기 일지 ]**")
             def save_j(): st.session_state['accounts'][acc_name]["journal_text"] = st.session_state[f"j_{acc_name}"]; save_accounts_data(st.session_state['accounts'])
-            st.text_area("TYPE YOUR MARKET THOUGHTS HERE...", value=curr_acc_data.get('journal_text', ''), key=f"j_{acc_name}", height=150, on_change=save_j, label_visibility="collapsed")
+            st.text_area("시장의 주요 이슈와 매매 감정을 자유롭게 기록하세요.", value=curr_acc_data.get('journal_text', ''), key=f"j_{acc_name}", height=150, on_change=save_j, label_visibility="collapsed")
         with col_log2:
-            st.markdown("**[ SYSTEM LOGS ]**")
+            st.markdown("**[ 시스템 로그 ]**")
             history = curr_acc_data.get('history', [])
             if history: st.dataframe(pd.DataFrame(history)[::-1], hide_index=True, use_container_width=True, height=150)
 
@@ -921,67 +985,70 @@ def make_portfolio_page(acc_name):
 
 # --- 페이지 구성: 계좌 관리 ---
 def page_manage_accounts():
-    st.title("⚙️ MANAGE LEDGERS")
-    new_acc = st.text_input("NEW LEDGER NAME")
-    if st.button("🚀 OPEN ACCOUNT", type="primary") and new_acc:
+    st.title("⚙️ 포트폴리오 계좌 관리")
+    new_acc = st.text_input("신규 계좌 이름")
+    if st.button("🚀 계좌 개설", type="primary") and new_acc:
         if new_acc not in st.session_state['accounts']:
-            st.session_state['accounts'][new_acc] = {"portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0} for t in REQUIRED_TICKERS], "history": [{"Date": datetime.now().strftime("%Y-%m-%d"), "Log": "✨ LEDGER CREATED"}], "target_seed": 10000.0}
+            st.session_state['accounts'][new_acc] = {"portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0} for t in REQUIRED_TICKERS], "history": [{"Date": datetime.now().strftime("%Y-%m-%d"), "Log": "✨ 계좌 개설"}], "target_seed": 10000.0}
             save_accounts_data(st.session_state['accounts']); st.rerun()
     st.divider()
     for acc in list(st.session_state['accounts'].keys()):
         c1, c2 = st.columns([4, 1])
         c1.write(f"💼 **{acc}**")
-        if c2.button("DELETE", key=f"del_{acc}", disabled=len(st.session_state['accounts']) <=1):
+        if c2.button("삭제", key=f"del_{acc}", disabled=len(st.session_state['accounts']) <=1):
             del st.session_state['accounts'][acc]; save_accounts_data(st.session_state['accounts']); st.rerun()
 
 # --- 페이지 구성: 전략 명세서 ---
 def page_strategy_specification():
-    st.title("📜 AMLS STRATEGY MANIFESTO")
-    st.caption("DEPARTMENT OF QUANTITATIVE STRATEGY | CONFIDENTIAL")
+    st.title("📜 AMLS 적응형 다중 레버리지 전략 명세서")
+    st.caption("DEPARTMENT OF QUANTITATIVE STRATEGY | 정량전략부 공식 문서")
     st.markdown("""---""")
 
     with st.container():
-        st.markdown("### 🏷️ VERSION: v4.3 (PHASED ENTRY)")
+        st.markdown("### 🏷️ 버전: v4.3 (단계적 진입 로직)")
         col_s1, col_s2 = st.columns(2)
         with col_s1:
-            st.info("**SUMMARY**\n- **BASE ASSET:** QQQ (NASDAQ 100 ETF)\n- **REGIME DETECTOR:** QQQ vs 200MA + VIX + MA CROSS\n- **RULE:** IMMEDIATE DOWN, 5-DAY VERIFY UP\n- **CORE ETF:** TQQQ, SOXL, USD, QLD, SSO, QQQ, SPY, GLD")
+            st.info("**문서 요약**\n- **기준 자산:** QQQ (나스닥100 ETF)\n- **레짐 판단:** QQQ vs 200일 MA + VIX + MA50/MA200 골든크로스\n- **전환 규칙:** 하향 즉시 / 상향 5일 확인 (확인 중 한 단계 위 배분 적용)\n- **핵심 ETF:** TQQQ, SOXL, USD, QLD, SSO, QQQ, SPY, GLD")
         with col_s2:
-            st.success("**TARGETS**\n- **TARGET MDD:** UNDER -35%\n- **EVOLUTION:** v4 -> v4.2 -> v4.3\n- **CORE VALUE:** SURVIVE BEARS, EXPLOIT BULLS")
+            st.success("**목표 지표**\n- **목표 MDD:** -35% 이내\n- **진화 단계:** v4 → v4.2 → v4.3\n- **핵심 가치:** 하락장 생존 및 상승장 초입 수익 극대화")
 
-    st.markdown("### I. EVOLUTION LOG")
-    st.markdown("- **v4:** 4-STAGE REGIMES (R1~R4) AND ASYMMETRIC RULES ESTABLISHED.\n- **v4.2:** R2 LEVERAGE TO 1.75X. R3 GLD TO 50% FOR HEAVY CRASHES.\n- **v4.3:** PHASED ENTRY IMPLEMENTED. PREVENTS GAIN LOSS DURING 5-DAY DELAY.")
+    st.markdown("### I. 진화 경로: v4 → v4.2 → v4.3")
+    st.markdown("- **v4 (기본):** 4단계 레짐(R1~R4)과 비대칭 전환 규칙(하향 즉시, 상향 5일 확인) 확립.\n- **v4.2 (R2/R3 개선):** R2 레버리지를 1.45x에서 1.75x로 상향. R3의 GLD 비중을 50%로 높여 폭락장 방어 강화.\n- **v4.3 (단계적 진입):** 상향 전환 5일 확인 대기 기간 동안 기존 레짐이 아닌 **한 단계 위 레짐 배분**을 적용하여 수익 누락 방지.")
 
-    st.markdown("### II. REGIME DETECTION MATRIX")
-    st.table(pd.DataFrame({"PRIORITY": ["1", "2", "3", "4"], "CONDITION": ["VIX > 40", "QQQ < 200MA", "QQQ > MA200 & MA50 > MA200 & VIX < 25", "OTHERWISE"], "TARGET": ["R4 (CRASH)", "R3 (BEAR)", "R1 (BULL)", "R2 (NORM)"]}))
+    st.markdown("### II. 레짐 판단 기준")
+    st.table(pd.DataFrame({"우선순위": ["1", "2", "3", "4"], "조건": ["VIX > 40", "QQQ < 200일 MA", "QQQ > MA200 & MA50 > MA200 & VIX < 25", "위 조건 모두 불충족"], "목표 레짐": ["R4 (위기)", "R3 (약세)", "R1 (강세)", "R2 (보통)"]}))
 
-    st.markdown("### III. ALLOCATION DIRECTIVE (v4.3)")
+    st.markdown("### III. 레짐별 자산 배분표 (v4.3)")
     tabs = st.tabs(["Regime 1", "Regime 2", "Regime 3", "Regime 4"])
-    with tabs[0]: st.write("**EFFECTIVE LEVERAGE: ~2.25x**"); st.table(pd.DataFrame({"ASSET": ["TQQQ", "SOXL/USD", "QLD", "SSO", "GLD", "CASH"], "WEIGHT": ["30%", "20%", "20%", "15%", "10%", "5%"]}))
-    with tabs[1]: st.write("**EFFECTIVE LEVERAGE: ~1.75x**"); st.table(pd.DataFrame({"ASSET": ["QLD", "SSO", "GLD", "USD", "QQQ", "CASH"], "WEIGHT": ["30%", "25%", "20%", "10%", "5%", "10%"]}))
-    with tabs[2]: st.write("**EFFECTIVE LEVERAGE: ~0.15x**"); st.table(pd.DataFrame({"ASSET": ["QQQ", "GLD", "CASH"], "WEIGHT": ["15%", "50%", "35%"]}))
-    with tabs[3]: st.write("**EFFECTIVE LEVERAGE: ~0.10x**"); st.table(pd.DataFrame({"ASSET": ["GLD", "QQQ", "CASH"], "WEIGHT": ["50%", "10%", "40%"]}))
+    with tabs[0]: st.write("**실효 레버리지: 약 2.25배**"); st.table(pd.DataFrame({"종목": ["TQQQ", "SOXL/USD", "QLD", "SSO", "GLD", "현금"], "비중": ["30%", "20%", "20%", "15%", "10%", "5%"]}))
+    with tabs[1]: st.write("**실효 레버리지: 약 1.75배**"); st.table(pd.DataFrame({"종목": ["QLD", "SSO", "GLD", "USD", "QQQ", "현금"], "비중": ["30%", "25%", "20%", "10%", "5%", "10%"]}))
+    with tabs[2]: st.write("**실효 레버리지: 약 0.15배**"); st.table(pd.DataFrame({"종목": ["QQQ", "GLD", "현금"], "비중": ["15%", "50%", "35%"]}))
+    with tabs[3]: st.write("**실효 레버리지: 약 0.10배**"); st.table(pd.DataFrame({"종목": ["GLD", "QQQ", "현금"], "비중": ["50%", "10%", "40%"]}))
+
+    st.markdown("### IV. 반도체 동적 스위칭 (SOXL/USD)")
+    st.write("R1 반도체 슬롯(20%)은 아래 세 조건을 모두 충족할 때만 **SOXL(3x)**을 사용합니다.\n- SMH > SMH 50일 MA (추세 상승)\n- SMH 3개월 수익률 > 5% (중기 모멘텀)\n- SMH RSI(14) > 50 (과매도 탈출)")
 
 
 # =====================================================================
 # [5] 네비게이션 라우팅
 # =====================================================================
 pages = {
-    "🌐 GLOBAL MACRO": [st.Page(page_market_dashboard, title="MARKET TICKER", icon="🗺️")],
-    "📊 SIMULATIONS": [st.Page(page_amls_backtest, title="AMLS TEARSHEET", icon="🦅")],
-    "🏦 MY LEDGERS": [],
-    "📜 DIRECTIVES": [st.Page(page_strategy_specification, title="MANIFESTO v4.3", icon="📄")]
+    "🌐 마켓 터미널": [st.Page(page_market_dashboard, title="실시간 시장 지표", icon="🗺️")],
+    "📊 백테스팅": [st.Page(page_amls_backtest, title="AMLS 시뮬레이터", icon="🦅")],
+    "🏦 내 포트폴리오": [],
+    "📜 전략 가이드": [st.Page(page_strategy_specification, title="공식 명세서 (v4.3)", icon="📄")]
 }
 
 for name in st.session_state['accounts'].keys():
-    pages["🏦 MY LEDGERS"].append(st.Page(make_portfolio_page(name), title=name, icon="💼"))
+    pages["🏦 내 포트폴리오"].append(st.Page(make_portfolio_page(name), title=name, icon="💼"))
 
-pages["🏦 MY LEDGERS"].append(st.Page(page_manage_accounts, title="⚙️ SETTINGS", icon="⚙️"))
+pages["🏦 내 포트폴리오"].append(st.Page(page_manage_accounts, title="⚙️ 계좌 관리", icon="⚙️"))
 
 # 사이드바 데이터 백업
-with st.sidebar.expander("💾 ARCHIVE / RESTORE"):
-    st.download_button("📥 PUNCH TAPE OUT", data=json.dumps(st.session_state['accounts']), file_name="amls_archive.json")
-    up_f = st.file_uploader("📤 READ TAPE IN", type=['json'])
-    if up_f and st.button("⚠️ OVERWRITE"):
+with st.sidebar.expander("💾 백업/복구"):
+    st.download_button("📥 백업 받기", data=json.dumps(st.session_state['accounts']), file_name="amls_backup.json")
+    up_f = st.file_uploader("📤 복구하기", type=['json'])
+    if up_f and st.button("⚠️ 복구 실행"):
         st.session_state['accounts'] = json.load(up_f)
         save_accounts_data(st.session_state['accounts'])
         st.rerun()
