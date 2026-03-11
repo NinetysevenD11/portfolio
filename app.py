@@ -98,6 +98,11 @@ if needs_save: save_accounts_data(st.session_state['accounts'])
 # [2] 동적 테마 및 레이아웃 설정 (4가지 압축 + 커스텀 배경화면)
 # =====================================================================
 current_theme = st.session_state['settings'].get("theme", "애플 테마")
+theme_list = ["애플 테마", "1930년대 타자기 테마", "월스트리트 저널 테마", "엑셀 테마"]
+
+# 🔥 에러 방지용 안전장치 (과거 테마가 저장되어 있으면 애플 테마로 강제 초기화)
+if current_theme not in theme_list:
+    current_theme = "애플 테마"
 
 if current_theme == "애플 테마":
     DEFAULT_TEXT_COLOR = "#1d1d1f"; TEXT_SUB = "#8e8e93"
@@ -462,7 +467,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지 구성: 내 포트폴리오 관리 (1.5주 톨러런스, AI 체류일수, 명언 봇 포함)
+# [6] 페이지 구성: 내 포트폴리오 관리 
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
@@ -618,11 +623,12 @@ def make_portfolio_page(acc_name):
             if row["수량 (주/달러)"] == 0 or row["평균 단가 ($)"] == 0 or row["티커 (Ticker)"] == "CASH": return 0.0
             return (row["현재가 ($)"] - row["평균 단가 ($)"]) / row["평균 단가 ($)"] * 100
         disp_df["수익률 (%)"] = disp_df.apply(cy, axis=1)
-        
+
         def cy_krw(row):
             if row["수량 (주/달러)"] == 0 or row["평균 단가 ($)"] == 0 or row["티커 (Ticker)"] == "CASH": return 0.0
             if row.get("매입 환율", 0) <= 0 or current_usdkrw <= 0: return 0.0
-            buy_krw = row["평균 단가 ($)"] * row["매입 환율"]; now_krw = row["현재가 ($)"] * current_usdkrw
+            buy_krw = row["평균 단가 ($)"] * row["매입 환율"]
+            now_krw = row["현재가 ($)"] * current_usdkrw
             return (now_krw - buy_krw) / buy_krw * 100
         disp_df["원화 수익률 (%)"] = disp_df.apply(cy_krw, axis=1)
 
@@ -646,9 +652,6 @@ def make_portfolio_page(acc_name):
                 r_ret = row["수익률 (%)"]
                 if tkr != "CASH" and r_ret > best_ret: best_ret = r_ret; best_ticker = tkr
 
-        if total_val_now > 0:
-            for k, v in asset_vals.items(): weights_dict[k] = v / total_val_now
-
         daily_diff = total_val_now - total_val_yest
         daily_diff_pct = (daily_diff / total_val_yest * 100) if total_val_yest > 0 else 0.0
 
@@ -666,9 +669,6 @@ def make_portfolio_page(acc_name):
         if history_changed: save_accounts_data(st.session_state['accounts'])
 
 
-        # -------------------------------------------------------------
-        # 동적 레이아웃 렌더링 루프
-        # -------------------------------------------------------------
         for block in current_layout:
             
             if block == "🎯 목표 달성률":
@@ -747,7 +747,7 @@ def make_portfolio_page(acc_name):
                     wait_msg_pc = f"<div style='margin-top:10px; padding:10px; background-color:rgba(231,76,60,0.15); border-left:4px solid #e74c3c; border-radius:4px;'><span style='color:#e74c3c; font-weight:bold;'>🚨 하락 전환 주의 발동</span><br>현재 시장 지표가 <b>[R{tgt_reg}]</b> 악화 조건을 터치했습니다. 오늘 종가가 이대로 마감되면 내일 아침 즉시 대기 없이 하향 전환됩니다.</div>"
 
                 if app_reg == 1:
-                    reg_t = "[R1: 완벽한 강세장]"
+                    reg_t = "[R1: 완벽 강세장]"
                     reg_d = f"VIX({vix_c:.1f}) 안정권 및 나스닥({qqq_c:.0f}) 정배열 유지. 하방 리스크가 제한적이므로 3배 레버리지를 가동해 상승분을 캡처하십시오."
                 elif app_reg == 2:
                     reg_t = "[R2: 조정/경계]"
@@ -766,8 +766,8 @@ def make_portfolio_page(acc_name):
                 if direction == 'ascending' and dur <= 10: summ = "상향 전환 직후 골든타임. 진입 비중 확대를 적극 권장합니다."
                 elif direction == 'ascending': summ = "상승 추세 안정화. 계획된 비중대로 편안하게 분할 매수하십시오."
                 elif direction == 'descending' and dur <= 20: summ = "하향 전환 발생. 추가 하락 우려가 있으므로 신규 매수를 전면 보류하십시오."
-                elif direction == 'descending': summ = "장기 하락 중. 완벽한 상승 신호(R2 이상)가 뜰 때까지 현금을 대기하십시오."
-                elif dur > 60: summ = "레짐 장기화로 추세 반전 리스크 누적. 보수적인 소규모 분할 진입을 추천합니다."
+                elif direction == 'descending': summ = "장기 하락 중. 완벽한 상승 신호가 뜰 때까지 현금을 대기하십시오."
+                elif dur > 60: summ = "레짐 장기화로 추세 반전 리스크 누적. 보수적인 분할 진입을 추천합니다."
                 else: summ = "레짐 안정적. 시스템 룰에 맞춰 평소처럼 자금을 정상 운용하십시오."
 
                 if mobile_mode:
@@ -949,6 +949,8 @@ def make_portfolio_page(acc_name):
                         custom_layout = THEME_LAYOUT.copy()
                         custom_layout.update(height=300, hovermode="x unified")
                         fig_achieve.update_layout(**custom_layout)
+                        
+                        # TypeError 방지: 기존 yaxis 설정에 업데이트만 하도록 로직 변경
                         fig_achieve.update_yaxes(ticksuffix="%")
                         st.plotly_chart(fig_achieve, use_container_width=True)
                 st.write("")
@@ -1012,7 +1014,7 @@ def page_strategy_specification():
 # =====================================================================
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🎨 테마 설정")
-theme_list = ["애플 테마", "아이패드 테마", "갤럭시 탭 테마", "1930년대 타자기 테마", "카페 테마", "2000년대 구글 감성 테마", "월스트리트 저널 테마", "엑셀 테마"]
+theme_list = ["애플 테마", "1930년대 타자기 테마", "월스트리트 저널 테마", "엑셀 테마"]
 selected_theme = st.sidebar.selectbox("테마를 선택하세요", theme_list, index=theme_list.index(current_theme))
 if selected_theme != current_theme:
     st.session_state['settings']['theme'] = selected_theme
