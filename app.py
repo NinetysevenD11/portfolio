@@ -22,7 +22,7 @@ warnings.filterwarnings('ignore')
 # =====================================================================
 st.set_page_config(page_title="AMLS 퀀트 포트폴리오", layout="wide", initial_sidebar_state="expanded")
 
-SETTINGS_FILE = "amls_settings_v11.json"
+SETTINGS_FILE = "amls_settings_v12.json"
 ACCOUNTS_FILE = "amls_multi_accounts.json"
 REQUIRED_TICKERS = ["TQQQ", "QLD", "QQQ", "SOXL", "USD", "SSO", "GLD", "CASH"]
 
@@ -32,7 +32,7 @@ def load_settings():
             with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
         except: pass
-    return {"theme": "아이패드 테마"}
+    return {"theme": "애플 테마"}
 
 def save_settings(settings_data):
     with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
@@ -95,64 +95,38 @@ if needs_save: save_accounts_data(st.session_state['accounts'])
 
 
 # =====================================================================
-# [2] 동적 테마 및 레이아웃 설정
+# [2] 동적 테마 및 레이아웃 설정 (4가지 압축 + 커스텀 배경화면)
 # =====================================================================
-current_theme = st.session_state['settings'].get("theme", "아이패드 테마")
+current_theme = st.session_state['settings'].get("theme", "애플 테마")
 
 if current_theme == "애플 테마":
     DEFAULT_TEXT_COLOR = "#1d1d1f"; TEXT_SUB = "#8e8e93"
-    PANEL_BG = "rgba(255,255,255,0.65)"; PANEL_BORDER = "1px solid rgba(255,255,255,0.5)"; PANEL_RADIUS = "16px"
+    PANEL_BG = "rgba(255, 255, 255, 0.7)"; PANEL_BORDER = "1px solid rgba(200, 200, 200, 0.3)"; PANEL_RADIUS = "16px"
     WIDGET_THEME = "light"
     C_UP = "#34c759"; C_DOWN = "#ff3b30"; C_WARN = "#ff9500"; C_SAFE = "#007aff"
     BASE_CHART_COLORS = {'TQQQ':'#ff3b30', 'SOXL':'#af52de', 'USD':'#5856d6', 'QLD':'#ff9500', 'SSO':'#ffcc00', 'QQQ':'#007aff', 'GLD':'#34c759', 'BTC-USD':'#f7931a', 'CASH':'#8e8e93'}
-elif current_theme == "아이패드 테마":
-    DEFAULT_TEXT_COLOR = "#1C1C1E"; TEXT_SUB = "#8E8E93"
-    PANEL_BG = "#FFFFFF"; PANEL_BORDER = "none"; PANEL_RADIUS = "24px"
-    WIDGET_THEME = "light"
-    C_UP = "#34C759"; C_DOWN = "#FF3B30"; C_WARN = "#FF9500"; C_SAFE = "#007AFF"
-    BASE_CHART_COLORS = {'TQQQ':'#FF3B30', 'SOXL':'#AF52DE', 'USD':'#5856D6', 'QLD':'#FF9500', 'SSO':'#FFCC00', 'QQQ':'#007AFF', 'GLD':'#34C759', 'BTC-USD':'#f7931a', 'CASH':'#8E8E93'}
-elif current_theme == "갤럭시 탭 테마":
-    DEFAULT_TEXT_COLOR = "#FAFAFA"; TEXT_SUB = "#A0A0A0"
-    PANEL_BG = "#1C1C1E"; PANEL_BORDER = "none"; PANEL_RADIUS = "28px"
-    WIDGET_THEME = "dark"
-    C_UP = "#23D079"; C_DOWN = "#E94C3D"; C_WARN = "#F4B33E"; C_SAFE = "#3E91FF"
-    BASE_CHART_COLORS = {'TQQQ':'#E94C3D', 'SOXL':'#9D4EDD', 'USD':'#3E91FF', 'QLD':'#F4B33E', 'SSO':'#F39C12', 'QQQ':'#3E91FF', 'GLD':'#F1C40F', 'BTC-USD':'#f7931a', 'CASH':'#A0A0A0'}
-elif current_theme == "엑셀 테마":
-    DEFAULT_TEXT_COLOR = "#333333"; TEXT_SUB = "#666666"
-    PANEL_BG = "#FFFFFF"; PANEL_BORDER = "1px solid #D4D4D4"; PANEL_RADIUS = "0px"
-    WIDGET_THEME = "light"
-    C_UP = "#107C41"; C_DOWN = "#C00000"; C_WARN = "#FFB900"; C_SAFE = "#0078D4"
-    BASE_CHART_COLORS = {'TQQQ':'#C00000', 'SOXL':'#800080', 'USD':'#0078D4', 'QLD':'#FFB900', 'SSO':'#E36C09', 'QQQ':'#0078D4', 'GLD':'#FFC000', 'BTC-USD':'#f7931a', 'CASH':'#7F7F7F'}
-elif current_theme in ["1930년대 타자기 테마", "1920년대 타자기 테마"]:
+
+elif current_theme == "1930년대 타자기 테마":
     DEFAULT_TEXT_COLOR = "#2c2a25"; TEXT_SUB = "#555555"
-    PANEL_BG = "#dfd7c5"; PANEL_BORDER = "2px solid #2c2a25"; PANEL_RADIUS = "0px"
+    PANEL_BG = "rgba(223, 215, 197, 0.85)"; PANEL_BORDER = "2px solid #2c2a25"; PANEL_RADIUS = "0px"
     WIDGET_THEME = "light"
     C_UP = "#000080"; C_DOWN = "#8b0000"; C_WARN = "#b8860b"; C_SAFE = "#006400"
     BASE_CHART_COLORS = {'TQQQ':'#8b0000', 'SOXL':'#556b2f', 'USD':'#8fbc8f', 'QLD':'#b8860b', 'SSO':'#cd853f', 'QQQ':'#000080', 'GLD':'#daa520', 'BTC-USD':'#f7931a', 'CASH':'#2f4f4f'}
-elif current_theme == "카페 테마":
-    DEFAULT_TEXT_COLOR = "#5D4A44"; TEXT_SUB = "#A89B96"
-    PANEL_BG = "#FFFFFF"; PANEL_BORDER = "2px solid #FFF0E5"; PANEL_RADIUS = "20px"
-    WIDGET_THEME = "light"
-    C_UP = "#FFB7B2"; C_DOWN = "#A1C9F1"; C_WARN = "#FFDAC1"; C_SAFE = "#B5EAD7"
-    BASE_CHART_COLORS = {'TQQQ':'#FF9AA2', 'SOXL':'#C7CEEA', 'USD':'#E2F0CB', 'QLD':'#FFDAC1', 'SSO':'#FFB7B2', 'QQQ':'#A1C9F1', 'GLD':'#FCEBB6', 'BTC-USD':'#f7931a', 'CASH':'#B5EAD7'}
-elif current_theme == "2000년대 구글 감성 테마":
-    DEFAULT_TEXT_COLOR = "#000000"; TEXT_SUB = "#666666"
-    PANEL_BG = "#F8F9FA"; PANEL_BORDER = "1px solid #CCCCCC"; PANEL_RADIUS = "0px"
-    WIDGET_THEME = "light"
-    C_UP = "#34A853"; C_DOWN = "#EA4335"; C_WARN = "#FBBC05"; C_SAFE = "#4285F4"
-    BASE_CHART_COLORS = {'TQQQ':'#EA4335', 'SOXL':'#990099', 'USD':'#660099', 'QLD':'#FBBC05', 'SSO':'#F68B1F', 'QQQ':'#4285F4', 'GLD':'#F4B400', 'BTC-USD':'#f7931a', 'CASH':'#34A853'}
+
 elif current_theme == "월스트리트 저널 테마":
     DEFAULT_TEXT_COLOR = "#1A1A1A"; TEXT_SUB = "#555555"
-    PANEL_BG = "#FFFFFF"; PANEL_BORDER = "1px solid #1A1A1A"; PANEL_RADIUS = "0px"
+    PANEL_BG = "rgba(255, 255, 255, 0.95)"; PANEL_BORDER = "1px solid #000000"; PANEL_RADIUS = "0px"
     WIDGET_THEME = "light"
     C_UP = "#006400"; C_DOWN = "#8B0000"; C_WARN = "#B8860B"; C_SAFE = "#000080"
     BASE_CHART_COLORS = {'TQQQ':'#8B0000', 'SOXL':'#556b2f', 'USD':'#2F4F4F', 'QLD':'#B8860B', 'SSO':'#DAA520', 'QQQ':'#000080', 'GLD':'#BDB76B', 'BTC-USD':'#f7931a', 'CASH':'#696969'}
-else:
-    DEFAULT_TEXT_COLOR = "#1C1C1E"; TEXT_SUB = "#8E8E93"
-    PANEL_BG = "#FFFFFF"; PANEL_BORDER = "none"; PANEL_RADIUS = "24px"
+
+elif current_theme == "엑셀 테마":
+    DEFAULT_TEXT_COLOR = "#333333"; TEXT_SUB = "#666666"
+    PANEL_BG = "rgba(255, 255, 255, 0.95)"; PANEL_BORDER = "1px solid #D4D4D4"; PANEL_RADIUS = "0px"
     WIDGET_THEME = "light"
-    C_UP = "#34C759"; C_DOWN = "#FF3B30"; C_WARN = "#FF9500"; C_SAFE = "#007AFF"
-    BASE_CHART_COLORS = {'TQQQ':'#FF3B30', 'SOXL':'#AF52DE', 'USD':'#5856D6', 'QLD':'#FF9500', 'SSO':'#FFCC00', 'QQQ':'#007AFF', 'GLD':'#34C759', 'BTC-USD':'#f7931a', 'CASH':'#8E8E93'}
+    C_UP = "#107C41"; C_DOWN = "#C00000"; C_WARN = "#FFB900"; C_SAFE = "#0078D4"
+    BASE_CHART_COLORS = {'TQQQ':'#C00000', 'SOXL':'#800080', 'USD':'#0078D4', 'QLD':'#FFB900', 'SSO':'#E36C09', 'QQQ':'#0078D4', 'GLD':'#FFC000', 'BTC-USD':'#f7931a', 'CASH':'#7F7F7F'}
+
 
 if "last_theme" not in st.session_state['settings'] or st.session_state['settings']["last_theme"] != current_theme:
     st.session_state['settings']["text_color"] = DEFAULT_TEXT_COLOR
@@ -168,19 +142,60 @@ for tkr in REQUIRED_TICKERS + ['BTC-USD']:
 TEXT_COLOR = st.session_state['settings']["text_color"]
 COLOR_PALETTE = st.session_state['settings']["chart_colors"]
 
-if current_theme in ["갤럭시 탭 테마"]: THEME_LAYOUT = dict(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0))
-else: THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0))
+THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0))
 
-st.markdown(f"""
-<style>
-.stApp, html, body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: {'#111' if WIDGET_THEME=='dark' else '#F2F2F7'} !important; color: {TEXT_COLOR} !important; }}
-div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background-color: {PANEL_BG} !important; border: {PANEL_BORDER} !important; border-radius: {PANEL_RADIUS} !important; box-shadow: 0 4px 20px rgba(0,0,0,0.05) !important; padding: 1.5rem !important; }}
-div[data-testid="stMetricValue"] {{ font-weight: bold; font-size: 1.8rem; color: {TEXT_COLOR}; }}
-.info-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }}
-@media (max-width: 800px) {{ .info-grid {{ grid-template-columns: 1fr; }} }}
-.info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }}
-</style>
-""", unsafe_allow_html=True)
+def apply_custom_css():
+    css_base = ""
+    css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.03); backdrop-filter: blur(10px); }}"
+    
+    if current_theme == "애플 테마":
+        css_base = f"""
+        @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+        .stApp {{ background-color: #f5f5f7; background-image: radial-gradient(circle at top right, #e2e2e5 0%, #f5f5f7 40%, #e8e8ed 100%); font-family: 'Pretendard', -apple-system, sans-serif; color: {TEXT_COLOR}; letter-spacing: -0.01em; }}
+        div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background: {PANEL_BG}; backdrop-filter: blur(20px); border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.05); padding: 1.5rem; }}
+        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none !important; color: {TEXT_COLOR}; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
+        .sidebar-link:hover {{ background-color: rgba(0,0,0,0.05); transform: translateX(2px); }}
+        """
+    elif current_theme == "1930년대 타자기 테마":
+        css_base = f"""
+        @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+        [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
+        .stApp {{ font-family: 'Special Elite', 'Courier New', monospace !important; color: {TEXT_COLOR} !important; background-color: #e4dccc; background-image: url('https://www.transparenttextures.com/patterns/old-wall.png'); }}
+        div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background: {PANEL_BG} !important; border: {PANEL_BORDER} !important; border-radius: {PANEL_RADIUS} !important; box-shadow: 4px 4px 0px {TEXT_COLOR} !important; padding: 1.5rem !important; }}
+        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border: 1px solid transparent; border-radius: 0px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-weight: bold; font-size: 0.95rem; transition: background-color 0.2s; }}
+        .sidebar-link:hover {{ background-color: rgba(0,0,0,0.1); border: 1px dashed {TEXT_COLOR}; }}
+        """
+        css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; box-shadow: 4px 4px 0px {TEXT_COLOR}; }}"
+    elif current_theme == "월스트리트 저널 테마":
+        css_base = f"""
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
+        [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
+        .stApp {{ font-family: 'Playfair Display', serif; color: {TEXT_COLOR}; background-color: #F4F4F0; background-image: repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.02) 2px, rgba(0,0,0,0.02) 4px); }}
+        div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background-color: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 1.5rem; box-shadow: 3px 3px 0px rgba(0,0,0,0.1); border-top: 4px solid #000000; }}
+        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; text-decoration: none !important; color: #000000 !important; font-weight: bold; font-size: 0.95rem; border-bottom: 1px dotted #CCC; }}
+        .sidebar-link:hover {{ background-color: #DDDDDD; }}
+        """
+    elif current_theme == "엑셀 테마":
+        css_base = f"""
+        .stApp {{ font-family: 'Calibri', 'Malgun Gothic', sans-serif; color: {TEXT_COLOR} !important; background-color: #F3F2F1; background-image: linear-gradient(#e1dfdd 1px, transparent 1px), linear-gradient(90deg, #e1dfdd 1px, transparent 1px); background-size: 20px 20px; }}
+        div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background-color: {PANEL_BG} !important; border: {PANEL_BORDER} !important; border-top: 3px solid #107C41 !important; border-radius: {PANEL_RADIUS} !important; padding: 1.5rem !important; box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important; }}
+        .sidebar-link {{ display: flex; align-items: center; padding: 6px 8px; margin-bottom: 2px; text-decoration: none !important; color: #0078D4 !important; font-family: 'Calibri', sans-serif; font-size: 0.95rem; border-bottom: 1px solid transparent; }}
+        .sidebar-link:hover {{ border-bottom: 1px solid #0078D4; background-color: rgba(0,0,0,0.05); }}
+        """
+        css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-top: 3px solid #107C41 !important; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}"
+
+    st.markdown(f"""
+    <style>
+    {css_base}
+    div[data-testid="stMetricValue"] > div, div[data-testid="stMetricDelta"] > div, p, span, label, .stMarkdown {{ white-space: normal !important; word-break: keep-all !important; overflow-wrap: break-word !important; }}
+    div[data-testid="stMetricValue"] {{ font-weight: bold; font-size: 1.8rem; color: {TEXT_COLOR}; }}
+    .info-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }}
+    @media (max-width: 800px) {{ .info-grid {{ grid-template-columns: 1fr; }} }}
+    {css_panel}
+    </style>
+    """, unsafe_allow_html=True)
+
+apply_custom_css()
 
 
 # =====================================================================
@@ -447,7 +462,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지 구성: 내 포트폴리오 관리 
+# [6] 페이지 구성: 내 포트폴리오 관리 (1.5주 톨러런스, AI 체류일수, 명언 봇 포함)
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
@@ -459,7 +474,6 @@ def make_portfolio_page(acc_name):
         DEFAULT_LAYOUT = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]
         current_layout = curr_acc_data.get("layout_order", DEFAULT_LAYOUT)
         
-        # 🔥 사이드바 레이아웃 편집기 (UI 복구 성공)
         with st.sidebar.expander(f"🛠️ 화면 레이아웃 편집", expanded=False):
             st.caption("위아래로 순서를 변경하세요.")
             for i, block_name in enumerate(current_layout):
@@ -604,12 +618,11 @@ def make_portfolio_page(acc_name):
             if row["수량 (주/달러)"] == 0 or row["평균 단가 ($)"] == 0 or row["티커 (Ticker)"] == "CASH": return 0.0
             return (row["현재가 ($)"] - row["평균 단가 ($)"]) / row["평균 단가 ($)"] * 100
         disp_df["수익률 (%)"] = disp_df.apply(cy, axis=1)
-
+        
         def cy_krw(row):
             if row["수량 (주/달러)"] == 0 or row["평균 단가 ($)"] == 0 or row["티커 (Ticker)"] == "CASH": return 0.0
             if row.get("매입 환율", 0) <= 0 or current_usdkrw <= 0: return 0.0
-            buy_krw = row["평균 단가 ($)"] * row["매입 환율"]
-            now_krw = row["현재가 ($)"] * current_usdkrw
+            buy_krw = row["평균 단가 ($)"] * row["매입 환율"]; now_krw = row["현재가 ($)"] * current_usdkrw
             return (now_krw - buy_krw) / buy_krw * 100
         disp_df["원화 수익률 (%)"] = disp_df.apply(cy_krw, axis=1)
 
@@ -761,7 +774,6 @@ def make_portfolio_page(acc_name):
                     st.success(f"**🤖 AI 전략 분석관 (Regime {app_reg})**\n\n{reg_t} {reg_d}\n\n⏱️ 현재 R{app_reg} 체류 기간: {dur}일째{wait_msg_mob}")
                     st.info(f"**⚡ 반도체 판독기:** {soxl_res} (추세 {s_stat}, 수익률 {r_stat}, RSI {rsi_stat})")
                 else:
-                    # 🔥 UI 3등분 복구 (에러 없이 렌더링)
                     st.markdown(f"""<div class='info-grid'>
 <div class='info-panel'>
 <div style='font-weight:bold; margin-bottom:8px; border-bottom:1px solid currentColor; padding-bottom:4px; opacity:0.8;'>⚡ SOXL 진입 판독기</div>
@@ -795,7 +807,6 @@ def make_portfolio_page(acc_name):
 </div>
 </div>""", unsafe_allow_html=True)
                 
-                # 명언 봇 위치
                 quotes_r1 = ["강세장은 비관 속에서 태어나, 회의 속에서 자라며, 낙관 속에서 성숙하고, 행복 속에서 죽는다. - 존 템플턴", "10년 이상 볼 것이 아니면 단 10분도 그 주식을 갖고 있지 마라. - 워런 버핏"]
                 quotes_r2 = ["위험은 자신이 무엇을 하는지 모르는 데서 온다. - 워런 버핏", "투자의 가장 큰 적은 바로 자기 자신이다. - 벤저민 그레이엄"]
                 quotes_r3 = ["떨어지는 칼날을 맨손으로 잡지 마라. - 피터 린치", "성공적인 투자는 영원히 기다리는 것이다. - 찰리 멍거"]
