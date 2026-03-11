@@ -459,6 +459,22 @@ def make_portfolio_page(acc_name):
         DEFAULT_LAYOUT = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]
         current_layout = curr_acc_data.get("layout_order", DEFAULT_LAYOUT)
         
+        # 🔥 사이드바 레이아웃 편집기 (UI 복구 성공)
+        with st.sidebar.expander(f"🛠️ 화면 레이아웃 편집", expanded=False):
+            st.caption("위아래로 순서를 변경하세요.")
+            for i, block_name in enumerate(current_layout):
+                c_name, c_up, c_dn = st.columns([5, 1.5, 1.5])
+                c_name.markdown(f"<div style='font-size:0.85rem; font-weight:bold; padding-top:5px;'>{i+1}. {block_name}</div>", unsafe_allow_html=True)
+                if c_up.button("▲", key=f"up_{i}_{acc_name}") and i > 0:
+                    current_layout[i], current_layout[i-1] = current_layout[i-1], current_layout[i]
+                    curr_acc_data["layout_order"] = current_layout
+                    save_accounts_data(st.session_state['accounts']); st.rerun()
+                if c_dn.button("▼", key=f"dn_{i}_{acc_name}") and i < len(current_layout)-1:
+                    current_layout[i], current_layout[i+1] = current_layout[i+1], current_layout[i]
+                    curr_acc_data["layout_order"] = current_layout
+                    save_accounts_data(st.session_state['accounts']); st.rerun()
+        st.sidebar.markdown("---")
+
         pf_df = pd.DataFrame(curr_acc_data["portfolio"])
         for col in ["수량 (주/달러)", "평균 단가 ($)", "매입 환율"]:
             if col in pf_df.columns: pf_df[col] = pf_df[col].astype(float)
@@ -617,6 +633,9 @@ def make_portfolio_page(acc_name):
                 r_ret = row["수익률 (%)"]
                 if tkr != "CASH" and r_ret > best_ret: best_ret = r_ret; best_ticker = tkr
 
+        if total_val_now > 0:
+            for k, v in asset_vals.items(): weights_dict[k] = v / total_val_now
+
         daily_diff = total_val_now - total_val_yest
         daily_diff_pct = (daily_diff / total_val_yest * 100) if total_val_yest > 0 else 0.0
 
@@ -633,21 +652,10 @@ def make_portfolio_page(acc_name):
                 history_changed = True
         if history_changed: save_accounts_data(st.session_state['accounts'])
 
-        if not mobile_mode:
-            with st.expander("🛠️ 화면 레이아웃 편집"):
-                for i, block_name in enumerate(current_layout):
-                    c_name, c_up, c_dn = st.columns([6, 1, 1])
-                    c_name.markdown(f"**{i+1}. {block_name}**")
-                    if c_up.button("▲", key=f"u_{i}") and i > 0:
-                        current_layout[i], current_layout[i-1] = current_layout[i-1], current_layout[i]
-                        curr_acc_data["layout_order"] = current_layout
-                        save_accounts_data(st.session_state['accounts']); st.rerun()
-                    if c_dn.button("▼", key=f"d_{i}") and i < len(current_layout)-1:
-                        current_layout[i], current_layout[i+1] = current_layout[i+1], current_layout[i]
-                        curr_acc_data["layout_order"] = current_layout
-                        save_accounts_data(st.session_state['accounts']); st.rerun()
-            st.write("")
 
+        # -------------------------------------------------------------
+        # 동적 레이아웃 렌더링 루프
+        # -------------------------------------------------------------
         for block in current_layout:
             
             if block == "🎯 목표 달성률":
@@ -753,7 +761,7 @@ def make_portfolio_page(acc_name):
                     st.success(f"**🤖 AI 전략 분석관 (Regime {app_reg})**\n\n{reg_t} {reg_d}\n\n⏱️ 현재 R{app_reg} 체류 기간: {dur}일째{wait_msg_mob}")
                     st.info(f"**⚡ 반도체 판독기:** {soxl_res} (추세 {s_stat}, 수익률 {r_stat}, RSI {rsi_stat})")
                 else:
-                    # 복구된 완벽한 3분할 그리드 레이아웃
+                    # 🔥 UI 3등분 복구 (에러 없이 렌더링)
                     st.markdown(f"""<div class='info-grid'>
 <div class='info-panel'>
 <div style='font-weight:bold; margin-bottom:8px; border-bottom:1px solid currentColor; padding-bottom:4px; opacity:0.8;'>⚡ SOXL 진입 판독기</div>
@@ -902,6 +910,7 @@ def make_portfolio_page(acc_name):
                     def color_act(val):
                         if '매수' in str(val) or '추가' in str(val): return f'color: {C_UP}; font-weight:bold;'
                         elif '매도' in str(val) or '인출' in str(val): return f'color: {C_DOWN}; font-weight:bold;'
+                        elif '적정' in str(val): return f'color: {TEXT_SUB};'
                         return ''
                     st.dataframe(status_df.style.map(color_act, subset=['리밸런싱 액션']), use_container_width=True, hide_index=True)
 
