@@ -95,12 +95,11 @@ if needs_save: save_accounts_data(st.session_state['accounts'])
 
 
 # =====================================================================
-# [2] 동적 테마 및 레이아웃 설정 (4가지 압축 + 커스텀 배경화면)
+# [2] 동적 테마 및 레이아웃 설정
 # =====================================================================
 current_theme = st.session_state['settings'].get("theme", "애플 테마")
 theme_list = ["애플 테마", "1930년대 타자기 테마", "월스트리트 저널 테마", "엑셀 테마"]
 
-# 🔥 에러 방지용 안전장치 (과거 테마가 저장되어 있으면 애플 테마로 강제 초기화)
 if current_theme not in theme_list:
     current_theme = "애플 테마"
 
@@ -167,7 +166,7 @@ def apply_custom_css():
         [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
         .stApp {{ font-family: 'Special Elite', 'Courier New', monospace !important; color: {TEXT_COLOR} !important; background-color: #e4dccc; background-image: url('https://www.transparenttextures.com/patterns/old-wall.png'); }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background: {PANEL_BG} !important; border: {PANEL_BORDER} !important; border-radius: {PANEL_RADIUS} !important; box-shadow: 4px 4px 0px {TEXT_COLOR} !important; padding: 1.5rem !important; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border: 1px solid transparent; border-radius: 0px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-weight: bold; font-size: 0.95rem; transition: background-color 0.2s; }}
+        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 0px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-weight: bold; font-size: 0.95rem; transition: background-color 0.2s; }}
         .sidebar-link:hover {{ background-color: rgba(0,0,0,0.1); border: 1px dashed {TEXT_COLOR}; }}
         """
         css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; box-shadow: 4px 4px 0px {TEXT_COLOR}; }}"
@@ -624,6 +623,7 @@ def make_portfolio_page(acc_name):
             return (row["현재가 ($)"] - row["평균 단가 ($)"]) / row["평균 단가 ($)"] * 100
         disp_df["수익률 (%)"] = disp_df.apply(cy, axis=1)
 
+        # 🔥 KeyError의 원인이었던 부분 완벽 복구
         def cy_krw(row):
             if row["수량 (주/달러)"] == 0 or row["평균 단가 ($)"] == 0 or row["티커 (Ticker)"] == "CASH": return 0.0
             if row.get("매입 환율", 0) <= 0 or current_usdkrw <= 0: return 0.0
@@ -652,6 +652,9 @@ def make_portfolio_page(acc_name):
                 r_ret = row["수익률 (%)"]
                 if tkr != "CASH" and r_ret > best_ret: best_ret = r_ret; best_ticker = tkr
 
+        if total_val_now > 0:
+            for k, v in asset_vals.items(): weights_dict[k] = v / total_val_now
+
         daily_diff = total_val_now - total_val_yest
         daily_diff_pct = (daily_diff / total_val_yest * 100) if total_val_yest > 0 else 0.0
 
@@ -669,6 +672,9 @@ def make_portfolio_page(acc_name):
         if history_changed: save_accounts_data(st.session_state['accounts'])
 
 
+        # -------------------------------------------------------------
+        # 동적 레이아웃 렌더링 루프
+        # -------------------------------------------------------------
         for block in current_layout:
             
             if block == "🎯 목표 달성률":
@@ -683,53 +689,64 @@ def make_portfolio_page(acc_name):
                         new_target = st.number_input("목표액 설정", min_value=0.0, value=float(target_val), step=10000.0, key=f"tg_{acc_name}")
                         if new_target != target_val:
                             st.session_state['accounts'][acc_name]["target_portfolio_value"] = new_target
-                            save_accounts_data(st.session_state['accounts']); st.rerun()
+                            save_accounts_data(st.session_state['accounts'])
+                            st.rerun()
                 
                 with c_prog:
+                    pb_bg = "rgba(0,0,0,0.1)" if WIDGET_THEME=="light" else "rgba(255,255,255,0.1)"
                     st.markdown(f"""<div class='info-panel'>
-<div style='display:flex; justify-content:space-between; margin-bottom:8px; font-weight:bold;'>
-<span>현재: ${total_val_now:,.0f}</span> <span style='color:{C_DOWN};'>목표: ${target_val:,.0f}</span>
+<div style='display:flex; justify-content:space-between; margin-bottom:8px; font-weight:bold; font-size:1.05rem;'>
+<span>현재: ${total_val_now:,.0f}</span>
+<span style='color:{C_DOWN};'>목표: ${target_val:,.0f}</span>
 </div>
-<div style='background-color:rgba(150,150,150,0.2); border-radius:8px; height:16px; width:100%; overflow:hidden;'>
-<div style='background-color:{C_UP}; width:{min(100.0, progress_pct)}%; height:100%;'></div>
+<div style='background-color:{pb_bg}; border-radius:8px; height:16px; width:100%; position:relative; overflow:hidden;'>
+<div style='background-color:{C_UP}; width:{min(100.0, progress_pct)}%; height:100%; border-radius:8px;'></div>
 </div>
 <div style='text-align:right; margin-top:5px; font-weight:bold;'>{progress_pct:.2f}%</div>
 </div>""", unsafe_allow_html=True)
                 st.write("")
 
             elif block == "📊 실시간 요약":
-                st.markdown(f"#### 📊 자산 요약 ({price_label})")
+                st.markdown(f"#### 📊 자산 및 시황 요약 (기준: {price_label})")
                 
-                all_eq = [d['equity'] for d in curr_acc_data.get("seed_history", {}).values()] + [total_val_now]
-                max_eq = max(all_eq) if all_eq else total_val_now
-                mdd_now = (total_val_now / max_eq - 1) * 100 if max_eq > 0 else 0
-                if mdd_now < -15: st.warning(f"🚨 **MDD 경고:** 현재 자산이 전고점 대비 **{mdd_now:.1f}%** 하락한 상태입니다. 리스크 관리에 유의하십시오.")
-
-                pn_col = C_UP if daily_diff > 0 else (C_DOWN if daily_diff < 0 else TEXT_COLOR)
-                pn_ico = "▲" if daily_diff > 0 else ("▼" if daily_diff < 0 else "-")
+                col_group, col_ai = st.columns([3, 1])
                 
-                if mobile_mode:
-                    st.metric("💰 총 평가액", f"${total_val_now:,.0f}", f"{pn_ico} {abs(daily_diff_pct):.2f}%")
-                else:
-                    st.markdown(f"""<div class='info-panel' style='display:flex; justify-content:space-around; text-align:center;'>
-<div style='flex:1; border-right:1px dashed #888;'>
-<div style='font-size:0.85rem; opacity:0.8;'>💰 총 평가액 (Total)</div>
-<div style='font-size:1.6rem; font-weight:bold;'>${total_val_now:,.0f}</div>
+                with col_group:
+                    pn_col = C_UP if daily_diff > 0 else (C_DOWN if daily_diff < 0 else TEXT_COLOR)
+                    pn_ico = "▲" if daily_diff > 0 else ("▼" if daily_diff < 0 else "-")
+                    
+                    st.markdown(f"""<div class='info-panel' style='display:flex; justify-content:space-around; align-items:center; text-align:center;'>
+<div style='flex:1; border-right:1px dashed rgba(150,150,150,0.4);'>
+<div style='font-size:0.85rem; font-weight:bold; opacity:0.8; color:{TEXT_COLOR};'>💰 총 평가액 (Total)</div>
+<div style='font-size:1.6rem; font-weight:bold; margin-top:5px; color:{TEXT_COLOR};'>${total_val_now:,.0f}</div>
 </div>
-<div style='flex:1; border-right:1px dashed #888;'>
-<div style='font-size:0.85rem; opacity:0.8;'>일간 손익 (Daily)</div>
-<div style='color:{pn_col}; font-size:1.6rem; font-weight:bold;'>{pn_ico} {abs(daily_diff_pct):.2f}%</div>
+<div style='flex:1; border-right:1px dashed rgba(150,150,150,0.4);'>
+<div style='font-size:0.85rem; font-weight:bold; opacity:0.8; color:{TEXT_COLOR};'>일간 손익 (Daily)</div>
+<div style='color:{pn_col}; font-size:1.6rem; font-weight:bold; margin-top:5px;'>{pn_ico} {abs(daily_diff_pct):.2f}%</div>
+<div style='color:{pn_col}; font-size:0.8rem;'>({daily_diff:+.0f} $)</div>
 </div>
 <div style='flex:1;'>
-<div style='font-size:0.85rem; opacity:0.8;'>현재 MDD</div>
-<div style='color:{C_DOWN}; font-size:1.6rem; font-weight:bold;'>{mdd_now:.1f}%</div>
+<div style='font-size:0.85rem; font-weight:bold; opacity:0.8; color:{TEXT_COLOR};'>👑 포트폴리오 MVP</div>
+<div style='font-size:1.6rem; font-weight:bold; margin-top:5px; color:{TEXT_COLOR};'>{best_ticker}</div>
+<div style='font-size:0.8rem; font-weight:bold; color:{TEXT_COLOR};'>수익률 {best_ret:+.1f}%</div>
 </div>
+</div>""", unsafe_allow_html=True)
+
+                with col_ai:
+                    app_reg = ms['regime']
+                    st.markdown(f"""<div class='info-panel' style='text-align:center; display:flex; flex-direction:column; justify-content:center;'>
+<div style='font-size:0.85rem; font-weight:bold; opacity:0.8; color:{TEXT_COLOR};'>AI 전략 국면</div>
+<div style='font-size:1.6rem; font-weight:bold; margin-top:5px; color:{TEXT_COLOR};'>Regime {app_reg}</div>
 </div>""", unsafe_allow_html=True)
                 st.write("")
                 
             elif block == "⚡ 시스템 분석관":
-                st.markdown("#### ⚡ AI 시스템 분석관")
-                app_reg = ms['regime']; tgt_reg = ms['target_regime']; is_wait = ms['is_waiting']; wait_d = ms['wait_days']; dur = ms['regime_duration']
+                st.markdown("#### ⚡ 실시간 시스템 분석관 요약")
+                app_reg = ms['regime']
+                tgt_reg = ms['target_regime']
+                is_wait = ms['is_waiting']
+                wait_d = ms['wait_days']
+                dur = ms['regime_duration']
                 entry_g = ms['entry_grade']; direction = ms['regime_direction']
                 
                 vix_c = ms['vix']; qqq_c = ms['qqq']; ma200_c = ms['ma200']; smh_c = ms['smh']; smh_ma50_c = ms['smh_ma50']
@@ -747,7 +764,7 @@ def make_portfolio_page(acc_name):
                     wait_msg_pc = f"<div style='margin-top:10px; padding:10px; background-color:rgba(231,76,60,0.15); border-left:4px solid #e74c3c; border-radius:4px;'><span style='color:#e74c3c; font-weight:bold;'>🚨 하락 전환 주의 발동</span><br>현재 시장 지표가 <b>[R{tgt_reg}]</b> 악화 조건을 터치했습니다. 오늘 종가가 이대로 마감되면 내일 아침 즉시 대기 없이 하향 전환됩니다.</div>"
 
                 if app_reg == 1:
-                    reg_t = "[R1: 완벽 강세장]"
+                    reg_t = "[R1: 완벽한 강세장]"
                     reg_d = f"VIX({vix_c:.1f}) 안정권 및 나스닥({qqq_c:.0f}) 정배열 유지. 하방 리스크가 제한적이므로 3배 레버리지를 가동해 상승분을 캡처하십시오."
                 elif app_reg == 2:
                     reg_t = "[R2: 조정/경계]"
@@ -767,13 +784,14 @@ def make_portfolio_page(acc_name):
                 elif direction == 'ascending': summ = "상승 추세 안정화. 계획된 비중대로 편안하게 분할 매수하십시오."
                 elif direction == 'descending' and dur <= 20: summ = "하향 전환 발생. 추가 하락 우려가 있으므로 신규 매수를 전면 보류하십시오."
                 elif direction == 'descending': summ = "장기 하락 중. 완벽한 상승 신호가 뜰 때까지 현금을 대기하십시오."
-                elif dur > 60: summ = "레짐 장기화로 추세 반전 리스크 누적. 보수적인 분할 진입을 추천합니다."
+                elif dur > 60: summ = "레짐 장기화로 추세 반전 리스크 누적. 보수적인 소규모 분할 진입을 추천합니다."
                 else: summ = "레짐 안정적. 시스템 룰에 맞춰 평소처럼 자금을 정상 운용하십시오."
 
                 if mobile_mode:
                     st.success(f"**🤖 AI 전략 분석관 (Regime {app_reg})**\n\n{reg_t} {reg_d}\n\n⏱️ 현재 R{app_reg} 체류 기간: {dur}일째{wait_msg_mob}")
                     st.info(f"**⚡ 반도체 판독기:** {soxl_res} (추세 {s_stat}, 수익률 {r_stat}, RSI {rsi_stat})")
                 else:
+                    # 🔥 UI 3등분 복구
                     st.markdown(f"""<div class='info-grid'>
 <div class='info-panel'>
 <div style='font-weight:bold; margin-bottom:8px; border-bottom:1px solid currentColor; padding-bottom:4px; opacity:0.8;'>⚡ SOXL 진입 판독기</div>
@@ -823,7 +841,7 @@ def make_portfolio_page(acc_name):
                     csv_data = disp_df[["태그", "티커 (Ticker)", "수량 (주/달러)", "평균 단가 ($)", "매입 환율"]].to_csv(index=False).encode('utf-8')
                     st.download_button("💾 포트폴리오 CSV 내보내기", data=csv_data, file_name=f"{acc_name}_portfolio.csv", mime='text/csv')
                 with csv_col2:
-                    uploaded_file = st.file_uploader("📂 CSV 불러오기", type=['csv'], label_visibility="collapsed")
+                    uploaded_file = st.file_uploader("📂 CSV 불러오기 (위의 내보낸 양식 유지)", type=['csv'], label_visibility="collapsed")
                     if uploaded_file is not None:
                         if st.button("파일 적용하기"):
                             new_df = pd.read_csv(uploaded_file)
@@ -874,10 +892,10 @@ def make_portfolio_page(acc_name):
                     st.session_state['accounts'][acc_name]["portfolio"] = ed_disp[base_cols].to_dict(orient="records")
                     save_accounts_data(st.session_state['accounts']); st.rerun()
                 
-                target_seed = st.number_input("운용 시드 설정 ($)", value=float(curr_acc_data.get("target_seed", 10000.0)), step=1000.0, key=f"s_{acc_name}")
-                if target_seed != curr_acc_data.get("target_seed"):
-                    st.session_state['accounts'][acc_name]["target_seed"] = target_seed; save_accounts_data(st.session_state['accounts'])
-
+                # 운용 시드를 수동/자동으로 결정하는 로직 (기본은 자동 동기화)
+                target_seed = total_val_now
+                st.session_state['accounts'][acc_name]["target_seed"] = target_seed
+                
                 status_d = []
                 smh_cond = (ms['smh'] > ms['smh_ma50']) and (ms['smh_3m_ret'] > 0.05) and (ms['smh_rsi'] > 50)
                 def get_w_local(reg, usx):
@@ -949,8 +967,6 @@ def make_portfolio_page(acc_name):
                         custom_layout = THEME_LAYOUT.copy()
                         custom_layout.update(height=300, hovermode="x unified")
                         fig_achieve.update_layout(**custom_layout)
-                        
-                        # TypeError 방지: 기존 yaxis 설정에 업데이트만 하도록 로직 변경
                         fig_achieve.update_yaxes(ticksuffix="%")
                         st.plotly_chart(fig_achieve, use_container_width=True)
                 st.write("")
