@@ -5,12 +5,13 @@ import pandas as pd
 import pandas_ta as ta
 import numpy as np
 import plotly.graph_objects as go
+import plotly.express as px # 히트맵을 위해 추가
 from plotly.subplots import make_subplots
 from datetime import datetime, timedelta
 import warnings
 import json
 import os
-import random  # 명언 봇을 위한 모듈 추가
+import random
 
 warnings.filterwarnings('ignore')
 
@@ -19,7 +20,6 @@ warnings.filterwarnings('ignore')
 # =====================================================================
 st.set_page_config(page_title="AMLS 퀀트 포트폴리오", layout="wide", initial_sidebar_state="expanded")
 
-# 테마 추가/삭제에 따른 충돌 방지를 위해 v11로 세팅 파일 업데이트
 SETTINGS_FILE = "amls_settings_v11.json"
 ACCOUNTS_FILE = "amls_multi_accounts.json"
 REQUIRED_TICKERS = ["TQQQ", "QLD", "QQQ", "SOXL", "USD", "SSO", "GLD", "CASH"]
@@ -61,7 +61,7 @@ if 'accounts' not in st.session_state:
             "AMLS v4.3": {  
                 "portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS],
                 "history": [], "first_entry_date": None, "journal_text": "", "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0,
-                "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 성장 곡선", "📝 매매 일지"]
+                "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]
             }
         }
     st.session_state['accounts'] = loaded
@@ -75,7 +75,7 @@ for acc_name, acc_data in st.session_state['accounts'].items():
     if "seed_history" not in acc_data: acc_data["seed_history"] = {}; needs_save = True
     if "target_portfolio_value" not in acc_data: acc_data["target_portfolio_value"] = 100000.0; needs_save = True
     if "layout_order" not in acc_data: 
-        acc_data["layout_order"] = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 성장 곡선", "📝 매매 일지"]
+        acc_data["layout_order"] = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]
         needs_save = True
 
     existing_tickers = [item["티커 (Ticker)"] for item in acc_data["portfolio"]]
@@ -96,7 +96,7 @@ if needs_save: save_accounts_data(st.session_state['accounts'])
 
 
 # =====================================================================
-# [2] 동적 테마 엔진 (신규 테마 반영)
+# [2] 동적 테마 엔진
 # =====================================================================
 current_theme = st.session_state['settings'].get("theme", "아이패드 테마")
 
@@ -163,7 +163,6 @@ else:
     C_UP = "#34C759"; C_DOWN = "#FF3B30"; C_WARN = "#FF9500"; C_SAFE = "#007AFF"
     BASE_CHART_COLORS = {'TQQQ':'#FF3B30', 'SOXL':'#AF52DE', 'USD':'#5856D6', 'QLD':'#FF9500', 'SSO':'#FFCC00', 'QQQ':'#007AFF', 'GLD':'#34C759', 'CASH':'#8E8E93'}
 
-# 데이터 강제 주입 로직 (에러 방지)
 if "text_color" not in st.session_state['settings']: st.session_state['settings']["text_color"] = BASE_TEXT_COLOR
 if "chart_colors" not in st.session_state['settings']: st.session_state['settings']["chart_colors"] = BASE_CHART_COLORS.copy()
 for tkr in REQUIRED_TICKERS:
@@ -173,7 +172,6 @@ for tkr in REQUIRED_TICKERS:
 TEXT_COLOR = st.session_state['settings']["text_color"]
 COLOR_PALETTE = st.session_state['settings']["chart_colors"]
 
-# --- Plotly 레이아웃 설정 ---
 if current_theme in ["1930년대 타자기 테마", "월스트리트 저널 테마"]:
     THEME_LAYOUT = dict(template="simple_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0))
 elif current_theme in ["갤럭시 탭 테마"]:
@@ -465,6 +463,10 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
         if df.index[i].month != df.index[i-1].month: curr_inv += monthly_cont
         inv_arr.append(curr_inv)
     df['Invested'] = inv_arr
+    
+    # 월별 히트맵 계산용 추가 반환
+    df['AMLS v4.3_Ret'] = df['AMLS v4.3_Value'].pct_change()
+    
     return df, logs, data.columns
 
 
@@ -553,7 +555,8 @@ def page_amls_backtest():
         metrics_data.append({"전략": s, "최종 금액": f"${fv:,.0f}", "수익률": f"{tr*100:+.1f}%", "CAGR": f"{cagr*100:.1f}%", "MDD": f"{mdd*100:.1f}%", "샤프": f"{shp:.2f}"})
     metrics_df = pd.DataFrame(metrics_data).set_index("전략")
 
-    tab1, tab2, tab3 = st.tabs(["📊 요약", "📈 성장 곡선", "📝 매매 로그"])
+    # 🔥 월별 수익률 히트맵 탭 추가
+    tab1, tab2, tab3, tab4 = st.tabs(["📊 요약", "📉 성장 곡선", "🗓️ 월별 수익률", "📝 매매 로그"])
 
     with tab1:
         st.markdown("#### 🏆 성과 요약")
@@ -591,7 +594,21 @@ def page_amls_backtest():
         fig_eq.update_layout(**cust_eq)
         st.plotly_chart(fig_eq, use_container_width=True)
 
+    # 🔥 월별 수익률 캘린더 기능 추가
     with tab3:
+        st.markdown("#### 🗓️ AMLS v4.3 월별 수익률 캘린더 (%)")
+        monthly_df = df['AMLS v4.3_Value'].resample('M').last().pct_change() * 100
+        monthly_df = monthly_df.dropna()
+        
+        heatmap_data = pd.DataFrame({'Year': monthly_df.index.year, 'Month': monthly_df.index.month, 'Return': monthly_df.values})
+        pivot_data = heatmap_data.pivot(index='Year', columns='Month', values='Return').fillna(0).round(1)
+        pivot_data.columns = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][:len(pivot_data.columns)]
+        
+        fig_hm = px.imshow(pivot_data, text_auto=True, color_continuous_scale='RdYlGn', zmin=-15, zmax=15, aspect="auto")
+        fig_hm.update_layout(**THEME_LAYOUT, height=400)
+        st.plotly_chart(fig_hm, use_container_width=True)
+
+    with tab4:
         st.markdown("#### 📝 매매 로그")
         log_df = pd.DataFrame(logs)[::-1]
         if not log_df.empty:
@@ -600,7 +617,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지 구성: 내 포트폴리오 관리 (새로운 통합 레이아웃 & 한국어 번역)
+# [6] 페이지 구성: 내 포트폴리오 관리 (1.5주 톨러런스, AI 체류일수, 명언 봇 포함)
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
@@ -1154,20 +1171,22 @@ if selected_theme != current_theme:
 
 st.sidebar.markdown("---")
 
-st.sidebar.markdown(f"<div style='font-size:1.1rem; font-weight:700; color:{TEXT_COLOR}; margin-bottom:10px;'>⭐ 즐겨찾기</div>", unsafe_allow_html=True)
-st.sidebar.markdown(f"""<div style="display:flex; flex-direction:column; gap:2px;">
-<div style="font-size:0.8rem; font-weight:bold; margin-top:5px; color:{TEXT_SUB};">유튜브</div>
-<a href="https://www.youtube.com/@JB_Insight" target="_blank" class="sidebar-link"><span>📊</span> JB 인사이트</a>
-<a href="https://www.youtube.com/@odokgod" target="_blank" class="sidebar-link"><span>📻</span> 오독</a>
-<a href="https://www.youtube.com/@TQQQCRAZY" target="_blank" class="sidebar-link"><span>🔥</span> TQQQ 미친놈</a>
-<a href="https://www.youtube.com/@developmong" target="_blank" class="sidebar-link"><span>🐒</span> 디벨롭몽</a>
-<div style="font-size:0.8rem; font-weight:bold; margin-top:15px; color:{TEXT_SUB};">차트 분석</div>
-<a href="https://kr.investing.com/" target="_blank" class="sidebar-link"><span>🌍</span> 인베스팅닷컴</a>
-<a href="https://kr.tradingview.com/" target="_blank" class="sidebar-link"><span>📉</span> 트레이딩뷰</a>
-<div style="font-size:0.8rem; font-weight:bold; margin-top:15px; color:{TEXT_SUB};">AI 도우미</div>
-<a href="https://claude.ai/" target="_blank" class="sidebar-link"><span>🧠</span> 클로드</a>
-<a href="https://gemini.google.com/" target="_blank" class="sidebar-link"><span>✨</span> 제미나이</a>
-</div>""", unsafe_allow_html=True)
+# 🔥 즐겨찾기 토글(아코디언) 기능 적용
+with st.sidebar.expander("⭐ 즐겨찾기 링크", expanded=False):
+    st.markdown(f"""<div style="display:flex; flex-direction:column; gap:2px;">
+    <div style="font-size:0.8rem; font-weight:bold; margin-top:5px; color:{TEXT_SUB};">유튜브</div>
+    <a href="https://www.youtube.com/@JB_Insight" target="_blank" class="sidebar-link"><span>📊</span> JB 인사이트</a>
+    <a href="https://www.youtube.com/@odokgod" target="_blank" class="sidebar-link"><span>📻</span> 오독</a>
+    <a href="https://www.youtube.com/@TQQQCRAZY" target="_blank" class="sidebar-link"><span>🔥</span> TQQQ 미친놈</a>
+    <a href="https://www.youtube.com/@developmong" target="_blank" class="sidebar-link"><span>🐒</span> 디벨롭몽</a>
+    <div style="font-size:0.8rem; font-weight:bold; margin-top:15px; color:{TEXT_SUB};">차트 분석</div>
+    <a href="https://kr.investing.com/" target="_blank" class="sidebar-link"><span>🌍</span> 인베스팅닷컴</a>
+    <a href="https://kr.tradingview.com/" target="_blank" class="sidebar-link"><span>📉</span> 트레이딩뷰</a>
+    <div style="font-size:0.8rem; font-weight:bold; margin-top:15px; color:{TEXT_SUB};">AI 도우미</div>
+    <a href="https://claude.ai/" target="_blank" class="sidebar-link"><span>🧠</span> 클로드</a>
+    <a href="https://gemini.google.com/" target="_blank" class="sidebar-link"><span>✨</span> 제미나이</a>
+    </div>""", unsafe_allow_html=True)
+
 st.sidebar.markdown("---")
 
 with st.sidebar.expander("🎨 테마 색상 커스텀"):
