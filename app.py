@@ -60,7 +60,7 @@ if 'accounts' not in st.session_state:
             "AMLS v4.4": {  
                 "portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS],
                 "history": [], "first_entry_date": None, "journal_text": "", "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0,
-                "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]
+                "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "🔍 레짐 판단 근거", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]
             }
         }
     st.session_state['accounts'] = loaded
@@ -69,16 +69,12 @@ needs_save = False
 if "기본 계좌 (AMLS)" in st.session_state['accounts']:
     st.session_state['accounts']["AMLS v4.4"] = st.session_state['accounts'].pop("기본 계좌 (AMLS)")
     needs_save = True
-# 이전 버전명 호환을 위한 마이그레이션
-if "AMLS v4.3" in st.session_state['accounts']:
-    st.session_state['accounts']["AMLS v4.4"] = st.session_state['accounts'].pop("AMLS v4.3")
-    needs_save = True
 
 for acc_name, acc_data in st.session_state['accounts'].items():
     if "seed_history" not in acc_data: acc_data["seed_history"] = {}; needs_save = True
     if "target_portfolio_value" not in acc_data: acc_data["target_portfolio_value"] = 100000.0; needs_save = True
     if "layout_order" not in acc_data: 
-        acc_data["layout_order"] = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]
+        acc_data["layout_order"] = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "🔍 레짐 판단 근거", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]
         needs_save = True
 
     existing_tickers = [item["티커 (Ticker)"] for item in acc_data["portfolio"]]
@@ -134,6 +130,7 @@ elif current_theme == "엑셀 테마":
     WIDGET_THEME = "light"
     C_UP = "#107C41"; C_DOWN = "#C00000"; C_WARN = "#FFB900"; C_SAFE = "#0078D4"
     BASE_CHART_COLORS = {'TQQQ':'#C00000', 'SOXL':'#800080', 'USD':'#0078D4', 'QLD':'#FFB900', 'SSO':'#E36C09', 'QQQ':'#0078D4', 'SPY':'#107C41', 'GLD':'#FFC000', 'BTC-USD':'#f7931a', 'CASH':'#7F7F7F'}
+
 
 if "last_theme" not in st.session_state['settings'] or st.session_state['settings']["last_theme"] != current_theme:
     st.session_state['settings']["text_color"] = DEFAULT_TEXT_COLOR
@@ -276,7 +273,6 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
             w['BTC-USD'] = btc_amt
         return w
 
-    # 🔥 비교군에 '라오어 무한매수(TQQQ)' 추가
     strategies = ['AMLS v4.4', 'QQQ', 'QLD', 'TQQQ', '무한매수(TQQQ)']
     ports = {s: init_cap for s in strategies if s != '무한매수(TQQQ)'}
     hists = {s: [init_cap] for s in ports.keys()}
@@ -284,7 +280,6 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
     weights_v4_4 = {t: 0.0 for t in data.columns}
     logs, days_since = [], 0
 
-    # 무한매수 전용 변수 초기화
     inf_cash = init_cap
     inf_shares = 0.0
     inf_avg = 0.0
@@ -296,7 +291,6 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
         today, yesterday = df.index[i], df.index[i-1]
         days_since += 1
         
-        # 일반 포트폴리오 수익률 반영
         ret_v4_4 = sum(weights_v4_4[t] * daily_returns[t].iloc[i] for t in data.columns)
         ports['AMLS v4.4'] *= (1 + ret_v4_4)
         for s in ['QQQ', 'QLD', 'TQQQ']: ports[s] *= (1 + daily_returns[s].iloc[i])
@@ -304,40 +298,30 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
         for t in data.columns:
             if ports['AMLS v4.4'] > 0: weights_v4_4[t] = weights_v4_4[t]*(1+daily_returns[t].iloc[i])/(1+ret_v4_4)
             
-        # 매월 적립금 투입
         if today.month != yesterday.month:
             for s in ports: ports[s] += monthly_cont
             total_invested += monthly_cont
-            inf_cash += monthly_cont # 무한매수에도 동일하게 월 적립금 부여
+            inf_cash += monthly_cont
 
         for s in ports: hists[s].append(ports[s])
         
-        # ==========================================
-        # 🔥 무한매수 알고리즘 (TQQQ 40분할) 시뮬레이션
-        # ==========================================
         p_tqqq = data['TQQQ'].iloc[i]
-        
-        # 1. 익절 또는 영혼법(손절) 체크
         if inf_shares > 0:
-            if p_tqqq >= inf_avg * 1.10: # +10% 도달 시 전량 매도
+            if p_tqqq >= inf_avg * 1.10:
                 inf_cash += inf_shares * p_tqqq
                 inf_shares, inf_days = 0.0, 0
-            elif inf_days >= 40: # 40회차 소진 시 전량 매도 (영혼법/리셋)
+            elif inf_days >= 40:
                 inf_cash += inf_shares * p_tqqq
                 inf_shares, inf_days = 0.0, 0
                 
-        # 2. 새로운 사이클 시작 시 분할금액 갱신
         if inf_shares == 0:
             inf_chunk = (inf_cash) / 40.0
             if inf_chunk <= 0: inf_chunk = 0.0
             
-        # 3. 매일 매수 로직
         if inf_cash > 0:
-            # 평단가보다 낮으면 1회분 매수, 높으면 0.5회분 매수 (무한매수 표준 룰)
             spend = inf_chunk if p_tqqq < inf_avg else inf_chunk * 0.5
-            if inf_shares == 0: spend = inf_chunk # 첫 매수
-            
-            if spend > inf_cash: spend = inf_cash # 남은 현금 싹쓸이
+            if inf_shares == 0: spend = inf_chunk
+            if spend > inf_cash: spend = inf_cash
             
             buy_sh = spend / p_tqqq
             if inf_shares + buy_sh > 0:
@@ -346,9 +330,7 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
             inf_cash -= spend
             inf_days += 1
             
-        # 매일 평가액 저장
         hists['무한매수(TQQQ)'].append(inf_cash + inf_shares * p_tqqq)
-        # ==========================================
         
         use_soxl = (df['SMH'].iloc[i-1] > df['SMH_MA50'].iloc[i-1]) and (df['SMH_3M_Ret'].iloc[i-1] > 0.05) and (df['SMH_RSI'].iloc[i-1] > 50)
         
@@ -570,9 +552,34 @@ def make_portfolio_page(acc_name):
         st.title(f"💼 {acc_name}")
         curr_acc_data = st.session_state['accounts'][acc_name]
         
-        DEFAULT_LAYOUT = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]
+        # 🔥 '🔍 레짐 판단 근거' 추가
+        DEFAULT_LAYOUT = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "🔍 레짐 판단 근거", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]
         current_layout = curr_acc_data.get("layout_order", DEFAULT_LAYOUT)
         
+        if "💼 기입표" in current_layout: current_layout[current_layout.index("💼 기입표")] = "💼 포트폴리오 & 리밸런싱"
+        if "🍩 자산 배분 & 지침" in current_layout: current_layout.remove("🍩 자산 배분 & 지침")
+        if "🍩 배분 및 지침" in current_layout: current_layout.remove("🍩 배분 및 지침")
+        if "📈 성장 곡선" in current_layout: current_layout[current_layout.index("📈 성장 곡선")] = "📈 목표 달성률 추이"
+        if "🔍 레짐 판단 근거" not in current_layout:
+            try:
+                idx = current_layout.index("⚡ 시스템 분석관")
+                current_layout.insert(idx + 1, "🔍 레짐 판단 근거")
+            except:
+                current_layout.append("🔍 레짐 판단 근거")
+            
+        for item in DEFAULT_LAYOUT:
+            if item not in current_layout: current_layout.append(item)
+        current_layout = [x for x in current_layout if x in DEFAULT_LAYOUT]
+        
+        if current_layout != curr_acc_data.get("layout_order", []):
+            curr_acc_data["layout_order"] = current_layout
+            save_accounts_data(st.session_state['accounts'])
+
+        pf_df = pd.DataFrame(curr_acc_data["portfolio"])
+        for col in ["수량 (주/달러)", "평균 단가 ($)", "매입 환율"]:
+            if col in pf_df.columns: pf_df[col] = pf_df[col].astype(float)
+            else: pf_df[col] = 0.0
+
         with st.sidebar.expander(f"🛠️ 화면 레이아웃 편집", expanded=False):
             st.caption("위아래로 순서를 변경하세요.")
             for i, block_name in enumerate(current_layout):
@@ -588,14 +595,9 @@ def make_portfolio_page(acc_name):
                     save_accounts_data(st.session_state['accounts']); st.rerun()
         st.sidebar.markdown("---")
 
-        pf_df = pd.DataFrame(curr_acc_data["portfolio"])
-        for col in ["수량 (주/달러)", "평균 단가 ($)", "매입 환율"]:
-            if col in pf_df.columns: pf_df[col] = pf_df[col].astype(float)
-            else: pf_df[col] = 0.0
-
         @st.cache_data(ttl=1800)
         def get_market_status():
-            TICKERS = ['QQQ', 'TQQQ', 'SOXL', 'USD', 'QLD', 'SSO', 'SPY', 'SMH', 'GLD', '^VIX', 'USDKRW=X']
+            TICKERS = ['QQQ', 'TQQQ', 'SOXL', 'USD', 'QLD', 'SSO', 'SPY', 'SMH', 'GLD', '^VIX']
             try:
                 data = yf.download(TICKERS, start=datetime.today()-timedelta(days=400), progress=False)['Close'].ffill()
                 if data.empty or len(data) < 200: raise ValueError
@@ -665,7 +667,8 @@ def make_portfolio_page(acc_name):
             else: entry_grade = "진입 적합"
 
             try:
-                current_usdkrw = float(today['USDKRW=X']) if pd.notna(today.get('USDKRW=X')) else 0.0
+                fx_data = yf.download('USDKRW=X', period='5d', progress=False)['Close'].ffill()
+                current_usdkrw = float(fx_data.iloc[:, 0].iloc[-1] if isinstance(fx_data, pd.DataFrame) else fx_data.iloc[-1])
             except: current_usdkrw = 0.0
 
             return {
@@ -684,6 +687,17 @@ def make_portfolio_page(acc_name):
                 if rt.empty: return None
                 return rt.ffill().iloc[-1].to_dict()
             except: return None
+            
+        @st.cache_data(ttl=3600)
+        def get_regime_chart_data():
+            tkrs = ['QQQ', '^VIX']
+            try:
+                c_df = yf.download(tkrs, start=datetime.today()-timedelta(days=400), progress=False)['Close'].ffill().dropna()
+                c_df['MA50'] = c_df['QQQ'].rolling(50).mean()
+                c_df['MA200'] = c_df['QQQ'].rolling(200).mean()
+                return c_df.dropna().tail(252)
+            except:
+                return pd.DataFrame()
 
         with st.spinner("AI 엔진 동기화 중..."): 
             ms = get_market_status()
@@ -926,6 +940,37 @@ def make_portfolio_page(acc_name):
                 st.markdown(f"<div style='font-size:0.9rem; color:{TEXT_SUB}; text-align:right; font-style:italic;'>📜 {random.choice(q_list)}</div>", unsafe_allow_html=True)
                 st.write("")
 
+            # 🔥 신규 패널: 레짐 판단 근거 시각화
+            elif block == "🔍 레짐 판단 근거":
+                st.markdown("#### 🔍 레짐 판단 근거 시각화")
+                if mobile_mode:
+                    st.info("📱 모바일 간편뷰 모드에서는 복잡한 차트가 생략됩니다.")
+                else:
+                    c_df = get_regime_chart_data()
+                    if not c_df.empty:
+                        fig_rc = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.7, 0.3], vertical_spacing=0.08, subplot_titles=("나스닥 (QQQ) 장단기 추세", "시장 공포지수 (VIX)"))
+                        
+                        # QQQ
+                        fig_rc.add_trace(go.Scatter(x=c_df.index, y=c_df['QQQ'], name="QQQ (Price)", line=dict(color=C_SAFE, width=2)), row=1, col=1)
+                        fig_rc.add_trace(go.Scatter(x=c_df.index, y=c_df['MA50'], name="50MA", line=dict(color=C_WARN, width=1.5, dash='dot')), row=1, col=1)
+                        fig_rc.add_trace(go.Scatter(x=c_df.index, y=c_df['MA200'], name="200MA", line=dict(color=C_DOWN, width=2)), row=1, col=1)
+                        
+                        # VIX
+                        fig_rc.add_trace(go.Scatter(x=c_df.index, y=c_df['^VIX'], name="VIX", line=dict(color='#9b59b6', width=1.5), fill='tozeroy'), row=2, col=1)
+                        fig_rc.add_hline(y=40, line_dash="dash", line_color="red", row=2, col=1, annotation_text="패닉 (40)")
+                        fig_rc.add_hline(y=25, line_dash="dash", line_color="orange", row=2, col=1, annotation_text="경계 (25)")
+                        
+                        cust_rc = THEME_LAYOUT.copy()
+                        cust_rc.update(height=500, hovermode="x unified", margin=dict(l=0, r=0, t=30, b=0))
+                        fig_rc.update_layout(**cust_rc)
+                        
+                        with st.container(border=True):
+                            st.plotly_chart(fig_rc, use_container_width=True)
+                            st.markdown(f"<div style='font-size:0.85rem; color:{TEXT_SUB}; text-align:center;'>💡 <b>레짐 판단의 핵심 지표:</b> 나스닥(QQQ)이 200일 이동평균선(빨간선) 위에 있는지, 공포지수(VIX)가 25나 40을 넘었는지가 전략의 핵심입니다.</div>", unsafe_allow_html=True)
+                    else:
+                        st.info("데이터를 불러오지 못했습니다.")
+                st.write("")
+
             elif block == "💼 포트폴리오 & 리밸런싱":
                 st.markdown("#### 💼 자산 기입 및 리밸런싱 (AMLS v4.4)")
                 
@@ -1103,7 +1148,7 @@ def page_manage_accounts():
     new_acc = st.text_input("새 계좌명")
     if st.button("개설", type="primary") and new_acc:
         if new_acc not in st.session_state['accounts']:
-            st.session_state['accounts'][new_acc] = {"portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS], "history": [{"Date": datetime.now().strftime("%Y-%m-%d"), "Log": "계좌 개설"}], "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0, "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]}
+            st.session_state['accounts'][new_acc] = {"portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS], "history": [{"Date": datetime.now().strftime("%Y-%m-%d"), "Log": "계좌 개설"}], "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0, "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "🔍 레짐 판단 근거", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]}
             save_accounts_data(st.session_state['accounts']); st.rerun()
     st.divider()
     for acc in list(st.session_state['accounts'].keys()):
