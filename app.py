@@ -24,7 +24,7 @@ st.set_page_config(page_title="AMLS 퀀트 포트폴리오", layout="wide", init
 
 SETTINGS_FILE = "amls_settings_v12.json"
 ACCOUNTS_FILE = "amls_multi_accounts.json"
-REQUIRED_TICKERS = ["TQQQ", "QLD", "QQQ", "SOXL", "USD", "SSO", "GLD", "CASH"]
+REQUIRED_TICKERS = ["TQQQ", "QLD", "QQQ", "SOXL", "USD", "SSO", "SPY", "GLD", "CASH"]
 
 def load_settings():
     if os.path.exists(SETTINGS_FILE):
@@ -108,28 +108,28 @@ if current_theme == "애플 테마":
     PANEL_BG = "rgba(255, 255, 255, 0.7)"; PANEL_BORDER = "1px solid rgba(200, 200, 200, 0.3)"; PANEL_RADIUS = "16px"
     WIDGET_THEME = "light"
     C_UP = "#34c759"; C_DOWN = "#ff3b30"; C_WARN = "#ff9500"; C_SAFE = "#007aff"
-    BASE_CHART_COLORS = {'TQQQ':'#ff3b30', 'SOXL':'#af52de', 'USD':'#5856d6', 'QLD':'#ff9500', 'SSO':'#ffcc00', 'QQQ':'#007aff', 'GLD':'#34c759', 'BTC-USD':'#f7931a', 'CASH':'#8e8e93'}
+    BASE_CHART_COLORS = {'TQQQ':'#ff3b30', 'SOXL':'#af52de', 'USD':'#5856d6', 'QLD':'#ff9500', 'SSO':'#ffcc00', 'QQQ':'#007aff', 'SPY':'#34a853', 'GLD':'#34c759', 'BTC-USD':'#f7931a', 'CASH':'#8e8e93'}
 
 elif current_theme == "1930년대 타자기 테마":
     DEFAULT_TEXT_COLOR = "#2c2a25"; TEXT_SUB = "#555555"
     PANEL_BG = "rgba(223, 215, 197, 0.85)"; PANEL_BORDER = "2px solid #2c2a25"; PANEL_RADIUS = "0px"
     WIDGET_THEME = "light"
     C_UP = "#000080"; C_DOWN = "#8b0000"; C_WARN = "#b8860b"; C_SAFE = "#006400"
-    BASE_CHART_COLORS = {'TQQQ':'#8b0000', 'SOXL':'#556b2f', 'USD':'#8fbc8f', 'QLD':'#b8860b', 'SSO':'#cd853f', 'QQQ':'#000080', 'GLD':'#daa520', 'BTC-USD':'#f7931a', 'CASH':'#2f4f4f'}
+    BASE_CHART_COLORS = {'TQQQ':'#8b0000', 'SOXL':'#556b2f', 'USD':'#8fbc8f', 'QLD':'#b8860b', 'SSO':'#cd853f', 'QQQ':'#000080', 'SPY':'#2e8b57', 'GLD':'#daa520', 'BTC-USD':'#f7931a', 'CASH':'#2f4f4f'}
 
 elif current_theme == "월스트리트 저널 테마":
     DEFAULT_TEXT_COLOR = "#1A1A1A"; TEXT_SUB = "#555555"
     PANEL_BG = "rgba(255, 255, 255, 0.95)"; PANEL_BORDER = "1px solid #000000"; PANEL_RADIUS = "0px"
     WIDGET_THEME = "light"
     C_UP = "#006400"; C_DOWN = "#8B0000"; C_WARN = "#B8860B"; C_SAFE = "#000080"
-    BASE_CHART_COLORS = {'TQQQ':'#8B0000', 'SOXL':'#556b2f', 'USD':'#2F4F4F', 'QLD':'#B8860B', 'SSO':'#DAA520', 'QQQ':'#000080', 'GLD':'#BDB76B', 'BTC-USD':'#f7931a', 'CASH':'#696969'}
+    BASE_CHART_COLORS = {'TQQQ':'#8B0000', 'SOXL':'#556b2f', 'USD':'#2F4F4F', 'QLD':'#B8860B', 'SSO':'#DAA520', 'QQQ':'#000080', 'SPY':'#4682B4', 'GLD':'#BDB76B', 'BTC-USD':'#f7931a', 'CASH':'#696969'}
 
 elif current_theme == "엑셀 테마":
     DEFAULT_TEXT_COLOR = "#333333"; TEXT_SUB = "#666666"
     PANEL_BG = "rgba(255, 255, 255, 0.95)"; PANEL_BORDER = "1px solid #D4D4D4"; PANEL_RADIUS = "0px"
     WIDGET_THEME = "light"
     C_UP = "#107C41"; C_DOWN = "#C00000"; C_WARN = "#FFB900"; C_SAFE = "#0078D4"
-    BASE_CHART_COLORS = {'TQQQ':'#C00000', 'SOXL':'#800080', 'USD':'#0078D4', 'QLD':'#FFB900', 'SSO':'#E36C09', 'QQQ':'#0078D4', 'GLD':'#FFC000', 'BTC-USD':'#f7931a', 'CASH':'#7F7F7F'}
+    BASE_CHART_COLORS = {'TQQQ':'#C00000', 'SOXL':'#800080', 'USD':'#0078D4', 'QLD':'#FFB900', 'SSO':'#E36C09', 'QQQ':'#0078D4', 'SPY':'#107C41', 'GLD':'#FFC000', 'BTC-USD':'#f7931a', 'CASH':'#7F7F7F'}
 
 
 if "last_theme" not in st.session_state['settings'] or st.session_state['settings']["last_theme"] != current_theme:
@@ -207,11 +207,11 @@ apply_custom_css()
 # =====================================================================
 @st.cache_data(ttl=3600)
 def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 1회", btc_ratio=0):
+    # SPY 추가
     tickers = ['QQQ', 'TQQQ', 'SOXL', 'USD', 'QLD', 'SSO', 'SPY', 'SMH', 'GLD', '^VIX', 'BTC-USD']
     start_str = (start - timedelta(days=400)).strftime("%Y-%m-%d")
     end_str = end.strftime("%Y-%m-%d")
     
-    # 🔥 야후 파이낸스 Rate Limit(차단) 우회 및 안전장치
     try: 
         data = yf.download(tickers, start=start_str, end=end_str, progress=False, auto_adjust=True)['Close']
         if data.empty: raise ValueError
@@ -220,7 +220,7 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
             data = yf.download(tickers, start=start_str, end=end_str, progress=False)['Close']
             if data.empty: raise ValueError
         except:
-            return pd.DataFrame(), [], [] # 차단 시 빈 데이터 반환하여 에러 방지
+            return pd.DataFrame(), [], []
 
     data = data.ffill().dropna(subset=['QQQ', '^VIX'])
 
@@ -263,8 +263,9 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
 
     def get_v4_3_weights(regime, use_soxl, b_ratio):
         w = {t: 0.0 for t in data.columns}; semi = 'SOXL' if use_soxl else 'USD'
-        if regime == 1: w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'] = 0.30, 0.20, 0.20, 0.15, 0.10
-        elif regime == 2: w['QLD'], w['SSO'], w['GLD'], w['USD'], w['QQQ'] = 0.30, 0.25, 0.20, 0.10, 0.05
+        # 🔥 사용자 요청: R1에서 Cash 5% -> SPY 5%, R2에서 Cash 10% -> SPY 5% + GLD 5%
+        if regime == 1: w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'], w['SPY'] = 0.30, 0.20, 0.20, 0.15, 0.10, 0.05
+        elif regime == 2: w['QLD'], w['SSO'], w['GLD'], w['USD'], w['QQQ'], w['SPY'] = 0.30, 0.25, 0.25, 0.10, 0.05, 0.05
         elif regime == 3: w['GLD'], w['QQQ'] = 0.50, 0.15
         elif regime == 4: w['GLD'], w['QQQ'] = 0.50, 0.10
         
@@ -450,6 +451,23 @@ def page_amls_backtest():
         st.info(f"투입 원금: ${df['Invested'].iloc[-1]:,.0f} (BTC 편입비중: {BTC_RATIO}%)")
         st.dataframe(metrics_df, width="stretch")
 
+        # 🔥 Backtest Pie chart (R1, R2 비중 업데이트 적용됨)
+        st.markdown("#### 🥧 국면별 비중 (AMLS v4.3 기준)")
+        c1, c2, c3, c4 = st.columns(4)
+        def get_w(reg):
+            if reg == 1: return {'TQQQ':30, 'SOXL/USD':20, 'QLD':20, 'SSO':15, 'GLD':10, 'SPY':5}
+            elif reg == 2: return {'QLD':30, 'SSO':25, 'GLD':25, 'USD':10, 'QQQ':5, 'SPY':5}
+            elif reg == 3: return {'GLD':50, 'CASH':35, 'QQQ':15}
+            elif reg == 4: return {'GLD':50, 'CASH':40, 'QQQ':10}
+        
+        for i, col in enumerate([c1, c2, c3, c4]):
+            r = i+1; w = {k:v for k,v in get_w(r).items() if v>0}
+            fig_p = go.Figure(go.Pie(labels=list(w.keys()), values=list(w.values()), hole=0.5, marker=dict(colors=[COLOR_PALETTE.get(k.split('/')[0], '#888') for k in w.keys()])))
+            cust_p = THEME_LAYOUT.copy(); cust_p.update(title=f"R{r}", title_x=0.5, height=250, margin=dict(t=40,b=10,l=10,r=10), showlegend=False)
+            fig_p.update_layout(**cust_p)
+            fig_p.update_traces(textinfo='label+percent', textposition='inside', textfont=dict(color="#ffffff" if current_theme in ["1930년대 타자기 테마", "월스트리트 저널 테마", "블룸버그 터미널 테마"] else TEXT_COLOR, size=11))
+            col.plotly_chart(fig_p, use_container_width=True)
+
         st.markdown("#### 📈 자산 곡선 및 낙폭 (MDD)")
         fig_eq = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.7, 0.3], vertical_spacing=0.05)
         for s in strats:
@@ -530,7 +548,6 @@ def make_portfolio_page(acc_name):
                 data = yf.download(TICKERS, start=datetime.today()-timedelta(days=400), progress=False)['Close'].ffill()
                 if data.empty or len(data) < 200: raise ValueError
             except:
-                # 🔥 Fallback: Rate Limit 방어용 안전 모드 데이터
                 return {
                     'regime': 2, 'target_regime': 2, 'is_waiting': False, 'wait_days': 0,
                     'regime_duration': 0, 'regime_direction': 'stable', 'entry_grade': '서버 점검중',
@@ -582,7 +599,6 @@ def make_portfolio_page(acc_name):
                 if applied_series.iloc[i] == current_reg: regime_duration += 1
                 else: break
             
-            # 🔥 Edge case fix: When regime never changed in 400 days
             prev_reg = current_reg
             search_start = len(applied_series) - regime_duration - 1
             if search_start >= 0:
@@ -596,7 +612,6 @@ def make_portfolio_page(acc_name):
             elif regime_direction == "descending": entry_grade = "진입 보류" if regime_duration <= 20 else "바닥 탐색"
             else: entry_grade = "진입 적합"
 
-            # 🔥 Rate limit fix: using merged USDKRW=X data
             try:
                 current_usdkrw = float(today['USDKRW=X']) if pd.notna(today.get('USDKRW=X')) else 0.0
             except: current_usdkrw = 0.0
@@ -711,9 +726,6 @@ def make_portfolio_page(acc_name):
         if history_changed: save_accounts_data(st.session_state['accounts'])
 
 
-        # -------------------------------------------------------------
-        # 동적 레이아웃 렌더링 루프
-        # -------------------------------------------------------------
         for block in current_layout:
             
             if block == "🎯 목표 달성률":
@@ -814,7 +826,7 @@ def make_portfolio_page(acc_name):
                 elif direction == 'ascending': summ = "상승 추세 안정화. 계획된 비중대로 편안하게 분할 매수하십시오."
                 elif direction == 'descending' and dur <= 20: summ = "하향 전환 발생. 추가 하락 우려가 있으므로 신규 매수를 전면 보류하십시오."
                 elif direction == 'descending': summ = "장기 하락 중. 완벽한 상승 신호가 뜰 때까지 현금을 대기하십시오."
-                elif dur > 60: summ = "레짐 장기화로 추세 반전 리스크 누적. 보수적인 분할 진입을 추천합니다."
+                elif dur > 60: summ = "레짐 장기화로 추세 반전 리스크 누적. 보수적인 소규모 분할 진입을 추천합니다."
                 else: summ = "레짐 안정적. 시스템 룰에 맞춰 평소처럼 자금을 정상 운용하십시오."
 
                 if mobile_mode:
@@ -883,7 +895,6 @@ def make_portfolio_page(acc_name):
                         elif val < 0: return f'color: {C_DOWN}; font-weight: bold;'
                     return ''
 
-                # 🔥 수정사항: use_container_width=True 제거, width="stretch" 통일
                 ed_disp_kwargs = dict(
                     data=disp_df.style.map(color_y, subset=["수익률 (%)", "원화 수익률 (%)"]), 
                     num_rows="dynamic", width="stretch", height=320, key=f"ed_{acc_name}",
@@ -928,10 +939,12 @@ def make_portfolio_page(acc_name):
 
                 status_d = []
                 smh_cond = (ms['smh'] > ms['smh_ma50']) and (ms['smh_3m_ret'] > 0.05) and (ms['smh_rsi'] > 50)
+                
+                # 🔥 업데이트: R1 SPY 5%, R2 SPY 5% + GLD 25% 적용
                 def get_w_local(reg, usx):
                     w = {t: 0.0 for t in REQUIRED_TICKERS}; semi = 'SOXL' if usx else 'USD'
-                    if reg == 1: w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'], w['CASH'] = 0.30, 0.20, 0.20, 0.15, 0.10, 0.05
-                    elif reg == 2: w['QLD'], w['SSO'], w['GLD'], w['USD'], w['QQQ'], w['CASH'] = 0.30, 0.25, 0.20, 0.10, 0.05, 0.10
+                    if reg == 1: w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'], w['SPY'] = 0.30, 0.20, 0.20, 0.15, 0.10, 0.05
+                    elif reg == 2: w['QLD'], w['SSO'], w['GLD'], w['USD'], w['QQQ'], w['SPY'] = 0.30, 0.25, 0.25, 0.10, 0.05, 0.05
                     elif reg == 3: w['GLD'], w['CASH'], w['QQQ'] = 0.50, 0.35, 0.15
                     elif reg == 4: w['GLD'], w['CASH'], w['QQQ'] = 0.50, 0.40, 0.10
                     return {k: v for k, v in w.items() if v > 0}
@@ -994,7 +1007,6 @@ def make_portfolio_page(acc_name):
                         fig_achieve.add_trace(go.Scatter(x=hist_df.index, y=hist_df['achieve_pct'], name="달성률", mode='lines+markers', line=dict(color=C_UP, width=3)))
                         fig_achieve.add_hline(y=100, line_dash="dash", line_color=C_DOWN)
                         
-                        # 🔥 수정사항: update_layout 인자 충돌(TypeError) 완벽 방지
                         custom_layout = THEME_LAYOUT.copy()
                         custom_layout.update(height=300, hovermode="x unified")
                         fig_achieve.update_layout(**custom_layout)
@@ -1052,7 +1064,7 @@ def page_manage_accounts():
 # --- 페이지 구성: 전략 명세서 ---
 def page_strategy_specification():
     st.title("📜 전략 명세서")
-    st.markdown("### 🏷️ 버전: v4.3")
+    st.markdown("### 🏷️ 버전: v4.3 (SPY 편입)")
     st.table(pd.DataFrame({"우선순위": ["1", "2", "3", "4"], "조건": ["VIX > 40", "QQQ < 200일선", "정배열 & VIX < 25", "그 외 조건"], "레짐": ["R4 (위기)", "R3 (약세)", "R1 (강세)", "R2 (보통)"]}))
 
 
