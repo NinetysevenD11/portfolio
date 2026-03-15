@@ -57,7 +57,7 @@ if 'accounts' not in st.session_state:
     loaded = load_accounts_data()
     if not loaded:
         loaded = {
-            "AMLS v4.3": {  
+            "AMLS v4.4": {  
                 "portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS],
                 "history": [], "first_entry_date": None, "journal_text": "", "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0,
                 "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]
@@ -67,7 +67,11 @@ if 'accounts' not in st.session_state:
 
 needs_save = False
 if "기본 계좌 (AMLS)" in st.session_state['accounts']:
-    st.session_state['accounts']["AMLS v4.3"] = st.session_state['accounts'].pop("기본 계좌 (AMLS)")
+    st.session_state['accounts']["AMLS v4.4"] = st.session_state['accounts'].pop("기본 계좌 (AMLS)")
+    needs_save = True
+# 이전 버전명 호환을 위한 마이그레이션
+if "AMLS v4.3" in st.session_state['accounts']:
+    st.session_state['accounts']["AMLS v4.4"] = st.session_state['accounts'].pop("AMLS v4.3")
     needs_save = True
 
 for acc_name, acc_data in st.session_state['accounts'].items():
@@ -130,7 +134,6 @@ elif current_theme == "엑셀 테마":
     WIDGET_THEME = "light"
     C_UP = "#107C41"; C_DOWN = "#C00000"; C_WARN = "#FFB900"; C_SAFE = "#0078D4"
     BASE_CHART_COLORS = {'TQQQ':'#C00000', 'SOXL':'#800080', 'USD':'#0078D4', 'QLD':'#FFB900', 'SSO':'#E36C09', 'QQQ':'#0078D4', 'SPY':'#107C41', 'GLD':'#FFC000', 'BTC-USD':'#f7931a', 'CASH':'#7F7F7F'}
-
 
 if "last_theme" not in st.session_state['settings'] or st.session_state['settings']["last_theme"] != current_theme:
     st.session_state['settings']["text_color"] = DEFAULT_TEXT_COLOR
@@ -203,11 +206,10 @@ apply_custom_css()
 
 
 # =====================================================================
-# [3] 글로벌 백엔드 (백테스트 엔진 + 비트코인 옵션 적용)
+# [3] 글로벌 백엔드 (AMLS v4.4 백테스트 엔진 + 무한매수 비교군 추가)
 # =====================================================================
 @st.cache_data(ttl=3600)
 def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 1회", btc_ratio=0):
-    # SPY 추가
     tickers = ['QQQ', 'TQQQ', 'SOXL', 'USD', 'QLD', 'SSO', 'SPY', 'SMH', 'GLD', '^VIX', 'BTC-USD']
     start_str = (start - timedelta(days=400)).strftime("%Y-%m-%d")
     end_str = end.strftime("%Y-%m-%d")
@@ -246,24 +248,23 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
 
     df['Target_Regime'] = df.apply(get_target_regime, axis=1)
     
-    actual_regime_v4_3 = []; current_v4_3 = 3; pend_v4_3 = None; cnt_v4_3 = 0
+    actual_regime_v4_4 = []; current_v4_4 = 3; pend_v4_4 = None; cnt_v4_4 = 0
     for i in range(len(df)):
         tr = df['Target_Regime'].iloc[i]
-        if tr > current_v4_3: 
-            current_v4_3 = tr; pend_v4_3 = None; cnt_v4_3 = 0; actual_regime_v4_3.append(current_v4_3)
-        elif tr < current_v4_3: 
-            if tr == pend_v4_3:
-                cnt_v4_3 += 1
-                if cnt_v4_3 >= 5: current_v4_3 = tr; pend_v4_3 = None; cnt_v4_3 = 0; actual_regime_v4_3.append(current_v4_3)
-                else: actual_regime_v4_3.append(current_v4_3 - 1)
-            else: pend_v4_3 = tr; cnt_v4_3 = 1; actual_regime_v4_3.append(current_v4_3 - 1)
-        else: pend_v4_3 = None; cnt_v4_3 = 0; actual_regime_v4_3.append(current_v4_3)
+        if tr > current_v4_4: 
+            current_v4_4 = tr; pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4.append(current_v4_4)
+        elif tr < current_v4_4: 
+            if tr == pend_v4_4:
+                cnt_v4_4 += 1
+                if cnt_v4_4 >= 5: current_v4_4 = tr; pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4.append(current_v4_4)
+                else: actual_regime_v4_4.append(current_v4_4 - 1)
+            else: pend_v4_4 = tr; cnt_v4_4 = 1; actual_regime_v4_4.append(current_v4_4 - 1)
+        else: pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4.append(current_v4_4)
 
-    df['Signal_Regime_v4_3'] = pd.Series(actual_regime_v4_3, index=df.index).shift(1).bfill()
+    df['Signal_Regime_v4_4'] = pd.Series(actual_regime_v4_4, index=df.index).shift(1).bfill()
 
-    def get_v4_3_weights(regime, use_soxl, b_ratio):
+    def get_v4_4_weights(regime, use_soxl, b_ratio):
         w = {t: 0.0 for t in data.columns}; semi = 'SOXL' if use_soxl else 'USD'
-        # 🔥 사용자 요청: R1에서 Cash 5% -> SPY 5%, R2에서 Cash 10% -> SPY 5% + GLD 5%
         if regime == 1: w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'], w['SPY'] = 0.30, 0.20, 0.20, 0.15, 0.10, 0.05
         elif regime == 2: w['QLD'], w['SSO'], w['GLD'], w['USD'], w['QQQ'], w['SPY'] = 0.30, 0.25, 0.25, 0.10, 0.05, 0.05
         elif regime == 3: w['GLD'], w['QQQ'] = 0.50, 0.15
@@ -275,46 +276,97 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
             w['BTC-USD'] = btc_amt
         return w
 
-    strategies = ['AMLS v4.3', 'QQQ', 'QLD']
-    ports = {s: init_cap for s in strategies}
+    # 🔥 비교군에 '라오어 무한매수(TQQQ)' 추가
+    strategies = ['AMLS v4.4', 'QQQ', 'QLD', 'TQQQ', '무한매수(TQQQ)']
+    ports = {s: init_cap for s in strategies if s != '무한매수(TQQQ)'}
     hists = {s: [init_cap] for s in ports.keys()}
     total_invested = init_cap
-    weights_v4_3 = {t: 0.0 for t in data.columns}
+    weights_v4_4 = {t: 0.0 for t in data.columns}
     logs, days_since = [], 0
+
+    # 무한매수 전용 변수 초기화
+    inf_cash = init_cap
+    inf_shares = 0.0
+    inf_avg = 0.0
+    inf_days = 0
+    inf_chunk = init_cap / 40.0
+    hists['무한매수(TQQQ)'] = [init_cap]
 
     for i in range(1, len(df)):
         today, yesterday = df.index[i], df.index[i-1]
         days_since += 1
-        ret_v4_3 = sum(weights_v4_3[t] * daily_returns[t].iloc[i] for t in data.columns)
         
-        ports['AMLS v4.3'] *= (1 + ret_v4_3)
-        for s in ['QQQ', 'QLD']: ports[s] *= (1 + daily_returns[s].iloc[i])
+        # 일반 포트폴리오 수익률 반영
+        ret_v4_4 = sum(weights_v4_4[t] * daily_returns[t].iloc[i] for t in data.columns)
+        ports['AMLS v4.4'] *= (1 + ret_v4_4)
+        for s in ['QQQ', 'QLD', 'TQQQ']: ports[s] *= (1 + daily_returns[s].iloc[i])
         
         for t in data.columns:
-            if ports['AMLS v4.3'] > 0: weights_v4_3[t] = weights_v4_3[t]*(1+daily_returns[t].iloc[i])/(1+ret_v4_3)
+            if ports['AMLS v4.4'] > 0: weights_v4_4[t] = weights_v4_4[t]*(1+daily_returns[t].iloc[i])/(1+ret_v4_4)
             
+        # 매월 적립금 투입
         if today.month != yesterday.month:
             for s in ports: ports[s] += monthly_cont
             total_invested += monthly_cont
+            inf_cash += monthly_cont # 무한매수에도 동일하게 월 적립금 부여
+
         for s in ports: hists[s].append(ports[s])
+        
+        # ==========================================
+        # 🔥 무한매수 알고리즘 (TQQQ 40분할) 시뮬레이션
+        # ==========================================
+        p_tqqq = data['TQQQ'].iloc[i]
+        
+        # 1. 익절 또는 영혼법(손절) 체크
+        if inf_shares > 0:
+            if p_tqqq >= inf_avg * 1.10: # +10% 도달 시 전량 매도
+                inf_cash += inf_shares * p_tqqq
+                inf_shares, inf_days = 0.0, 0
+            elif inf_days >= 40: # 40회차 소진 시 전량 매도 (영혼법/리셋)
+                inf_cash += inf_shares * p_tqqq
+                inf_shares, inf_days = 0.0, 0
+                
+        # 2. 새로운 사이클 시작 시 분할금액 갱신
+        if inf_shares == 0:
+            inf_chunk = (inf_cash) / 40.0
+            if inf_chunk <= 0: inf_chunk = 0.0
+            
+        # 3. 매일 매수 로직
+        if inf_cash > 0:
+            # 평단가보다 낮으면 1회분 매수, 높으면 0.5회분 매수 (무한매수 표준 룰)
+            spend = inf_chunk if p_tqqq < inf_avg else inf_chunk * 0.5
+            if inf_shares == 0: spend = inf_chunk # 첫 매수
+            
+            if spend > inf_cash: spend = inf_cash # 남은 현금 싹쓸이
+            
+            buy_sh = spend / p_tqqq
+            if inf_shares + buy_sh > 0:
+                inf_avg = ((inf_shares * inf_avg) + spend) / (inf_shares + buy_sh)
+            inf_shares += buy_sh
+            inf_cash -= spend
+            inf_days += 1
+            
+        # 매일 평가액 저장
+        hists['무한매수(TQQQ)'].append(inf_cash + inf_shares * p_tqqq)
+        # ==========================================
         
         use_soxl = (df['SMH'].iloc[i-1] > df['SMH_MA50'].iloc[i-1]) and (df['SMH_3M_Ret'].iloc[i-1] > 0.05) and (df['SMH_RSI'].iloc[i-1] > 50)
         
-        sig_r = df['Signal_Regime_v4_3'].iloc[i]
+        sig_r = df['Signal_Regime_v4_4'].iloc[i]
         rebal = False
-        if sig_r != df['Signal_Regime_v4_3'].iloc[i-1] or i == 1: rebal = True
+        if sig_r != df['Signal_Regime_v4_4'].iloc[i-1] or i == 1: rebal = True
         elif rebal_freq == "월 1회" and today.month != yesterday.month: rebal = True
         elif "주 1회" in rebal_freq and days_since >= 5: rebal = True
         elif "2주 1회" in rebal_freq and days_since >= 10: rebal = True
         elif "3주 1회" in rebal_freq and days_since >= 15: rebal = True
         
         if rebal:
-            weights_v4_3 = get_v4_3_weights(sig_r, use_soxl, btc_ratio)
-            log_type = "레짐 전환" if sig_r != df['Signal_Regime_v4_3'].iloc[i-1] else f"정기 ({rebal_freq.split(' ')[0]})"
-            logs.append({"날짜": today.strftime('%Y-%m-%d'), "유형": log_type, "국면": f"R{int(sig_r)}", "평가액": ports['AMLS v4.3']})
+            weights_v4_4 = get_v4_4_weights(sig_r, use_soxl, btc_ratio)
+            log_type = "레짐 전환" if sig_r != df['Signal_Regime_v4_4'].iloc[i-1] else f"정기 ({rebal_freq.split(' ')[0]})"
+            logs.append({"날짜": today.strftime('%Y-%m-%d'), "유형": log_type, "국면": f"R{int(sig_r)}", "평가액": ports['AMLS v4.4']})
             days_since = 0
 
-    for s in ports: df[f'{s}_Value'] = hists[s]
+    for s in strategies: df[f'{s}_Value'] = hists[s]
     inv_arr = [init_cap]; curr_inv = init_cap
     for i in range(1, len(df)):
         if df.index[i].month != df.index[i-1].month: curr_inv += monthly_cont
@@ -437,7 +489,7 @@ def page_amls_backtest():
         sharpe = (daily_ret.mean() * 252) / (daily_ret.std() * np.sqrt(252)) if daily_ret.std() != 0 else 0
         return final_val, total_ret, cagr, mdd, sharpe
 
-    strats = ['AMLS v4.3', 'QQQ', 'QLD']
+    strats = ['AMLS v4.4', 'QQQ', 'QLD', 'TQQQ', '무한매수(TQQQ)']
     metrics_data = []
     for s in strats:
         fv, tr, cagr, mdd, shp = calc_metrics(df[f'{s}_Value'], df['Invested'])
@@ -451,8 +503,24 @@ def page_amls_backtest():
         st.info(f"투입 원금: ${df['Invested'].iloc[-1]:,.0f} (BTC 편입비중: {BTC_RATIO}%)")
         st.dataframe(metrics_df, width="stretch")
 
-        # 🔥 Backtest Pie chart (R1, R2 비중 업데이트 적용됨)
-        st.markdown("#### 🥧 국면별 비중 (AMLS v4.3 기준)")
+        st.markdown("#### 📈 자산 곡선 및 낙폭 (MDD)")
+        fig_eq = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.7, 0.3], vertical_spacing=0.05)
+        for s in strats:
+            color = C_UP if 'AMLS' in s else (C_SAFE if 'QQQ' in s else (C_WARN if 'QLD' in s else ('#8e44ad' if '무한매수' in s else C_DOWN)))
+            fig_eq.add_trace(go.Scatter(x=df.index, y=df[f'{s}_Value'], name=s, line=dict(color=color, width=3 if 'AMLS' in s else 1.5)), row=1, col=1)
+            dd = (df[f'{s}_Value'] / df[f'{s}_Value'].cummax() - 1) * 100
+            fig_eq.add_trace(go.Scatter(x=df.index, y=dd, name=f'{s} DD', line=dict(color=color, width=1.5)), row=2, col=1)
+        
+        fig_eq.add_trace(go.Scatter(x=df.index, y=df['Invested'], name='원금', line=dict(color='#888', dash='dot')), row=1, col=1)
+        fig_eq.add_hline(y=-30, line_dash="dash", line_color="red", row=2, col=1)
+        
+        cust_eq = THEME_LAYOUT.copy()
+        cust_eq.update(height=600, hovermode="x unified", margin=dict(l=0,r=0,t=20,b=0))
+        fig_eq.update_layout(**cust_eq)
+        fig_eq.update_yaxes(type="log", row=1, col=1)
+        st.plotly_chart(fig_eq, use_container_width=True)
+
+        st.markdown("#### 🥧 국면별 비중 (AMLS v4.4 기준)")
         c1, c2, c3, c4 = st.columns(4)
         def get_w(reg):
             if reg == 1: return {'TQQQ':30, 'SOXL/USD':20, 'QLD':20, 'SSO':15, 'GLD':10, 'SPY':5}
@@ -468,26 +536,10 @@ def page_amls_backtest():
             fig_p.update_traces(textinfo='label+percent', textposition='inside', textfont=dict(color="#ffffff" if current_theme in ["1930년대 타자기 테마", "월스트리트 저널 테마", "블룸버그 터미널 테마"] else TEXT_COLOR, size=11))
             col.plotly_chart(fig_p, use_container_width=True)
 
-        st.markdown("#### 📈 자산 곡선 및 낙폭 (MDD)")
-        fig_eq = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.7, 0.3], vertical_spacing=0.05)
-        for s in strats:
-            color = C_UP if 'AMLS' in s else (C_SAFE if 'QQQ' in s else C_WARN)
-            fig_eq.add_trace(go.Scatter(x=df.index, y=df[f'{s}_Value'], name=s, line=dict(color=color, width=3 if 'AMLS' in s else 1.5)), row=1, col=1)
-            dd = (df[f'{s}_Value'] / df[f'{s}_Value'].cummax() - 1) * 100
-            fig_eq.add_trace(go.Scatter(x=df.index, y=dd, name=f'{s} DD', line=dict(color=color, width=1.5)), row=2, col=1)
-        
-        fig_eq.add_trace(go.Scatter(x=df.index, y=df['Invested'], name='원금', line=dict(color='#888', dash='dot')), row=1, col=1)
-        fig_eq.add_hline(y=-30, line_dash="dash", line_color="red", row=2, col=1)
-        
-        cust_eq = THEME_LAYOUT.copy()
-        cust_eq.update(height=600, hovermode="x unified", margin=dict(l=0,r=0,t=20,b=0))
-        fig_eq.update_layout(**cust_eq)
-        fig_eq.update_yaxes(type="log", row=1, col=1)
-        st.plotly_chart(fig_eq, use_container_width=True)
 
     with tab2:
-        st.markdown("#### 🗓️ AMLS v4.3 월별 수익률 캘린더 (%)")
-        monthly_df = df['AMLS v4.3_Value'].resample('M').last().pct_change() * 100
+        st.markdown("#### 🗓️ AMLS v4.4 월별 수익률 캘린더 (%)")
+        monthly_df = df['AMLS v4.4_Value'].resample('M').last().pct_change() * 100
         monthly_df = monthly_df.dropna()
         
         heatmap_data = pd.DataFrame({'Year': monthly_df.index.year, 'Month': monthly_df.index.month, 'Return': monthly_df.values})
@@ -574,24 +626,24 @@ def make_portfolio_page(acc_name):
                 elif q >= m200 and m50 >= m200 and v < 25: target_regimes.append(1)
                 else: target_regimes.append(2)
                 
-            current_v4_3 = 3; pend_v4_3 = None; cnt_v4_3 = 0; actual_regime_v4_3 = []
+            current_v4_4 = 3; pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4 = []
             for tr in target_regimes:
-                if tr > current_v4_3: 
-                    current_v4_3 = tr; pend_v4_3 = None; cnt_v4_3 = 0; actual_regime_v4_3.append(current_v4_3)
-                elif tr < current_v4_3:
-                    if tr == pend_v4_3:
-                        cnt_v4_3 += 1
-                        if cnt_v4_3 >= 5: current_v4_3 = tr; pend_v4_3 = None; cnt_v4_3 = 0; actual_regime_v4_3.append(current_v4_3)
-                        else: actual_regime_v4_3.append(current_v4_3 - 1)
+                if tr > current_v4_4: 
+                    current_v4_4 = tr; pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4.append(current_v4_4)
+                elif tr < current_v4_4:
+                    if tr == pend_v4_4:
+                        cnt_v4_4 += 1
+                        if cnt_v4_4 >= 5: current_v4_4 = tr; pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4.append(current_v4_4)
+                        else: actual_regime_v4_4.append(current_v4_4 - 1)
                     else: 
-                        pend_v4_3 = tr; cnt_v4_3 = 1; actual_regime_v4_3.append(current_v4_3 - 1)
+                        pend_v4_4 = tr; cnt_v4_4 = 1; actual_regime_v4_4.append(current_v4_4 - 1)
                 else: 
-                    pend_v4_3 = None; cnt_v4_3 = 0; actual_regime_v4_3.append(current_v4_3)
+                    pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4.append(current_v4_4)
                     
-            applied_series = pd.Series(actual_regime_v4_3, index=data.index).shift(1).bfill()
+            applied_series = pd.Series(actual_regime_v4_4, index=data.index).shift(1).bfill()
             applied_reg = int(applied_series.iloc[-1])
             target_reg = int(target_regimes[-1])
-            is_waiting = (pend_v4_3 is not None and target_reg < current_v4_3)
+            is_waiting = (pend_v4_4 is not None and target_reg < current_v4_4)
 
             current_reg = applied_series.iloc[-1]
             regime_duration = 0
@@ -617,7 +669,7 @@ def make_portfolio_page(acc_name):
             except: current_usdkrw = 0.0
 
             return {
-                'regime': applied_reg, 'target_regime': target_reg, 'is_waiting': is_waiting, 'wait_days': cnt_v4_3,
+                'regime': applied_reg, 'target_regime': target_reg, 'is_waiting': is_waiting, 'wait_days': cnt_v4_4,
                 'regime_duration': regime_duration, 'regime_direction': regime_direction, 'entry_grade': entry_grade,
                 'vix': today['^VIX'], 'qqq': today['QQQ'], 'ma200': ma200_s.iloc[-1], 'ma50': ma50_s.iloc[-1],
                 'smh': today['SMH'], 'smh_ma50': smh_ma50_s.iloc[-1], 'smh_3m_ret': smh_3m_ret_s.iloc[-1], 'smh_rsi': smh_rsi_s.iloc[-1],
@@ -787,7 +839,7 @@ def make_portfolio_page(acc_name):
                 st.write("")
                 
             elif block == "⚡ 시스템 분석관":
-                st.markdown("#### ⚡ AI 시스템 분석관")
+                st.markdown("#### ⚡ AI 시스템 분석관 (AMLS v4.4)")
                 app_reg = ms['regime']; tgt_reg = ms['target_regime']; is_wait = ms['is_waiting']; wait_d = ms['wait_days']; dur = ms['regime_duration']
                 entry_g = ms['entry_grade']; direction = ms['regime_direction']
                 
@@ -826,7 +878,7 @@ def make_portfolio_page(acc_name):
                 elif direction == 'ascending': summ = "상승 추세 안정화. 계획된 비중대로 편안하게 분할 매수하십시오."
                 elif direction == 'descending' and dur <= 20: summ = "하향 전환 발생. 추가 하락 우려가 있으므로 신규 매수를 전면 보류하십시오."
                 elif direction == 'descending': summ = "장기 하락 중. 완벽한 상승 신호가 뜰 때까지 현금을 대기하십시오."
-                elif dur > 60: summ = "레짐 장기화로 추세 반전 리스크 누적. 보수적인 소규모 분할 진입을 추천합니다."
+                elif dur > 60: summ = "레짐 장기화로 추세 반전 리스크 누적. 보수적인 분할 진입을 추천합니다."
                 else: summ = "레짐 안정적. 시스템 룰에 맞춰 평소처럼 자금을 정상 운용하십시오."
 
                 if mobile_mode:
@@ -875,7 +927,7 @@ def make_portfolio_page(acc_name):
                 st.write("")
 
             elif block == "💼 포트폴리오 & 리밸런싱":
-                st.markdown("#### 💼 자산 기입 및 리밸런싱")
+                st.markdown("#### 💼 자산 기입 및 리밸런싱 (AMLS v4.4)")
                 
                 csv_col1, csv_col2 = st.columns(2)
                 with csv_col1:
@@ -940,7 +992,6 @@ def make_portfolio_page(acc_name):
                 status_d = []
                 smh_cond = (ms['smh'] > ms['smh_ma50']) and (ms['smh_3m_ret'] > 0.05) and (ms['smh_rsi'] > 50)
                 
-                # 🔥 업데이트: R1 SPY 5%, R2 SPY 5% + GLD 25% 적용
                 def get_w_local(reg, usx):
                     w = {t: 0.0 for t in REQUIRED_TICKERS}; semi = 'SOXL' if usx else 'USD'
                     if reg == 1: w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'], w['SPY'] = 0.30, 0.20, 0.20, 0.15, 0.10, 0.05
@@ -950,7 +1001,7 @@ def make_portfolio_page(acc_name):
                     return {k: v for k, v in w.items() if v > 0}
                     
                 target_w_dict = get_w_local(ms['regime'], smh_cond)
-                copy_text_lines = ["📋 [AMLS 기계적 리밸런싱 지침]"]
+                copy_text_lines = ["📋 [AMLS v4.4 기계적 리밸런싱 지침]"]
                 
                 all_tkrs = set([t for t in asset_vals.keys()] + list(target_w_dict.keys()))
                 for tkr in all_tkrs:
@@ -1064,7 +1115,7 @@ def page_manage_accounts():
 # --- 페이지 구성: 전략 명세서 ---
 def page_strategy_specification():
     st.title("📜 전략 명세서")
-    st.markdown("### 🏷️ 버전: v4.3 (SPY 편입)")
+    st.markdown("### 🏷️ 버전: AMLS v4.4")
     st.table(pd.DataFrame({"우선순위": ["1", "2", "3", "4"], "조건": ["VIX > 40", "QQQ < 200일선", "정배열 & VIX < 25", "그 외 조건"], "레짐": ["R4 (위기)", "R3 (약세)", "R1 (강세)", "R2 (보통)"]}))
 
 
