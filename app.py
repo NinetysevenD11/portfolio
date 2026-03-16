@@ -140,10 +140,9 @@ elif current_theme == "월스트리트 저널 테마":
     C_UP = "#006400"; C_DOWN = "#8B0000"; C_WARN = "#B8860B"; C_SAFE = "#000080"
     BASE_CHART_COLORS = {'TQQQ':'#8B0000', 'SOXL':'#556b2f', 'USD':'#2F4F4F', 'QLD':'#B8860B', 'SSO':'#DAA520', 'QQQ':'#000080', 'SPY':'#4682B4', 'GLD':'#BDB76B', 'BTC-USD':'#f7931a', 'CASH':'#696969'}
 
-# 🔥 칠판 테마 디테일 업그레이드 (나무 테두리, 글씨 크기 1.3배, 수납공간)
 elif current_theme == "학교 칠판 테마":
-    DEFAULT_TEXT_COLOR = "#ffffff"; TEXT_SUB = "#dcdcdc"
-    PANEL_BG = "rgba(25, 45, 35, 0.6)"; PANEL_BORDER = "2px dashed rgba(255, 255, 255, 0.6)"; PANEL_RADIUS = "4px"
+    DEFAULT_TEXT_COLOR = "#fdfdfd"; TEXT_SUB = "#dcdcdc"
+    PANEL_BG = "rgba(45, 68, 54, 0.85)"; PANEL_BORDER = "2px dashed #a8b5a3"; PANEL_RADIUS = "8px"
     WIDGET_THEME = "dark"
     C_UP = "#ff6961"; C_DOWN = "#77dd77"; C_WARN = "#fdfd96"; C_SAFE = "#aec6cf"
     BASE_CHART_COLORS = {'TQQQ':'#ff6961', 'SOXL':'#cbaacb', 'USD':'#aec6cf', 'QLD':'#fdfd96', 'SSO':'#ffb347', 'QQQ':'#aec6cf', 'SPY':'#77dd77', 'GLD':'#fdfd96', 'BTC-USD':'#ffb347', 'CASH':'#dcdcdc'}
@@ -206,7 +205,6 @@ def apply_custom_css():
         .sidebar-link:hover {{ background-color: #DDDDDD; }}
         """
     elif current_theme == "학교 칠판 테마":
-        # 🔥 리얼 칠판 감성 극대화 및 수납공간 구현
         css_base += f"""
         [data-testid="stAppViewContainer"] {{ 
             background-color: #354a3a !important; 
@@ -280,7 +278,7 @@ def get_market_status():
         if pd.isna(m200): target_regimes.append(2); continue
         if v > 40: target_regimes.append(4)
         elif q < m200: target_regimes.append(3)
-        elif q >= m200 and m50 >= m200 and vix < 25: target_regimes.append(1)
+        elif q >= m200 and m50 >= m200 and v < 25: target_regimes.append(1)  # 🔥 v 로 완벽하게 수정됨!
         else: target_regimes.append(2)
         
     current_v4_4 = 3; pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4 = []
@@ -585,10 +583,10 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지: AI 시스템 분석관 (🔥 트렌디 위젯 카드 유지)
+# [6] 페이지: AI 시스템 분석관
 # =====================================================================
 def make_metric_card(title, value, subtitle, sub_color):
-    """깔끔한 모던 카드 위젯 (프로그레스바 제거로 심플함 강조)"""
+    """깔끔한 모던 카드 위젯"""
     return f"""
     <div style="background:{PANEL_BG}; border:{PANEL_BORDER}; border-radius:16px; padding:24px; min-height:150px; display:flex; flex-direction:column; justify-content:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
         <div style="color:{TEXT_SUB}; font-size:0.95rem; font-weight:600; margin-bottom:12px;">{title}</div>
@@ -626,10 +624,10 @@ def page_ai_analyst():
     rsi_stat_txt = "통과" if ms['smh_rsi'] > 50 else "미달"
     soxl_res = "승인" if (smh_c > smh_ma50_c and ms['smh_3m_ret'] > 0.05 and ms['smh_rsi'] > 50) else "보류"
 
-    if app_reg == 1: reg_t = "[R1: 완벽 강세장]"; reg_d = f"VIX({float(vix_c):.1f}) 안정권 및 나스닥({float(qqq_c):.0f}) 정배열 유지. 3배 레버리지를 가동해 상승분을 캡처하십시오."
-    elif app_reg == 2: reg_t = "[R2: 조정/경계]"; reg_d = f"장기 추세는 유효하나 VIX({float(vix_c):.1f})가 상승했거나 단기 모멘텀이 약화. 레버리지를 2배수 이하로 축소하십시오."
-    elif app_reg == 3: reg_t = "[R3: 장기 하락장]"; reg_d = f"나스닥({float(qqq_c):.0f})이 200일선({float(ma200_c):.0f})을 하향 이탈. 레버리지 청산 후 GLD로 방어하십시오."
-    else: reg_t = "[R4: 시스템 패닉]"; reg_d = f"VIX({float(vix_c):.1f}) 40 돌파. 주식을 전량 매도하고 안전자산으로 대피하십시오."
+    if app_reg == 1: reg_t = "[R1: 완벽 강세장]"; reg_d = f"VIX({float(vix_c):.1f}) 안정권 및 나스닥 정배열 유지. 3배 레버리지를 가동해 상승분을 캡처하십시오."
+    elif app_reg == 2: reg_t = "[R2: 조정/경계]"; reg_d = f"장기 추세는 유효하나 VIX가 상승했거나 단기 모멘텀이 약화. 레버리지를 2배수 이하로 축소하십시오."
+    elif app_reg == 3: reg_t = "[R3: 장기 하락장]"; reg_d = f"나스닥이 200일선을 하향 이탈. 레버리지 청산 후 GLD로 방어하십시오."
+    else: reg_t = "[R4: 시스템 패닉]"; reg_d = f"VIX 40 돌파. 주식을 전량 매도하고 안전자산으로 대피하십시오."
 
     dir_map = {"ascending": "상향 전환", "descending": "하향 전환", "stable": "현재 상태 유지"}; dir_kr = dir_map.get(direction, "-")
     if direction == 'ascending' and dur <= 10: summ = "상향 전환 직후 골든타임. 진입 비중 확대를 적극 권장합니다."
@@ -651,21 +649,21 @@ def page_ai_analyst():
     vix_f = float(vix_c)
     
     vix_color = C_SAFE if vix_f < 25 else (C_WARN if vix_f < 40 else C_DOWN)
-    vix_sub = "안정권 (Stable)" if vix_f < 25 else ("경계 구간 (Caution)" if vix_f < 40 else "위험권 (Panic)")
+    vix_sub = "✅ 안정권 (Stable)" if vix_f < 25 else ("⚠️ 경계 구간 (Caution)" if vix_f < 40 else "🚨 위험권 (Panic)")
     gap_color = C_UP if gap_pct > 0 else C_DOWN
-    gap_sub = "장기 추세 상회 (강세)" if gap_pct > 0 else "장기 추세 하회 (약세)"
+    gap_sub = "📈 장기 추세 상회 (강세)" if gap_pct > 0 else "📉 장기 추세 하회 (약세)"
     rsi_color = C_DOWN if rsi_val < 30 else (C_WARN if rsi_val < 50 else C_UP)
-    rsi_sub = "과매도 (침체)" if rsi_val < 30 else ("중립 (보통)" if rsi_val < 50 else ("과열 (강세)" if rsi_val > 70 else "양호 (상승)"))
+    rsi_sub = "🧊 과매도 (침체)" if rsi_val < 30 else ("➖ 중립 (보통)" if rsi_val < 50 else ("🔥 과열 (강세)" if rsi_val > 70 else "↗️ 양호 (상승)"))
     
     if mobile_mode:
-        st.markdown(make_metric_card("📉 시장 공포지수 (VIX)", f"{vix_f:.1f}", vix_sub, vix_color), unsafe_allow_html=True); st.write("")
-        st.markdown(make_metric_card("📈 나스닥 200일선 이격도", f"{gap_pct:+.1f}%", gap_sub, gap_color), unsafe_allow_html=True); st.write("")
-        st.markdown(make_metric_card("🔥 반도체(SMH) RSI", f"{rsi_val:.1f}", rsi_sub, rsi_color), unsafe_allow_html=True)
+        st.markdown(make_metric_card("시장 공포지수 (VIX)", f"{vix_f:.1f}", vix_sub, vix_color), unsafe_allow_html=True); st.write("")
+        st.markdown(make_metric_card("나스닥 200일선 이격도", f"{gap_pct:+.1f}%", gap_sub, gap_color), unsafe_allow_html=True); st.write("")
+        st.markdown(make_metric_card("반도체(SMH) RSI", f"{rsi_val:.1f}", rsi_sub, rsi_color), unsafe_allow_html=True)
     else:
         col1, col2, col3 = st.columns(3)
-        with col1: st.markdown(make_metric_card("📉 시장 공포지수 (VIX)", f"{vix_f:.1f}", vix_sub, vix_color), unsafe_allow_html=True)
-        with col2: st.markdown(make_metric_card("📈 나스닥 200일선 이격도", f"{gap_pct:+.1f}%", gap_sub, gap_color), unsafe_allow_html=True)
-        with col3: st.markdown(make_metric_card("🔥 반도체(SMH) RSI", f"{rsi_val:.1f}", rsi_sub, rsi_color), unsafe_allow_html=True)
+        with col1: st.markdown(make_metric_card("시장 공포지수 (VIX)", f"{vix_f:.1f}", vix_sub, vix_color), unsafe_allow_html=True)
+        with col2: st.markdown(make_metric_card("나스닥 200일선 이격도", f"{gap_pct:+.1f}%", gap_sub, gap_color), unsafe_allow_html=True)
+        with col3: st.markdown(make_metric_card("반도체(SMH) RSI", f"{rsi_val:.1f}", rsi_sub, rsi_color), unsafe_allow_html=True)
     
     st.write(""); st.write("")
     st.markdown("#### 🤖 AI 전략 분석관 Report")
