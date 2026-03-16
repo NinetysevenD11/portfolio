@@ -158,11 +158,9 @@ for tkr in REQUIRED_TICKERS + ['BTC-USD']:
 TEXT_COLOR = st.session_state['settings']["text_color"]
 COLOR_PALETTE = st.session_state['settings']["chart_colors"]
 
-# 공통 폰트 설정
 THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Pretendard, -apple-system, sans-serif", color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0))
 
 def apply_custom_css():
-    # 모든 테마에 Pretendard 폰트 강제 적용
     css_base = f"""
     @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
     * {{ font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important; letter-spacing: -0.02em; }}
@@ -171,7 +169,6 @@ def apply_custom_css():
     css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; min-height: 100%; height: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.03); backdrop-filter: blur(10px); word-wrap: break-word; }}"
     
     if current_theme == "애플 테마":
-        # 애플 테마 배경색 짙게 수정 (Space Gray 느낌 그라데이션)
         css_base += f"""
         .stApp {{ background-color: #e5e5ea; background-image: radial-gradient(circle at top right, #d1d1d6 0%, #e5e5ea 40%, #d1d1d6 100%); color: {TEXT_COLOR}; }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background: {PANEL_BG}; backdrop-filter: blur(20px); border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.05); padding: 1.5rem; height: 100%; }}
@@ -649,7 +646,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지 구성: AI 시스템 분석관 (UI 100% 트렌디 개편본)
+# [6] 페이지 구성: AI 시스템 분석관 (UI 글씨 겹침 해결 & 트렌디 개편본)
 # =====================================================================
 def page_ai_analyst():
     st.title("⚡ AI 시스템 분석관")
@@ -715,7 +712,7 @@ def page_ai_analyst():
     quotes_r4 = ["남들이 겁을 먹고 있을 때 욕심을 부려라. - 워런 버핏", "공포가 절정에 달했을 때가 가장 안전한 매수 시점이다. - 존 템플턴"]
     q_list = quotes_r1 if ms['regime']==1 else (quotes_r2 if ms['regime']==2 else (quotes_r3 if ms['regime']==3 else quotes_r4))
 
-    # 🔥 트렌디한 모던 원형 게이지 차트 (투박함 제거)
+    # 🔥 트렌디한 모던 원형 게이지 (텍스트 겹침 해결)
     st.markdown("#### 📊 시장 핵심 지표 판독기")
     
     if mobile_mode:
@@ -728,10 +725,11 @@ def page_ai_analyst():
         col1, col2, col3 = st.columns(3)
         with col1:
             with st.container(border=True):
+                # 텍스트는 밖으로 빼서 st.markdown으로 렌더링 (겹침 원천 차단)
+                st.markdown(f"<div style='text-align:center; font-weight:bold; font-size:1.1rem; color:{TEXT_SUB}; margin-bottom:5px;'>시장 공포지수 (VIX)</div>", unsafe_allow_html=True)
                 fig_vix = go.Figure(go.Indicator(
                     mode="gauge+number", value=vix_c,
-                    title={'text': "시장 공포지수 (VIX)", 'font': {'size': 14, 'color': TEXT_SUB}},
-                    number={'font': {'size': 36, 'color': TEXT_COLOR, 'family': "Pretendard"}, 'valueformat': '.1f'},
+                    number={'font': {'size': 38, 'color': TEXT_COLOR, 'family': "Pretendard"}, 'valueformat': '.1f'},
                     gauge={
                         'axis': {'range': [0, 80], 'visible': False},
                         'bar': {'color': C_UP if vix_c < 25 else (C_WARN if vix_c < 40 else C_DOWN), 'thickness': 0.15},
@@ -744,16 +742,17 @@ def page_ai_analyst():
                         'threshold': {'line': {'color': "red", 'width': 2}, 'thickness': 0.75, 'value': 40}
                     }
                 ))
-                fig_vix.update_layout(height=200, margin=dict(t=50, b=10, l=10, r=10), paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Pretendard, sans-serif"))
+                # 여백 극도로 최소화하여 콤팩트하게 렌더링
+                fig_vix.update_layout(height=160, margin=dict(t=10, b=0, l=10, r=10), paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Pretendard, sans-serif"))
                 st.plotly_chart(fig_vix, use_container_width=True, config={'displayModeBar': False})
 
         with col2:
             with st.container(border=True):
                 gap_pct = (qqq_c / ma200_c - 1) * 100
+                st.markdown(f"<div style='text-align:center; font-weight:bold; font-size:1.1rem; color:{TEXT_SUB}; margin-bottom:5px;'>나스닥 200일선 이격도</div>", unsafe_allow_html=True)
                 fig_qqq = go.Figure(go.Indicator(
                     mode="gauge+number", value=gap_pct,
-                    title={'text': "나스닥 200일선 이격도", 'font': {'size': 14, 'color': TEXT_SUB}},
-                    number={'font': {'size': 36, 'color': TEXT_COLOR, 'family': "Pretendard"}, 'valueformat': '+.1f', 'suffix': '%'},
+                    number={'font': {'size': 38, 'color': TEXT_COLOR, 'family': "Pretendard"}, 'valueformat': '+.1f', 'suffix': '%'},
                     gauge={
                         'axis': {'range': [-30, 30], 'visible': False},
                         'bar': {'color': C_UP if gap_pct > 0 else C_DOWN, 'thickness': 0.15},
@@ -765,15 +764,15 @@ def page_ai_analyst():
                         'threshold': {'line': {'color': "orange", 'width': 2}, 'thickness': 0.75, 'value': 0}
                     }
                 ))
-                fig_qqq.update_layout(height=200, margin=dict(t=50, b=10, l=10, r=10), paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Pretendard, sans-serif"))
+                fig_qqq.update_layout(height=160, margin=dict(t=10, b=0, l=10, r=10), paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Pretendard, sans-serif"))
                 st.plotly_chart(fig_qqq, use_container_width=True, config={'displayModeBar': False})
 
         with col3:
             with st.container(border=True):
+                st.markdown(f"<div style='text-align:center; font-weight:bold; font-size:1.1rem; color:{TEXT_SUB}; margin-bottom:5px;'>반도체(SMH) 단기 RSI</div>", unsafe_allow_html=True)
                 fig_rsi = go.Figure(go.Indicator(
                     mode="gauge+number", value=ms['smh_rsi'],
-                    title={'text': "반도체(SMH) 단기 RSI", 'font': {'size': 14, 'color': TEXT_SUB}},
-                    number={'font': {'size': 36, 'color': TEXT_COLOR, 'family': "Pretendard"}, 'valueformat': '.1f'},
+                    number={'font': {'size': 38, 'color': TEXT_COLOR, 'family': "Pretendard"}, 'valueformat': '.1f'},
                     gauge={
                         'axis': {'range': [0, 100], 'visible': False},
                         'bar': {'color': "#3498db" if ms['smh_rsi'] > 50 else C_DOWN, 'thickness': 0.15},
@@ -786,12 +785,12 @@ def page_ai_analyst():
                         'threshold': {'line': {'color': "green", 'width': 2}, 'thickness': 0.75, 'value': 50}
                     }
                 ))
-                fig_rsi.update_layout(height=200, margin=dict(t=50, b=10, l=10, r=10), paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Pretendard, sans-serif"))
+                fig_rsi.update_layout(height=160, margin=dict(t=10, b=0, l=10, r=10), paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Pretendard, sans-serif"))
                 st.plotly_chart(fig_rsi, use_container_width=True, config={'displayModeBar': False})
 
     st.write("")
 
-    # 🔥 네이티브 컨테이너 기반의 유연한 리포트 (글씨 잘림 100% 완벽 방지)
+    # 🔥 네이티브 컨테이너 기반의 유연한 리포트 (글씨 잘림 방지 유지)
     st.markdown("#### 🤖 AI 전략 분석관 Report")
     with st.container(border=True):
         st.markdown(f"### 현재 국면: {reg_t}")
@@ -809,7 +808,6 @@ def page_ai_analyst():
 
     st.write("")
     
-    # 🔥 유연한 2분할 컨테이너 (SOXL / 신규 자금 투입 가이드)
     col_soxl, col_entry = st.columns(2)
     with col_soxl:
         with st.container(border=True):
@@ -1258,7 +1256,7 @@ with st.sidebar.expander("💾 백업 및 복구"):
         st.session_state['accounts'] = json.load(up_f)
         save_accounts_data(st.session_state['accounts']); st.rerun()
 
-# 🔥 좌측 카테고리 (AI 시스템 분석관 분리 적용 완료)
+# 🔥 좌측 카테고리 (AI 시스템 분석관 등록 완료)
 pages = {
     "시스템": [
         st.Page(page_market_dashboard, title="마켓 터미널", icon="🌐"), 
