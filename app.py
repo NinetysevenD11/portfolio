@@ -26,11 +26,15 @@ SETTINGS_FILE = "amls_settings_v12.json"
 ACCOUNTS_FILE = "amls_multi_accounts.json"
 REQUIRED_TICKERS = ["TQQQ", "QLD", "QQQ", "SOXL", "USD", "SSO", "SPY", "GLD", "CASH"]
 
+# 🔥 수정 2: 삭제된 엑셀 테마 잔재 강제 리셋 (에러 방지)
 def load_settings():
     if os.path.exists(SETTINGS_FILE):
         try:
             with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                s = json.load(f)
+                if s.get("theme") not in ["애플 테마", "1930년대 타자기 테마", "월스트리트 저널 테마", "학교 칠판 테마"]:
+                    s["theme"] = "애플 테마"
+                return s
         except: pass
     return {"theme": "애플 테마"}
 
@@ -107,10 +111,9 @@ if needs_save: save_accounts_data(st.session_state['accounts'])
 
 
 # =====================================================================
-# [2] 동적 테마 및 레이아웃 설정 (엑셀 삭제, 학교 칠판 테마 추가!)
+# [2] 동적 테마 및 레이아웃 설정
 # =====================================================================
 current_theme = st.session_state['settings'].get("theme", "애플 테마")
-# 🔥 엑셀 제거, 칠판 테마 추가
 theme_list = ["애플 테마", "1930년대 타자기 테마", "월스트리트 저널 테마", "학교 칠판 테마"]
 
 if current_theme not in theme_list:
@@ -137,7 +140,6 @@ elif current_theme == "월스트리트 저널 테마":
     C_UP = "#006400"; C_DOWN = "#8B0000"; C_WARN = "#B8860B"; C_SAFE = "#000080"
     BASE_CHART_COLORS = {'TQQQ':'#8B0000', 'SOXL':'#556b2f', 'USD':'#2F4F4F', 'QLD':'#B8860B', 'SSO':'#DAA520', 'QQQ':'#000080', 'SPY':'#4682B4', 'GLD':'#BDB76B', 'BTC-USD':'#f7931a', 'CASH':'#696969'}
 
-# 🔥 신규 칠판 테마 색상 설정
 elif current_theme == "학교 칠판 테마":
     DEFAULT_TEXT_COLOR = "#fdfdfd"; TEXT_SUB = "#dcdcdc"
     PANEL_BG = "rgba(45, 68, 54, 0.85)"; PANEL_BORDER = "2px dashed #a8b5a3"; PANEL_RADIUS = "8px"
@@ -159,12 +161,10 @@ for tkr in REQUIRED_TICKERS + ['BTC-USD']:
 TEXT_COLOR = st.session_state['settings']["text_color"]
 COLOR_PALETTE = st.session_state['settings']["chart_colors"]
 
-# 공통 폰트 설정 (칠판 테마일 경우 분필 폰트 적용)
 chart_font = "Nanum Pen Script, cursive" if current_theme == "학교 칠판 테마" else "Pretendard, -apple-system, sans-serif"
 THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family=chart_font, color=TEXT_COLOR, size=16 if current_theme == "학교 칠판 테마" else 13), margin=dict(l=0, r=0, t=30, b=0))
 
 def apply_custom_css():
-    # 🔥 메뉴 아이콘(arrow_light) 깨짐 버그 원천 차단: 텍스트 영역에만 폰트를 적용
     css_base = f"""
     @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
     @import url('https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap');
@@ -200,7 +200,6 @@ def apply_custom_css():
         .sidebar-link:hover {{ background-color: #DDDDDD; }}
         """
     elif current_theme == "학교 칠판 테마":
-        # 🔥 신규: 학교 칠판 테마 배경 및 분필 감성 CSS
         css_base += f"""
         [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
         .stApp {{ color: {TEXT_COLOR} !important; background-color: #26382a; background-image: url('https://www.transparenttextures.com/patterns/black-board.png'); font-size: 1.1rem; }}
@@ -324,6 +323,17 @@ def get_regime_chart_data():
         c_df['MA50'] = c_df['QQQ'].rolling(50).mean()
         c_df['MA200'] = c_df['QQQ'].rolling(200).mean()
         return c_df.dropna().tail(252)
+    except:
+        return pd.DataFrame()
+
+# 🔥 수정 1: 누락되었던 get_dashboard_data 함수 복구
+@st.cache_data(ttl=1800)
+def get_dashboard_data():
+    tickers = ['^GSPC', '^IXIC', '^VIX', 'USDKRW=X']
+    try:
+        df = yf.download(tickers, start=datetime.today()-timedelta(days=365), progress=False)['Close'].ffill()
+        if df.empty or len(df) < 2: return pd.DataFrame()
+        return df
     except:
         return pd.DataFrame()
 
@@ -654,10 +664,10 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지 구성: AI 시스템 분석관 (트렌디 위젯 UI 및 버그 해결본)
+# [6] 페이지 구성: AI 시스템 분석관 (트렌디 위젯 UI)
 # =====================================================================
 def make_metric_card(title, value, subtitle, prog_pct, bar_color):
-    """HTML 기반의 반응형 트렌디 카드 위젯 (글씨 겹침 원천 차단)"""
+    """트렌디하고 겹침 없는 HTML 카드 위젯"""
     return f"""
     <div style="background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: center; word-wrap: break-word; min-height: 140px;">
         <div style="color: {TEXT_COLOR}; font-size: 0.95rem; font-weight: 600; opacity: 0.8; margin-bottom: 8px;">{title}</div>
@@ -733,7 +743,6 @@ def page_ai_analyst():
     quotes_r4 = ["남들이 겁을 먹고 있을 때 욕심을 부려라. - 워런 버핏", "공포가 절정에 달했을 때가 가장 안전한 매수 시점이다. - 존 템플턴"]
     q_list = quotes_r1 if ms['regime']==1 else (quotes_r2 if ms['regime']==2 else (quotes_r3 if ms['regime']==3 else quotes_r4))
 
-    # 🔥 트렌디 HTML 위젯 카드 (글씨 겹침 완전 차단)
     st.markdown("#### 📊 시장 핵심 지표 판독기")
     
     gap_pct = (qqq_c / ma200_c - 1) * 100
@@ -751,11 +760,9 @@ def page_ai_analyst():
     rsi_stat = "상승 모멘텀 (과열)" if rsi_val > 70 else ("하락 모멘텀 (침체)" if rsi_val < 30 else "보통 (중립)")
     
     if mobile_mode:
-        st.markdown(make_metric_card("📉 시장 공포지수 (VIX)", f"{vix_c:.1f}", vix_stat, vix_prog, vix_color), unsafe_allow_html=True)
-        st.write("")
-        st.markdown(make_metric_card("📈 나스닥 200일선 이격도", f"{gap_pct:+.1f}%", gap_stat, gap_prog, gap_color), unsafe_allow_html=True)
-        st.write("")
-        st.markdown(make_metric_card("🔥 반도체(SMH) 단기 RSI", f"{rsi_val:.1f}", rsi_stat, rsi_val, rsi_color), unsafe_allow_html=True)
+        st.components.v1.html(make_metric_card("📉 시장 공포지수 (VIX)", f"{vix_c:.1f}", vix_stat, vix_prog, vix_color), height=140)
+        st.components.v1.html(make_metric_card("📈 나스닥 200일선 이격도", f"{gap_pct:+.1f}%", gap_stat, gap_prog, gap_color), height=140)
+        st.components.v1.html(make_metric_card("🔥 반도체(SMH) 단기 RSI", f"{rsi_val:.1f}", rsi_stat, rsi_val, rsi_color), height=140)
     else:
         col1, col2, col3 = st.columns(3)
         with col1: st.markdown(make_metric_card("📉 시장 공포지수 (VIX)", f"{vix_c:.1f}", vix_stat, vix_prog, vix_color), unsafe_allow_html=True)
