@@ -100,7 +100,6 @@ if needs_save: save_accounts_data(st.session_state['accounts'])
 # =====================================================================
 # [2] 동적 테마 엔진 (애플 테마로 일원화)
 # =====================================================================
-# 테마 설정을 애플 테마 하나로 일원화 (기존 변수 호환성 유지)
 TEXT_COLOR = "#1d1d1f"; TEXT_SUB = "#8e8e93"
 PANEL_BG = "rgba(255,255,255,0.65)"; PANEL_BORDER = "1px solid rgba(255,255,255,0.5)"; PANEL_RADIUS = "16px"
 WIDGET_THEME = "light"
@@ -260,7 +259,7 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
 
 
 # =====================================================================
-# [4] 페이지 구성: 글로벌 마켓 대시보드
+# [4] 페이지 구성: 글로벌 마켓 대시보드 (히트맵 트레이딩뷰 위젯 적용)
 # =====================================================================
 def page_market_dashboard():
     st.title("🌐 매크로 터미널")
@@ -305,17 +304,62 @@ def page_market_dashboard():
 
     with col_right:
         with st.container(border=True):
-            st.markdown("##### 🗺️ S&P 500 히트맵")
-            components.html(f"""<div style="border-radius: {PANEL_RADIUS}; overflow: hidden; height: 100%;">
-<iframe src="https://www.tradingview.com/embed-widget-stock-heatmap/?locale=kr#%7B%22dataSource%22%3A%22SPX500%22%2C%22blockSize%22%3A%22market_cap_basic%22%2C%22blockColor%22%3A%22change%22%2C%22grouping%22%3A%22sector%22%2C%22colorTheme%22%3A%22{WIDGET_THEME}%22%7D" width="100%" height="450" frameborder="0"></iframe>
-</div>""", height=460)
+            st.markdown("##### 🗺️ 글로벌 증시 히트맵")
+            tab_sp, tab_ndx = st.tabs(["S&P 500", "NASDAQ 100"])
+            
+            with tab_sp:
+                components.html(f"""
+                <div class="tradingview-widget-container">
+                  <div class="tradingview-widget-container__widget"></div>
+                  <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js" async>
+                  {{
+                  "exchanges": [],
+                  "dataSource": "SPX500",
+                  "grouping": "sector",
+                  "blockSize": "market_cap_basic",
+                  "blockColor": "change",
+                  "locale": "kr",
+                  "colorTheme": "{WIDGET_THEME}",
+                  "hasTopBar": false,
+                  "isDataSetEnabled": false,
+                  "isZoomEnabled": true,
+                  "hasSymbolTooltip": true,
+                  "width": "100%",
+                  "height": "400"
+                }}
+                  </script>
+                </div>
+                """, height=400)
+            with tab_ndx:
+                components.html(f"""
+                <div class="tradingview-widget-container">
+                  <div class="tradingview-widget-container__widget"></div>
+                  <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js" async>
+                  {{
+                  "exchanges": [],
+                  "dataSource": "NDX",
+                  "grouping": "sector",
+                  "blockSize": "market_cap_basic",
+                  "blockColor": "change",
+                  "locale": "kr",
+                  "colorTheme": "{WIDGET_THEME}",
+                  "hasTopBar": false,
+                  "isDataSetEnabled": false,
+                  "isZoomEnabled": true,
+                  "hasSymbolTooltip": true,
+                  "width": "100%",
+                  "height": "400"
+                }}
+                  </script>
+                </div>
+                """, height=400)
 
 
 # =====================================================================
 # [5] 페이지 구성: AMLS 백테스트
 # =====================================================================
 def page_amls_backtest():
-    st.title("🦅 AMLS v4.4 시뮬레이터")
+    st.title("🦅 V4.4 전략 시뮬레이터")
 
     st.sidebar.header("⚙️ 시뮬레이션 설정")
     BACKTEST_START = st.sidebar.date_input("시작일", datetime(2018, 1, 1))
@@ -324,7 +368,7 @@ def page_amls_backtest():
     MONTHLY_CONTRIBUTION = st.sidebar.number_input("월 적립금 ($)", value=2000, step=500)
     REBAL_FREQ = st.sidebar.selectbox("🔄 리밸런싱 주기", ["월 1회", "주 1회 (5거래일)", "2주 1회 (10거래일)", "3주 1회 (15거래일)"], index=0)
 
-    with st.spinner('최신 v4.4 엔진으로 과거 데이터를 분석 중입니다...'):
+    with st.spinner('과거 데이터를 분석 중입니다...'):
         df, logs, tickers = load_amls_backtest_data(BACKTEST_START, BACKTEST_END, INITIAL_CAPITAL, MONTHLY_CONTRIBUTION, REBAL_FREQ)
     
     def calc_metrics(series, invested_series):
@@ -351,7 +395,7 @@ def page_amls_backtest():
         st.info(f"투입 원금: ${df['Invested'].iloc[-1]:,.0f}")
         st.dataframe(metrics_df, use_container_width=True)
 
-        st.markdown("#### 🥧 v4.4 국면별 비중")
+        st.markdown("#### 🥧 V4.4 국면별 비중")
         c1, c2, c3, c4 = st.columns(4)
         def get_w(reg):
             if reg == 1: return {'TQQQ':30, 'SOXL/USD':20, 'QLD':20, 'SSO':15, 'GLD':10, 'SPY':5}
@@ -391,7 +435,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지 구성: 내 포트폴리오 관리 
+# [6] 페이지 구성: 내 포트폴리오 관리 (V4.4 적용, 체류일수 추가, 톨러런스 적용)
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
@@ -469,6 +513,7 @@ def make_portfolio_page(acc_name):
             # 🔥 현재 체류 일수 및 진입일
             current_reg = applied_series.iloc[-1]
             regime_start_date = entry_dates_series.iloc[-1]
+            # 주말/휴일 제외 영업일 기준 체류일수 계산
             regime_duration = len(data.loc[regime_start_date:])
 
             target_reg = int(target_regimes[-1])
@@ -480,7 +525,7 @@ def make_portfolio_page(acc_name):
             except: current_usdkrw = 0.0
 
             return {
-                'regime': int(current_reg), 'target_regime': target_reg, 'is_waiting': is_waiting, 'wait_days': cnt_v4_4,
+                'regime': int(current_reg), 'target_regime': target_reg, 'is_waiting': is_waiting, 'wait_days': cnt_v4_4, 
                 'regime_duration': regime_duration, 'regime_start_date': regime_start_date,
                 'vix': today['^VIX'], 'qqq': today['QQQ'], 'ma200': ma200_s.iloc[-1], 'ma50': ma50_s.iloc[-1],
                 'smh': today['SMH'], 'smh_ma50': smh_ma50_s.iloc[-1], 'smh_3m_ret': smh_3m_ret_s.iloc[-1], 'smh_rsi': smh_rsi_s.iloc[-1],
@@ -577,7 +622,6 @@ def make_portfolio_page(acc_name):
         st.session_state['accounts'][acc_name]["target_seed"] = auto_seed
         rebal_base = total_val_now if total_val_now > 0 else auto_seed
 
-        # 매일 자동 스냅샷 기록 (목표 달성률 궤적 추적용)
         today_str = datetime.now().strftime("%Y-%m-%d")
         history_changed = False
         last_seed = curr_acc_data["seed_history"].get(today_str, {}).get("seed")
@@ -590,7 +634,7 @@ def make_portfolio_page(acc_name):
 
 
         # -------------------------------------------------------------
-        # 레이아웃 편집기 UI (사이드바로 이동)
+        # 레이아웃 편집기 UI (사이드바 이동)
         # -------------------------------------------------------------
         with st.sidebar.expander("🛠️ 화면 레이아웃 편집"):
             st.caption("위아래 버튼으로 순서를 변경하세요.")
@@ -606,6 +650,7 @@ def make_portfolio_page(acc_name):
                     curr_acc_data["layout_order"] = current_layout
                     save_accounts_data(st.session_state['accounts']); st.rerun()
 
+        st.write("")
 
         # -------------------------------------------------------------
         # 동적 레이아웃 렌더링 루프
@@ -625,7 +670,7 @@ def make_portfolio_page(acc_name):
                         save_accounts_data(st.session_state['accounts'])
                         st.rerun()
                 with c_prog:
-                    pb_bg = "rgba(0,0,0,0.1)" if WIDGET_THEME=="light" else "rgba(255,255,255,0.1)"
+                    pb_bg = "rgba(0,0,0,0.1)"
                     st.markdown(f"""<div class='info-panel'>
 <div style='display:flex; justify-content:space-between; margin-bottom:8px; font-weight:bold; font-size:1.05rem;'>
 <span>현재: ${total_val_now:,.0f}</span>
@@ -695,7 +740,7 @@ def make_portfolio_page(acc_name):
                 elif tgt_reg > app_reg:
                     wait_msg = f"<div style='margin-top:6px; padding:6px; background-color:rgba(231,76,60,0.15); border-left:3px solid #e74c3c; font-size:0.8rem;'><span style='color:#e74c3c; font-weight:bold;'>🚨 하락 전환 주의</span><br>내일 아침 즉시 하향 전환(R{tgt_reg}) 예상</div>"
 
-                # 🔥 체류 기간 명확하게 표시
+                # 🔥 체류 기간 및 진입일 표시 (기능 강화)
                 dur_text = f"<br><span style='color:{C_SAFE}; font-weight:bold;'>⏱️ 현재 R{app_reg} 진입일: {start_dt} ({dur}일째 체류 중)</span>"
 
                 if app_reg == 1:
@@ -766,7 +811,7 @@ def make_portfolio_page(acc_name):
                 with col_pie:
                     with st.container(border=True):
                         if total_val_now > 0:
-                            fig = go.Figure(go.Pie(labels=list(asset_vals.keys()), values=list(asset_vals.values()), hole=0.6, marker=dict(colors=[COLOR_PALETTE.get(k, '#888') for k in asset_vals.keys()])))
+                            fig = go.Figure(go.Pie(labels=list(asset_vals.keys()), values=list(asset_vals.values()), hole=0.6, marker=dict(colors=[COLOR_PALETTE.get(k.split('/')[0], '#888') for k in asset_vals.keys()])))
                             cust_p2 = THEME_LAYOUT.copy()
                             cust_p2.update(height=280, showlegend=False, margin=dict(t=10, b=10, l=10, r=10), annotations=[dict(text=f"100%", x=0.5, y=0.5, showarrow=False, font=dict(color=TEXT_COLOR, size=16))])
                             fig.update_layout(**cust_p2)
