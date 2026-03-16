@@ -143,6 +143,7 @@ elif current_theme == "엑셀 테마":
     C_UP = "#107C41"; C_DOWN = "#C00000"; C_WARN = "#FFB900"; C_SAFE = "#0078D4"
     BASE_CHART_COLORS = {'TQQQ':'#C00000', 'SOXL':'#800080', 'USD':'#0078D4', 'QLD':'#FFB900', 'SSO':'#E36C09', 'QQQ':'#0078D4', 'SPY':'#107C41', 'GLD':'#FFC000', 'BTC-USD':'#f7931a', 'CASH':'#7F7F7F'}
 
+
 if "last_theme" not in st.session_state['settings'] or st.session_state['settings']["last_theme"] != current_theme:
     st.session_state['settings']["text_color"] = DEFAULT_TEXT_COLOR
     st.session_state['settings']["last_theme"] = current_theme
@@ -157,44 +158,45 @@ for tkr in REQUIRED_TICKERS + ['BTC-USD']:
 TEXT_COLOR = st.session_state['settings']["text_color"]
 COLOR_PALETTE = st.session_state['settings']["chart_colors"]
 
-THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0))
+# 🔥 플롯리 기본 폰트도 전부 Pretendard로 예쁘게 변경
+THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Pretendard, -apple-system, sans-serif", color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0))
 
 def apply_custom_css():
-    css_base = ""
+    # 🔥 이쁜 폰트(Pretendard)를 전체 UI에 강제 주입
+    css_base = f"""
+    @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+    * {{ font-family: 'Pretendard', -apple-system, sans-serif !important; letter-spacing: -0.02em; }}
+    """
+    
     css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; min-height: 100%; height: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.03); backdrop-filter: blur(10px); word-wrap: break-word; }}"
     
     if current_theme == "애플 테마":
-        css_base = f"""
-        @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
-        .stApp {{ background-color: #f5f5f7; background-image: radial-gradient(circle at top right, #e2e2e5 0%, #f5f5f7 40%, #e8e8ed 100%); font-family: 'Pretendard', -apple-system, sans-serif; color: {TEXT_COLOR}; letter-spacing: -0.01em; }}
+        css_base += f"""
+        .stApp {{ background-color: #f5f5f7; background-image: radial-gradient(circle at top right, #e2e2e5 0%, #f5f5f7 40%, #e8e8ed 100%); color: {TEXT_COLOR}; }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background: {PANEL_BG}; backdrop-filter: blur(20px); border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.05); padding: 1.5rem; height: 100%; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none !important; color: {TEXT_COLOR}; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
         .sidebar-link:hover {{ background-color: rgba(0,0,0,0.05); transform: translateX(2px); }}
         """
     elif current_theme == "1930년대 타자기 테마":
-        css_base = f"""
-        @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
-        [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
-        .stApp {{ font-family: 'Special Elite', 'Courier New', monospace !important; color: {TEXT_COLOR} !important; background-color: #e4dccc; background-image: url('https://www.transparenttextures.com/patterns/old-wall.png'); }}
+        css_base += f"""
+        .stApp {{ color: {TEXT_COLOR} !important; background-color: #e4dccc; background-image: url('https://www.transparenttextures.com/patterns/old-wall.png'); }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background: {PANEL_BG} !important; border: {PANEL_BORDER} !important; border-radius: {PANEL_RADIUS} !important; box-shadow: 4px 4px 0px {TEXT_COLOR} !important; padding: 1.5rem !important; height: 100%; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border: 1px solid transparent; border-radius: 0px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-weight: bold; font-size: 0.95rem; transition: background-color 0.2s; }}
         .sidebar-link:hover {{ background-color: rgba(0,0,0,0.1); border: 1px dashed {TEXT_COLOR}; }}
         """
         css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; min-height: 100%; height: auto; box-shadow: 4px 4px 0px {TEXT_COLOR}; }}"
     elif current_theme == "월스트리트 저널 테마":
-        css_base = f"""
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
-        [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
-        .stApp {{ font-family: 'Playfair Display', serif; color: {TEXT_COLOR}; background-color: #F4F4F0; background-image: repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.02) 2px, rgba(0,0,0,0.02) 4px); }}
+        css_base += f"""
+        .stApp {{ color: {TEXT_COLOR}; background-color: #F4F4F0; background-image: repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.02) 2px, rgba(0,0,0,0.02) 4px); }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background-color: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 1.5rem; box-shadow: 3px 3px 0px rgba(0,0,0,0.1); border-top: 4px solid #000000; height: 100%; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; text-decoration: none !important; color: #000000 !important; font-weight: bold; font-size: 0.95rem; border-bottom: 1px dotted #CCC; }}
         .sidebar-link:hover {{ background-color: #DDDDDD; }}
         """
     elif current_theme == "엑셀 테마":
-        css_base = f"""
-        .stApp {{ font-family: 'Calibri', 'Malgun Gothic', sans-serif; color: {TEXT_COLOR} !important; background-color: #F3F2F1; background-image: linear-gradient(#e1dfdd 1px, transparent 1px), linear-gradient(90deg, #e1dfdd 1px, transparent 1px); background-size: 20px 20px; }}
+        css_base += f"""
+        .stApp {{ color: {TEXT_COLOR} !important; background-color: #F3F2F1; background-image: linear-gradient(#e1dfdd 1px, transparent 1px), linear-gradient(90deg, #e1dfdd 1px, transparent 1px); background-size: 20px 20px; }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background-color: {PANEL_BG} !important; border: {PANEL_BORDER} !important; border-top: 3px solid #107C41 !important; border-radius: {PANEL_RADIUS} !important; padding: 1.5rem !important; box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important; height: 100%; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 6px 8px; margin-bottom: 2px; text-decoration: none !important; color: #0078D4 !important; font-family: 'Calibri', sans-serif; font-size: 0.95rem; border-bottom: 1px solid transparent; }}
+        .sidebar-link {{ display: flex; align-items: center; padding: 6px 8px; margin-bottom: 2px; text-decoration: none !important; color: #0078D4 !important; font-size: 0.95rem; border-bottom: 1px solid transparent; }}
         .sidebar-link:hover {{ border-bottom: 1px solid #0078D4; background-color: rgba(0,0,0,0.05); }}
         """
         css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-top: 3px solid #107C41 !important; border-radius: {PANEL_RADIUS}; padding: 16px; min-height: 100%; height: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}"
@@ -203,7 +205,8 @@ def apply_custom_css():
     <style>
     {css_base}
     div[data-testid="stMetricValue"] > div, div[data-testid="stMetricDelta"] > div, p, span, label, .stMarkdown {{ white-space: normal !important; word-break: keep-all !important; overflow-wrap: break-word !important; }}
-    div[data-testid="stMetricValue"] {{ font-weight: bold; font-size: 1.8rem; color: {TEXT_COLOR}; }}
+    div[data-testid="stMetricValue"] {{ font-weight: 800; font-size: 1.8rem; color: {TEXT_COLOR}; letter-spacing: -0.05em; }}
+    {css_panel}
     </style>
     """, unsafe_allow_html=True)
 
@@ -211,7 +214,7 @@ apply_custom_css()
 
 
 # =====================================================================
-# [3] 글로벌 백엔드 데이터 함수 
+# [3] 글로벌 백엔드 데이터 함수
 # =====================================================================
 @st.cache_data(ttl=1800)
 def get_market_status():
@@ -496,23 +499,21 @@ def page_market_dashboard():
     with col_left:
         with st.container(border=True):
             st.markdown("##### 📈 주요 지수 및 시장 심리")
-            tickers = ['^GSPC', '^IXIC', '^VIX', 'USDKRW=X']
-            try:
-                indices_df = yf.download(tickers, start=datetime.today()-timedelta(days=365), progress=False)['Close'].ffill()
-                if not indices_df.empty and len(indices_df) >= 2:
-                    c1, c2 = st.columns(2); latest = indices_df.iloc[-1]; prev = indices_df.iloc[-2]
-                    c1.metric("S&P 500", f"{latest.get('^GSPC', 0):,.0f}", f"{(latest.get('^GSPC',0)/prev.get('^GSPC',1)-1)*100:+.2f}%")
-                    c2.metric("NASDAQ", f"{latest.get('^IXIC', 0):,.0f}", f"{(latest.get('^IXIC',0)/prev.get('^IXIC',1)-1)*100:+.2f}%")
-                    c3, c4 = st.columns(2)
-                    c3.metric("VIX", f"{latest.get('^VIX', 0):,.2f}", f"{(latest.get('^VIX',0)/prev.get('^VIX',1)-1)*100:+.2f}%", delta_color="inverse")
-                    c4.metric("USD/KRW", f"₩{latest.get('USDKRW=X', 0):,.1f}", f"{(latest.get('USDKRW=X',0)/prev.get('USDKRW=X',1)-1)*100:+.2f}%", delta_color="inverse")
-                    
-                    vix_val = latest.get('^VIX', 20)
-                    fg_score = max(0, min(100, 100 - (vix_val - 10) * 2.5))
-                    st.markdown(f"**🧠 시장 공포 & 탐욕 지수:** `{'극심한 공포' if fg_score<25 else '공포' if fg_score<45 else '중립' if fg_score<55 else '탐욕' if fg_score<75 else '극심한 탐욕'}`")
-                    st.progress(fg_score / 100.0)
-                else: raise ValueError
-            except:
+            indices_df = get_dashboard_data()
+            
+            if not indices_df.empty and len(indices_df) >= 2:
+                c1, c2 = st.columns(2); latest = indices_df.iloc[-1]; prev = indices_df.iloc[-2]
+                c1.metric("S&P 500", f"{latest.get('^GSPC', 0):,.0f}", f"{(latest.get('^GSPC',0)/prev.get('^GSPC',1)-1)*100:+.2f}%")
+                c2.metric("NASDAQ", f"{latest.get('^IXIC', 0):,.0f}", f"{(latest.get('^IXIC',0)/prev.get('^IXIC',1)-1)*100:+.2f}%")
+                c3, c4 = st.columns(2)
+                c3.metric("VIX", f"{latest.get('^VIX', 0):,.2f}", f"{(latest.get('^VIX',0)/prev.get('^VIX',1)-1)*100:+.2f}%", delta_color="inverse")
+                c4.metric("USD/KRW", f"₩{latest.get('USDKRW=X', 0):,.1f}", f"{(latest.get('USDKRW=X',0)/prev.get('USDKRW=X',1)-1)*100:+.2f}%", delta_color="inverse")
+                
+                vix_val = latest.get('^VIX', 20)
+                fg_score = max(0, min(100, 100 - (vix_val - 10) * 2.5))
+                st.markdown(f"**🧠 시장 공포 & 탐욕 지수:** `{'극심한 공포' if fg_score<25 else '공포' if fg_score<45 else '중립' if fg_score<55 else '탐욕' if fg_score<75 else '극심한 탐욕'}`")
+                st.progress(fg_score / 100.0)
+            else:
                 st.warning("⚠️ 야후 파이낸스 서버 혼잡(Rate Limit)으로 지표를 불러오지 못했습니다. 잠시 후 다시 접속해 주세요.")
 
     with col_right:
@@ -645,7 +646,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지 구성: AI 시스템 분석관 (UI 100% 트렌디 개편본)
+# [6] 페이지 구성: AI 시스템 분석관 (트렌디 미니멀 게이지 뷰)
 # =====================================================================
 def page_ai_analyst():
     st.title("⚡ AI 시스템 분석관")
@@ -711,7 +712,7 @@ def page_ai_analyst():
     quotes_r4 = ["남들이 겁을 먹고 있을 때 욕심을 부려라. - 워런 버핏", "공포가 절정에 달했을 때가 가장 안전한 매수 시점이다. - 존 템플턴"]
     q_list = quotes_r1 if ms['regime']==1 else (quotes_r2 if ms['regime']==2 else (quotes_r3 if ms['regime']==3 else quotes_r4))
 
-    # 🔥 트렌디한 네이티브 수평 바 형 게이지 (Bullet Chart) 도입
+    # 🔥 트렌디한 네이티브 모던 앵귤러(원형) 게이지 도입
     st.markdown("#### 📊 시장 핵심 지표 판독기")
     
     if mobile_mode:
@@ -724,56 +725,65 @@ def page_ai_analyst():
         col1, col2, col3 = st.columns(3)
         with col1:
             with st.container(border=True):
-                st.markdown(f"<div style='text-align:center; font-weight:bold; margin-bottom:10px;'>📉 시장 공포지수 (VIX)</div>", unsafe_allow_html=True)
                 fig_vix = go.Figure(go.Indicator(
-                    mode="number+gauge", value=vix_c,
-                    number={'valueformat': ".1f", 'font': {'size': 24, 'color': TEXT_COLOR}},
+                    mode="gauge+number", value=vix_c,
+                    title={'text': "시장 공포지수 (VIX)", 'font': {'size': 14, 'color': TEXT_SUB}},
+                    number={'font': {'size': 36, 'color': TEXT_COLOR, 'family': "Pretendard"}, 'valueformat': '.1f'},
                     gauge={
-                        'shape': "bullet", 'axis': {'range': [0, 60], 'visible': False},
-                        'threshold': {'line': {'color': "red", 'width': 3}, 'thickness': 0.75, 'value': 40},
-                        'steps': [{'range': [0, 25], 'color': "rgba(46,204,113,0.3)"},
-                                  {'range': [25, 40], 'color': "rgba(243,156,18,0.3)"},
-                                  {'range': [40, 60], 'color': "rgba(231,76,60,0.3)"}],
-                        'bar': {'color': C_UP if vix_c < 25 else (C_WARN if vix_c < 40 else C_DOWN), 'thickness': 0.5}
+                        'axis': {'range': [0, 80], 'visible': False},
+                        'bar': {'color': C_UP if vix_c < 25 else (C_WARN if vix_c < 40 else C_DOWN), 'thickness': 0.15},
+                        'bgcolor': "rgba(150,150,150,0.1)",
+                        'steps': [
+                            {'range': [0, 25], 'color': "rgba(46,204,113,0.15)"},
+                            {'range': [25, 40], 'color': "rgba(243,156,18,0.15)"},
+                            {'range': [40, 80], 'color': "rgba(231,76,60,0.15)"}
+                        ],
+                        'threshold': {'line': {'color': "red", 'width': 2}, 'thickness': 0.75, 'value': 40}
                     }
                 ))
-                fig_vix.update_layout(height=70, margin=dict(t=0, b=0, l=10, r=30), paper_bgcolor="rgba(0,0,0,0)")
+                fig_vix.update_layout(height=200, margin=dict(t=50, b=10, l=10, r=10), paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Pretendard, sans-serif"))
                 st.plotly_chart(fig_vix, use_container_width=True, config={'displayModeBar': False})
 
         with col2:
             with st.container(border=True):
                 gap_pct = (qqq_c / ma200_c - 1) * 100
-                st.markdown(f"<div style='text-align:center; font-weight:bold; margin-bottom:10px;'>📈 나스닥 200일선 이격도</div>", unsafe_allow_html=True)
                 fig_qqq = go.Figure(go.Indicator(
-                    mode="number+gauge", value=gap_pct,
-                    number={'valueformat': "+.1f", 'suffix': "%", 'font': {'size': 24, 'color': TEXT_COLOR}},
+                    mode="gauge+number", value=gap_pct,
+                    title={'text': "나스닥 200일선 이격도", 'font': {'size': 14, 'color': TEXT_SUB}},
+                    number={'font': {'size': 36, 'color': TEXT_COLOR, 'family': "Pretendard"}, 'valueformat': '+.1f', 'suffix': '%'},
                     gauge={
-                        'shape': "bullet", 'axis': {'range': [-30, 30], 'visible': False},
-                        'threshold': {'line': {'color': "orange", 'width': 3}, 'thickness': 0.75, 'value': 0},
-                        'steps': [{'range': [-30, 0], 'color': "rgba(231,76,60,0.3)"},
-                                  {'range': [0, 30], 'color': "rgba(46,204,113,0.3)"}],
-                        'bar': {'color': C_UP if gap_pct > 0 else C_DOWN, 'thickness': 0.5}
+                        'axis': {'range': [-30, 30], 'visible': False},
+                        'bar': {'color': C_UP if gap_pct > 0 else C_DOWN, 'thickness': 0.15},
+                        'bgcolor': "rgba(150,150,150,0.1)",
+                        'steps': [
+                            {'range': [-30, 0], 'color': "rgba(231,76,60,0.15)"},
+                            {'range': [0, 30], 'color': "rgba(46,204,113,0.15)"}
+                        ],
+                        'threshold': {'line': {'color': "orange", 'width': 2}, 'thickness': 0.75, 'value': 0}
                     }
                 ))
-                fig_qqq.update_layout(height=70, margin=dict(t=0, b=0, l=10, r=30), paper_bgcolor="rgba(0,0,0,0)")
+                fig_qqq.update_layout(height=200, margin=dict(t=50, b=10, l=10, r=10), paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Pretendard, sans-serif"))
                 st.plotly_chart(fig_qqq, use_container_width=True, config={'displayModeBar': False})
 
         with col3:
             with st.container(border=True):
-                st.markdown(f"<div style='text-align:center; font-weight:bold; margin-bottom:10px;'>🔥 반도체(SMH) RSI</div>", unsafe_allow_html=True)
                 fig_rsi = go.Figure(go.Indicator(
-                    mode="number+gauge", value=ms['smh_rsi'],
-                    number={'valueformat': ".1f", 'font': {'size': 24, 'color': TEXT_COLOR}},
+                    mode="gauge+number", value=ms['smh_rsi'],
+                    title={'text': "반도체(SMH) 단기 RSI", 'font': {'size': 14, 'color': TEXT_SUB}},
+                    number={'font': {'size': 36, 'color': TEXT_COLOR, 'family': "Pretendard"}, 'valueformat': '.1f'},
                     gauge={
-                        'shape': "bullet", 'axis': {'range': [0, 100], 'visible': False},
-                        'threshold': {'line': {'color': "green", 'width': 3}, 'thickness': 0.75, 'value': 50},
-                        'steps': [{'range': [0, 30], 'color': "rgba(231,76,60,0.3)"},
-                                  {'range': [30, 50], 'color': "rgba(243,156,18,0.3)"},
-                                  {'range': [50, 100], 'color': "rgba(52,152,219,0.3)"}],
-                        'bar': {'color': "#3498db" if ms['smh_rsi'] > 50 else C_DOWN, 'thickness': 0.5}
+                        'axis': {'range': [0, 100], 'visible': False},
+                        'bar': {'color': "#3498db" if ms['smh_rsi'] > 50 else C_DOWN, 'thickness': 0.15},
+                        'bgcolor': "rgba(150,150,150,0.1)",
+                        'steps': [
+                            {'range': [0, 30], 'color': "rgba(231,76,60,0.15)"},
+                            {'range': [30, 70], 'color': "rgba(52,152,219,0.15)"},
+                            {'range': [70, 100], 'color': "rgba(243,156,18,0.15)"}
+                        ],
+                        'threshold': {'line': {'color': "green", 'width': 2}, 'thickness': 0.75, 'value': 50}
                     }
                 ))
-                fig_rsi.update_layout(height=70, margin=dict(t=0, b=0, l=10, r=30), paper_bgcolor="rgba(0,0,0,0)")
+                fig_rsi.update_layout(height=200, margin=dict(t=50, b=10, l=10, r=10), paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Pretendard, sans-serif"))
                 st.plotly_chart(fig_rsi, use_container_width=True, config={'displayModeBar': False})
 
     st.write("")
@@ -988,7 +998,6 @@ def make_portfolio_page(acc_name):
                 mdd_now = (total_val_now / max_eq - 1) * 100 if max_eq > 0 else 0
                 if mdd_now < -15: st.warning(f"🚨 **MDD 경고:** 현재 자산이 전고점 대비 **{mdd_now:.1f}%** 하락한 상태입니다. 리스크 관리에 유의하십시오.")
 
-                # 🔥 계좌 요약도 글씨 안 잘리는 네이티브 컨테이너 방식 적용
                 c1, c2, c3, c4 = st.columns(4)
                 with c1:
                     with st.container(border=True):
@@ -1011,7 +1020,7 @@ def make_portfolio_page(acc_name):
                     csv_data = disp_df[["태그", "티커 (Ticker)", "수량 (주/달러)", "평균 단가 ($)", "매입 환율"]].to_csv(index=False).encode('utf-8')
                     st.download_button("💾 포트폴리오 CSV 내보내기", data=csv_data, file_name=f"{acc_name}_portfolio.csv", mime='text/csv')
                 with csv_col2:
-                    uploaded_file = st.file_uploader("📂 CSV 불러오기", type=['csv'], label_visibility="collapsed")
+                    uploaded_file = st.file_uploader("📂 CSV 불러오기 (위의 내보낸 양식 유지)", type=['csv'], label_visibility="collapsed")
                     if uploaded_file is not None:
                         if st.button("파일 적용하기"):
                             new_df = pd.read_csv(uploaded_file)
@@ -1246,7 +1255,7 @@ with st.sidebar.expander("💾 백업 및 복구"):
         st.session_state['accounts'] = json.load(up_f)
         save_accounts_data(st.session_state['accounts']); st.rerun()
 
-# 🔥 좌측 카테고리 (AI 시스템 분석관 등록 정상화)
+# 🔥 좌측 카테고리 (AI 시스템 분석관 등록 완료)
 pages = {
     "시스템": [
         st.Page(page_market_dashboard, title="마켓 터미널", icon="🌐"), 
