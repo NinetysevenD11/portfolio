@@ -140,9 +140,12 @@ elif current_theme == "월스트리트 저널 테마":
     C_UP = "#006400"; C_DOWN = "#8B0000"; C_WARN = "#B8860B"; C_SAFE = "#000080"
     BASE_CHART_COLORS = {'TQQQ':'#8B0000', 'SOXL':'#556b2f', 'USD':'#2F4F4F', 'QLD':'#B8860B', 'SSO':'#DAA520', 'QQQ':'#000080', 'SPY':'#4682B4', 'GLD':'#BDB76B', 'BTC-USD':'#f7931a', 'CASH':'#696969'}
 
+# 🔥 학교 칠판 테마 디테일 완벽 적용
 elif current_theme == "학교 칠판 테마":
-    DEFAULT_TEXT_COLOR = "#fdfdfd"; TEXT_SUB = "#dcdcdc"
-    PANEL_BG = "rgba(45, 68, 54, 0.85)"; PANEL_BORDER = "2px dashed #a8b5a3"; PANEL_RADIUS = "8px"
+    DEFAULT_TEXT_COLOR = "#f8f9fa"; TEXT_SUB = "#dcdcdc"
+    PANEL_BG = "transparent" # 칠판 배경이 비치도록 투명하게
+    PANEL_BORDER = "2px dashed rgba(255, 255, 255, 0.8)" # 분필 느낌 점선
+    PANEL_RADIUS = "0px"
     WIDGET_THEME = "dark"
     C_UP = "#ff6961"; C_DOWN = "#77dd77"; C_WARN = "#fdfd96"; C_SAFE = "#aec6cf"
     BASE_CHART_COLORS = {'TQQQ':'#ff6961', 'SOXL':'#cbaacb', 'USD':'#aec6cf', 'QLD':'#fdfd96', 'SSO':'#ffb347', 'QQQ':'#aec6cf', 'SPY':'#77dd77', 'GLD':'#fdfd96', 'BTC-USD':'#ffb347', 'CASH':'#dcdcdc'}
@@ -205,21 +208,28 @@ def apply_custom_css():
         .sidebar-link:hover {{ background-color: #DDDDDD; }}
         """
     elif current_theme == "학교 칠판 테마":
+        # 🔥 리얼 칠판 대대적 개편: 두꺼운 나무 테두리, 글꼴 1.3배, 배경 하단 수납공간
         css_base += f"""
+        /* 칠판 전체 배경과 나무 프레임 테두리 */
         [data-testid="stAppViewContainer"] {{ 
-            background-color: #354a3a !important; 
+            background-color: #1a2f23 !important; 
             background-image: 
-                radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 60%),
-                linear-gradient(to top, #4a3a2a 0%, #354a3a 10%) !important; 
-            border: 20px solid #4a3a2a;
-            border-image: 
-                url('https://www.transparenttextures.com/patterns/dark-wood.png') 30 stretch;
+                radial-gradient(circle at center, rgba(255,255,255,0.05) 0%, transparent 60%),
+                url('https://www.transparenttextures.com/patterns/black-board.png') !important; 
+            border: 25px solid #4a2e15 !important;
+            border-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png') 30 stretch !important;
+            padding-bottom: 60px; /* 수납공간 확보 */
         }}
         [data-testid="stHeader"] {{ background-color: transparent !important; }}
+        
+        /* 글꼴 1.3배 확대 */
         .stApp {{ 
             color: {TEXT_COLOR} !important; 
             font-size: 1.35rem; 
+            letter-spacing: 0.05em;
         }}
+        
+        /* 패널 내부 투명화 및 분필 점선 처리 */
         div[data-testid="stVerticalBlockBorderWrapper"] > div {{ 
             background: {PANEL_BG} !important; 
             border: {PANEL_BORDER} !important; 
@@ -228,19 +238,84 @@ def apply_custom_css():
             height: 100%; 
             box-shadow: none !important; 
         }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-size: 1.6rem; border-bottom: 1px solid transparent; }}
-        .sidebar-link:hover {{ border-bottom: 1px dashed {TEXT_COLOR}; background-color: rgba(255,255,255,0.05); }}
-        hr {{ border-bottom: 2px dashed rgba(255,255,255,0.3) !important; border-top: none !important; }}
+        
+        /* 사이드바 메뉴도 칠판 글씨처럼 */
+        .sidebar-link {{ display: flex; align-items: center; padding: 10px 12px; margin-bottom: 4px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-size: 1.6rem; border-bottom: 1px dashed transparent; }}
+        .sidebar-link:hover {{ border-bottom: 2px dashed rgba(255,255,255,0.6); background-color: rgba(255,255,255,0.05); }}
+        hr {{ border-bottom: 2px dashed rgba(255,255,255,0.4) !important; border-top: none !important; }}
+        
+        /* 하단 수납공간 (나무 선반) */
+        [data-testid="stAppViewContainer"]::after {{
+            content: '';
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 35px;
+            background: #5c3a21;
+            background-image: linear-gradient(to bottom, #6b4423 0%, #3a2210 100%);
+            border-top: 3px solid #2a1a0b;
+            z-index: 9998;
+            box-shadow: 0px -5px 15px rgba(0,0,0,0.6);
+        }}
+        
+        /* 분필과 지우개 CSS 아트 */
+        .chalk-ledge {{
+            position: fixed;
+            bottom: 8px;
+            right: 8%;
+            z-index: 9999;
+            display: flex;
+            align-items: flex-end;
+            gap: 40px;
+            pointer-events: none;
+        }}
+        .chalk-group {{
+            display: flex;
+            gap: 10px;
+            transform: rotate(-10deg);
+            margin-bottom: 6px;
+        }}
+        .chalk {{
+            height: 12px;
+            border-radius: 2px;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+        }}
+        .chalk.white {{ width: 45px; background: #ffffff; }}
+        .chalk.yellow {{ width: 35px; background: #fdfd96; }}
+        .chalk.blue {{ width: 28px; background: #aec6cf; }}
+        .eraser {{
+            width: 110px;
+            height: 40px;
+            background: #222222;
+            border-top: 14px solid #c19a6b; /* 나무 손잡이 */
+            border-radius: 3px;
+            box-shadow: 3px 3px 8px rgba(0,0,0,0.7);
+            transform: rotate(5deg);
+        }}
         """
 
     st.markdown(f"""
     <style>
     {css_base}
     div[data-testid="stMetricValue"] > div, div[data-testid="stMetricDelta"] > div, p, span, label, .stMarkdown {{ white-space: normal !important; word-break: keep-all !important; overflow-wrap: break-word !important; }}
-    div[data-testid="stMetricValue"] {{ font-weight: 800; font-size: 2.1rem; color: {TEXT_COLOR}; letter-spacing: -0.05em; }}
+    div[data-testid="stMetricValue"] {{ font-weight: 800; font-size: 2.2rem; color: {TEXT_COLOR}; letter-spacing: -0.05em; }}
     {css_panel}
     </style>
     """, unsafe_allow_html=True)
+    
+    # 칠판 테마일 때만 화면 하단에 분필과 지우개 렌더링
+    if current_theme == "학교 칠판 테마":
+        st.markdown("""
+        <div class="chalk-ledge">
+            <div class="chalk-group">
+                <div class="chalk white"></div>
+                <div class="chalk yellow"></div>
+                <div class="chalk blue"></div>
+            </div>
+            <div class="eraser"></div>
+        </div>
+        """, unsafe_allow_html=True)
 
 apply_custom_css()
 
@@ -278,7 +353,7 @@ def get_market_status():
         if pd.isna(m200): target_regimes.append(2); continue
         if v > 40: target_regimes.append(4)
         elif q < m200: target_regimes.append(3)
-        elif q >= m200 and m50 >= m200 and v < 25: target_regimes.append(1)  # 🔥 v 로 완벽하게 수정됨!
+        elif q >= m200 and m50 >= m200 and v < 25: target_regimes.append(1)
         else: target_regimes.append(2)
         
     current_v4_4 = 3; pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4 = []
@@ -583,15 +658,15 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지: AI 시스템 분석관
+# [6] 페이지: AI 시스템 분석관 
 # =====================================================================
 def make_metric_card(title, value, subtitle, sub_color):
-    """깔끔한 모던 카드 위젯"""
+    """깔끔한 모던 카드 위젯 (프로그레스바 제거로 심플함 강조)"""
     return f"""
     <div style="background:{PANEL_BG}; border:{PANEL_BORDER}; border-radius:16px; padding:24px; min-height:150px; display:flex; flex-direction:column; justify-content:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-        <div style="color:{TEXT_SUB}; font-size:0.95rem; font-weight:600; margin-bottom:12px;">{title}</div>
-        <div style="font-size:2.4rem; font-weight:800; color:{TEXT_COLOR}; line-height:1; margin-bottom:10px;">{value}</div>
-        <div style="font-size:1.0rem; font-weight:700; color:{sub_color};">{subtitle}</div>
+        <div style="color:{TEXT_SUB}; font-size:1.0rem; font-weight:600; margin-bottom:12px;">{title}</div>
+        <div style="font-size:2.8rem; font-weight:800; color:{TEXT_COLOR}; line-height:1; margin-bottom:10px;">{value}</div>
+        <div style="font-size:1.1rem; font-weight:700; color:{sub_color};">{subtitle}</div>
     </div>"""
 
 def page_ai_analyst():
@@ -644,6 +719,7 @@ def page_ai_analyst():
     q_list = quotes_r1 if ms['regime']==1 else (quotes_r2 if ms['regime']==2 else (quotes_r3 if ms['regime']==3 else quotes_r4))
 
     st.markdown("#### 📊 시장 핵심 지표 판독기")
+    
     gap_pct = float((qqq_c / ma200_c - 1) * 100)
     rsi_val = float(ms['smh_rsi'])
     vix_f = float(vix_c)
@@ -656,14 +732,14 @@ def page_ai_analyst():
     rsi_sub = "🧊 과매도 (침체)" if rsi_val < 30 else ("➖ 중립 (보통)" if rsi_val < 50 else ("🔥 과열 (강세)" if rsi_val > 70 else "↗️ 양호 (상승)"))
     
     if mobile_mode:
-        st.markdown(make_metric_card("시장 공포지수 (VIX)", f"{vix_f:.1f}", vix_sub, vix_color), unsafe_allow_html=True); st.write("")
-        st.markdown(make_metric_card("나스닥 200일선 이격도", f"{gap_pct:+.1f}%", gap_sub, gap_color), unsafe_allow_html=True); st.write("")
-        st.markdown(make_metric_card("반도체(SMH) RSI", f"{rsi_val:.1f}", rsi_sub, rsi_color), unsafe_allow_html=True)
+        st.markdown(make_metric_card("📉 시장 공포지수 (VIX)", f"{vix_f:.1f}", vix_sub, vix_color), unsafe_allow_html=True); st.write("")
+        st.markdown(make_metric_card("📈 나스닥 200일선 이격도", f"{gap_pct:+.1f}%", gap_sub, gap_color), unsafe_allow_html=True); st.write("")
+        st.markdown(make_metric_card("🔥 반도체(SMH) RSI", f"{rsi_val:.1f}", rsi_sub, rsi_color), unsafe_allow_html=True)
     else:
         col1, col2, col3 = st.columns(3)
-        with col1: st.markdown(make_metric_card("시장 공포지수 (VIX)", f"{vix_f:.1f}", vix_sub, vix_color), unsafe_allow_html=True)
-        with col2: st.markdown(make_metric_card("나스닥 200일선 이격도", f"{gap_pct:+.1f}%", gap_sub, gap_color), unsafe_allow_html=True)
-        with col3: st.markdown(make_metric_card("반도체(SMH) RSI", f"{rsi_val:.1f}", rsi_sub, rsi_color), unsafe_allow_html=True)
+        with col1: st.markdown(make_metric_card("📉 시장 공포지수 (VIX)", f"{vix_f:.1f}", vix_sub, vix_color), unsafe_allow_html=True)
+        with col2: st.markdown(make_metric_card("📈 나스닥 200일선 이격도", f"{gap_pct:+.1f}%", gap_sub, gap_color), unsafe_allow_html=True)
+        with col3: st.markdown(make_metric_card("🔥 반도체(SMH) RSI", f"{rsi_val:.1f}", rsi_sub, rsi_color), unsafe_allow_html=True)
     
     st.write(""); st.write("")
     st.markdown("#### 🤖 AI 전략 분석관 Report")
