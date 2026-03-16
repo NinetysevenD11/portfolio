@@ -161,14 +161,13 @@ COLOR_PALETTE = st.session_state['settings']["chart_colors"]
 THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Pretendard, -apple-system, sans-serif", color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0))
 
 def apply_custom_css():
-    # 🔥 해결: 전체 적용(*)을 없애고 텍스트 영역만 폰트 지정. 아이콘 폰트는 Streamlit 기본값 유지
     css_base = f"""
     @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
     html, body, p, span, div, h1, h2, h3, h4, h5, h6, label, input, button, select {{ 
         font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
         letter-spacing: -0.02em; 
     }}
-    .material-symbols-rounded {{ font-family: 'Material Symbols Rounded' !important; }} /* 아이콘 폰트 강제 보호 */
+    .material-symbols-rounded {{ font-family: 'Material Symbols Rounded' !important; }} 
     """
     
     css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; min-height: 100%; height: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.03); backdrop-filter: blur(10px); word-wrap: break-word; }}"
@@ -561,7 +560,7 @@ def page_amls_backtest():
     INITIAL_CAPITAL = st.sidebar.number_input("초기 자본금 ($)", value=10000, step=1000)
     MONTHLY_CONTRIBUTION = st.sidebar.number_input("월 적립금 ($)", value=2000, step=500)
     REBAL_FREQ = st.sidebar.selectbox("🔄 리밸런싱 주기", ["월 1회", "주 1회 (5거래일)", "2주 1회 (10거래일)", "3주 1회 (15거래일)"], index=0)
-    BTC_RATIO = st.sidebar.slider("🪙 비트코인 디지털 골드 편입비중 (금속 비중 내)", min_value=0, max_value=100, value=0, step=5, help="안전자산인 금(GLD) 비중 중 몇 %를 비트코인 대체할지 결정합니다.")
+    BTC_RATIO = st.sidebar.slider("🪙 비트코인 디지털 골드 편입비중 (금속 비중 내)", min_value=0, max_value=100, value=0, step=5, help="안전자산인 금(GLD) 비중 중 몇 %를 비트코인으로 대체할지 결정합니다.")
 
     with st.spinner('과거 데이터를 분석 중입니다...'):
         df, logs, tickers = load_amls_backtest_data(BACKTEST_START, BACKTEST_END, INITIAL_CAPITAL, MONTHLY_CONTRIBUTION, REBAL_FREQ, BTC_RATIO)
@@ -651,7 +650,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지 구성: AI 시스템 분석관 (UI 겹침 원천 차단 개편본)
+# [6] 페이지 구성: AI 시스템 분석관
 # =====================================================================
 def page_ai_analyst():
     st.title("⚡ AI 시스템 분석관")
@@ -990,10 +989,12 @@ def make_portfolio_page(acc_name):
                 mdd_now = (total_val_now / max_eq - 1) * 100 if max_eq > 0 else 0
                 if mdd_now < -15: st.warning(f"🚨 **MDD 경고:** 현재 자산이 전고점 대비 **{mdd_now:.1f}%** 하락한 상태입니다. 리스크 관리에 유의하십시오.")
 
+                total_krw = total_val_now * current_usdkrw
+
                 c1, c2, c3, c4 = st.columns(4)
                 with c1:
                     with st.container(border=True):
-                        st.metric("💰 총 평가액", f"${total_val_now:,.0f}")
+                        st.metric("💰 총 평가액", f"${total_val_now:,.0f} (₩{total_krw:,.0f})")
                 with c2:
                     with st.container(border=True):
                         st.metric("일간 손익", f"{daily_diff_pct:+.2f}%", f"{daily_diff:+.0f} $")
@@ -1261,7 +1262,7 @@ pages = {
     ]
 }
 
-# 계좌명에도 아이콘(icon=) 파라미터를 쓰지 않고 title 안에 직관적으로 병합합니다.
+# 포트폴리오 목록 렌더링 방식 수정 (아이콘 옵션 제거, 타이틀 직관적 통합)
 for name in st.session_state['accounts'].keys(): 
     pages["포트폴리오"].append(st.Page(make_portfolio_page(name), title=f"💼 {name}"))
 
