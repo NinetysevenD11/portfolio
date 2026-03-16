@@ -26,7 +26,7 @@ SETTINGS_FILE = "amls_settings_v12.json"
 ACCOUNTS_FILE = "amls_multi_accounts.json"
 REQUIRED_TICKERS = ["TQQQ", "QLD", "QQQ", "SOXL", "USD", "SSO", "SPY", "GLD", "CASH"]
 
-VALID_THEMES = ["애플 테마", "1930년대 타자기 테마", "월스트리트 저널 테마", "학교 칠판 테마"]
+VALID_THEMES = ["애플 테마"]
 
 def load_settings():
     if os.path.exists(SETTINGS_FILE):
@@ -111,44 +111,16 @@ if needs_save: save_accounts_data(st.session_state['accounts'])
 
 
 # =====================================================================
-# [2] 동적 테마 및 레이아웃 설정
+# [2] 동적 테마 및 레이아웃 설정 (애플 테마 단일화)
 # =====================================================================
-current_theme = st.session_state['settings'].get("theme", "애플 테마")
-theme_list = VALID_THEMES
+current_theme = "애플 테마"
+st.session_state['settings']["theme"] = current_theme
 
-if current_theme not in theme_list:
-    current_theme = "애플 테마"
-
-if current_theme == "애플 테마":
-    DEFAULT_TEXT_COLOR = "#1d1d1f"; TEXT_SUB = "#8e8e93"
-    PANEL_BG = "rgba(255, 255, 255, 0.7)"; PANEL_BORDER = "1px solid rgba(200, 200, 200, 0.3)"; PANEL_RADIUS = "16px"
-    WIDGET_THEME = "light"
-    C_UP = "#34c759"; C_DOWN = "#ff3b30"; C_WARN = "#ff9500"; C_SAFE = "#007aff"
-    BASE_CHART_COLORS = {'TQQQ':'#ff3b30', 'SOXL':'#af52de', 'USD':'#5856d6', 'QLD':'#ff9500', 'SSO':'#ffcc00', 'QQQ':'#007aff', 'SPY':'#34a853', 'GLD':'#34c759', 'BTC-USD':'#f7931a', 'CASH':'#8e8e93'}
-
-elif current_theme == "1930년대 타자기 테마":
-    DEFAULT_TEXT_COLOR = "#2c2a25"; TEXT_SUB = "#555555"
-    PANEL_BG = "rgba(223, 215, 197, 0.85)"; PANEL_BORDER = "2px solid #2c2a25"; PANEL_RADIUS = "0px"
-    WIDGET_THEME = "light"
-    C_UP = "#000080"; C_DOWN = "#8b0000"; C_WARN = "#b8860b"; C_SAFE = "#006400"
-    BASE_CHART_COLORS = {'TQQQ':'#8b0000', 'SOXL':'#556b2f', 'USD':'#8fbc8f', 'QLD':'#b8860b', 'SSO':'#cd853f', 'QQQ':'#000080', 'SPY':'#2e8b57', 'GLD':'#daa520', 'BTC-USD':'#f7931a', 'CASH':'#2f4f4f'}
-
-elif current_theme == "월스트리트 저널 테마":
-    DEFAULT_TEXT_COLOR = "#1A1A1A"; TEXT_SUB = "#555555"
-    PANEL_BG = "rgba(255, 255, 255, 0.95)"; PANEL_BORDER = "1px solid #000000"; PANEL_RADIUS = "0px"
-    WIDGET_THEME = "light"
-    C_UP = "#006400"; C_DOWN = "#8B0000"; C_WARN = "#B8860B"; C_SAFE = "#000080"
-    BASE_CHART_COLORS = {'TQQQ':'#8B0000', 'SOXL':'#556b2f', 'USD':'#2F4F4F', 'QLD':'#B8860B', 'SSO':'#DAA520', 'QQQ':'#000080', 'SPY':'#4682B4', 'GLD':'#BDB76B', 'BTC-USD':'#f7931a', 'CASH':'#696969'}
-
-# 🔥 학교 칠판 테마 디테일 완벽 적용
-elif current_theme == "학교 칠판 테마":
-    DEFAULT_TEXT_COLOR = "#f8f9fa"; TEXT_SUB = "#dcdcdc"
-    PANEL_BG = "transparent" # 칠판 배경이 비치도록 투명하게
-    PANEL_BORDER = "2px dashed rgba(255, 255, 255, 0.8)" # 분필 느낌 점선
-    PANEL_RADIUS = "0px"
-    WIDGET_THEME = "dark"
-    C_UP = "#ff6961"; C_DOWN = "#77dd77"; C_WARN = "#fdfd96"; C_SAFE = "#aec6cf"
-    BASE_CHART_COLORS = {'TQQQ':'#ff6961', 'SOXL':'#cbaacb', 'USD':'#aec6cf', 'QLD':'#fdfd96', 'SSO':'#ffb347', 'QQQ':'#aec6cf', 'SPY':'#77dd77', 'GLD':'#fdfd96', 'BTC-USD':'#ffb347', 'CASH':'#dcdcdc'}
+DEFAULT_TEXT_COLOR = "#1d1d1f"; TEXT_SUB = "#8e8e93"
+PANEL_BG = "rgba(255, 255, 255, 0.7)"; PANEL_BORDER = "1px solid rgba(200, 200, 200, 0.3)"; PANEL_RADIUS = "16px"
+WIDGET_THEME = "light"
+C_UP = "#34c759"; C_DOWN = "#ff3b30"; C_WARN = "#ff9500"; C_SAFE = "#007aff"
+BASE_CHART_COLORS = {'TQQQ':'#ff3b30', 'SOXL':'#af52de', 'USD':'#5856d6', 'QLD':'#ff9500', 'SSO':'#ffcc00', 'QQQ':'#007aff', 'SPY':'#34a853', 'GLD':'#34c759', 'BTC-USD':'#f7931a', 'CASH':'#8e8e93'}
 
 if "last_theme" not in st.session_state['settings'] or st.session_state['settings']["last_theme"] != current_theme:
     st.session_state['settings']["text_color"] = DEFAULT_TEXT_COLOR
@@ -165,13 +137,12 @@ for tkr in REQUIRED_TICKERS + ['BTC-USD']:
 TEXT_COLOR = st.session_state['settings']["text_color"]
 COLOR_PALETTE = st.session_state['settings']["chart_colors"]
 
-chart_font = "'Nanum Pen Script', cursive" if current_theme == "학교 칠판 테마" else "'Pretendard', -apple-system, sans-serif"
-THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family=chart_font, color=TEXT_COLOR, size=16 if current_theme == "학교 칠판 테마" else 13), margin=dict(l=0, r=0, t=30, b=0))
+chart_font = "'Pretendard', -apple-system, sans-serif"
+THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family=chart_font, color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0))
 
 def apply_custom_css():
     css_base = f"""
     @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
-    @import url('https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap');
     
     p, h1, h2, h3, h4, h5, h6, label, th, td, li, .stMarkdown, div[data-testid="stMetricValue"], div[data-testid="stMetricLabel"] {{
         font-family: {chart_font} !important;
@@ -181,141 +152,22 @@ def apply_custom_css():
     
     css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; min-height: 100%; height: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.03); backdrop-filter: blur(10px); word-wrap: break-word; }}"
     
-    if current_theme == "애플 테마":
-        css_base += f"""
-        [data-testid="stAppViewContainer"] {{ background-color: #e5e5ea !important; background-image: radial-gradient(circle at top right, #d1d1d6 0%, #e5e5ea 40%, #d1d1d6 100%) !important; }}
-        .stApp {{ color: {TEXT_COLOR}; }}
-        div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background: {PANEL_BG}; backdrop-filter: blur(20px); border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.05); padding: 1.5rem; height: 100%; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none !important; color: {TEXT_COLOR}; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
-        .sidebar-link:hover {{ background-color: rgba(0,0,0,0.05); transform: translateX(2px); }}
-        """
-    elif current_theme == "1930년대 타자기 테마":
-        css_base += f"""
-        [data-testid="stAppViewContainer"] {{ background-color: #e4dccc !important; background-image: url('https://www.transparenttextures.com/patterns/old-wall.png') !important; }}
-        [data-testid="stHeader"] {{ background-color: transparent !important; }}
-        .stApp {{ color: {TEXT_COLOR} !important; }}
-        div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background: {PANEL_BG} !important; border: {PANEL_BORDER} !important; border-radius: {PANEL_RADIUS} !important; box-shadow: 4px 4px 0px {TEXT_COLOR} !important; padding: 1.5rem !important; height: 100%; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border: 1px solid transparent; border-radius: 0px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-weight: bold; font-size: 0.95rem; }}
-        .sidebar-link:hover {{ background-color: rgba(0,0,0,0.1); border: 1px dashed {TEXT_COLOR}; }}
-        """
-    elif current_theme == "월스트리트 저널 테마":
-        css_base += f"""
-        [data-testid="stAppViewContainer"] {{ background-color: #F4F4F0 !important; background-image: repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.02) 2px, rgba(0,0,0,0.02) 4px) !important; }}
-        [data-testid="stHeader"] {{ background-color: transparent !important; }}
-        .stApp {{ color: {TEXT_COLOR}; }}
-        div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background-color: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 1.5rem; box-shadow: 3px 3px 0px rgba(0,0,0,0.1); border-top: 4px solid #000000; height: 100%; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; text-decoration: none !important; color: #000000 !important; font-weight: bold; font-size: 0.95rem; border-bottom: 1px dotted #CCC; }}
-        .sidebar-link:hover {{ background-color: #DDDDDD; }}
-        """
-    elif current_theme == "학교 칠판 테마":
-        # 🔥 리얼 칠판 대대적 개편: 두꺼운 나무 테두리, 글꼴 1.3배, 배경 하단 수납공간
-        css_base += f"""
-        /* 칠판 전체 배경과 나무 프레임 테두리 */
-        [data-testid="stAppViewContainer"] {{ 
-            background-color: #1a2f23 !important; 
-            background-image: 
-                radial-gradient(circle at center, rgba(255,255,255,0.05) 0%, transparent 60%),
-                url('https://www.transparenttextures.com/patterns/black-board.png') !important; 
-            border: 25px solid #4a2e15 !important;
-            border-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png') 30 stretch !important;
-            padding-bottom: 60px; /* 수납공간 확보 */
-        }}
-        [data-testid="stHeader"] {{ background-color: transparent !important; }}
-        
-        /* 글꼴 1.3배 확대 */
-        .stApp {{ 
-            color: {TEXT_COLOR} !important; 
-            font-size: 1.35rem; 
-            letter-spacing: 0.05em;
-        }}
-        
-        /* 패널 내부 투명화 및 분필 점선 처리 */
-        div[data-testid="stVerticalBlockBorderWrapper"] > div {{ 
-            background: {PANEL_BG} !important; 
-            border: {PANEL_BORDER} !important; 
-            border-radius: {PANEL_RADIUS} !important; 
-            padding: 1.5rem !important; 
-            height: 100%; 
-            box-shadow: none !important; 
-        }}
-        
-        /* 사이드바 메뉴도 칠판 글씨처럼 */
-        .sidebar-link {{ display: flex; align-items: center; padding: 10px 12px; margin-bottom: 4px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-size: 1.6rem; border-bottom: 1px dashed transparent; }}
-        .sidebar-link:hover {{ border-bottom: 2px dashed rgba(255,255,255,0.6); background-color: rgba(255,255,255,0.05); }}
-        hr {{ border-bottom: 2px dashed rgba(255,255,255,0.4) !important; border-top: none !important; }}
-        
-        /* 하단 수납공간 (나무 선반) */
-        [data-testid="stAppViewContainer"]::after {{
-            content: '';
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 35px;
-            background: #5c3a21;
-            background-image: linear-gradient(to bottom, #6b4423 0%, #3a2210 100%);
-            border-top: 3px solid #2a1a0b;
-            z-index: 9998;
-            box-shadow: 0px -5px 15px rgba(0,0,0,0.6);
-        }}
-        
-        /* 분필과 지우개 CSS 아트 */
-        .chalk-ledge {{
-            position: fixed;
-            bottom: 8px;
-            right: 8%;
-            z-index: 9999;
-            display: flex;
-            align-items: flex-end;
-            gap: 40px;
-            pointer-events: none;
-        }}
-        .chalk-group {{
-            display: flex;
-            gap: 10px;
-            transform: rotate(-10deg);
-            margin-bottom: 6px;
-        }}
-        .chalk {{
-            height: 12px;
-            border-radius: 2px;
-            box-shadow: 2px 2px 4px rgba(0,0,0,0.6);
-        }}
-        .chalk.white {{ width: 45px; background: #ffffff; }}
-        .chalk.yellow {{ width: 35px; background: #fdfd96; }}
-        .chalk.blue {{ width: 28px; background: #aec6cf; }}
-        .eraser {{
-            width: 110px;
-            height: 40px;
-            background: #222222;
-            border-top: 14px solid #c19a6b; /* 나무 손잡이 */
-            border-radius: 3px;
-            box-shadow: 3px 3px 8px rgba(0,0,0,0.7);
-            transform: rotate(5deg);
-        }}
-        """
+    css_base += f"""
+    [data-testid="stAppViewContainer"] {{ background-color: #e5e5ea !important; background-image: radial-gradient(circle at top right, #d1d1d6 0%, #e5e5ea 40%, #d1d1d6 100%) !important; }}
+    .stApp {{ color: {TEXT_COLOR}; }}
+    div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background: {PANEL_BG}; backdrop-filter: blur(20px); border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.05); padding: 1.5rem; height: 100%; }}
+    .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none !important; color: {TEXT_COLOR}; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
+    .sidebar-link:hover {{ background-color: rgba(0,0,0,0.05); transform: translateX(2px); }}
+    """
 
     st.markdown(f"""
     <style>
     {css_base}
     div[data-testid="stMetricValue"] > div, div[data-testid="stMetricDelta"] > div, p, span, label, .stMarkdown {{ white-space: normal !important; word-break: keep-all !important; overflow-wrap: break-word !important; }}
-    div[data-testid="stMetricValue"] {{ font-weight: 800; font-size: 2.2rem; color: {TEXT_COLOR}; letter-spacing: -0.05em; }}
+    div[data-testid="stMetricValue"] {{ font-weight: 800; font-size: 2.1rem; color: {TEXT_COLOR}; letter-spacing: -0.05em; }}
     {css_panel}
     </style>
     """, unsafe_allow_html=True)
-    
-    # 칠판 테마일 때만 화면 하단에 분필과 지우개 렌더링
-    if current_theme == "학교 칠판 테마":
-        st.markdown("""
-        <div class="chalk-ledge">
-            <div class="chalk-group">
-                <div class="chalk white"></div>
-                <div class="chalk yellow"></div>
-                <div class="chalk blue"></div>
-            </div>
-            <div class="eraser"></div>
-        </div>
-        """, unsafe_allow_html=True)
 
 apply_custom_css()
 
@@ -658,15 +510,15 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지: AI 시스템 분석관 
+# [6] 페이지: AI 시스템 분석관 (🔥 트렌디 위젯 카드 유지)
 # =====================================================================
 def make_metric_card(title, value, subtitle, sub_color):
     """깔끔한 모던 카드 위젯 (프로그레스바 제거로 심플함 강조)"""
     return f"""
     <div style="background:{PANEL_BG}; border:{PANEL_BORDER}; border-radius:16px; padding:24px; min-height:150px; display:flex; flex-direction:column; justify-content:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-        <div style="color:{TEXT_SUB}; font-size:1.0rem; font-weight:600; margin-bottom:12px;">{title}</div>
-        <div style="font-size:2.8rem; font-weight:800; color:{TEXT_COLOR}; line-height:1; margin-bottom:10px;">{value}</div>
-        <div style="font-size:1.1rem; font-weight:700; color:{sub_color};">{subtitle}</div>
+        <div style="color:{TEXT_SUB}; font-size:1.2rem; font-weight:600; margin-bottom:12px;">{title}</div>
+        <div style="font-size:3.1rem; font-weight:800; color:{TEXT_COLOR}; line-height:1; margin-bottom:10px;">{value}</div>
+        <div style="font-size:1.3rem; font-weight:700; color:{sub_color};">{subtitle}</div>
     </div>"""
 
 def page_ai_analyst():
@@ -719,7 +571,6 @@ def page_ai_analyst():
     q_list = quotes_r1 if ms['regime']==1 else (quotes_r2 if ms['regime']==2 else (quotes_r3 if ms['regime']==3 else quotes_r4))
 
     st.markdown("#### 📊 시장 핵심 지표 판독기")
-    
     gap_pct = float((qqq_c / ma200_c - 1) * 100)
     rsi_val = float(ms['smh_rsi'])
     vix_f = float(vix_c)
