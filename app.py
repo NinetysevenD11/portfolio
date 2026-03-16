@@ -26,7 +26,6 @@ SETTINGS_FILE = "amls_settings_v12.json"
 ACCOUNTS_FILE = "amls_multi_accounts.json"
 REQUIRED_TICKERS = ["TQQQ", "QLD", "QQQ", "SOXL", "USD", "SSO", "SPY", "GLD", "CASH"]
 
-# 삭제된 테마 잔재 강제 리셋
 VALID_THEMES = ["애플 테마", "1930년대 타자기 테마", "월스트리트 저널 테마", "학교 칠판 테마"]
 
 def load_settings():
@@ -148,8 +147,10 @@ elif current_theme == "학교 칠판 테마":
     C_UP = "#ff6961"; C_DOWN = "#77dd77"; C_WARN = "#fdfd96"; C_SAFE = "#aec6cf"
     BASE_CHART_COLORS = {'TQQQ':'#ff6961', 'SOXL':'#cbaacb', 'USD':'#aec6cf', 'QLD':'#fdfd96', 'SSO':'#ffb347', 'QQQ':'#aec6cf', 'SPY':'#77dd77', 'GLD':'#fdfd96', 'BTC-USD':'#ffb347', 'CASH':'#dcdcdc'}
 
+# 🔥 핵심 버그 수정: 테마가 바뀌면 캐싱된 차트 색상도 강제 초기화되도록 수정!
 if "last_theme" not in st.session_state['settings'] or st.session_state['settings']["last_theme"] != current_theme:
     st.session_state['settings']["text_color"] = DEFAULT_TEXT_COLOR
+    st.session_state['settings']["chart_colors"] = BASE_CHART_COLORS.copy() # 색상 강제 덮어쓰기
     st.session_state['settings']["last_theme"] = current_theme
     save_settings(st.session_state['settings'])
 
@@ -162,48 +163,58 @@ for tkr in REQUIRED_TICKERS + ['BTC-USD']:
 TEXT_COLOR = st.session_state['settings']["text_color"]
 COLOR_PALETTE = st.session_state['settings']["chart_colors"]
 
-chart_font = "Nanum Pen Script, cursive" if current_theme == "학교 칠판 테마" else "Pretendard, -apple-system, sans-serif"
+# 🔥 핵심 버그 수정: 폰트 이름 양옆에 작은따옴표 추가
+chart_font = "'Nanum Pen Script', cursive" if current_theme == "학교 칠판 테마" else "'Pretendard', -apple-system, sans-serif"
 THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family=chart_font, color=TEXT_COLOR, size=16 if current_theme == "학교 칠판 테마" else 13), margin=dict(l=0, r=0, t=30, b=0))
 
 def apply_custom_css():
     css_base = f"""
     @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
     @import url('https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap');
-    p, h1, h2, h3, h4, h5, h6, label, th, td, li, .stMarkdown, div[data-testid="stMetricValue"], div[data-testid="stMetricLabel"] {{
+    
+    /* UI 전체에 폰트 적용하되 아이콘 폰트는 깨지지 않게 보호 */
+    .stApp, p, h1, h2, h3, h4, h5, h6, label, th, td, li, .stMarkdown, div[data-testid="stMetricValue"], div[data-testid="stMetricLabel"] {{
         font-family: {chart_font} !important;
     }}
+    .material-symbols-rounded {{ font-family: 'Material Symbols Rounded' !important; }}
     """
+    
     css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; min-height: 100%; height: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.03); backdrop-filter: blur(10px); word-wrap: break-word; }}"
     
     if current_theme == "애플 테마":
         css_base += f"""
-        .stApp {{ background-color: #e5e5ea; background-image: radial-gradient(circle at top right, #d1d1d6 0%, #e5e5ea 40%, #d1d1d6 100%); color: {TEXT_COLOR}; }}
+        [data-testid="stAppViewContainer"] {{ background-color: #e5e5ea !important; background-image: radial-gradient(circle at top right, #d1d1d6 0%, #e5e5ea 40%, #d1d1d6 100%) !important; }}
+        .stApp {{ color: {TEXT_COLOR}; }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background: {PANEL_BG}; backdrop-filter: blur(20px); border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.05); padding: 1.5rem; height: 100%; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none !important; color: {TEXT_COLOR}; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
         .sidebar-link:hover {{ background-color: rgba(0,0,0,0.05); transform: translateX(2px); }}
         """
     elif current_theme == "1930년대 타자기 테마":
         css_base += f"""
-        [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
-        .stApp {{ color: {TEXT_COLOR} !important; background-color: #e4dccc; background-image: url('https://www.transparenttextures.com/patterns/old-wall.png'); }}
+        [data-testid="stAppViewContainer"] {{ background-color: #e4dccc !important; background-image: url('https://www.transparenttextures.com/patterns/old-wall.png') !important; }}
+        [data-testid="stHeader"] {{ background-color: transparent !important; }}
+        .stApp {{ color: {TEXT_COLOR} !important; }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background: {PANEL_BG} !important; border: {PANEL_BORDER} !important; border-radius: {PANEL_RADIUS} !important; box-shadow: 4px 4px 0px {TEXT_COLOR} !important; padding: 1.5rem !important; height: 100%; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border: 1px solid transparent; border-radius: 0px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-weight: bold; font-size: 0.95rem; }}
         .sidebar-link:hover {{ background-color: rgba(0,0,0,0.1); border: 1px dashed {TEXT_COLOR}; }}
         """
     elif current_theme == "월스트리트 저널 테마":
         css_base += f"""
-        [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
-        .stApp {{ color: {TEXT_COLOR}; background-color: #F4F4F0; background-image: repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.02) 2px, rgba(0,0,0,0.02) 4px); }}
+        [data-testid="stAppViewContainer"] {{ background-color: #F4F4F0 !important; background-image: repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.02) 2px, rgba(0,0,0,0.02) 4px) !important; }}
+        [data-testid="stHeader"] {{ background-color: transparent !important; }}
+        .stApp {{ color: {TEXT_COLOR}; }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background-color: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 1.5rem; box-shadow: 3px 3px 0px rgba(0,0,0,0.1); border-top: 4px solid #000000; height: 100%; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; text-decoration: none !important; color: #000000 !important; font-weight: bold; font-size: 0.95rem; border-bottom: 1px dotted #CCC; }}
         .sidebar-link:hover {{ background-color: #DDDDDD; }}
         """
     elif current_theme == "학교 칠판 테마":
+        # 🔥 핵심 버그 수정: stAppViewContainer 타겟팅으로 칠판 배경 완벽 반영
         css_base += f"""
-        [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
-        .stApp {{ color: {TEXT_COLOR} !important; background-color: #26382a; background-image: url('https://www.transparenttextures.com/patterns/black-board.png'); font-size: 1.1rem; }}
+        [data-testid="stAppViewContainer"] {{ background-color: #26382a !important; background-image: url('https://www.transparenttextures.com/patterns/black-board.png') !important; }}
+        [data-testid="stHeader"] {{ background-color: transparent !important; }}
+        .stApp {{ color: {TEXT_COLOR} !important; font-size: 1.1rem; }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background: {PANEL_BG} !important; border: {PANEL_BORDER} !important; border-radius: {PANEL_RADIUS} !important; padding: 1.5rem !important; height: 100%; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-size: 1.3rem; border-bottom: 1px solid transparent; }}
+        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-size: 1.4rem; border-bottom: 1px solid transparent; }}
         .sidebar-link:hover {{ border-bottom: 1px dashed {TEXT_COLOR}; background-color: rgba(255,255,255,0.05); }}
         """
 
@@ -324,7 +335,6 @@ def get_regime_chart_data():
     except:
         return pd.DataFrame()
 
-# 🔥 수정 1: 누락된 대시보드 데이터 함수 완벽 복구
 @st.cache_data(ttl=1800)
 def get_dashboard_data():
     tickers = ['^GSPC', '^IXIC', '^VIX', 'USDKRW=X']
@@ -557,15 +567,15 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지: AI 시스템 분석관 (🔥 수정 3: 트렌디 카드 UI 도입, 게이지 삭제)
+# [6] 페이지: AI 시스템 분석관 (트렌디 HTML 카드 UI 도입본)
 # =====================================================================
 def make_metric_card(title, value, subtitle, sub_color):
-    """깔끔한 모던 카드 위젯 (프로그레스바 제거로 심플함 강조)"""
+    """트렌디한 반응형 HTML 카드 위젯 (글씨 겹침 원천 차단)"""
     return f"""
-    <div style="background:{PANEL_BG}; border:{PANEL_BORDER}; border-radius:16px; padding:24px; min-height:150px; display:flex; flex-direction:column; justify-content:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-        <div style="color:{TEXT_SUB}; font-size:0.95rem; font-weight:600; margin-bottom:12px;">{title}</div>
-        <div style="font-size:2.4rem; font-weight:800; color:{TEXT_COLOR}; line-height:1; margin-bottom:10px;">{value}</div>
-        <div style="font-size:1.0rem; font-weight:700; color:{sub_color};">{subtitle}</div>
+    <div style="background:{PANEL_BG}; border:{PANEL_BORDER}; border-radius:16px; padding:24px; min-height:160px; display:flex; flex-direction:column; justify-content:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+        <div style="color:{TEXT_SUB}; font-size:1.0rem; font-weight:600; margin-bottom:12px;">{title}</div>
+        <div style="font-size:2.6rem; font-weight:800; color:{TEXT_COLOR}; line-height:1; margin-bottom:8px;">{value}</div>
+        <div style="font-size:1.1rem; font-weight:700; color:{sub_color};">{subtitle}</div>
     </div>"""
 
 def page_ai_analyst():
@@ -618,7 +628,7 @@ def page_ai_analyst():
     q_list = quotes_r1 if ms['regime']==1 else (quotes_r2 if ms['regime']==2 else (quotes_r3 if ms['regime']==3 else quotes_r4))
 
     st.markdown("#### 📊 시장 핵심 지표 판독기")
-    # 🔥 수정 2: 200일선 이격도 소수 첫째자리(+.1f)로 강제 포맷 적용
+    
     gap_pct = float((qqq_c / ma200_c - 1) * 100)
     rsi_val = float(ms['smh_rsi'])
     vix_f = float(vix_c)
@@ -631,14 +641,14 @@ def page_ai_analyst():
     rsi_sub = "🧊 과매도 (침체)" if rsi_val < 30 else ("➖ 중립 (보통)" if rsi_val < 50 else ("🔥 과열 (강세)" if rsi_val > 70 else "↗️ 양호 (상승)"))
     
     if mobile_mode:
-        st.markdown(make_metric_card("시장 공포지수 (VIX)", f"{vix_f:.1f}", vix_sub, vix_color), unsafe_allow_html=True); st.write("")
-        st.markdown(make_metric_card("나스닥 200일선 이격도", f"{gap_pct:+.1f}%", gap_sub, gap_color), unsafe_allow_html=True); st.write("")
-        st.markdown(make_metric_card("반도체(SMH) RSI", f"{rsi_val:.1f}", rsi_sub, rsi_color), unsafe_allow_html=True)
+        st.markdown(make_metric_card("📉 시장 공포지수 (VIX)", f"{vix_f:.1f}", vix_sub, vix_color), unsafe_allow_html=True); st.write("")
+        st.markdown(make_metric_card("📈 나스닥 200일선 이격도", f"{gap_pct:+.1f}%", gap_sub, gap_color), unsafe_allow_html=True); st.write("")
+        st.markdown(make_metric_card("🔥 반도체(SMH) RSI", f"{rsi_val:.1f}", rsi_sub, rsi_color), unsafe_allow_html=True)
     else:
         col1, col2, col3 = st.columns(3)
-        with col1: st.markdown(make_metric_card("시장 공포지수 (VIX)", f"{vix_f:.1f}", vix_sub, vix_color), unsafe_allow_html=True)
-        with col2: st.markdown(make_metric_card("나스닥 200일선 이격도", f"{gap_pct:+.1f}%", gap_sub, gap_color), unsafe_allow_html=True)
-        with col3: st.markdown(make_metric_card("반도체(SMH) RSI", f"{rsi_val:.1f}", rsi_sub, rsi_color), unsafe_allow_html=True)
+        with col1: st.markdown(make_metric_card("📉 시장 공포지수 (VIX)", f"{vix_f:.1f}", vix_sub, vix_color), unsafe_allow_html=True)
+        with col2: st.markdown(make_metric_card("📈 나스닥 200일선 이격도", f"{gap_pct:+.1f}%", gap_sub, gap_color), unsafe_allow_html=True)
+        with col3: st.markdown(make_metric_card("🔥 반도체(SMH) RSI", f"{rsi_val:.1f}", rsi_sub, rsi_color), unsafe_allow_html=True)
     
     st.write(""); st.write("")
     st.markdown("#### 🤖 AI 전략 분석관 Report")
@@ -792,7 +802,7 @@ def make_portfolio_page(acc_name):
                 csv_col1, csv_col2 = st.columns(2)
                 with csv_col1: st.download_button("💾 CSV 내보내기", data=disp_df[["태그","티커 (Ticker)","수량 (주/달러)","평균 단가 ($)","매입 환율"]].to_csv(index=False).encode('utf-8'), file_name=f"{acc_name}_portfolio.csv", mime='text/csv')
                 with csv_col2:
-                    uploaded_file = st.file_uploader("📂 CSV 불러오기", type=['csv'], label_visibility="collapsed")
+                    uploaded_file = st.file_uploader("📂 CSV 불러오기 (위의 내보낸 양식 유지)", type=['csv'], label_visibility="collapsed")
                     if uploaded_file is not None and st.button("파일 적용"):
                         st.session_state['accounts'][acc_name]["portfolio"] = pd.read_csv(uploaded_file).to_dict(orient="records"); save_accounts_data(st.session_state['accounts']); st.rerun()
 
