@@ -140,17 +140,17 @@ elif current_theme == "월스트리트 저널 테마":
     C_UP = "#006400"; C_DOWN = "#8B0000"; C_WARN = "#B8860B"; C_SAFE = "#000080"
     BASE_CHART_COLORS = {'TQQQ':'#8B0000', 'SOXL':'#556b2f', 'USD':'#2F4F4F', 'QLD':'#B8860B', 'SSO':'#DAA520', 'QQQ':'#000080', 'SPY':'#4682B4', 'GLD':'#BDB76B', 'BTC-USD':'#f7931a', 'CASH':'#696969'}
 
+# 🔥 칠판 테마 시각적 요소 전면 개편 (분필 테두리, 어두운 바탕)
 elif current_theme == "학교 칠판 테마":
-    DEFAULT_TEXT_COLOR = "#fdfdfd"; TEXT_SUB = "#dcdcdc"
-    PANEL_BG = "rgba(45, 68, 54, 0.85)"; PANEL_BORDER = "2px dashed #a8b5a3"; PANEL_RADIUS = "8px"
+    DEFAULT_TEXT_COLOR = "#ffffff"; TEXT_SUB = "#dcdcdc"
+    PANEL_BG = "rgba(15, 30, 20, 0.6)"; PANEL_BORDER = "2px dashed rgba(255, 255, 255, 0.6)"; PANEL_RADIUS = "4px"
     WIDGET_THEME = "dark"
     C_UP = "#ff6961"; C_DOWN = "#77dd77"; C_WARN = "#fdfd96"; C_SAFE = "#aec6cf"
     BASE_CHART_COLORS = {'TQQQ':'#ff6961', 'SOXL':'#cbaacb', 'USD':'#aec6cf', 'QLD':'#fdfd96', 'SSO':'#ffb347', 'QQQ':'#aec6cf', 'SPY':'#77dd77', 'GLD':'#fdfd96', 'BTC-USD':'#ffb347', 'CASH':'#dcdcdc'}
 
-# 🔥 핵심 버그 수정: 테마가 바뀌면 캐싱된 차트 색상도 강제 초기화되도록 수정!
 if "last_theme" not in st.session_state['settings'] or st.session_state['settings']["last_theme"] != current_theme:
     st.session_state['settings']["text_color"] = DEFAULT_TEXT_COLOR
-    st.session_state['settings']["chart_colors"] = BASE_CHART_COLORS.copy() # 색상 강제 덮어쓰기
+    st.session_state['settings']["chart_colors"] = BASE_CHART_COLORS.copy()
     st.session_state['settings']["last_theme"] = current_theme
     save_settings(st.session_state['settings'])
 
@@ -163,7 +163,6 @@ for tkr in REQUIRED_TICKERS + ['BTC-USD']:
 TEXT_COLOR = st.session_state['settings']["text_color"]
 COLOR_PALETTE = st.session_state['settings']["chart_colors"]
 
-# 🔥 핵심 버그 수정: 폰트 이름 양옆에 작은따옴표 추가
 chart_font = "'Nanum Pen Script', cursive" if current_theme == "학교 칠판 테마" else "'Pretendard', -apple-system, sans-serif"
 THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family=chart_font, color=TEXT_COLOR, size=16 if current_theme == "학교 칠판 테마" else 13), margin=dict(l=0, r=0, t=30, b=0))
 
@@ -172,8 +171,7 @@ def apply_custom_css():
     @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
     @import url('https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap');
     
-    /* UI 전체에 폰트 적용하되 아이콘 폰트는 깨지지 않게 보호 */
-    .stApp, p, h1, h2, h3, h4, h5, h6, label, th, td, li, .stMarkdown, div[data-testid="stMetricValue"], div[data-testid="stMetricLabel"] {{
+    p, h1, h2, h3, h4, h5, h6, label, th, td, li, .stMarkdown, div[data-testid="stMetricValue"], div[data-testid="stMetricLabel"] {{
         font-family: {chart_font} !important;
     }}
     .material-symbols-rounded {{ font-family: 'Material Symbols Rounded' !important; }}
@@ -208,14 +206,25 @@ def apply_custom_css():
         .sidebar-link:hover {{ background-color: #DDDDDD; }}
         """
     elif current_theme == "학교 칠판 테마":
-        # 🔥 핵심 버그 수정: stAppViewContainer 타겟팅으로 칠판 배경 완벽 반영
+        # 🔥 리얼 칠판 질감 및 분필 효과 극대화
         css_base += f"""
-        [data-testid="stAppViewContainer"] {{ background-color: #26382a !important; background-image: url('https://www.transparenttextures.com/patterns/black-board.png') !important; }}
+        [data-testid="stAppViewContainer"] {{ 
+            background-color: #2b3a32 !important; 
+            background-image: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%), url('https://www.transparenttextures.com/patterns/chalkboard.png') !important; 
+        }}
         [data-testid="stHeader"] {{ background-color: transparent !important; }}
-        .stApp {{ color: {TEXT_COLOR} !important; font-size: 1.1rem; }}
-        div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background: {PANEL_BG} !important; border: {PANEL_BORDER} !important; border-radius: {PANEL_RADIUS} !important; padding: 1.5rem !important; height: 100%; }}
+        .stApp {{ color: {TEXT_COLOR} !important; font-size: 1.15rem; }}
+        div[data-testid="stVerticalBlockBorderWrapper"] > div {{ 
+            background: {PANEL_BG} !important; 
+            border: {PANEL_BORDER} !important; 
+            border-radius: {PANEL_RADIUS} !important; 
+            padding: 1.5rem !important; 
+            height: 100%; 
+            box-shadow: none !important; 
+        }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-size: 1.4rem; border-bottom: 1px solid transparent; }}
-        .sidebar-link:hover {{ border-bottom: 1px dashed {TEXT_COLOR}; background-color: rgba(255,255,255,0.05); }}
+        .sidebar-link:hover {{ border-bottom: 1px dashed {TEXT_COLOR}; background-color: rgba(255,255,255,0.08); }}
+        hr {{ border-bottom: 2px dashed rgba(255,255,255,0.4) !important; border-top: none !important; }}
         """
 
     st.markdown(f"""
@@ -250,6 +259,7 @@ def get_market_status():
         }
 
     today = data.iloc[-1]; yesterday = data.iloc[-2]
+    
     ma200_s = data['QQQ'].rolling(200).mean()
     ma50_s = data['QQQ'].rolling(50).mean()
     smh_ma50_s = data['SMH'].rolling(50).mean()
@@ -567,15 +577,15 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지: AI 시스템 분석관 (트렌디 HTML 카드 UI 도입본)
+# [6] 페이지: AI 시스템 분석관 (🔥 트렌디 위젯 카드 유지)
 # =====================================================================
 def make_metric_card(title, value, subtitle, sub_color):
-    """트렌디한 반응형 HTML 카드 위젯 (글씨 겹침 원천 차단)"""
+    """깔끔한 모던 카드 위젯 (프로그레스바 제거로 심플함 강조)"""
     return f"""
-    <div style="background:{PANEL_BG}; border:{PANEL_BORDER}; border-radius:16px; padding:24px; min-height:160px; display:flex; flex-direction:column; justify-content:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-        <div style="color:{TEXT_SUB}; font-size:1.0rem; font-weight:600; margin-bottom:12px;">{title}</div>
-        <div style="font-size:2.6rem; font-weight:800; color:{TEXT_COLOR}; line-height:1; margin-bottom:8px;">{value}</div>
-        <div style="font-size:1.1rem; font-weight:700; color:{sub_color};">{subtitle}</div>
+    <div style="background:{PANEL_BG}; border:{PANEL_BORDER}; border-radius:16px; padding:24px; min-height:150px; display:flex; flex-direction:column; justify-content:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+        <div style="color:{TEXT_SUB}; font-size:0.95rem; font-weight:600; margin-bottom:12px;">{title}</div>
+        <div style="font-size:2.4rem; font-weight:800; color:{TEXT_COLOR}; line-height:1; margin-bottom:10px;">{value}</div>
+        <div style="font-size:1.0rem; font-weight:700; color:{sub_color};">{subtitle}</div>
     </div>"""
 
 def page_ai_analyst():
@@ -608,10 +618,10 @@ def page_ai_analyst():
     rsi_stat_txt = "통과" if ms['smh_rsi'] > 50 else "미달"
     soxl_res = "승인" if (smh_c > smh_ma50_c and ms['smh_3m_ret'] > 0.05 and ms['smh_rsi'] > 50) else "보류"
 
-    if app_reg == 1: reg_t = "[R1: 완벽 강세장]"; reg_d = f"VIX({float(vix_c):.1f}) 안정권 및 나스닥 정배열 유지. 3배 레버리지를 가동해 상승분을 캡처하십시오."
-    elif app_reg == 2: reg_t = "[R2: 조정/경계]"; reg_d = f"장기 추세는 유효하나 VIX가 상승했거나 단기 모멘텀이 약화. 레버리지를 2배수 이하로 축소하십시오."
-    elif app_reg == 3: reg_t = "[R3: 장기 하락장]"; reg_d = f"나스닥이 200일선을 하향 이탈. 레버리지 청산 후 GLD로 방어하십시오."
-    else: reg_t = "[R4: 시스템 패닉]"; reg_d = f"VIX 40 돌파. 주식을 전량 매도하고 안전자산으로 대피하십시오."
+    if app_reg == 1: reg_t = "[R1: 완벽 강세장]"; reg_d = f"VIX({float(vix_c):.1f}) 안정권 및 나스닥({float(qqq_c):.0f}) 정배열 유지. 3배 레버리지를 가동해 상승분을 캡처하십시오."
+    elif app_reg == 2: reg_t = "[R2: 조정/경계]"; reg_d = f"장기 추세는 유효하나 VIX({float(vix_c):.1f})가 상승했거나 단기 모멘텀이 약화. 레버리지를 2배수 이하로 축소하십시오."
+    elif app_reg == 3: reg_t = "[R3: 장기 하락장]"; reg_d = f"나스닥({float(qqq_c):.0f})이 200일선({float(ma200_c):.0f})을 하향 이탈. 레버리지 청산 후 GLD로 방어하십시오."
+    else: reg_t = "[R4: 시스템 패닉]"; reg_d = f"VIX({float(vix_c):.1f}) 40 돌파. 주식을 전량 매도하고 안전자산으로 대피하십시오."
 
     dir_map = {"ascending": "상향 전환", "descending": "하향 전환", "stable": "현재 상태 유지"}; dir_kr = dir_map.get(direction, "-")
     if direction == 'ascending' and dur <= 10: summ = "상향 전환 직후 골든타임. 진입 비중 확대를 적극 권장합니다."
@@ -628,17 +638,16 @@ def page_ai_analyst():
     q_list = quotes_r1 if ms['regime']==1 else (quotes_r2 if ms['regime']==2 else (quotes_r3 if ms['regime']==3 else quotes_r4))
 
     st.markdown("#### 📊 시장 핵심 지표 판독기")
-    
     gap_pct = float((qqq_c / ma200_c - 1) * 100)
     rsi_val = float(ms['smh_rsi'])
     vix_f = float(vix_c)
     
     vix_color = C_SAFE if vix_f < 25 else (C_WARN if vix_f < 40 else C_DOWN)
-    vix_sub = "✅ 안정권 (Stable)" if vix_f < 25 else ("⚠️ 경계 구간 (Caution)" if vix_f < 40 else "🚨 위험권 (Panic)")
+    vix_sub = "안정권 (Stable)" if vix_f < 25 else ("경계 구간 (Caution)" if vix_f < 40 else "위험권 (Panic)")
     gap_color = C_UP if gap_pct > 0 else C_DOWN
-    gap_sub = "📈 장기 추세 상회 (강세)" if gap_pct > 0 else "📉 장기 추세 하회 (약세)"
+    gap_sub = "장기 추세 상회 (강세)" if gap_pct > 0 else "장기 추세 하회 (약세)"
     rsi_color = C_DOWN if rsi_val < 30 else (C_WARN if rsi_val < 50 else C_UP)
-    rsi_sub = "🧊 과매도 (침체)" if rsi_val < 30 else ("➖ 중립 (보통)" if rsi_val < 50 else ("🔥 과열 (강세)" if rsi_val > 70 else "↗️ 양호 (상승)"))
+    rsi_sub = "과매도 (침체)" if rsi_val < 30 else ("중립 (보통)" if rsi_val < 50 else ("과열 (강세)" if rsi_val > 70 else "양호 (상승)"))
     
     if mobile_mode:
         st.markdown(make_metric_card("📉 시장 공포지수 (VIX)", f"{vix_f:.1f}", vix_sub, vix_color), unsafe_allow_html=True); st.write("")
@@ -692,7 +701,7 @@ def page_ai_analyst():
             fig_rc.update_layout(**cust_rc)
             with st.container(border=True):
                 st.plotly_chart(fig_rc, use_container_width=True)
-                st.caption("💡 나스닥(QQQ)이 200일 이동평균선(빨간선) 위에 있는지, VIX가 25/40을 넘었는지가 핵심입니다.")
+                st.caption("💡 나스닥(QQQ)이 200일 이동평균선 위에 있는지, VIX가 25/40을 넘었는지가 핵심입니다.")
 
 
 # =====================================================================
@@ -802,7 +811,7 @@ def make_portfolio_page(acc_name):
                 csv_col1, csv_col2 = st.columns(2)
                 with csv_col1: st.download_button("💾 CSV 내보내기", data=disp_df[["태그","티커 (Ticker)","수량 (주/달러)","평균 단가 ($)","매입 환율"]].to_csv(index=False).encode('utf-8'), file_name=f"{acc_name}_portfolio.csv", mime='text/csv')
                 with csv_col2:
-                    uploaded_file = st.file_uploader("📂 CSV 불러오기 (위의 내보낸 양식 유지)", type=['csv'], label_visibility="collapsed")
+                    uploaded_file = st.file_uploader("📂 CSV 불러오기", type=['csv'], label_visibility="collapsed")
                     if uploaded_file is not None and st.button("파일 적용"):
                         st.session_state['accounts'][acc_name]["portfolio"] = pd.read_csv(uploaded_file).to_dict(orient="records"); save_accounts_data(st.session_state['accounts']); st.rerun()
 
