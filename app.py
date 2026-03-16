@@ -976,7 +976,7 @@ def make_portfolio_page(acc_name):
                             if search_q: h_df = h_df[h_df['Log'].str.contains(search_q, case=False, na=False)]
                             st.dataframe(h_df, hide_index=True, width="stretch", height=250)
                 st.write("")
-    page_func.__name__ = f"pf_{abs(hash(acc_name))}"; return page_func
+        page_func.__name__ = f"pf_{abs(hash(acc_name))}"; return page_func
 
 
 # --- 페이지: 계좌 관리 ---
@@ -1004,7 +1004,7 @@ def page_strategy_specification():
 # =====================================================================
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🎨 테마 설정")
-selected_theme = st.sidebar.selectbox("테마를 선택하세요", theme_list, index=theme_list.index(current_theme))
+selected_theme = st.sidebar.selectbox("테마를 선택하세요", VALID_THEMES, index=VALID_THEMES.index(current_theme))
 if selected_theme != current_theme:
     st.session_state['settings']['theme'] = selected_theme; save_settings(st.session_state['settings']); st.rerun()
 
