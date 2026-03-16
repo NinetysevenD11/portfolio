@@ -107,10 +107,10 @@ if needs_save: save_accounts_data(st.session_state['accounts'])
 
 
 # =====================================================================
-# [2] 동적 테마 및 레이아웃 설정
+# [2] 동적 테마 및 레이아웃 설정 (엑셀 삭제, 학교 칠판 테마 추가)
 # =====================================================================
 current_theme = st.session_state['settings'].get("theme", "애플 테마")
-theme_list = ["애플 테마", "1930년대 타자기 테마", "월스트리트 저널 테마", "엑셀 테마"]
+theme_list = ["애플 테마", "1930년대 타자기 테마", "월스트리트 저널 테마", "학교 칠판 테마"]
 
 if current_theme not in theme_list:
     current_theme = "애플 테마"
@@ -136,12 +136,12 @@ elif current_theme == "월스트리트 저널 테마":
     C_UP = "#006400"; C_DOWN = "#8B0000"; C_WARN = "#B8860B"; C_SAFE = "#000080"
     BASE_CHART_COLORS = {'TQQQ':'#8B0000', 'SOXL':'#556b2f', 'USD':'#2F4F4F', 'QLD':'#B8860B', 'SSO':'#DAA520', 'QQQ':'#000080', 'SPY':'#4682B4', 'GLD':'#BDB76B', 'BTC-USD':'#f7931a', 'CASH':'#696969'}
 
-elif current_theme == "엑셀 테마":
-    DEFAULT_TEXT_COLOR = "#333333"; TEXT_SUB = "#666666"
-    PANEL_BG = "rgba(255, 255, 255, 0.95)"; PANEL_BORDER = "1px solid #D4D4D4"; PANEL_RADIUS = "0px"
-    WIDGET_THEME = "light"
-    C_UP = "#107C41"; C_DOWN = "#C00000"; C_WARN = "#FFB900"; C_SAFE = "#0078D4"
-    BASE_CHART_COLORS = {'TQQQ':'#C00000', 'SOXL':'#800080', 'USD':'#0078D4', 'QLD':'#FFB900', 'SSO':'#E36C09', 'QQQ':'#0078D4', 'SPY':'#107C41', 'GLD':'#FFC000', 'BTC-USD':'#f7931a', 'CASH':'#7F7F7F'}
+elif current_theme == "학교 칠판 테마":
+    DEFAULT_TEXT_COLOR = "#fdfdfd"; TEXT_SUB = "#dcdcdc"
+    PANEL_BG = "rgba(45, 68, 54, 0.85)"; PANEL_BORDER = "2px dashed #a8b5a3"; PANEL_RADIUS = "8px"
+    WIDGET_THEME = "dark"
+    C_UP = "#ff6961"; C_DOWN = "#77dd77"; C_WARN = "#fdfd96"; C_SAFE = "#aec6cf"
+    BASE_CHART_COLORS = {'TQQQ':'#ff6961', 'SOXL':'#cbaacb', 'USD':'#aec6cf', 'QLD':'#fdfd96', 'SSO':'#ffb347', 'QQQ':'#aec6cf', 'SPY':'#77dd77', 'GLD':'#fdfd96', 'BTC-USD':'#ffb347', 'CASH':'#dcdcdc'}
 
 
 if "last_theme" not in st.session_state['settings'] or st.session_state['settings']["last_theme"] != current_theme:
@@ -158,22 +158,19 @@ for tkr in REQUIRED_TICKERS + ['BTC-USD']:
 TEXT_COLOR = st.session_state['settings']["text_color"]
 COLOR_PALETTE = st.session_state['settings']["chart_colors"]
 
-THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Pretendard, -apple-system, sans-serif", color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0))
+# 공통 폰트 설정 (칠판 테마일 경우 다른 폰트 적용)
+chart_font = "Nanum Pen Script, cursive" if current_theme == "학교 칠판 테마" else "Pretendard, -apple-system, sans-serif"
+THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family=chart_font, color=TEXT_COLOR, size=14 if current_theme == "학교 칠판 테마" else 13), margin=dict(l=0, r=0, t=30, b=0))
 
 def apply_custom_css():
-    css_base = f"""
-    @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
-    html, body, p, span, div, h1, h2, h3, h4, h5, h6, label, input, button, select {{ 
-        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-        letter-spacing: -0.02em; 
-    }}
-    .material-symbols-rounded {{ font-family: 'Material Symbols Rounded' !important; }} 
-    """
-    
+    css_base = ""
     css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; min-height: 100%; height: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.03); backdrop-filter: blur(10px); word-wrap: break-word; }}"
     
     if current_theme == "애플 테마":
         css_base += f"""
+        @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+        html, body, p, span, div, h1, h2, h3, h4, h5, h6, label, input, button, select {{ font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.02em; }}
+        .material-symbols-rounded {{ font-family: 'Material Symbols Rounded' !important; }}
         .stApp {{ background-color: #e5e5ea; background-image: radial-gradient(circle at top right, #d1d1d6 0%, #e5e5ea 40%, #d1d1d6 100%); color: {TEXT_COLOR}; }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background: {PANEL_BG}; backdrop-filter: blur(20px); border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.05); padding: 1.5rem; height: 100%; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none !important; color: {TEXT_COLOR}; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
@@ -181,29 +178,37 @@ def apply_custom_css():
         """
     elif current_theme == "1930년대 타자기 테마":
         css_base += f"""
+        @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+        html, body, p, span, div, h1, h2, h3, h4, h5, h6, label, input, button, select {{ font-family: 'Special Elite', 'Courier New', monospace; }}
+        .material-symbols-rounded {{ font-family: 'Material Symbols Rounded' !important; }}
         [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
         .stApp {{ color: {TEXT_COLOR} !important; background-color: #e4dccc; background-image: url('https://www.transparenttextures.com/patterns/old-wall.png'); }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background: {PANEL_BG} !important; border: {PANEL_BORDER} !important; border-radius: {PANEL_RADIUS} !important; box-shadow: 4px 4px 0px {TEXT_COLOR} !important; padding: 1.5rem !important; height: 100%; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border: 1px solid transparent; border-radius: 0px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-weight: bold; font-size: 0.95rem; transition: background-color 0.2s; }}
         .sidebar-link:hover {{ background-color: rgba(0,0,0,0.1); border: 1px dashed {TEXT_COLOR}; }}
         """
-        css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; min-height: 100%; height: auto; box-shadow: 4px 4px 0px {TEXT_COLOR}; }}"
     elif current_theme == "월스트리트 저널 테마":
         css_base += f"""
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
+        html, body, p, span, div, h1, h2, h3, h4, h5, h6, label, input, button, select {{ font-family: 'Playfair Display', serif; }}
+        .material-symbols-rounded {{ font-family: 'Material Symbols Rounded' !important; }}
         [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
         .stApp {{ color: {TEXT_COLOR}; background-color: #F4F4F0; background-image: repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.02) 2px, rgba(0,0,0,0.02) 4px); }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background-color: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 1.5rem; box-shadow: 3px 3px 0px rgba(0,0,0,0.1); border-top: 4px solid #000000; height: 100%; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; text-decoration: none !important; color: #000000 !important; font-weight: bold; font-size: 0.95rem; border-bottom: 1px dotted #CCC; }}
         .sidebar-link:hover {{ background-color: #DDDDDD; }}
         """
-    elif current_theme == "엑셀 테마":
+    elif current_theme == "학교 칠판 테마":
         css_base += f"""
-        .stApp {{ color: {TEXT_COLOR} !important; background-color: #F3F2F1; background-image: linear-gradient(#e1dfdd 1px, transparent 1px), linear-gradient(90deg, #e1dfdd 1px, transparent 1px); background-size: 20px 20px; }}
-        div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background-color: {PANEL_BG} !important; border: {PANEL_BORDER} !important; border-top: 3px solid #107C41 !important; border-radius: {PANEL_RADIUS} !important; padding: 1.5rem !important; box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important; height: 100%; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 6px 8px; margin-bottom: 2px; text-decoration: none !important; color: #0078D4 !important; font-size: 0.95rem; border-bottom: 1px solid transparent; }}
-        .sidebar-link:hover {{ border-bottom: 1px solid #0078D4; background-color: rgba(0,0,0,0.05); }}
+        @import url('https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap');
+        html, body, p, span, div, h1, h2, h3, h4, h5, h6, label, input, button, select {{ font-family: 'Nanum Pen Script', cursive; font-size: 1.2rem; letter-spacing: 0.03em; }}
+        .material-symbols-rounded {{ font-family: 'Material Symbols Rounded' !important; font-size: 1.2rem; }}
+        [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
+        .stApp {{ color: {TEXT_COLOR} !important; background-color: #26382a; background-image: url('https://www.transparenttextures.com/patterns/black-board.png'); }}
+        div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background: {PANEL_BG} !important; border: {PANEL_BORDER} !important; border-radius: {PANEL_RADIUS} !important; padding: 1.5rem !important; height: 100%; }}
+        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-size: 1.3rem; border-bottom: 1px solid transparent; }}
+        .sidebar-link:hover {{ border-bottom: 1px dashed {TEXT_COLOR}; background-color: rgba(255,255,255,0.05); }}
         """
-        css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-top: 3px solid #107C41 !important; border-radius: {PANEL_RADIUS}; padding: 16px; min-height: 100%; height: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}"
 
     st.markdown(f"""
     <style>
@@ -623,7 +628,7 @@ def page_amls_backtest():
             fig_p = go.Figure(go.Pie(labels=list(w.keys()), values=list(w.values()), hole=0.5, marker=dict(colors=[COLOR_PALETTE.get(k.split('/')[0], '#888') for k in w.keys()])))
             cust_p = THEME_LAYOUT.copy(); cust_p.update(title=f"R{r}", title_x=0.5, height=250, margin=dict(t=40,b=10,l=10,r=10), showlegend=False)
             fig_p.update_layout(**cust_p)
-            fig_p.update_traces(textinfo='label+percent', textposition='inside', textfont=dict(color="#ffffff" if current_theme in ["1930년대 타자기 테마", "월스트리트 저널 테마", "블룸버그 터미널 테마"] else TEXT_COLOR, size=11))
+            fig_p.update_traces(textinfo='label+percent', textposition='inside', textfont=dict(color="#ffffff" if current_theme in ["1930년대 타자기 테마", "월스트리트 저널 테마", "학교 칠판 테마"] else TEXT_COLOR, size=11))
             col.plotly_chart(fig_p, use_container_width=True)
 
     with tab2:
@@ -650,8 +655,21 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지 구성: AI 시스템 분석관
+# [6] 페이지 구성: AI 시스템 분석관 (트렌디 HTML/CSS 위젯 도입)
 # =====================================================================
+def make_metric_card(title, value, subtitle, prog_pct, bar_color):
+    """트렌디한 반응형 HTML 카드 위젯 생성 함수 (Plotly 글씨 겹침 원천 차단)"""
+    return f"""
+    <div style="background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); height: 100%; display: flex; flex-direction: column; justify-content: center; overflow: hidden;">
+        <div style="color: {TEXT_COLOR}; font-size: 0.95rem; font-weight: 600; opacity: 0.8; margin-bottom: 8px; white-space: nowrap;">{title}</div>
+        <div style="font-size: 2.4rem; font-weight: 800; color: {TEXT_COLOR}; margin-bottom: 5px; line-height: 1.1;">{value}</div>
+        <div style="font-size: 0.9rem; font-weight: 700; color: {bar_color}; margin-bottom: 12px;">{subtitle}</div>
+        <div style="width: 100%; background: rgba(150,150,150,0.2); height: 8px; border-radius: 4px; overflow: hidden;">
+            <div style="width: {max(0, min(100, prog_pct))}%; background: {bar_color}; height: 100%; border-radius: 4px; transition: width 0.5s ease-in-out;"></div>
+        </div>
+    </div>
+    """
+
 def page_ai_analyst():
     st.title("⚡ AI 시스템 분석관")
     mobile_mode = st.sidebar.checkbox("📱 모바일 간편뷰 모드", value=False, help="작은 화면에서 텍스트와 핵심 지표만 크게 봅니다.")
@@ -716,70 +734,35 @@ def page_ai_analyst():
     quotes_r4 = ["남들이 겁을 먹고 있을 때 욕심을 부려라. - 워런 버핏", "공포가 절정에 달했을 때가 가장 안전한 매수 시점이다. - 존 템플턴"]
     q_list = quotes_r1 if ms['regime']==1 else (quotes_r2 if ms['regime']==2 else (quotes_r3 if ms['regime']==3 else quotes_r4))
 
+    # 🔥 트렌디한 HTML/CSS 카드 위젯 렌더링 (글씨 겹침 절대 불가)
     st.markdown("#### 📊 시장 핵심 지표 판독기")
     
+    gap_pct = (qqq_c / ma200_c - 1) * 100
+    
+    # 색상 및 프로그레스바 설정
+    vix_color = C_SAFE if vix_c < 25 else (C_WARN if vix_c < 40 else C_DOWN)
+    vix_stat = "안정권" if vix_c < 25 else ("경계" if vix_c < 40 else "위험권")
+    vix_prog = (vix_c / 80) * 100
+    
+    gap_color = C_UP if gap_pct > 0 else C_DOWN
+    gap_stat = "장기 추세 상회 (강세)" if gap_pct > 0 else "장기 추세 하회 (약세)"
+    gap_prog = ((gap_pct + 30) / 60) * 100 # -30~+30 을 0~100 스케일로 매핑
+    
+    rsi_val = ms['smh_rsi']
+    rsi_color = C_SAFE if rsi_val > 70 else (C_WARN if rsi_val > 30 else C_DOWN)
+    rsi_stat = "상승 모멘텀 (과열)" if rsi_val > 70 else ("하락 모멘텀 (침체)" if rsi_val < 30 else "보통")
+    
     if mobile_mode:
-        col1, col2, col3 = st.columns(3)
-        col1.metric("VIX", f"{vix_c:.1f}", "위험" if vix_c>=25 else "안정", delta_color="inverse")
-        gap = (qqq_c/ma200_c-1)*100
-        col2.metric("QQQ 200일 이격", f"{gap:+.1f}%", "하회" if gap<0 else "상회", delta_color="normal")
-        col3.metric("SMH RSI", f"{ms['smh_rsi']:.1f}", "과열" if ms['smh_rsi']>70 else ("침체" if ms['smh_rsi']<30 else "보통"), delta_color="off")
+        st.components.v1.html(make_metric_card("📉 시장 공포지수 (VIX)", f"{vix_c:.1f}", vix_stat, vix_prog, vix_color), height=140)
+        st.components.v1.html(make_metric_card("📈 나스닥 200일선 이격도", f"{gap_pct:+.1f}%", gap_stat, gap_prog, gap_color), height=140)
+        st.components.v1.html(make_metric_card("🔥 반도체(SMH) 단기 RSI", f"{rsi_val:.1f}", rsi_stat, rsi_val, rsi_color), height=140)
     else:
         col1, col2, col3 = st.columns(3)
-        with col1:
-            with st.container(border=True):
-                st.markdown(f"<div style='text-align:center; font-weight:bold; font-size:1.1rem; color:{TEXT_SUB}; margin-bottom:5px;'>📉 시장 공포지수 (VIX)</div>", unsafe_allow_html=True)
-                fig_vix = go.Figure(go.Indicator(
-                    mode="number+gauge", value=vix_c,
-                    number={'valueformat': ".1f", 'font': {'size': 32, 'color': TEXT_COLOR, 'family': "Pretendard"}},
-                    gauge={
-                        'shape': "bullet", 'axis': {'range': [0, 60], 'visible': False},
-                        'threshold': {'line': {'color': "red", 'width': 3}, 'thickness': 0.75, 'value': 40},
-                        'steps': [{'range': [0, 25], 'color': "rgba(46,204,113,0.2)"},
-                                  {'range': [25, 40], 'color': "rgba(243,156,18,0.2)"},
-                                  {'range': [40, 60], 'color': "rgba(231,76,60,0.2)"}],
-                        'bar': {'color': C_UP if vix_c < 25 else (C_WARN if vix_c < 40 else C_DOWN), 'thickness': 0.5}
-                    }
-                ))
-                fig_vix.update_layout(height=60, margin=dict(t=0, b=0, l=10, r=30), paper_bgcolor="rgba(0,0,0,0)")
-                st.plotly_chart(fig_vix, use_container_width=True, config={'displayModeBar': False})
+        with col1: st.markdown(make_metric_card("📉 시장 공포지수 (VIX)", f"{vix_c:.1f}", vix_stat, vix_prog, vix_color), unsafe_allow_html=True)
+        with col2: st.markdown(make_metric_card("📈 나스닥 200일선 이격도", f"{gap_pct:+.1f}%", gap_stat, gap_prog, gap_color), unsafe_allow_html=True)
+        with col3: st.markdown(make_metric_card("🔥 반도체(SMH) 단기 RSI", f"{rsi_val:.1f}", rsi_stat, rsi_val, rsi_color), unsafe_allow_html=True)
 
-        with col2:
-            with st.container(border=True):
-                gap_pct = (qqq_c / ma200_c - 1) * 100
-                st.markdown(f"<div style='text-align:center; font-weight:bold; font-size:1.1rem; color:{TEXT_SUB}; margin-bottom:5px;'>📈 나스닥 200일선 이격도</div>", unsafe_allow_html=True)
-                fig_qqq = go.Figure(go.Indicator(
-                    mode="number+gauge", value=gap_pct,
-                    number={'valueformat': "+.1f", 'suffix': "%", 'font': {'size': 32, 'color': TEXT_COLOR, 'family': "Pretendard"}},
-                    gauge={
-                        'shape': "bullet", 'axis': {'range': [-30, 30], 'visible': False},
-                        'threshold': {'line': {'color': "orange", 'width': 3}, 'thickness': 0.75, 'value': 0},
-                        'steps': [{'range': [-30, 0], 'color': "rgba(231,76,60,0.2)"},
-                                  {'range': [0, 30], 'color': "rgba(46,204,113,0.2)"}],
-                        'bar': {'color': C_UP if gap_pct > 0 else C_DOWN, 'thickness': 0.5}
-                    }
-                ))
-                fig_qqq.update_layout(height=60, margin=dict(t=0, b=0, l=10, r=30), paper_bgcolor="rgba(0,0,0,0)")
-                st.plotly_chart(fig_qqq, use_container_width=True, config={'displayModeBar': False})
-
-        with col3:
-            with st.container(border=True):
-                st.markdown(f"<div style='text-align:center; font-weight:bold; font-size:1.1rem; color:{TEXT_SUB}; margin-bottom:5px;'>🔥 반도체(SMH) 단기 RSI</div>", unsafe_allow_html=True)
-                fig_rsi = go.Figure(go.Indicator(
-                    mode="number+gauge", value=ms['smh_rsi'],
-                    number={'valueformat': ".1f", 'font': {'size': 32, 'color': TEXT_COLOR, 'family': "Pretendard"}},
-                    gauge={
-                        'shape': "bullet", 'axis': {'range': [0, 100], 'visible': False},
-                        'threshold': {'line': {'color': "green", 'width': 3}, 'thickness': 0.75, 'value': 50},
-                        'steps': [{'range': [0, 30], 'color': "rgba(231,76,60,0.2)"},
-                                  {'range': [30, 70], 'color': "rgba(52,152,219,0.2)"},
-                                  {'range': [70, 100], 'color': "rgba(243,156,18,0.2)"}],
-                        'bar': {'color': "#3498db" if ms['smh_rsi'] > 50 else C_DOWN, 'thickness': 0.5}
-                    }
-                ))
-                fig_rsi.update_layout(height=60, margin=dict(t=0, b=0, l=10, r=30), paper_bgcolor="rgba(0,0,0,0)")
-                st.plotly_chart(fig_rsi, use_container_width=True, config={'displayModeBar': False})
-
+    st.write("")
     st.write("")
 
     st.markdown("#### 🤖 AI 전략 분석관 Report")
@@ -953,7 +936,6 @@ def make_portfolio_page(acc_name):
         if history_changed: save_accounts_data(st.session_state['accounts'])
 
         for block in current_layout:
-            
             if block == "🎯 목표 달성률":
                 target_val = curr_acc_data.get("target_portfolio_value", 100000.0)
                 progress_pct = (total_val_now / target_val) * 100 if target_val > 0 else 0.0
@@ -1203,7 +1185,7 @@ def page_strategy_specification():
 # =====================================================================
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🎨 테마 설정")
-theme_list = ["애플 테마", "1930년대 타자기 테마", "월스트리트 저널 테마", "엑셀 테마"]
+theme_list = ["애플 테마", "1930년대 타자기 테마", "월스트리트 저널 테마", "학교 칠판 테마"]
 selected_theme = st.sidebar.selectbox("테마를 선택하세요", theme_list, index=theme_list.index(current_theme))
 if selected_theme != current_theme:
     st.session_state['settings']['theme'] = selected_theme
