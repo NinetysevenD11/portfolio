@@ -14,26 +14,12 @@ import os
 warnings.filterwarnings('ignore')
 
 # =====================================================================
-# [0] 시스템 설정 및 동적 테마 엔진
+# [0] 시스템 설정 및 단일 테마(애플 테마) 적용
 # =====================================================================
 st.set_page_config(page_title="AMLS 퀀트 포트폴리오", layout="wide", initial_sidebar_state="expanded")
 
-# 테마 추가/삭제에 따른 충돌 방지를 위해 v11로 세팅 파일 업데이트
-SETTINGS_FILE = "amls_settings_v11.json"
 ACCOUNTS_FILE = "amls_multi_accounts.json"
-REQUIRED_TICKERS = ["TQQQ", "QLD", "QQQ", "SOXL", "USD", "SSO", "GLD", "CASH"]
-
-def load_settings():
-    if os.path.exists(SETTINGS_FILE):
-        try:
-            with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except: pass
-    return {"theme": "아이패드 테마"}
-
-def save_settings(settings_data):
-    with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
-        json.dump(settings_data, f, ensure_ascii=False, indent=4)
+REQUIRED_TICKERS = ["TQQQ", "QLD", "QQQ", "SOXL", "USD", "SSO", "GLD", "SPY", "CASH"] # SPY 추가
 
 def load_accounts_data():
     if os.path.exists(ACCOUNTS_FILE):
@@ -47,17 +33,11 @@ def save_accounts_data(data_dict):
     with open(ACCOUNTS_FILE, "w", encoding="utf-8") as f:
         json.dump(data_dict, f, ensure_ascii=False, indent=4)
 
-# =====================================================================
-# [1] 세션 스테이트 (초기화 및 마이그레이션)
-# =====================================================================
-if 'settings' not in st.session_state:
-    st.session_state['settings'] = load_settings()
-
 if 'accounts' not in st.session_state:
     loaded = load_accounts_data()
     if not loaded:
         loaded = {
-            "AMLS v4.3": {  
+            "AMLS v4.4": {  
                 "portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS],
                 "history": [], "first_entry_date": None, "journal_text": "", "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0,
                 "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 성장 곡선", "📝 매매 일지"]
@@ -65,9 +45,10 @@ if 'accounts' not in st.session_state:
         }
     st.session_state['accounts'] = loaded
 
+# 마이그레이션 (v4.3 -> v4.4, SPY 누락분 추가)
 needs_save = False
-if "기본 계좌 (AMLS)" in st.session_state['accounts']:
-    st.session_state['accounts']["AMLS v4.3"] = st.session_state['accounts'].pop("기본 계좌 (AMLS)")
+if "AMLS v4.3" in st.session_state['accounts']:
+    st.session_state['accounts']["AMLS v4.4"] = st.session_state['accounts'].pop("AMLS v4.3")
     needs_save = True
 
 for acc_name, acc_data in st.session_state['accounts'].items():
@@ -77,7 +58,6 @@ for acc_name, acc_data in st.session_state['accounts'].items():
         acc_data["layout_order"] = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 성장 곡선", "📝 매매 일지"]
         needs_save = True
 
-    existing_tickers = [item["티커 (Ticker)"] for item in acc_data["portfolio"]]
     port_dict = {item["티커 (Ticker)"]: item for item in acc_data["portfolio"]}
     new_port = []
     for req_t in REQUIRED_TICKERS:
@@ -93,245 +73,38 @@ for acc_name, acc_data in st.session_state['accounts'].items():
 
 if needs_save: save_accounts_data(st.session_state['accounts'])
 
+# --- 애플 테마 고정 변수 ---
+TEXT_COLOR = "#1d1d1f"; TEXT_SUB = "#8e8e93"
+PANEL_BG = "rgba(255,255,255,0.65)"; PANEL_BORDER = "1px solid rgba(255,255,255,0.5)"; PANEL_RADIUS = "16px"
+WIDGET_THEME = "light"
+C_UP = "#34c759"; C_DOWN = "#ff3b30"; C_WARN = "#ff9500"; C_SAFE = "#007aff"
+COLOR_PALETTE = {'TQQQ':'#ff3b30', 'SOXL':'#af52de', 'USD':'#5856d6', 'QLD':'#ff9500', 'SSO':'#ffcc00', 'QQQ':'#007aff', 'SPY':'#34a853', 'GLD':'#34c759', 'CASH':'#8e8e93'}
+THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.05)'), yaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.05)'))
 
-# =====================================================================
-# [2] 동적 테마 엔진 (신규 테마 반영)
-# =====================================================================
-current_theme = st.session_state['settings'].get("theme", "아이패드 테마")
-
-if current_theme == "애플 테마":
-    BASE_TEXT_COLOR = "#1d1d1f"; TEXT_SUB = "#8e8e93"
-    PANEL_BG = "rgba(255,255,255,0.65)"; PANEL_BORDER = "1px solid rgba(255,255,255,0.5)"; PANEL_RADIUS = "16px"
-    WIDGET_THEME = "light"
-    C_UP = "#34c759"; C_DOWN = "#ff3b30"; C_WARN = "#ff9500"; C_SAFE = "#007aff"
-    BASE_CHART_COLORS = {'TQQQ':'#ff3b30', 'SOXL':'#af52de', 'USD':'#5856d6', 'QLD':'#ff9500', 'SSO':'#ffcc00', 'QQQ':'#007aff', 'GLD':'#34c759', 'CASH':'#8e8e93'}
-
-elif current_theme == "아이패드 테마":
-    BASE_TEXT_COLOR = "#1C1C1E"; TEXT_SUB = "#8E8E93"
-    PANEL_BG = "#FFFFFF"; PANEL_BORDER = "none"; PANEL_RADIUS = "24px"
-    WIDGET_THEME = "light"
-    C_UP = "#34C759"; C_DOWN = "#FF3B30"; C_WARN = "#FF9500"; C_SAFE = "#007AFF"
-    BASE_CHART_COLORS = {'TQQQ':'#FF3B30', 'SOXL':'#AF52DE', 'USD':'#5856D6', 'QLD':'#FF9500', 'SSO':'#FFCC00', 'QQQ':'#007AFF', 'GLD':'#34C759', 'CASH':'#8E8E93'}
-
-elif current_theme == "갤럭시 탭 테마":
-    BASE_TEXT_COLOR = "#FAFAFA"; TEXT_SUB = "#A0A0A0"
-    PANEL_BG = "#1C1C1E"; PANEL_BORDER = "none"; PANEL_RADIUS = "28px"
-    WIDGET_THEME = "dark"
-    C_UP = "#23D079"; C_DOWN = "#E94C3D"; C_WARN = "#F4B33E"; C_SAFE = "#3E91FF"
-    BASE_CHART_COLORS = {'TQQQ':'#E94C3D', 'SOXL':'#9D4EDD', 'USD':'#3E91FF', 'QLD':'#F4B33E', 'SSO':'#F39C12', 'QQQ':'#3E91FF', 'GLD':'#F1C40F', 'CASH':'#A0A0A0'}
-
-elif current_theme == "엑셀 테마":
-    BASE_TEXT_COLOR = "#333333"; TEXT_SUB = "#666666"
-    PANEL_BG = "#FFFFFF"; PANEL_BORDER = "1px solid #D4D4D4"; PANEL_RADIUS = "0px"
-    WIDGET_THEME = "light"
-    C_UP = "#107C41"; C_DOWN = "#C00000"; C_WARN = "#FFB900"; C_SAFE = "#0078D4"
-    BASE_CHART_COLORS = {'TQQQ':'#C00000', 'SOXL':'#800080', 'USD':'#0078D4', 'QLD':'#FFB900', 'SSO':'#E36C09', 'QQQ':'#0078D4', 'GLD':'#FFC000', 'CASH':'#7F7F7F'}
-
-elif current_theme in ["1930년대 타자기 테마", "1920년대 타자기 테마"]:
-    BASE_TEXT_COLOR = "#2c2a25"; TEXT_SUB = "#555555"
-    PANEL_BG = "#dfd7c5"; PANEL_BORDER = "2px solid #2c2a25"; PANEL_RADIUS = "0px"
-    WIDGET_THEME = "light"
-    C_UP = "#000080"; C_DOWN = "#8b0000"; C_WARN = "#b8860b"; C_SAFE = "#006400"
-    BASE_CHART_COLORS = {'TQQQ':'#8b0000', 'SOXL':'#556b2f', 'USD':'#8fbc8f', 'QLD':'#b8860b', 'SSO':'#cd853f', 'QQQ':'#000080', 'GLD':'#daa520', 'CASH':'#2f4f4f'}
-
-elif current_theme == "카페 테마":
-    BASE_TEXT_COLOR = "#5D4A44"; TEXT_SUB = "#A89B96"
-    PANEL_BG = "#FFFFFF"; PANEL_BORDER = "2px solid #FFF0E5"; PANEL_RADIUS = "20px"
-    WIDGET_THEME = "light"
-    C_UP = "#FFB7B2"; C_DOWN = "#A1C9F1"; C_WARN = "#FFDAC1"; C_SAFE = "#B5EAD7"
-    BASE_CHART_COLORS = {'TQQQ':'#FF9AA2', 'SOXL':'#C7CEEA', 'USD':'#E2F0CB', 'QLD':'#FFDAC1', 'SSO':'#FFB7B2', 'QQQ':'#A1C9F1', 'GLD':'#FCEBB6', 'CASH':'#B5EAD7'}
-
-elif current_theme == "2000년대 구글 감성 테마":
-    BASE_TEXT_COLOR = "#000000"; TEXT_SUB = "#666666"
-    PANEL_BG = "#F8F9FA"; PANEL_BORDER = "1px solid #CCCCCC"; PANEL_RADIUS = "0px"
-    WIDGET_THEME = "light"
-    C_UP = "#34A853"; C_DOWN = "#EA4335"; C_WARN = "#FBBC05"; C_SAFE = "#4285F4"
-    BASE_CHART_COLORS = {'TQQQ':'#EA4335', 'SOXL':'#990099', 'USD':'#660099', 'QLD':'#FBBC05', 'SSO':'#F68B1F', 'QQQ':'#4285F4', 'GLD':'#F4B400', 'CASH':'#34A853'}
-
-elif current_theme == "월스트리트 저널 테마":
-    BASE_TEXT_COLOR = "#1A1A1A"; TEXT_SUB = "#555555"
-    PANEL_BG = "#FFFFFF"; PANEL_BORDER = "1px solid #1A1A1A"; PANEL_RADIUS = "0px"
-    WIDGET_THEME = "light"
-    C_UP = "#006400"; C_DOWN = "#8B0000"; C_WARN = "#B8860B"; C_SAFE = "#000080"
-    BASE_CHART_COLORS = {'TQQQ':'#8B0000', 'SOXL':'#556b2f', 'USD':'#2F4F4F', 'QLD':'#B8860B', 'SSO':'#DAA520', 'QQQ':'#000080', 'GLD':'#BDB76B', 'CASH':'#696969'}
-
-else:
-    BASE_TEXT_COLOR = "#1C1C1E"; TEXT_SUB = "#8E8E93"
-    PANEL_BG = "#FFFFFF"; PANEL_BORDER = "none"; PANEL_RADIUS = "24px"
-    WIDGET_THEME = "light"
-    C_UP = "#34C759"; C_DOWN = "#FF3B30"; C_WARN = "#FF9500"; C_SAFE = "#007AFF"
-    BASE_CHART_COLORS = {'TQQQ':'#FF3B30', 'SOXL':'#AF52DE', 'USD':'#5856D6', 'QLD':'#FF9500', 'SSO':'#FFCC00', 'QQQ':'#007AFF', 'GLD':'#34C759', 'CASH':'#8E8E93'}
-
-# 데이터 강제 주입 로직 (에러 방지)
-if "text_color" not in st.session_state['settings']: st.session_state['settings']["text_color"] = BASE_TEXT_COLOR
-if "chart_colors" not in st.session_state['settings']: st.session_state['settings']["chart_colors"] = BASE_CHART_COLORS.copy()
-for tkr in REQUIRED_TICKERS:
-    if tkr not in st.session_state['settings']["chart_colors"]:
-        st.session_state['settings']["chart_colors"][tkr] = BASE_CHART_COLORS.get(tkr, "#888888")
-
-TEXT_COLOR = st.session_state['settings']["text_color"]
-COLOR_PALETTE = st.session_state['settings']["chart_colors"]
-
-# --- Plotly 레이아웃 설정 ---
-if current_theme in ["1930년대 타자기 테마", "월스트리트 저널 테마"]:
-    THEME_LAYOUT = dict(template="simple_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0))
-elif current_theme in ["갤럭시 탭 테마"]:
-    THEME_LAYOUT = dict(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='#333', zerolinecolor='#444'), yaxis=dict(showgrid=True, gridcolor='#333', zerolinecolor='#444'))
-elif current_theme == "엑셀 테마":
-    THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='#E1DFDD', zerolinecolor='#8A8886'), yaxis=dict(showgrid=True, gridcolor='#E1DFDD', zerolinecolor='#8A8886'))
-else:
-    THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.05)'), yaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.05)'))
-
-
-def apply_custom_css():
-    css_base = ""
-    css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }}"
-    
-    if current_theme == "애플 테마":
-        css_base = f"""
-        @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
-        .stApp {{ background: radial-gradient(circle at 15% 50%, rgba(240, 244, 255, 1), rgba(255, 255, 255, 0)), radial-gradient(circle at 85% 30%, rgba(230, 240, 255, 1), rgba(255, 255, 255, 0)); background-color: #f5f5f7; font-family: 'Pretendard', sans-serif; color: {TEXT_COLOR}; letter-spacing: -0.01em; }}
-        div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 20px; box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.06); padding: 1.5rem; transition: transform 0.2s ease, box-shadow 0.2s ease; }}
-        .stButton>button {{ background-color: rgba(255, 255, 255, 0.8); color: #007aff; border: 1px solid rgba(0, 122, 255, 0.3); border-radius: 12px; font-weight: 600; padding: 0.5rem 1rem; backdrop-filter: blur(10px); transition: all 0.2s; }}
-        .stButton>button:hover {{ background-color: #007aff; color: #ffffff; transform: scale(1.02); }}
-        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: rgba(255, 255, 255, 0.5); backdrop-filter: blur(10px); color: {TEXT_COLOR}; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; }}
-        [data-testid="stDataFrame"] {{ border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); background: rgba(255, 255, 255, 0.5); }}
-        [data-testid="stSidebar"] {{ background: rgba(245, 245, 247, 0.7); backdrop-filter: blur(20px); border-right: 1px solid rgba(0,0,0,0.05); }}
-        button[data-baseweb="tab"][aria-selected="true"] {{ color: #1d1d1f; border-bottom-color: #1d1d1f; border-bottom-width: 2px; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none !important; color: {TEXT_COLOR}; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
-        .sidebar-link:hover {{ background-color: rgba(0,0,0,0.05); transform: translateX(2px); }}
-        """
-        
-    elif current_theme == "아이패드 테마":
-        css_base = f"""
-        .stApp, html, body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #F2F2F7 !important; color: {TEXT_COLOR} !important; }}
-        div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: {PANEL_BG} !important; border: {PANEL_BORDER} !important; border-radius: {PANEL_RADIUS} !important; box-shadow: 0 4px 20px rgba(0,0,0,0.05) !important; padding: 1.5rem !important; }}
-        .stButton>button {{ background-color: #F2F2F7 !important; color: #007aff !important; border: none !important; border-radius: 12px !important; font-weight: 600 !important; padding: 0.5rem 1rem !important; transition: all 0.2s; }}
-        .stButton>button:hover {{ background-color: #007aff !important; color: #ffffff !important; }}
-        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #F2F2F7 !important; color: {TEXT_COLOR} !important; border: none !important; border-radius: 10px !important; }}
-        [data-testid="stDataFrame"] {{ border-radius: 16px !important; border: 1px solid #E5E5EA !important; }}
-        [data-testid="stSidebar"] {{ background-color: #FFFFFF !important; border-right: 1px solid #E5E5EA !important; }}
-        button[data-baseweb="tab"][aria-selected="true"] {{ color: #1d1d1f !important; border-bottom-color: #1d1d1f !important; border-bottom-width: 2px !important; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s; }}
-        .sidebar-link:hover {{ background-color: #F2F2F7; }}
-        """
-        css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }}"
-
-    elif current_theme == "갤럭시 탭 테마":
-        css_base = f"""
-        [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
-        .stApp, html, body {{ font-family: 'Pretendard', sans-serif; background-color: #000000 !important; color: {TEXT_COLOR} !important; }}
-        div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: {PANEL_BG} !important; border: {PANEL_BORDER} !important; border-radius: {PANEL_RADIUS} !important; padding: 1.5rem !important; box-shadow: none !important; }}
-        .stButton>button {{ background-color: #333333 !important; color: #FAFAFA !important; border: none !important; border-radius: 20px !important; font-weight: 600 !important; padding: 0.5rem 1rem !important; transition: all 0.2s; }}
-        .stButton>button:hover {{ background-color: #3E91FF !important; color: #ffffff !important; }}
-        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #2C2C2E !important; color: {TEXT_COLOR} !important; border: none !important; border-radius: 14px !important; }}
-        [data-testid="stDataFrame"] {{ border-radius: 20px !important; border: none !important; background-color: #1C1C1E !important; }}
-        [data-testid="stSidebar"] {{ background-color: #151515 !important; border-right: 1px solid #333333 !important; }}
-        button[data-baseweb="tab"] {{ color: #A0A0A0 !important; }}
-        button[data-baseweb="tab"][aria-selected="true"] {{ color: #3E91FF !important; border-bottom-color: #3E91FF !important; border-bottom-width: 2px !important; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 14px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s; }}
-        .sidebar-link:hover {{ background-color: #333333; }}
-        """
-        css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; box-shadow: none; }}"
-
-    elif current_theme == "엑셀 테마":
-        css_base = f"""
-        .stApp, html, body {{ font-family: 'Calibri', 'Malgun Gothic', sans-serif; background-color: #F3F2F1 !important; color: {TEXT_COLOR} !important; }}
-        div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: {PANEL_BG} !important; border: {PANEL_BORDER} !important; border-top: 3px solid #107C41 !important; border-radius: {PANEL_RADIUS} !important; padding: 1.5rem !important; box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important; }}
-        .stButton>button {{ background-color: #E1DFDD !important; color: #333333 !important; border: 1px solid #8A8886 !important; border-radius: 2px !important; font-weight: normal !important; padding: 0.3rem 0.8rem !important; }}
-        .stButton>button:hover {{ background-color: #C8C6C4 !important; }}
-        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #FFFFFF !important; color: {TEXT_COLOR} !important; border: 1px solid #8A8886 !important; border-radius: 0px !important; }}
-        [data-testid="stDataFrame"] {{ border-radius: 0px !important; border: 1px solid #D4D4D4 !important; }}
-        [data-testid="stSidebar"] {{ background-color: #FFFFFF !important; border-right: 1px solid #D4D4D4 !important; }}
-        button[data-baseweb="tab"] {{ color: #666666 !important; font-weight: normal !important; }}
-        button[data-baseweb="tab"][aria-selected="true"] {{ color: #107C41 !important; border-bottom-color: #107C41 !important; border-bottom-width: 2px !important; font-weight: bold !important; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 6px 8px; margin-bottom: 2px; text-decoration: none !important; color: #0078D4 !important; font-family: 'Calibri', sans-serif; font-size: 0.95rem; border-bottom: 1px solid transparent; }}
-        .sidebar-link:hover {{ border-bottom: 1px solid #0078D4; background-color: #F3F2F1; }}
-        """
-        css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-top: 3px solid #107C41 !important; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}"
-
-    elif current_theme in ["1930년대 타자기 테마", "1920년대 타자기 테마"]:
-        css_base = f"""
-        @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
-        [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
-        .stApp, html, body {{ font-family: 'Special Elite', 'Courier New', monospace !important; background-color: #e4dccc !important; color: {TEXT_COLOR} !important; }}
-        div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: #dfd7c5 !important; border: 2px solid {TEXT_COLOR} !important; border-radius: 0px !important; box-shadow: 4px 4px 0px {TEXT_COLOR} !important; padding: 1.5rem !important; }}
-        .stButton>button {{ background-color: #d1c7b3 !important; color: {TEXT_COLOR} !important; border: 2px solid {TEXT_COLOR} !important; border-radius: 0px !important; box-shadow: 2px 2px 0px {TEXT_COLOR} !important; font-weight: bold !important; text-transform: uppercase; transition: all 0.1s; }}
-        .stButton>button:active {{ box-shadow: 0px 0px 0px {TEXT_COLOR} !important; transform: translateY(2px) translateX(2px); }}
-        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #f0e9d8 !important; color: {TEXT_COLOR} !important; border: 1px dashed {TEXT_COLOR} !important; border-radius: 0px !important; font-family: 'Special Elite', monospace !important; }}
-        [data-testid="stDataFrame"] {{ border: 1px solid {TEXT_COLOR} !important; background-color: #f0e9d8 !important; border-radius: 0px !important; }}
-        [data-testid="stSidebar"] {{ background-color: #d1c7b3 !important; border-right: 3px double {TEXT_COLOR} !important; }}
-        button[data-baseweb="tab"][aria-selected="true"] {{ color: {TEXT_COLOR} !important; border-bottom-color: {TEXT_COLOR} !important; border-bottom-width: 3px !important; font-weight: bold !important; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border: 1px solid transparent; border-radius: 0px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-weight: bold; font-size: 0.95rem; transition: background-color 0.2s; }}
-        .sidebar-link:hover {{ background-color: rgba(0,0,0,0.1); border: 1px dashed {TEXT_COLOR}; }}
-        """
-        css_panel = f".info-panel {{ background: #dfd7c5; border: 2px solid {TEXT_COLOR}; border-radius: 0px; padding: 16px; height: 100%; box-shadow: 4px 4px 0px {TEXT_COLOR}; }}"
-    
-    elif current_theme == "카페 테마":
-        css_base = f"""
-        @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
-        .stApp, html, body {{ font-family: 'Pretendard', sans-serif; background-color: #FFFBF0; color: {TEXT_COLOR}; letter-spacing: -0.01em; }}
-        div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: #FFFFFF; border: 2px solid #FFF0E5; border-radius: 24px; box-shadow: 0 8px 20px rgba(210, 190, 175, 0.15); padding: 1.5rem; transition: transform 0.2s ease, box-shadow 0.2s ease; }}
-        .stButton>button {{ background-color: #FFB7B2; color: #FFFFFF; border: none; border-radius: 16px; font-weight: 700; padding: 0.6rem 1.2rem; box-shadow: 0 4px 0 #F29F9A; transition: all 0.2s; }}
-        .stButton>button:hover {{ background-color: #FFC4C0; transform: translateY(2px); box-shadow: 0 2px 0 #F29F9A; }}
-        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #FAFAFA; color: {TEXT_COLOR}; border: 2px solid #EAE3D9; border-radius: 12px; }}
-        [data-testid="stDataFrame"] {{ border-radius: 16px; border: 2px solid #FFF0E5; }}
-        [data-testid="stSidebar"] {{ background-color: #FFF6EC; border-right: 2px dashed #EAE3D9; }}
-        button[data-baseweb="tab"][aria-selected="true"] {{ color: #FF9B94; border-bottom-color: #FF9B94; border-bottom-width: 3px; font-weight: bold; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-weight: 700; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
-        .sidebar-link:hover {{ background-color: #FFF0E5; transform: translateX(4px); }}
-        """
-        css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; box-shadow: 0 4px 12px rgba(210,190,175,0.1); }}"
-    
-    elif current_theme == "2000년대 구글 감성 테마":
-        css_base = f"""
-        .stApp, html, body {{ font-family: Arial, Tahoma, sans-serif; background-color: #FFFFFF; color: {TEXT_COLOR}; }}
-        div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: #FFFFFF; border: 1px solid #CCCCCC; border-radius: 0px; box-shadow: none; padding: 1.5rem; }}
-        .stButton>button {{ background-color: #F0F0F0; color: #000000; border: 1px solid #707070; border-radius: 2px; font-weight: normal; padding: 0.3rem 0.8rem; }}
-        .stButton>button:hover {{ background-color: #E0E0E0; border: 1px solid #333333; }}
-        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #FFFFFF; color: #000000; border: 1px solid #999999; border-radius: 0px; font-family: Arial, sans-serif; }}
-        [data-testid="stDataFrame"] {{ border-radius: 0px; border: 1px solid #999999; }}
-        [data-testid="stSidebar"] {{ background-color: #F8F9FA; border-right: 1px solid #CCCCCC; }}
-        button[data-baseweb="tab"] {{ color: #0000EE; text-decoration: underline; font-weight: normal; }}
-        button[data-baseweb="tab"][aria-selected="true"] {{ color: {TEXT_COLOR}; text-decoration: none; border-bottom: none; font-weight: bold; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 6px 8px; margin-bottom: 2px; text-decoration: underline !important; color: #0000EE !important; font-family: Arial, sans-serif; font-size: 0.9rem; }}
-        .sidebar-link:hover {{ color: #FF0000 !important; }}
-        .sidebar-link span {{ display: none; }}
-        """
-        css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; }}"
-    
-    elif current_theme == "월스트리트 저널 테마":
-        css_base = f"""
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
-        [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
-        .stApp, html, body {{ font-family: 'Playfair Display', serif; background-color: #F4F4F0 !important; color: {TEXT_COLOR}; }}
-        div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background-color: #FFFFFF; border: 1px solid #000000; border-radius: 0px; padding: 1.5rem; box-shadow: 3px 3px 0px rgba(0,0,0,0.1); border-top: 4px solid #000000; }}
-        .stButton>button {{ background-color: #000000; color: #FFFFFF; border: none; border-radius: 0px; font-weight: bold; font-family: 'Arial', sans-serif; text-transform: uppercase; }}
-        .stButton>button:hover {{ background-color: #333333; }}
-        input, textarea, select, div[data-baseweb="select"] > div {{ background-color: #FFFFFF; color: {TEXT_COLOR}; border: 1px solid #000000; border-radius: 0px; font-family: 'Arial', sans-serif; }}
-        [data-testid="stDataFrame"] {{ border-radius: 0px; border: 1px solid #000000; }}
-        [data-testid="stSidebar"] {{ background-color: #EBEBEB; border-right: 2px solid #000000; }}
-        button[data-baseweb="tab"][aria-selected="true"] {{ color: #000000; border-bottom: 3px solid #000000; font-weight: bold; }}
-        .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; text-decoration: none !important; color: #000000 !important; font-weight: bold; font-size: 0.95rem; border-bottom: 1px dotted #CCC; }}
-        .sidebar-link:hover {{ background-color: #DDDDDD; }}
-        """
-
-    st.markdown(f"""
-    <style>
-    {css_base}
-    div[data-testid="stMetricValue"] > div, div[data-testid="stMetricDelta"] > div, p, span, label, .stMarkdown {{ white-space: normal !important; word-break: keep-all !important; overflow-wrap: break-word !important; }}
-    div[data-testid="stMetricValue"] {{ font-weight: bold; font-size: 1.8rem; color: {TEXT_COLOR}; }}
-    .info-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }}
-    @media (max-width: 800px) {{ .info-grid {{ grid-template-columns: 1fr; }} }}
-    {css_panel}
-    </style>
-    """, unsafe_allow_html=True)
-
-apply_custom_css()
+st.markdown(f"""
+<style>
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+.stApp {{ background: radial-gradient(circle at 15% 50%, rgba(240, 244, 255, 1), rgba(255, 255, 255, 0)), radial-gradient(circle at 85% 30%, rgba(230, 240, 255, 1), rgba(255, 255, 255, 0)); background-color: #f5f5f7; font-family: 'Pretendard', sans-serif; color: {TEXT_COLOR}; letter-spacing: -0.01em; }}
+div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background: {PANEL_BG}; backdrop-filter: blur(20px); border: {PANEL_BORDER}; border-radius: 20px; box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.06); padding: 1.5rem; transition: transform 0.2s ease, box-shadow 0.2s ease; }}
+.stButton>button {{ background-color: rgba(255, 255, 255, 0.8); color: #007aff; border: 1px solid rgba(0, 122, 255, 0.3); border-radius: 12px; font-weight: 600; padding: 0.5rem 1rem; backdrop-filter: blur(10px); transition: all 0.2s; }}
+.stButton>button:hover {{ background-color: #007aff; color: #ffffff; transform: scale(1.02); }}
+input, textarea, select, div[data-baseweb="select"] > div {{ background-color: rgba(255, 255, 255, 0.5); backdrop-filter: blur(10px); color: {TEXT_COLOR}; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; }}
+[data-testid="stDataFrame"] {{ border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); background: rgba(255, 255, 255, 0.5); }}
+[data-testid="stSidebar"] {{ background: rgba(245, 245, 247, 0.7); backdrop-filter: blur(20px); border-right: 1px solid rgba(0,0,0,0.05); }}
+button[data-baseweb="tab"][aria-selected="true"] {{ color: #1d1d1f; border-bottom-color: #1d1d1f; border-bottom-width: 2px; }}
+.sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none !important; color: {TEXT_COLOR}; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
+.sidebar-link:hover {{ background-color: rgba(0,0,0,0.05); transform: translateX(2px); }}
+div[data-testid="stMetricValue"] > div, div[data-testid="stMetricDelta"] > div, p, span, label, .stMarkdown {{ white-space: normal !important; word-break: keep-all !important; overflow-wrap: break-word !important; }}
+div[data-testid="stMetricValue"] {{ font-weight: bold; font-size: 1.8rem; color: {TEXT_COLOR}; }}
+.info-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }}
+@media (max-width: 800px) {{ .info-grid {{ grid-template-columns: 1fr; }} }}
+.info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }}
+</style>
+""", unsafe_allow_html=True)
 
 
 # =====================================================================
-# [3] 글로벌 백엔드 함수
+# [1] 글로벌 백엔드 함수 (AMLS v4.4 적용)
 # =====================================================================
 @st.cache_data(ttl=3600)
 def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 1회"):
@@ -364,69 +137,65 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
 
     df['Target_Regime'] = df.apply(get_target_regime, axis=1)
     
-    actual_regime_v4 = []; actual_regime_v4_3 = []
-    current_v4 = 3; current_v4_3 = 3
-    pend_v4 = None; pend_v4_3 = None
-    cnt_v4 = 0; cnt_v4_3 = 0
+    actual_regime_v4_4 = []
+    current_v4_4 = 3
+    pend_v4_4 = None
+    cnt_v4_4 = 0
 
     for i in range(len(df)):
         tr = df['Target_Regime'].iloc[i]
-        if tr > current_v4: current_v4 = tr; pend_v4 = None; cnt_v4 = 0; actual_regime_v4.append(current_v4)
-        elif tr < current_v4:
-            if tr == pend_v4:
-                cnt_v4 += 1
-                if cnt_v4 >= 5: current_v4 = tr; pend_v4 = None; cnt_v4 = 0; actual_regime_v4.append(current_v4)
-                else: actual_regime_v4.append(current_v4)
-            else: pend_v4 = tr; cnt_v4 = 1; actual_regime_v4.append(current_v4)
-        else: pend_v4 = None; cnt_v4 = 0; actual_regime_v4.append(current_v4)
         
-        if tr > current_v4_3: current_v4_3 = tr; pend_v4_3 = None; cnt_v4_3 = 0; actual_regime_v4_3.append(current_v4_3)
-        elif tr < current_v4_3: 
-            if tr == pend_v4_3:
-                cnt_v4_3 += 1
-                if cnt_v4_3 >= 5: current_v4_3 = tr; pend_v4_3 = None; cnt_v4_3 = 0; actual_regime_v4_3.append(current_v4_3)
-                else: actual_regime_v4_3.append(current_v4_3 - 1)
-            else: pend_v4_3 = tr; cnt_v4_3 = 1; actual_regime_v4_3.append(current_v4_3 - 1)
-        else: pend_v4_3 = None; cnt_v4_3 = 0; actual_regime_v4_3.append(current_v4_3)
+        # AMLS v4.4 5일 대기 로직 적용
+        if tr > current_v4_4: 
+            current_v4_4 = tr; pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4.append(current_v4_4)
+        elif tr < current_v4_4: 
+            if tr == pend_v4_4:
+                cnt_v4_4 += 1
+                if cnt_v4_4 >= 5: current_v4_4 = tr; pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4.append(current_v4_4)
+                else: actual_regime_v4_4.append(current_v4_4 - 1)
+            else: pend_v4_4 = tr; cnt_v4_4 = 1; actual_regime_v4_4.append(current_v4_4 - 1)
+        else: pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4.append(current_v4_4)
 
-    df['Signal_Regime_v4'] = pd.Series(actual_regime_v4, index=df.index).shift(1).bfill()
-    df['Signal_Regime_v4_3'] = pd.Series(actual_regime_v4_3, index=df.index).shift(1).bfill()
+    df['Signal_Regime_v4_4'] = pd.Series(actual_regime_v4_4, index=df.index).shift(1).bfill()
 
-    def get_v4_weights(regime, use_soxl):
+    # 🔥 AMLS v4.4 공식 배분표 적용
+    def get_v4_4_weights(regime, use_soxl):
         w = {t: 0.0 for t in data.columns}; semi = 'SOXL' if use_soxl else 'USD'
-        if regime == 1: w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'] = 0.30, 0.20, 0.20, 0.15, 0.10
-        elif regime == 2: w['QLD'], w['SSO'], w['GLD'], w['QQQ'], w['USD'] = 0.25, 0.20, 0.20, 0.15, 0.10
-        elif regime == 3: w['GLD'], w['QQQ'], w['SPY'] = 0.35, 0.20, 0.10
-        elif regime == 4: w['GLD'], w['QQQ'] = 0.50, 0.10
+        if regime == 1: w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'], w['SPY'] = 0.30, 0.20, 0.20, 0.15, 0.10, 0.05
+        elif regime == 2: w['QLD'], w['SSO'], w['GLD'], w['USD'], w['QQQ'], w['SPY'] = 0.30, 0.25, 0.25, 0.10, 0.05, 0.05
+        elif regime == 3: w['GLD'], w['QQQ'] = 0.50, 0.15 # Cash is handled implicitly if sum < 1
+        elif regime == 4: w['GLD'], w['QQQ'] = 0.50, 0.10 # Cash is handled implicitly if sum < 1
+        
+        # Cash handling
+        total_w = sum(w.values())
+        if total_w < 1.0:
+            w['CASH'] = round(1.0 - total_w, 4)
         return w
 
-    def get_v4_3_weights(regime, use_soxl):
-        w = {t: 0.0 for t in data.columns}; semi = 'SOXL' if use_soxl else 'USD'
-        if regime == 1: w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'] = 0.30, 0.20, 0.20, 0.15, 0.10
-        elif regime == 2: w['QLD'], w['SSO'], w['GLD'], w['USD'], w['QQQ'] = 0.30, 0.25, 0.20, 0.10, 0.05
-        elif regime == 3: w['GLD'], w['QQQ'] = 0.50, 0.15
-        elif regime == 4: w['GLD'], w['QQQ'] = 0.50, 0.10
-        return w
-
-    strategies = ['AMLS v4.3', 'AMLS v4', 'QQQ', 'QLD', 'TQQQ']
+    strategies = ['AMLS v4.4', 'QQQ', 'QLD', 'TQQQ']
     ports = {s: init_cap for s in strategies}
     hists = {s: [init_cap] for s in ports.keys()}
     total_invested = init_cap
-    weights_v4 = {t: 0.0 for t in data.columns}; weights_v4_3 = {t: 0.0 for t in data.columns}
-    logs, days_since_v4, days_since_v4_3 = [], 0, 0
+    weights_v4_4 = {t: 0.0 for t in data.columns}; weights_v4_4['CASH'] = 1.0
+    logs, days_since_v4_4 = [], 0
 
     for i in range(1, len(df)):
         today, yesterday = df.index[i], df.index[i-1]
-        days_since_v4 += 1; days_since_v4_3 += 1
-        ret_v4 = sum(weights_v4[t] * daily_returns[t].iloc[i] for t in data.columns)
-        ret_v4_3 = sum(weights_v4_3[t] * daily_returns[t].iloc[i] for t in data.columns)
+        days_since_v4_4 += 1
         
-        ports['AMLS v4'] *= (1 + ret_v4); ports['AMLS v4.3'] *= (1 + ret_v4_3)
+        # Calculate Returns
+        ret_v4_4 = 0
+        for t in data.columns:
+            ret_v4_4 += weights_v4_4.get(t, 0) * daily_returns[t].iloc[i]
+        # Cash return is 0
+        
+        ports['AMLS v4.4'] *= (1 + ret_v4_4)
         for s in ['QQQ', 'QLD', 'TQQQ']: ports[s] *= (1 + daily_returns[s].iloc[i])
         
+        # Update Weights
         for t in data.columns:
-            if ports['AMLS v4'] > 0: weights_v4[t] = weights_v4[t]*(1+daily_returns[t].iloc[i])/(1+ret_v4)
-            if ports['AMLS v4.3'] > 0: weights_v4_3[t] = weights_v4_3[t]*(1+daily_returns[t].iloc[i])/(1+ret_v4_3)
+            if ports['AMLS v4.4'] > 0: weights_v4_4[t] = weights_v4_4.get(t,0)*(1+daily_returns[t].iloc[i])/(1+ret_v4_4)
+        if ports['AMLS v4.4'] > 0: weights_v4_4['CASH'] = weights_v4_4.get('CASH',0) / (1+ret_v4_4)
             
         if today.month != yesterday.month:
             for s in ports: ports[s] += monthly_cont
@@ -434,29 +203,21 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
         for s in ports: hists[s].append(ports[s])
         
         use_soxl = (df['SMH'].iloc[i-1] > df['SMH_MA50'].iloc[i-1]) and (df['SMH_3M_Ret'].iloc[i-1] > 0.05) and (df['SMH_RSI'].iloc[i-1] > 50)
-        
-        sig_r_v4 = df['Signal_Regime_v4'].iloc[i]
-        rebal_v4 = False
-        if sig_r_v4 != df['Signal_Regime_v4'].iloc[i-1] or i == 1: rebal_v4 = True
-        elif rebal_freq == "월 1회" and today.month != yesterday.month: rebal_v4 = True
-        elif "주 1회" in rebal_freq and days_since_v4 >= 5: rebal_v4 = True
-        elif "2주 1회" in rebal_freq and days_since_v4 >= 10: rebal_v4 = True
-        elif "3주 1회" in rebal_freq and days_since_v4 >= 15: rebal_v4 = True
-        if rebal_v4: weights_v4 = get_v4_weights(sig_r_v4, use_soxl); days_since_v4 = 0
 
-        sig_r_v4_3 = df['Signal_Regime_v4_3'].iloc[i]
-        rebal_v4_3 = False
-        if sig_r_v4_3 != df['Signal_Regime_v4_3'].iloc[i-1] or i == 1: rebal_v4_3 = True
-        elif rebal_freq == "월 1회" and today.month != yesterday.month: rebal_v4_3 = True
-        elif "주 1회" in rebal_freq and days_since_v4_3 >= 5: rebal_v4_3 = True
-        elif "2주 1회" in rebal_freq and days_since_v4_3 >= 10: rebal_v4_3 = True
-        elif "3주 1회" in rebal_freq and days_since_v4_3 >= 15: rebal_v4_3 = True
-        if rebal_v4_3:
-            weights_v4_3 = get_v4_3_weights(sig_r_v4_3, use_soxl)
-            log_type = "레짐 전환" if sig_r_v4_3 != df['Signal_Regime_v4_3'].iloc[i-1] else f"정기 ({rebal_freq.split(' ')[0]})"
-            semi_target = "SOXL" if use_soxl and sig_r_v4_3 == 1 else ("USD" if sig_r_v4_3 in [1, 2] else "-")
-            logs.append({"날짜": today.strftime('%Y-%m-%d'), "유형": log_type, "국면": f"R{int(sig_r_v4_3)}", "반도체": semi_target, "평가액": ports['AMLS v4.3']})
-            days_since_v4_3 = 0
+        sig_r_v4_4 = df['Signal_Regime_v4_4'].iloc[i]
+        rebal_v4_4 = False
+        if sig_r_v4_4 != df['Signal_Regime_v4_4'].iloc[i-1] or i == 1: rebal_v4_4 = True
+        elif rebal_freq == "월 1회" and today.month != yesterday.month: rebal_v4_4 = True
+        elif "주 1회" in rebal_freq and days_since_v4_4 >= 5: rebal_v4_4 = True
+        elif "2주 1회" in rebal_freq and days_since_v4_4 >= 10: rebal_v4_4 = True
+        elif "3주 1회" in rebal_freq and days_since_v4_4 >= 15: rebal_v4_4 = True
+        
+        if rebal_v4_4:
+            weights_v4_4 = get_v4_4_weights(sig_r_v4_4, use_soxl)
+            log_type = "레짐 전환" if sig_r_v4_4 != df['Signal_Regime_v4_4'].iloc[i-1] else f"정기 ({rebal_freq.split(' ')[0]})"
+            semi_target = "SOXL" if use_soxl and sig_r_v4_4 == 1 else ("USD" if sig_r_v4_4 in [1, 2] else "-")
+            logs.append({"날짜": today.strftime('%Y-%m-%d'), "유형": log_type, "국면": f"R{int(sig_r_v4_4)}", "반도체": semi_target, "평가액": ports['AMLS v4.4']})
+            days_since_v4_4 = 0
 
     for s in ports: df[f'{s}_Value'] = hists[s]
     inv_arr = [init_cap]; curr_inv = init_cap
@@ -468,7 +229,7 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
 
 
 # =====================================================================
-# [4] 페이지 구성: 글로벌 마켓 대시보드
+# [2] 페이지 구성: 글로벌 마켓 대시보드
 # =====================================================================
 def page_market_dashboard():
     st.title("🌐 매크로 터미널")
@@ -520,10 +281,10 @@ def page_market_dashboard():
 
 
 # =====================================================================
-# [5] 페이지 구성: AMLS 백테스트
+# [3] 페이지 구성: AMLS 백테스트
 # =====================================================================
 def page_amls_backtest():
-    st.title("🦅 전략 시뮬레이터")
+    st.title("🦅 V4.4 전략 시뮬레이터")
 
     st.sidebar.header("⚙️ 시뮬레이션 설정")
     BACKTEST_START = st.sidebar.date_input("시작일", datetime(2018, 1, 1))
@@ -545,7 +306,7 @@ def page_amls_backtest():
         sharpe = (daily_ret.mean() * 252) / (daily_ret.std() * np.sqrt(252)) if daily_ret.std() != 0 else 0
         return final_val, total_ret, cagr, mdd, sharpe
 
-    strats = ['AMLS v4.3', 'QQQ', 'QLD', 'TQQQ']
+    strats = ['AMLS v4.4', 'QQQ', 'QLD', 'TQQQ']
     metrics_data = []
     for s in strats:
         fv, tr, cagr, mdd, shp = calc_metrics(df[f'{s}_Value'], df['Invested'])
@@ -559,11 +320,11 @@ def page_amls_backtest():
         st.info(f"투입 원금: ${df['Invested'].iloc[-1]:,.0f}")
         st.dataframe(metrics_df, use_container_width=True)
 
-        st.markdown("#### 🥧 국면별 비중")
+        st.markdown("#### 🥧 국면별 비중 (v4.4 적용)")
         c1, c2, c3, c4 = st.columns(4)
         def get_w(reg):
-            if reg == 1: return {'TQQQ':30, 'SOXL/USD':20, 'QLD':20, 'SSO':15, 'GLD':10, 'CASH':5}
-            elif reg == 2: return {'QLD':30, 'SSO':25, 'GLD':20, 'USD':10, 'QQQ':5, 'CASH':10}
+            if reg == 1: return {'TQQQ':30, 'SOXL/USD':20, 'QLD':20, 'SSO':15, 'GLD':10, 'SPY':5}
+            elif reg == 2: return {'QLD':30, 'SSO':25, 'GLD':25, 'USD':10, 'QQQ':5, 'SPY':5}
             elif reg == 3: return {'GLD':50, 'CASH':35, 'QQQ':15}
             elif reg == 4: return {'GLD':50, 'CASH':40, 'QQQ':10}
         
@@ -572,7 +333,7 @@ def page_amls_backtest():
             fig_p = go.Figure(go.Pie(labels=list(w.keys()), values=list(w.values()), hole=0.5, marker=dict(colors=[COLOR_PALETTE.get(k.split('/')[0], '#888') for k in w.keys()])))
             cust_p = THEME_LAYOUT.copy(); cust_p.update(title=f"R{r}", title_x=0.5, height=250, margin=dict(t=40,b=10,l=10,r=10), showlegend=False)
             fig_p.update_layout(**cust_p)
-            fig_p.update_traces(textinfo='label+percent', textposition='inside', textfont=dict(color="#ffffff" if current_theme in ["1930년대 타자기 테마", "월스트리트 저널 테마", "블룸버그 터미널 테마"] else TEXT_COLOR, size=11))
+            fig_p.update_traces(textinfo='label+percent', textposition='inside', textfont=dict(color="#ffffff", size=11))
             col.plotly_chart(fig_p, use_container_width=True)
 
     with tab2:
@@ -580,7 +341,7 @@ def page_amls_backtest():
         use_log = st.checkbox("Y축 로그 스케일", value=False)
         fig_eq = go.Figure()
         
-        fig_eq.add_trace(go.Scatter(x=df.index, y=df['AMLS v4.3_Value'], name='AMLS v4.3', line=dict(color=C_UP, width=3)))
+        fig_eq.add_trace(go.Scatter(x=df.index, y=df['AMLS v4.4_Value'], name='AMLS v4.4', line=dict(color=C_UP, width=3)))
         fig_eq.add_trace(go.Scatter(x=df.index, y=df['QQQ_Value'], name='QQQ', line=dict(color=C_SAFE, width=1.5)))
         fig_eq.add_trace(go.Scatter(x=df.index, y=df['TQQQ_Value'], name='TQQQ', line=dict(color=C_DOWN, width=1.5)))
         fig_eq.add_trace(go.Scatter(x=df.index, y=df['Invested'], name='원금', line=dict(color='#888', width=1.5, dash='dot')))
@@ -599,7 +360,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지 구성: 내 포트폴리오 관리 (새로운 통합 레이아웃 & 한국어 번역)
+# [4] 페이지 구성: 내 포트폴리오 관리 (V4.4 적용, 체류일수 추가, 톨러런스 적용)
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
@@ -648,45 +409,44 @@ def make_portfolio_page(acc_name):
                 elif q >= m200 and m50 >= m200 and v < 25: target_regimes.append(1)
                 else: target_regimes.append(2)
                 
-            # 2. AMLS v4.3 5일 대기 로직 적용
-            current_v4_3 = 3; pend_v4_3 = None; cnt_v4_3 = 0; actual_regime_v4_3 = []
-            for tr in target_regimes:
-                if tr > current_v4_3: 
-                    current_v4_3 = tr; pend_v4_3 = None; cnt_v4_3 = 0; actual_regime_v4_3.append(current_v4_3)
-                elif tr < current_v4_3:
-                    if tr == pend_v4_3:
-                        cnt_v4_3 += 1
-                        if cnt_v4_3 >= 5: current_v4_3 = tr; pend_v4_3 = None; cnt_v4_3 = 0; actual_regime_v4_3.append(current_v4_3)
-                        else: actual_regime_v4_3.append(current_v4_3 - 1)
+            # 2. AMLS v4.4 5일 대기 로직 적용
+            current_v4_4 = 3; pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4 = []
+            
+            # 🔥 진입일(Entry Date) 추적을 위한 변수 추가
+            regime_entry_dates = []
+            current_entry_date = data.index[0]
+            
+            for i, tr in enumerate(target_regimes):
+                prev_regime_state = current_v4_4
+                
+                if tr > current_v4_4: 
+                    current_v4_4 = tr; pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4.append(current_v4_4)
+                elif tr < current_v4_4:
+                    if tr == pend_v4_4:
+                        cnt_v4_4 += 1
+                        if cnt_v4_4 >= 5: current_v4_4 = tr; pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4.append(current_v4_4)
+                        else: actual_regime_v4_4.append(current_v4_4 - 1)
                     else: 
-                        pend_v4_3 = tr; cnt_v4_3 = 1; actual_regime_v4_3.append(current_v4_3 - 1)
+                        pend_v4_4 = tr; cnt_v4_4 = 1; actual_regime_v4_4.append(current_v4_4 - 1)
                 else: 
-                    pend_v4_3 = None; cnt_v4_3 = 0; actual_regime_v4_3.append(current_v4_3)
+                    pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4.append(current_v4_4)
+                
+                # 레짐이 실제로 변경되었을 때 진입일 업데이트
+                if actual_regime_v4_4[-1] != prev_regime_state:
+                    current_entry_date = data.index[i]
+                regime_entry_dates.append(current_entry_date)
                     
-            applied_series = pd.Series(actual_regime_v4_3, index=data.index).shift(1).bfill()
+            applied_series = pd.Series(actual_regime_v4_4, index=data.index).shift(1).bfill()
+            entry_dates_series = pd.Series(regime_entry_dates, index=data.index).shift(1).bfill()
             
-            # 🔥 현재 체류 일수 계산
+            # 🔥 현재 체류 일수 및 진입일
             current_reg = applied_series.iloc[-1]
-            regime_duration = 0
-            for i in range(len(applied_series)-1, -1, -1):
-                if applied_series.iloc[i] == current_reg: regime_duration += 1
-                else: break
-            
-            # 🔥 이전 레짐 찾아서 방향(direction) 파악
-            prev_reg = current_reg
-            for i in range(len(applied_series)-regime_duration-1, -1, -1):
-                prev_reg = applied_series.iloc[i]; break
-
-            if current_reg < prev_reg: regime_direction = "ascending"
-            elif current_reg > prev_reg: regime_direction = "descending"
-            else: regime_direction = "stable"
-
-            if regime_direction == "ascending": entry_grade = "최적 진입" if regime_duration <= 30 else "주의(전환)"
-            elif regime_direction == "descending": entry_grade = "진입 보류" if regime_duration <= 20 else "바닥 탐색"
-            else: entry_grade = "진입 적합"
+            regime_start_date = entry_dates_series.iloc[-1]
+            # 주말/휴일 제외 영업일 기준 체류일수 계산
+            regime_duration = len(data.loc[regime_start_date:])
 
             target_reg = int(target_regimes[-1])
-            is_waiting = (pend_v4_3 is not None and target_reg < current_v4_3)
+            is_waiting = (pend_v4_4 is not None and target_reg < current_v4_4)
 
             try:
                 fx_data = yf.download('USDKRW=X', period='5d', progress=False)['Close'].ffill()
@@ -694,8 +454,8 @@ def make_portfolio_page(acc_name):
             except: current_usdkrw = 0.0
 
             return {
-                'regime': int(current_reg), 'target_regime': target_reg, 'is_waiting': is_waiting, 'wait_days': cnt_v4_3, 
-                'regime_duration': regime_duration, 'regime_direction': regime_direction, 'entry_grade': entry_grade,
+                'regime': int(current_reg), 'target_regime': target_reg, 'is_waiting': is_waiting, 'wait_days': cnt_v4_4, 
+                'regime_duration': regime_duration, 'regime_start_date': regime_start_date,
                 'vix': today['^VIX'], 'qqq': today['QQQ'], 'ma200': ma200_s.iloc[-1], 'ma50': ma50_s.iloc[-1],
                 'smh': today['SMH'], 'smh_ma50': smh_ma50_s.iloc[-1], 'smh_3m_ret': smh_3m_ret_s.iloc[-1], 'smh_rsi': smh_rsi_s.iloc[-1],
                 'prices': today.to_dict(), 'prev_prices': yesterday.to_dict(), 'date': data.index[-1], 'usdkrw': current_usdkrw
@@ -891,7 +651,9 @@ def make_portfolio_page(acc_name):
                 tgt_reg = ms['target_regime']
                 is_wait = ms['is_waiting']
                 wait_d = ms['wait_days']
-
+                dur = ms['regime_duration']
+                start_dt = ms['regime_start_date'].strftime('%Y-%m-%d')
+                
                 vix_c = ms['vix']; qqq_c = ms['qqq']; ma200_c = ms['ma200']; smh_c = ms['smh']; smh_ma50_c = ms['smh_ma50']
                 
                 s_stat = f"<span style='color:{C_UP}; font-weight:bold;'>돌파</span>" if smh_c > smh_ma50_c else f"<span style='color:{C_DOWN}; font-weight:bold;'>붕괴</span>"
@@ -899,16 +661,15 @@ def make_portfolio_page(acc_name):
                 rsi_stat = f"<span style='color:{C_UP}; font-weight:bold;'>통과</span>" if ms['smh_rsi'] > 50 else f"<span style='color:{C_DOWN}; font-weight:bold;'>미달</span>"
                 soxl_res = f"<span style='color:{C_UP}; font-weight:bold;'>SOXL 편입 승인</span>" if (smh_c > smh_ma50_c and ms['smh_3m_ret'] > 0.05 and ms['smh_rsi'] > 50) else f"<span style='color:{C_WARN}; font-weight:bold;'>USD(2X) 방어 유지</span>"
 
-                # 🔥 상향 전환 검증 추적 (5일 대기 안내)
+                # 🔥 5일 대기 안내 추가
                 wait_msg = ""
                 if is_wait and tgt_reg < app_reg:
                     wait_msg = f"<div style='margin-top:6px; padding:6px; background-color:rgba(255,193,7,0.15); border-left:3px solid #ffc107; font-size:0.8rem;'><span style='color:#ff9800; font-weight:bold;'>⏳ 상향 전환 검증 진행 중 ({wait_d}/5일차)</span><br>휩쏘 방지를 위해 R{app_reg} 유지 중</div>"
                 elif tgt_reg > app_reg:
                     wait_msg = f"<div style='margin-top:6px; padding:6px; background-color:rgba(231,76,60,0.15); border-left:3px solid #e74c3c; font-size:0.8rem;'><span style='color:#e74c3c; font-weight:bold;'>🚨 하락 전환 주의</span><br>내일 아침 즉시 하향 전환(R{tgt_reg}) 예상</div>"
 
-                # 🔥 현재 레짐 체류 기간 명시
-                dur = ms['regime_duration']
-                dur_text = f"<br><span style='color:{C_SAFE}; font-weight:bold;'>⏱️ 현재 R{app_reg} 체류 기간: {dur}일째</span>"
+                # 🔥 체류 기간 명확하게 표시
+                dur_text = f"<br><span style='color:{C_SAFE}; font-weight:bold;'>⏱️ 현재 R{app_reg} 진입일: {start_dt} ({dur}일째 체류 중)</span>"
 
                 if app_reg == 1:
                     reg_t = f"<span style='color:{C_UP}; font-weight:bold;'>[R1: 완벽한 강세장]</span>"
@@ -923,19 +684,6 @@ def make_portfolio_page(acc_name):
                     reg_t = f"<span style='color:{C_DOWN}; font-weight:bold;'>[R4: 시스템 패닉]</span>"
                     reg_d = f"VIX({vix_c:.1f}) 40 돌파. 극심한 시장 패닉 상태입니다. 주식을 전량 매도하고 대피하십시오.{dur_text}{wait_msg}"
 
-                entry_g = ms['entry_grade']
-                direction = ms['regime_direction']
-                dir_map = {"ascending": "상향 전환", "descending": "하향 전환", "stable": "현재 상태 유지"}
-                dir_kr = dir_map.get(direction, "-")
-                dot_c = C_UP if "최적" in entry_g or "적합" in entry_g else (C_WARN if "주의" in entry_g or "탐색" in entry_g else C_DOWN)
-                
-                if direction == 'ascending' and dur <= 10: summ = "상향 전환 직후 골든타임. 진입 비중 확대를 적극 권장합니다."
-                elif direction == 'ascending': summ = "상승 추세 안정화. 계획된 비중대로 편안하게 분할 매수하십시오."
-                elif direction == 'descending' and dur <= 20: summ = "하향 전환 발생. 추가 하락 우려가 있으므로 신규 매수를 보류하십시오."
-                elif direction == 'descending': summ = "장기 하락 중. 완벽한 상승 신호(R2 이상)가 뜰 때까지 현금을 대기하십시오."
-                elif dur > 60: summ = "레짐 장기화로 추세 반전 리스크 누적. 보수적인 소규모 분할 진입을 추천합니다."
-                else: summ = "레짐 안정적. 시스템 룰에 맞춰 자금을 정상 운용하십시오."
-
                 st.markdown(f"""<div class='info-grid'>
 <div class='info-panel'>
 <div style='font-weight:bold; margin-bottom:8px; border-bottom:1px solid currentColor; padding-bottom:4px; opacity:0.8;'>⚡ SOXL 진입 판독기</div>
@@ -948,21 +696,11 @@ def make_portfolio_page(acc_name):
 </div>
 </div>
 </div>
-<div class='info-panel'>
-<div style='font-weight:bold; margin-bottom:8px; border-bottom:1px solid currentColor; padding-bottom:4px; opacity:0.8;'>🤖 AI 전략 분석관</div>
+<div class='info-panel' style='grid-column: span 2;'>
+<div style='font-weight:bold; margin-bottom:8px; border-bottom:1px solid currentColor; padding-bottom:4px; opacity:0.8;'>🤖 AI 전략 분석관 Report</div>
 <div style='font-size:0.85rem; line-height:1.6;'>
 • <b>상태:</b> {reg_t}<br>
 <span style='opacity:0.9;'>{reg_d}</span>
-</div>
-</div>
-<div class='info-panel'>
-<div style='font-weight:bold; margin-bottom:8px; border-bottom:1px solid currentColor; padding-bottom:4px; opacity:0.8;'>🌱 신규 자금 투입 가이드</div>
-<div style='font-size:0.85rem; line-height:1.6;'>
-• <b>적합도:</b> <span style='color:{dot_c}; font-weight:bold;'>{entry_g}</span><br>
-• <b>방향:</b> {dir_kr} (체류 {dur}일차)<br>
-<div style='margin-top:6px; padding-top:6px; border-top:1px dashed currentColor; opacity:0.9;'>
-<b>총평:</b> {summ}
-</div>
 </div>
 </div>
 </div>""", unsafe_allow_html=True)
@@ -1001,7 +739,7 @@ def make_portfolio_page(acc_name):
                 with col_pie:
                     with st.container(border=True):
                         if total_val_now > 0:
-                            fig = go.Figure(go.Pie(labels=list(asset_vals.keys()), values=list(asset_vals.values()), hole=0.6, marker=dict(colors=[st.session_state['settings']['chart_colors'].get(k, '#888') for k in asset_vals.keys()])))
+                            fig = go.Figure(go.Pie(labels=list(asset_vals.keys()), values=list(asset_vals.values()), hole=0.6, marker=dict(colors=[COLOR_PALETTE.get(k, '#888') for k in asset_vals.keys()])))
                             cust_p2 = THEME_LAYOUT.copy()
                             cust_p2.update(height=280, showlegend=False, margin=dict(t=10, b=10, l=10, r=10), annotations=[dict(text=f"100%", x=0.5, y=0.5, showarrow=False, font=dict(color=TEXT_COLOR, size=16))])
                             fig.update_layout(**cust_p2)
@@ -1016,12 +754,16 @@ def make_portfolio_page(acc_name):
                 with st.container(border=True):
                     status_d = []
                     smh_cond = (ms['smh'] > ms['smh_ma50']) and (ms['smh_3m_ret'] > 0.05) and (ms['smh_rsi'] > 50)
+                    
+                    # AMLS v4.4 공식 배분표 함수
                     def get_w_local(reg, usx):
                         w = {t: 0.0 for t in REQUIRED_TICKERS}; semi = 'SOXL' if usx else 'USD'
-                        if reg == 1: w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'], w['CASH'] = 0.30, 0.20, 0.20, 0.15, 0.10, 0.05
-                        elif reg == 2: w['QLD'], w['SSO'], w['GLD'], w['USD'], w['QQQ'], w['CASH'] = 0.30, 0.25, 0.20, 0.10, 0.05, 0.10
-                        elif reg == 3: w['GLD'], w['CASH'], w['QQQ'] = 0.50, 0.35, 0.15
-                        elif reg == 4: w['GLD'], w['CASH'], w['QQQ'] = 0.50, 0.40, 0.10
+                        if reg == 1: w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'], w['SPY'] = 0.30, 0.20, 0.20, 0.15, 0.10, 0.05
+                        elif reg == 2: w['QLD'], w['SSO'], w['GLD'], w['USD'], w['QQQ'], w['SPY'] = 0.30, 0.25, 0.25, 0.10, 0.05, 0.05
+                        elif reg == 3: w['GLD'], w['QQQ'] = 0.50, 0.15
+                        elif reg == 4: w['GLD'], w['QQQ'] = 0.50, 0.10
+                        total_w = sum(w.values())
+                        if total_w < 1.0: w['CASH'] = round(1.0 - total_w, 4)
                         return {k: v for k, v in w.items() if v > 0}
                         
                     target_w_dict = get_w_local(ms['regime'], smh_cond)
@@ -1152,21 +894,13 @@ def page_manage_accounts():
 # --- 페이지 구성: 전략 명세서 ---
 def page_strategy_specification():
     st.title("📜 전략 명세서")
-    st.markdown("### 🏷️ 버전: v4.3")
+    st.markdown("### 🏷️ 버전: v4.4 (최신 안정화 버전)")
     st.table(pd.DataFrame({"우선순위": ["1", "2", "3", "4"], "조건": ["VIX > 40", "QQQ < 200일선", "정배열 & VIX < 25", "그 외 조건"], "레짐": ["R4 (위기)", "R3 (약세)", "R1 (강세)", "R2 (보통)"]}))
 
 
 # =====================================================================
 # [7] 사이드바 설정 및 네비게이션
 # =====================================================================
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 🎨 테마 설정")
-theme_list = ["애플 테마", "아이패드 테마", "갤럭시 탭 테마", "1930년대 타자기 테마", "카페 테마", "2000년대 구글 감성 테마", "월스트리트 저널 테마", "엑셀 테마"]
-selected_theme = st.sidebar.selectbox("테마를 선택하세요", theme_list, index=theme_list.index(current_theme))
-if selected_theme != current_theme:
-    st.session_state['settings']['theme'] = selected_theme
-    save_settings(st.session_state['settings']); st.rerun()
 
 st.sidebar.markdown("---")
 
@@ -1185,21 +919,6 @@ st.sidebar.markdown(f"""<div style="display:flex; flex-direction:column; gap:2px
 <a href="https://gemini.google.com/" target="_blank" class="sidebar-link"><span>✨</span> 제미나이</a>
 </div>""", unsafe_allow_html=True)
 st.sidebar.markdown("---")
-
-with st.sidebar.expander("🎨 테마 색상 커스텀"):
-    st.markdown("**기본 텍스트**")
-    new_text_color = st.color_picker("색상", st.session_state['settings']['text_color'])
-    if new_text_color != st.session_state['settings']['text_color']:
-        st.session_state['settings']['text_color'] = new_text_color
-        save_settings(st.session_state['settings']); st.rerun()
-        
-    st.markdown("---")
-    st.markdown("📈 **파이 차트 조각**")
-    for tkr in st.session_state['settings']['chart_colors']:
-        new_c = st.color_picker(f"{tkr}", st.session_state['settings']['chart_colors'][tkr])
-        if new_c != st.session_state['settings']['chart_colors'][tkr]:
-            st.session_state['settings']['chart_colors'][tkr] = new_c
-            save_settings(st.session_state['settings']); st.rerun()
 
 with st.sidebar.expander("💾 백업 및 복구"):
     st.download_button("📥 백업 다운로드", data=json.dumps(st.session_state['accounts']), file_name="amls_backup.json")
