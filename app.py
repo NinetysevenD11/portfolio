@@ -259,7 +259,7 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
 
 
 # =====================================================================
-# [4] 페이지 구성: 글로벌 마켓 대시보드 (기능 대폭 확장)
+# [4] 페이지 구성: 글로벌 마켓 대시보드
 # =====================================================================
 def page_market_dashboard():
     st.title("🌐 매크로 터미널")
@@ -281,11 +281,10 @@ def page_market_dashboard():
 </script>
 </div>""", height=70)
 
-    # --- 1열: 주요 지수 및 히트맵 ---
     col_left, col_right = st.columns([1, 1.8])
     with col_left:
         with st.container(border=True):
-            st.markdown("##### 📈 주요 증시 지표")
+            st.markdown("##### 📈 주요 지수")
             tickers = ['^GSPC', '^IXIC', '^VIX', 'USDKRW=X']
             indices_df = yf.download(tickers, start=datetime.today()-timedelta(days=365), progress=False)['Close'].ffill()
             if not indices_df.empty:
@@ -362,7 +361,6 @@ def page_market_dashboard():
     with col_mac1:
         with st.container(border=True):
             st.markdown("##### 🛢️ 금리 & 원자재 & 크립토")
-            # ^TNX (10년물), CL=F (WTI원유), GC=F (금), BTC-USD (비트코인)
             macro_tickers = ['^TNX', 'CL=F', 'GC=F', 'BTC-USD']
             macro_names = {'^TNX': '미 10년물 국채금리', 'CL=F': 'WTI 원유', 'GC=F': '국제 금', 'BTC-USD': '비트코인'}
             
@@ -412,7 +410,7 @@ def page_market_dashboard():
     # --- 3열: 경제 캘린더 ---
     st.markdown("---")
     with st.container(border=True):
-        st.markdown("##### 📅 글로벌 주요 경제 캘린더 (중요도 높음)")
+        st.markdown("##### 🇺🇸 미국 핵심 경제 캘린더 (한국어)")
         components.html(f"""
         <div class="tradingview-widget-container">
           <div class="tradingview-widget-container__widget"></div>
@@ -424,7 +422,7 @@ def page_market_dashboard():
           "height": "450",
           "locale": "kr",
           "importanceFilter": "0,1",
-          "currencyFilter": "USD,KRW,EUR,JPY,CNY"
+          "currencyFilter": "USD"
         }}
           </script>
         </div>
