@@ -161,9 +161,14 @@ COLOR_PALETTE = st.session_state['settings']["chart_colors"]
 THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Pretendard, -apple-system, sans-serif", color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0))
 
 def apply_custom_css():
+    # 🔥 해결: 전체 적용(*)을 없애고 텍스트 영역만 폰트 지정. 아이콘 폰트는 Streamlit 기본값 유지
     css_base = f"""
     @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
-    * {{ font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important; letter-spacing: -0.02em; }}
+    html, body, p, span, div, h1, h2, h3, h4, h5, h6, label, input, button, select {{ 
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+        letter-spacing: -0.02em; 
+    }}
+    .material-symbols-rounded {{ font-family: 'Material Symbols Rounded' !important; }} /* 아이콘 폰트 강제 보호 */
     """
     
     css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; min-height: 100%; height: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.03); backdrop-filter: blur(10px); word-wrap: break-word; }}"
@@ -340,7 +345,7 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
     df = pd.DataFrame(index=data.index)
     for t in data.columns: df[t] = data[t]
 
-    df['QQQ_MA50'] = df['QQQ'].rolling(50).mean()
+    df['QQQ_MA50'] = df['QQQ'].rolling(window=50).mean()
     df['QQQ_MA200'] = df['QQQ'].rolling(window=200).mean()
     df['QQQ_RSI'] = ta.rsi(df['QQQ'], length=14)
     df['SMH_MA50'] = df['SMH'].rolling(window=50).mean()
@@ -556,7 +561,7 @@ def page_amls_backtest():
     INITIAL_CAPITAL = st.sidebar.number_input("초기 자본금 ($)", value=10000, step=1000)
     MONTHLY_CONTRIBUTION = st.sidebar.number_input("월 적립금 ($)", value=2000, step=500)
     REBAL_FREQ = st.sidebar.selectbox("🔄 리밸런싱 주기", ["월 1회", "주 1회 (5거래일)", "2주 1회 (10거래일)", "3주 1회 (15거래일)"], index=0)
-    BTC_RATIO = st.sidebar.slider("🪙 비트코인 디지털 골드 편입비중 (금속 비중 내)", min_value=0, max_value=100, value=0, step=5, help="안전자산인 금(GLD) 비중 중 몇 %를 비트코인으로 대체할지 결정합니다.")
+    BTC_RATIO = st.sidebar.slider("🪙 비트코인 디지털 골드 편입비중 (금속 비중 내)", min_value=0, max_value=100, value=0, step=5, help="안전자산인 금(GLD) 비중 중 몇 %를 비트코인 대체할지 결정합니다.")
 
     with st.spinner('과거 데이터를 분석 중입니다...'):
         df, logs, tickers = load_amls_backtest_data(BACKTEST_START, BACKTEST_END, INITIAL_CAPITAL, MONTHLY_CONTRIBUTION, REBAL_FREQ, BTC_RATIO)
@@ -712,7 +717,6 @@ def page_ai_analyst():
     quotes_r4 = ["남들이 겁을 먹고 있을 때 욕심을 부려라. - 워런 버핏", "공포가 절정에 달했을 때가 가장 안전한 매수 시점이다. - 존 템플턴"]
     q_list = quotes_r1 if ms['regime']==1 else (quotes_r2 if ms['regime']==2 else (quotes_r3 if ms['regime']==3 else quotes_r4))
 
-    # 🔥 [개편] 텍스트를 차트 밖으로 완전히 빼내어 글씨 겹침을 구조적으로 차단
     st.markdown("#### 📊 시장 핵심 지표 판독기")
     
     if mobile_mode:
@@ -1243,7 +1247,7 @@ with st.sidebar.expander("💾 백업 및 복구"):
         st.session_state['accounts'] = json.load(up_f)
         save_accounts_data(st.session_state['accounts']); st.rerun()
 
-# 🔥 좌측 카테고리 (아이콘 렌더링 겹침 버그 완벽 해결)
+# 🔥 좌측 카테고리 (아이콘 렌더링을 완전히 분리하여 텍스트 충돌 완벽 방지)
 pages = {
     "시스템": [
         st.Page(page_market_dashboard, title="🌐 마켓 터미널"), 
@@ -1257,7 +1261,7 @@ pages = {
     ]
 }
 
-# 포트폴리오 목록 렌더링 방식 수정 (아이콘 옵션 제거, 타이틀 직관적 통합)
+# 계좌명에도 아이콘(icon=) 파라미터를 쓰지 않고 title 안에 직관적으로 병합합니다.
 for name in st.session_state['accounts'].keys(): 
     pages["포트폴리오"].append(st.Page(make_portfolio_page(name), title=f"💼 {name}"))
 
