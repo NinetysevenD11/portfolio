@@ -259,7 +259,7 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
 
 
 # =====================================================================
-# [4] 페이지 구성: 글로벌 마켓 대시보드 (히트맵 트레이딩뷰 위젯 적용)
+# [4] 페이지 구성: 글로벌 마켓 대시보드 (기능 대폭 확장)
 # =====================================================================
 def page_market_dashboard():
     st.title("🌐 매크로 터미널")
@@ -281,10 +281,11 @@ def page_market_dashboard():
 </script>
 </div>""", height=70)
 
+    # --- 1열: 주요 지수 및 히트맵 ---
     col_left, col_right = st.columns([1, 1.8])
     with col_left:
         with st.container(border=True):
-            st.markdown("##### 📈 주요 지수")
+            st.markdown("##### 📈 주요 증시 지표")
             tickers = ['^GSPC', '^IXIC', '^VIX', 'USDKRW=X']
             indices_df = yf.download(tickers, start=datetime.today()-timedelta(days=365), progress=False)['Close'].ffill()
             if not indices_df.empty:
@@ -353,6 +354,81 @@ def page_market_dashboard():
                   </script>
                 </div>
                 """, height=400)
+
+    # --- 2열: 매크로 및 주도주 파악 ---
+    st.markdown("---")
+    col_mac1, col_mac2 = st.columns([1, 1.8])
+    
+    with col_mac1:
+        with st.container(border=True):
+            st.markdown("##### 🛢️ 금리 & 원자재 & 크립토")
+            # ^TNX (10년물), CL=F (WTI원유), GC=F (금), BTC-USD (비트코인)
+            macro_tickers = ['^TNX', 'CL=F', 'GC=F', 'BTC-USD']
+            macro_names = {'^TNX': '미 10년물 국채금리', 'CL=F': 'WTI 원유', 'GC=F': '국제 금', 'BTC-USD': '비트코인'}
+            
+            try:
+                macro_df = yf.download(macro_tickers, period="5d", progress=False)['Close'].ffill()
+                if not macro_df.empty:
+                    latest_m = macro_df.iloc[-1]
+                    prev_m = macro_df.iloc[-2]
+                    
+                    mc1, mc2 = st.columns(2)
+                    mc1.metric(macro_names['^TNX'], f"{latest_m.get('^TNX', 0):.3f}%", f"{(latest_m.get('^TNX', 0) - prev_m.get('^TNX', 0)):+.3f}bp", delta_color="inverse")
+                    mc2.metric(macro_names['CL=F'], f"${latest_m.get('CL=F', 0):.2f}", f"{(latest_m.get('CL=F', 0)/prev_m.get('CL=F', 1)-1)*100:+.2f}%", delta_color="inverse")
+                    
+                    st.write("")
+                    mc3, mc4 = st.columns(2)
+                    mc3.metric(macro_names['GC=F'], f"${latest_m.get('GC=F', 0):,.1f}", f"{(latest_m.get('GC=F', 0)/prev_m.get('GC=F', 1)-1)*100:+.2f}%")
+                    mc4.metric(macro_names['BTC-USD'], f"${latest_m.get('BTC-USD', 0):,.0f}", f"{(latest_m.get('BTC-USD', 0)/prev_m.get('BTC-USD', 1)-1)*100:+.2f}%")
+                    
+                    st.caption("거시 경제의 자금 흐름을 파악하여 리스크를 선제 대응하세요.")
+            except:
+                st.info("데이터를 불러오는 중입니다...")
+
+    with col_mac2:
+        with st.container(border=True):
+            st.markdown("##### 🔥 시장 주도주 (Top Gainers & Losers)")
+            components.html(f"""
+            <div class="tradingview-widget-container">
+              <div class="tradingview-widget-container__widget"></div>
+              <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-hotlists.js" async>
+              {{
+              "colorTheme": "{WIDGET_THEME}",
+              "dateRange": "12M",
+              "exchange": "US",
+              "showChart": true,
+              "locale": "kr",
+              "largeChartUrl": "",
+              "isTransparent": true,
+              "showSymbolLogo": true,
+              "showFloatingTooltip": false,
+              "width": "100%",
+              "height": "350"
+            }}
+              </script>
+            </div>
+            """, height=350)
+
+    # --- 3열: 경제 캘린더 ---
+    st.markdown("---")
+    with st.container(border=True):
+        st.markdown("##### 📅 글로벌 주요 경제 캘린더 (중요도 높음)")
+        components.html(f"""
+        <div class="tradingview-widget-container">
+          <div class="tradingview-widget-container__widget"></div>
+          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>
+          {{
+          "colorTheme": "{WIDGET_THEME}",
+          "isTransparent": true,
+          "width": "100%",
+          "height": "450",
+          "locale": "kr",
+          "importanceFilter": "0,1",
+          "currencyFilter": "USD,KRW,EUR,JPY,CNY"
+        }}
+          </script>
+        </div>
+        """, height=450)
 
 
 # =====================================================================
@@ -435,7 +511,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지 구성: 내 포트폴리오 관리 (V4.4 적용, 체류일수 추가, 톨러런스 적용)
+# [6] 페이지 구성: 내 포트폴리오 관리 
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
@@ -622,6 +698,7 @@ def make_portfolio_page(acc_name):
         st.session_state['accounts'][acc_name]["target_seed"] = auto_seed
         rebal_base = total_val_now if total_val_now > 0 else auto_seed
 
+        # 매일 자동 스냅샷 기록 (목표 달성률 궤적 추적용)
         today_str = datetime.now().strftime("%Y-%m-%d")
         history_changed = False
         last_seed = curr_acc_data["seed_history"].get(today_str, {}).get("seed")
@@ -634,7 +711,7 @@ def make_portfolio_page(acc_name):
 
 
         # -------------------------------------------------------------
-        # 레이아웃 편집기 UI (사이드바 이동)
+        # 레이아웃 편집기 UI (사이드바로 이동)
         # -------------------------------------------------------------
         with st.sidebar.expander("🛠️ 화면 레이아웃 편집"):
             st.caption("위아래 버튼으로 순서를 변경하세요.")
@@ -650,7 +727,6 @@ def make_portfolio_page(acc_name):
                     curr_acc_data["layout_order"] = current_layout
                     save_accounts_data(st.session_state['accounts']); st.rerun()
 
-        st.write("")
 
         # -------------------------------------------------------------
         # 동적 레이아웃 렌더링 루프
@@ -811,7 +887,7 @@ def make_portfolio_page(acc_name):
                 with col_pie:
                     with st.container(border=True):
                         if total_val_now > 0:
-                            fig = go.Figure(go.Pie(labels=list(asset_vals.keys()), values=list(asset_vals.values()), hole=0.6, marker=dict(colors=[COLOR_PALETTE.get(k.split('/')[0], '#888') for k in asset_vals.keys()])))
+                            fig = go.Figure(go.Pie(labels=list(asset_vals.keys()), values=list(asset_vals.values()), hole=0.6, marker=dict(colors=[COLOR_PALETTE.get(k, '#888') for k in asset_vals.keys()])))
                             cust_p2 = THEME_LAYOUT.copy()
                             cust_p2.update(height=280, showlegend=False, margin=dict(t=10, b=10, l=10, r=10), annotations=[dict(text=f"100%", x=0.5, y=0.5, showarrow=False, font=dict(color=TEXT_COLOR, size=16))])
                             fig.update_layout(**cust_p2)
