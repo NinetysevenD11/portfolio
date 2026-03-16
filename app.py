@@ -976,7 +976,9 @@ def make_portfolio_page(acc_name):
                             if search_q: h_df = h_df[h_df['Log'].str.contains(search_q, case=False, na=False)]
                             st.dataframe(h_df, hide_index=True, width="stretch", height=250)
                 st.write("")
-        page_func.__name__ = f"pf_{abs(hash(acc_name))}"; return page_func
+                
+        page_func.__name__ = f"pf_{abs(hash(acc_name))}"
+        return page_func
 
 
 # --- 페이지: 계좌 관리 ---
