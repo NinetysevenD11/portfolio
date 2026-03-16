@@ -14,12 +14,26 @@ import os
 warnings.filterwarnings('ignore')
 
 # =====================================================================
-# [0] 시스템 설정 및 단일 테마(애플 테마) 적용
+# [0] 시스템 설정 및 동적 테마 엔진
 # =====================================================================
 st.set_page_config(page_title="AMLS 퀀트 포트폴리오", layout="wide", initial_sidebar_state="expanded")
 
+# 테마 추가/삭제에 따른 충돌 방지를 위해 v11로 세팅 파일 업데이트
+SETTINGS_FILE = "amls_settings_v11.json"
 ACCOUNTS_FILE = "amls_multi_accounts.json"
-REQUIRED_TICKERS = ["TQQQ", "QLD", "QQQ", "SOXL", "USD", "SSO", "GLD", "SPY", "CASH"] # SPY 추가
+REQUIRED_TICKERS = ["TQQQ", "QLD", "QQQ", "SOXL", "USD", "SSO", "GLD", "CASH"]
+
+def load_settings():
+    if os.path.exists(SETTINGS_FILE):
+        try:
+            with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except: pass
+    return {"theme": "애플 테마"}
+
+def save_settings(settings_data):
+    with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
+        json.dump(settings_data, f, ensure_ascii=False, indent=4)
 
 def load_accounts_data():
     if os.path.exists(ACCOUNTS_FILE):
@@ -33,6 +47,12 @@ def save_accounts_data(data_dict):
     with open(ACCOUNTS_FILE, "w", encoding="utf-8") as f:
         json.dump(data_dict, f, ensure_ascii=False, indent=4)
 
+# =====================================================================
+# [1] 세션 스테이트 (초기화 및 마이그레이션)
+# =====================================================================
+if 'settings' not in st.session_state:
+    st.session_state['settings'] = load_settings()
+
 if 'accounts' not in st.session_state:
     loaded = load_accounts_data()
     if not loaded:
@@ -40,13 +60,15 @@ if 'accounts' not in st.session_state:
             "AMLS v4.4": {  
                 "portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS],
                 "history": [], "first_entry_date": None, "journal_text": "", "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0,
-                "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 성장 곡선", "📝 매매 일지"]
+                "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]
             }
         }
     st.session_state['accounts'] = loaded
 
-# 마이그레이션 (v4.3 -> v4.4, SPY 누락분 추가)
 needs_save = False
+if "기본 계좌 (AMLS)" in st.session_state['accounts']:
+    st.session_state['accounts']["AMLS v4.4"] = st.session_state['accounts'].pop("기본 계좌 (AMLS)")
+    needs_save = True
 if "AMLS v4.3" in st.session_state['accounts']:
     st.session_state['accounts']["AMLS v4.4"] = st.session_state['accounts'].pop("AMLS v4.3")
     needs_save = True
@@ -55,9 +77,10 @@ for acc_name, acc_data in st.session_state['accounts'].items():
     if "seed_history" not in acc_data: acc_data["seed_history"] = {}; needs_save = True
     if "target_portfolio_value" not in acc_data: acc_data["target_portfolio_value"] = 100000.0; needs_save = True
     if "layout_order" not in acc_data: 
-        acc_data["layout_order"] = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 성장 곡선", "📝 매매 일지"]
+        acc_data["layout_order"] = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]
         needs_save = True
 
+    existing_tickers = [item["티커 (Ticker)"] for item in acc_data["portfolio"]]
     port_dict = {item["티커 (Ticker)"]: item for item in acc_data["portfolio"]}
     new_port = []
     for req_t in REQUIRED_TICKERS:
@@ -73,38 +96,54 @@ for acc_name, acc_data in st.session_state['accounts'].items():
 
 if needs_save: save_accounts_data(st.session_state['accounts'])
 
-# --- 애플 테마 고정 변수 ---
+
+# =====================================================================
+# [2] 동적 테마 엔진 (애플 테마로 일원화)
+# =====================================================================
+# 테마 설정을 애플 테마 하나로 일원화 (기존 변수 호환성 유지)
 TEXT_COLOR = "#1d1d1f"; TEXT_SUB = "#8e8e93"
 PANEL_BG = "rgba(255,255,255,0.65)"; PANEL_BORDER = "1px solid rgba(255,255,255,0.5)"; PANEL_RADIUS = "16px"
 WIDGET_THEME = "light"
 C_UP = "#34c759"; C_DOWN = "#ff3b30"; C_WARN = "#ff9500"; C_SAFE = "#007aff"
-COLOR_PALETTE = {'TQQQ':'#ff3b30', 'SOXL':'#af52de', 'USD':'#5856d6', 'QLD':'#ff9500', 'SSO':'#ffcc00', 'QQQ':'#007aff', 'SPY':'#34a853', 'GLD':'#34c759', 'CASH':'#8e8e93'}
+BASE_CHART_COLORS = {'TQQQ':'#ff3b30', 'SOXL':'#af52de', 'USD':'#5856d6', 'QLD':'#ff9500', 'SSO':'#ffcc00', 'QQQ':'#007aff', 'SPY':'#34a853', 'GLD':'#34c759', 'CASH':'#8e8e93'}
+
+if "text_color" not in st.session_state['settings']: st.session_state['settings']["text_color"] = TEXT_COLOR
+if "chart_colors" not in st.session_state['settings']: st.session_state['settings']["chart_colors"] = BASE_CHART_COLORS.copy()
+for tkr in REQUIRED_TICKERS:
+    if tkr not in st.session_state['settings']["chart_colors"]:
+        st.session_state['settings']["chart_colors"][tkr] = BASE_CHART_COLORS.get(tkr, "#888888")
+
+TEXT_COLOR = st.session_state['settings']["text_color"]
+COLOR_PALETTE = st.session_state['settings']["chart_colors"]
+
 THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color=TEXT_COLOR, size=13), margin=dict(l=0, r=0, t=30, b=0), xaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.05)'), yaxis=dict(showgrid=True, gridcolor='rgba(0,0,0,0.05)'))
 
-st.markdown(f"""
-<style>
-@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
-.stApp {{ background: radial-gradient(circle at 15% 50%, rgba(240, 244, 255, 1), rgba(255, 255, 255, 0)), radial-gradient(circle at 85% 30%, rgba(230, 240, 255, 1), rgba(255, 255, 255, 0)); background-color: #f5f5f7; font-family: 'Pretendard', sans-serif; color: {TEXT_COLOR}; letter-spacing: -0.01em; }}
-div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background: {PANEL_BG}; backdrop-filter: blur(20px); border: {PANEL_BORDER}; border-radius: 20px; box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.06); padding: 1.5rem; transition: transform 0.2s ease, box-shadow 0.2s ease; }}
-.stButton>button {{ background-color: rgba(255, 255, 255, 0.8); color: #007aff; border: 1px solid rgba(0, 122, 255, 0.3); border-radius: 12px; font-weight: 600; padding: 0.5rem 1rem; backdrop-filter: blur(10px); transition: all 0.2s; }}
-.stButton>button:hover {{ background-color: #007aff; color: #ffffff; transform: scale(1.02); }}
-input, textarea, select, div[data-baseweb="select"] > div {{ background-color: rgba(255, 255, 255, 0.5); backdrop-filter: blur(10px); color: {TEXT_COLOR}; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; }}
-[data-testid="stDataFrame"] {{ border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); background: rgba(255, 255, 255, 0.5); }}
-[data-testid="stSidebar"] {{ background: rgba(245, 245, 247, 0.7); backdrop-filter: blur(20px); border-right: 1px solid rgba(0,0,0,0.05); }}
-button[data-baseweb="tab"][aria-selected="true"] {{ color: #1d1d1f; border-bottom-color: #1d1d1f; border-bottom-width: 2px; }}
-.sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none !important; color: {TEXT_COLOR}; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
-.sidebar-link:hover {{ background-color: rgba(0,0,0,0.05); transform: translateX(2px); }}
-div[data-testid="stMetricValue"] > div, div[data-testid="stMetricDelta"] > div, p, span, label, .stMarkdown {{ white-space: normal !important; word-break: keep-all !important; overflow-wrap: break-word !important; }}
-div[data-testid="stMetricValue"] {{ font-weight: bold; font-size: 1.8rem; color: {TEXT_COLOR}; }}
-.info-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }}
-@media (max-width: 800px) {{ .info-grid {{ grid-template-columns: 1fr; }} }}
-.info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }}
-</style>
-""", unsafe_allow_html=True)
+def apply_custom_css():
+    css_base = f"""
+    @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+    .stApp {{ background: radial-gradient(circle at 15% 50%, rgba(240, 244, 255, 1), rgba(255, 255, 255, 0)), radial-gradient(circle at 85% 30%, rgba(230, 240, 255, 1), rgba(255, 255, 255, 0)); background-color: #f5f5f7; font-family: 'Pretendard', sans-serif; color: {TEXT_COLOR}; letter-spacing: -0.01em; }}
+    div[data-testid="stVerticalBlockBorderWrapper"] > div, .st-emotion-cache-1104k38, .st-emotion-cache-16txtl3 {{ background: {PANEL_BG}; backdrop-filter: blur(20px); border: {PANEL_BORDER}; border-radius: 20px; box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.06); padding: 1.5rem; transition: transform 0.2s ease, box-shadow 0.2s ease; }}
+    .stButton>button {{ background-color: rgba(255, 255, 255, 0.8); color: #007aff; border: 1px solid rgba(0, 122, 255, 0.3); border-radius: 12px; font-weight: 600; padding: 0.5rem 1rem; backdrop-filter: blur(10px); transition: all 0.2s; }}
+    .stButton>button:hover {{ background-color: #007aff; color: #ffffff; transform: scale(1.02); }}
+    input, textarea, select, div[data-baseweb="select"] > div {{ background-color: rgba(255, 255, 255, 0.5); backdrop-filter: blur(10px); color: {TEXT_COLOR}; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; }}
+    [data-testid="stDataFrame"] {{ border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); background: rgba(255, 255, 255, 0.5); }}
+    [data-testid="stSidebar"] {{ background: rgba(245, 245, 247, 0.7); backdrop-filter: blur(20px); border-right: 1px solid rgba(0,0,0,0.05); }}
+    button[data-baseweb="tab"][aria-selected="true"] {{ color: #1d1d1f; border-bottom-color: #1d1d1f; border-bottom-width: 2px; }}
+    .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; text-decoration: none !important; color: {TEXT_COLOR}; font-weight: 600; font-size: 0.95rem; transition: background-color 0.2s, transform 0.1s; }}
+    .sidebar-link:hover {{ background-color: rgba(0,0,0,0.05); transform: translateX(2px); }}
+    div[data-testid="stMetricValue"] > div, div[data-testid="stMetricDelta"] > div, p, span, label, .stMarkdown {{ white-space: normal !important; word-break: keep-all !important; overflow-wrap: break-word !important; }}
+    div[data-testid="stMetricValue"] {{ font-weight: bold; font-size: 1.8rem; color: {TEXT_COLOR}; }}
+    .info-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }}
+    @media (max-width: 800px) {{ .info-grid {{ grid-template-columns: 1fr; }} }}
+    .info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }}
+    """
+    st.markdown(f"<style>{css_base}</style>", unsafe_allow_html=True)
+
+apply_custom_css()
 
 
 # =====================================================================
-# [1] 글로벌 백엔드 함수 (AMLS v4.4 적용)
+# [3] 글로벌 백엔드 함수
 # =====================================================================
 @st.cache_data(ttl=3600)
 def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 1회"):
@@ -158,18 +197,14 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
 
     df['Signal_Regime_v4_4'] = pd.Series(actual_regime_v4_4, index=df.index).shift(1).bfill()
 
-    # 🔥 AMLS v4.4 공식 배분표 적용
     def get_v4_4_weights(regime, use_soxl):
         w = {t: 0.0 for t in data.columns}; semi = 'SOXL' if use_soxl else 'USD'
         if regime == 1: w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'], w['SPY'] = 0.30, 0.20, 0.20, 0.15, 0.10, 0.05
         elif regime == 2: w['QLD'], w['SSO'], w['GLD'], w['USD'], w['QQQ'], w['SPY'] = 0.30, 0.25, 0.25, 0.10, 0.05, 0.05
-        elif regime == 3: w['GLD'], w['QQQ'] = 0.50, 0.15 # Cash is handled implicitly if sum < 1
-        elif regime == 4: w['GLD'], w['QQQ'] = 0.50, 0.10 # Cash is handled implicitly if sum < 1
-        
-        # Cash handling
+        elif regime == 3: w['GLD'], w['QQQ'] = 0.50, 0.15 
+        elif regime == 4: w['GLD'], w['QQQ'] = 0.50, 0.10 
         total_w = sum(w.values())
-        if total_w < 1.0:
-            w['CASH'] = round(1.0 - total_w, 4)
+        if total_w < 1.0: w['CASH'] = round(1.0 - total_w, 4)
         return w
 
     strategies = ['AMLS v4.4', 'QQQ', 'QLD', 'TQQQ']
@@ -183,16 +218,12 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
         today, yesterday = df.index[i], df.index[i-1]
         days_since_v4_4 += 1
         
-        # Calculate Returns
         ret_v4_4 = 0
-        for t in data.columns:
-            ret_v4_4 += weights_v4_4.get(t, 0) * daily_returns[t].iloc[i]
-        # Cash return is 0
+        for t in data.columns: ret_v4_4 += weights_v4_4.get(t, 0) * daily_returns[t].iloc[i]
         
         ports['AMLS v4.4'] *= (1 + ret_v4_4)
         for s in ['QQQ', 'QLD', 'TQQQ']: ports[s] *= (1 + daily_returns[s].iloc[i])
         
-        # Update Weights
         for t in data.columns:
             if ports['AMLS v4.4'] > 0: weights_v4_4[t] = weights_v4_4.get(t,0)*(1+daily_returns[t].iloc[i])/(1+ret_v4_4)
         if ports['AMLS v4.4'] > 0: weights_v4_4['CASH'] = weights_v4_4.get('CASH',0) / (1+ret_v4_4)
@@ -229,7 +260,7 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
 
 
 # =====================================================================
-# [2] 페이지 구성: 글로벌 마켓 대시보드
+# [4] 페이지 구성: 글로벌 마켓 대시보드
 # =====================================================================
 def page_market_dashboard():
     st.title("🌐 매크로 터미널")
@@ -281,10 +312,10 @@ def page_market_dashboard():
 
 
 # =====================================================================
-# [3] 페이지 구성: AMLS 백테스트
+# [5] 페이지 구성: AMLS 백테스트
 # =====================================================================
 def page_amls_backtest():
-    st.title("🦅 V4.4 전략 시뮬레이터")
+    st.title("🦅 AMLS v4.4 시뮬레이터")
 
     st.sidebar.header("⚙️ 시뮬레이션 설정")
     BACKTEST_START = st.sidebar.date_input("시작일", datetime(2018, 1, 1))
@@ -293,7 +324,7 @@ def page_amls_backtest():
     MONTHLY_CONTRIBUTION = st.sidebar.number_input("월 적립금 ($)", value=2000, step=500)
     REBAL_FREQ = st.sidebar.selectbox("🔄 리밸런싱 주기", ["월 1회", "주 1회 (5거래일)", "2주 1회 (10거래일)", "3주 1회 (15거래일)"], index=0)
 
-    with st.spinner('과거 데이터를 분석 중입니다...'):
+    with st.spinner('최신 v4.4 엔진으로 과거 데이터를 분석 중입니다...'):
         df, logs, tickers = load_amls_backtest_data(BACKTEST_START, BACKTEST_END, INITIAL_CAPITAL, MONTHLY_CONTRIBUTION, REBAL_FREQ)
     
     def calc_metrics(series, invested_series):
@@ -320,7 +351,7 @@ def page_amls_backtest():
         st.info(f"투입 원금: ${df['Invested'].iloc[-1]:,.0f}")
         st.dataframe(metrics_df, use_container_width=True)
 
-        st.markdown("#### 🥧 국면별 비중 (v4.4 적용)")
+        st.markdown("#### 🥧 v4.4 국면별 비중")
         c1, c2, c3, c4 = st.columns(4)
         def get_w(reg):
             if reg == 1: return {'TQQQ':30, 'SOXL/USD':20, 'QLD':20, 'SSO':15, 'GLD':10, 'SPY':5}
@@ -360,7 +391,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [4] 페이지 구성: 내 포트폴리오 관리 (V4.4 적용, 체류일수 추가, 톨러런스 적용)
+# [6] 페이지 구성: 내 포트폴리오 관리 
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
@@ -368,12 +399,13 @@ def make_portfolio_page(acc_name):
         
         curr_acc_data = st.session_state['accounts'][acc_name]
         
-        DEFAULT_LAYOUT = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 성장 곡선", "📝 매매 일지"]
+        DEFAULT_LAYOUT = ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]
         current_layout = curr_acc_data.get("layout_order", [])
         
         if "💼 기입표" in current_layout: current_layout[current_layout.index("💼 기입표")] = "💼 포트폴리오 & 리밸런싱"
         if "🍩 자산 배분 & 지침" in current_layout: current_layout.remove("🍩 자산 배분 & 지침")
         if "🍩 배분 및 지침" in current_layout: current_layout.remove("🍩 배분 및 지침")
+        if "📈 성장 곡선" in current_layout: current_layout[current_layout.index("📈 성장 곡선")] = "📈 목표 달성률 추이"
             
         for item in DEFAULT_LAYOUT:
             if item not in current_layout: current_layout.append(item)
@@ -409,16 +441,12 @@ def make_portfolio_page(acc_name):
                 elif q >= m200 and m50 >= m200 and v < 25: target_regimes.append(1)
                 else: target_regimes.append(2)
                 
-            # 2. AMLS v4.4 5일 대기 로직 적용
+            # 2. AMLS v4.4 5일 대기 로직 적용 및 진입일 추적
             current_v4_4 = 3; pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4 = []
-            
-            # 🔥 진입일(Entry Date) 추적을 위한 변수 추가
-            regime_entry_dates = []
-            current_entry_date = data.index[0]
+            regime_entry_dates = []; current_entry_date = data.index[0]
             
             for i, tr in enumerate(target_regimes):
                 prev_regime_state = current_v4_4
-                
                 if tr > current_v4_4: 
                     current_v4_4 = tr; pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4.append(current_v4_4)
                 elif tr < current_v4_4:
@@ -430,8 +458,7 @@ def make_portfolio_page(acc_name):
                         pend_v4_4 = tr; cnt_v4_4 = 1; actual_regime_v4_4.append(current_v4_4 - 1)
                 else: 
                     pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4.append(current_v4_4)
-                
-                # 레짐이 실제로 변경되었을 때 진입일 업데이트
+                    
                 if actual_regime_v4_4[-1] != prev_regime_state:
                     current_entry_date = data.index[i]
                 regime_entry_dates.append(current_entry_date)
@@ -442,7 +469,6 @@ def make_portfolio_page(acc_name):
             # 🔥 현재 체류 일수 및 진입일
             current_reg = applied_series.iloc[-1]
             regime_start_date = entry_dates_series.iloc[-1]
-            # 주말/휴일 제외 영업일 기준 체류일수 계산
             regime_duration = len(data.loc[regime_start_date:])
 
             target_reg = int(target_regimes[-1])
@@ -454,7 +480,7 @@ def make_portfolio_page(acc_name):
             except: current_usdkrw = 0.0
 
             return {
-                'regime': int(current_reg), 'target_regime': target_reg, 'is_waiting': is_waiting, 'wait_days': cnt_v4_4, 
+                'regime': int(current_reg), 'target_regime': target_reg, 'is_waiting': is_waiting, 'wait_days': cnt_v4_4,
                 'regime_duration': regime_duration, 'regime_start_date': regime_start_date,
                 'vix': today['^VIX'], 'qqq': today['QQQ'], 'ma200': ma200_s.iloc[-1], 'ma50': ma50_s.iloc[-1],
                 'smh': today['SMH'], 'smh_ma50': smh_ma50_s.iloc[-1], 'smh_3m_ret': smh_3m_ret_s.iloc[-1], 'smh_rsi': smh_rsi_s.iloc[-1],
@@ -551,6 +577,7 @@ def make_portfolio_page(acc_name):
         st.session_state['accounts'][acc_name]["target_seed"] = auto_seed
         rebal_base = total_val_now if total_val_now > 0 else auto_seed
 
+        # 매일 자동 스냅샷 기록 (목표 달성률 궤적 추적용)
         today_str = datetime.now().strftime("%Y-%m-%d")
         history_changed = False
         last_seed = curr_acc_data["seed_history"].get(today_str, {}).get("seed")
@@ -563,22 +590,22 @@ def make_portfolio_page(acc_name):
 
 
         # -------------------------------------------------------------
-        # 레이아웃 편집기 UI
+        # 레이아웃 편집기 UI (사이드바로 이동)
         # -------------------------------------------------------------
-        with st.expander("🛠️ 화면 레이아웃 편집 (위아래로 순서 변경)"):
+        with st.sidebar.expander("🛠️ 화면 레이아웃 편집"):
+            st.caption("위아래 버튼으로 순서를 변경하세요.")
             for i, block_name in enumerate(current_layout):
-                c_name, c_up, c_dn = st.columns([6, 1, 1])
-                c_name.markdown(f"<div style='padding-top:5px; font-weight:bold;'>{i+1}. {block_name}</div>", unsafe_allow_html=True)
-                if c_up.button("▲ 올리기", key=f"up_{i}_{acc_name}") and i > 0:
+                c_name, c_up, c_dn = st.columns([5, 1, 1])
+                c_name.markdown(f"<div style='padding-top:5px; font-size: 0.9rem;'>{i+1}. {block_name}</div>", unsafe_allow_html=True)
+                if c_up.button("▲", key=f"up_{i}_{acc_name}") and i > 0:
                     current_layout[i], current_layout[i-1] = current_layout[i-1], current_layout[i]
                     curr_acc_data["layout_order"] = current_layout
                     save_accounts_data(st.session_state['accounts']); st.rerun()
-                if c_dn.button("▼ 내리기", key=f"dn_{i}_{acc_name}") and i < len(current_layout)-1:
+                if c_dn.button("▼", key=f"dn_{i}_{acc_name}") and i < len(current_layout)-1:
                     current_layout[i], current_layout[i+1] = current_layout[i+1], current_layout[i]
                     curr_acc_data["layout_order"] = current_layout
                     save_accounts_data(st.session_state['accounts']); st.rerun()
 
-        st.write("")
 
         # -------------------------------------------------------------
         # 동적 레이아웃 렌더링 루프
@@ -661,7 +688,7 @@ def make_portfolio_page(acc_name):
                 rsi_stat = f"<span style='color:{C_UP}; font-weight:bold;'>통과</span>" if ms['smh_rsi'] > 50 else f"<span style='color:{C_DOWN}; font-weight:bold;'>미달</span>"
                 soxl_res = f"<span style='color:{C_UP}; font-weight:bold;'>SOXL 편입 승인</span>" if (smh_c > smh_ma50_c and ms['smh_3m_ret'] > 0.05 and ms['smh_rsi'] > 50) else f"<span style='color:{C_WARN}; font-weight:bold;'>USD(2X) 방어 유지</span>"
 
-                # 🔥 5일 대기 안내 추가
+                # 🔥 5일 대기 안내
                 wait_msg = ""
                 if is_wait and tgt_reg < app_reg:
                     wait_msg = f"<div style='margin-top:6px; padding:6px; background-color:rgba(255,193,7,0.15); border-left:3px solid #ffc107; font-size:0.8rem;'><span style='color:#ff9800; font-weight:bold;'>⏳ 상향 전환 검증 진행 중 ({wait_d}/5일차)</span><br>휩쏘 방지를 위해 R{app_reg} 유지 중</div>"
@@ -743,7 +770,7 @@ def make_portfolio_page(acc_name):
                             cust_p2 = THEME_LAYOUT.copy()
                             cust_p2.update(height=280, showlegend=False, margin=dict(t=10, b=10, l=10, r=10), annotations=[dict(text=f"100%", x=0.5, y=0.5, showarrow=False, font=dict(color=TEXT_COLOR, size=16))])
                             fig.update_layout(**cust_p2)
-                            fig.update_traces(textposition='inside', textinfo='percent+label', textfont_size=13, textfont_color="#fff" if current_theme in ["1930년대 타자기 테마", "월스트리트 저널 테마"] else TEXT_COLOR)
+                            fig.update_traces(textposition='inside', textinfo='percent+label', textfont_size=13, textfont_color="#fff")
                             st.plotly_chart(fig, use_container_width=True)
                         else:
                             st.markdown("<div style='height: 280px; display: flex; align-items: center; justify-content: center; color: #888;'>자산을 입력해 주세요.</div>", unsafe_allow_html=True)
@@ -755,7 +782,7 @@ def make_portfolio_page(acc_name):
                     status_d = []
                     smh_cond = (ms['smh'] > ms['smh_ma50']) and (ms['smh_3m_ret'] > 0.05) and (ms['smh_rsi'] > 50)
                     
-                    # AMLS v4.4 공식 배분표 함수
+                    # AMLS v4.4 공식 배분표 적용
                     def get_w_local(reg, usx):
                         w = {t: 0.0 for t in REQUIRED_TICKERS}; semi = 'SOXL' if usx else 'USD'
                         if reg == 1: w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'], w['SPY'] = 0.30, 0.20, 0.20, 0.15, 0.10, 0.05
@@ -822,42 +849,39 @@ def make_portfolio_page(acc_name):
                         st.dataframe(status_df.style.map(color_act, subset=['리밸런싱 액션']), use_container_width=True, hide_index=True)
                 st.write("")
 
-            elif block == "📈 성장 곡선":
-                st.markdown("**📈 자산 성장 곡선**")
+            # 🔥 목표 달성률 추이 그래프
+            elif block == "📈 목표 달성률 추이":
+                st.markdown("#### 📈 목표 달성률 추이")
                 hist_dict = curr_acc_data.get("seed_history", {})
-                if hist_dict:
+                target_val = curr_acc_data.get("target_portfolio_value", 100000.0)
+                
+                if hist_dict and target_val > 0:
                     with st.container(border=True):
                         hist_df = pd.DataFrame.from_dict(hist_dict, orient='index')
                         hist_df.index = pd.to_datetime(hist_df.index)
                         hist_df = hist_df.sort_index()
 
-                        fed_str = curr_acc_data.get("first_entry_date")
-                        col_date, _ = st.columns([1, 3])
-                        with col_date:
-                            default_date = pd.to_datetime(fed_str).date() if fed_str else (datetime.today() - timedelta(days=90)).date()
-                            u_date = st.date_input("기준일 설정", value=default_date, key=f"date_{acc_name}")
-                            if str(u_date) != str(fed_str)[:10]: 
-                                st.session_state['accounts'][acc_name]["first_entry_date"] = str(u_date)
-                                save_accounts_data(st.session_state['accounts'])
+                        # 목표 달성률(%) 계산
+                        hist_df['achieve_pct'] = (hist_df['equity'] / target_val) * 100
+
+                        fig_achieve = go.Figure()
+                        fig_achieve.add_trace(go.Scatter(
+                            x=hist_df.index, y=hist_df['achieve_pct'], 
+                            name="달성률", mode='lines+markers',
+                            line=dict(color=C_UP, width=3), 
+                            marker=dict(size=6),
+                            fill='tozeroy', fillcolor='rgba(0,0,0,0)'
+                        ))
+                        # 100% 도달 선
+                        fig_achieve.add_hline(y=100, line_dash="dash", line_color=C_DOWN, annotation_text="목표 달성 (100%)", annotation_position="top left")
                         
-                        try:
-                            if fed_str:
-                                fed_dt = pd.to_datetime(fed_str)
-                                if fed_dt < hist_df.index[0]:
-                                    hist_df.loc[fed_dt] = {"seed": auto_seed, "equity": auto_seed}
-                                    hist_df = hist_df.sort_index()
-
-                            hist_df = hist_df.resample('D').ffill()
-
-                            fig_seed = go.Figure()
-                            fig_seed.add_trace(go.Scatter(x=hist_df.index, y=hist_df['equity'], name="실제 총 평가액", line=dict(color=C_UP, width=3, shape='hv'), mode='lines'))
-                            fig_seed.add_trace(go.Scatter(x=hist_df.index, y=hist_df['seed'], name="투입 시드 원금", line=dict(color=C_DOWN, width=2, dash='dot', shape='hv'), mode='lines'))
-                            
-                            cust_s = THEME_LAYOUT.copy()
-                            cust_s.update(height=350, hovermode="x unified", yaxis=dict(showgrid=True, autorange=True, rangemode="normal"))
-                            fig_seed.update_layout(**cust_s)
-                            st.plotly_chart(fig_seed, use_container_width=True)
-                        except Exception as e: pass
+                        cust_s = THEME_LAYOUT.copy()
+                        cust_s.update(height=350, hovermode="x unified", yaxis=dict(showgrid=True, ticksuffix="%"))
+                        fig_achieve.update_layout(**cust_s)
+                        st.plotly_chart(fig_achieve, use_container_width=True)
+                        st.caption("💡 접속 시 자동으로 해당 날짜의 총 평가액을 기록하여 목표 금액 대비 달성률(%) 궤적을 추적합니다.")
+                else:
+                    st.info("아직 충분한 자산 기록이 없거나 목표 금액이 설정되지 않았습니다.")
                 st.write("")
 
             elif block == "📝 매매 일지":
@@ -882,7 +906,7 @@ def page_manage_accounts():
     new_acc = st.text_input("새 계좌명")
     if st.button("개설", type="primary") and new_acc:
         if new_acc not in st.session_state['accounts']:
-            st.session_state['accounts'][new_acc] = {"portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS], "history": [{"Date": datetime.now().strftime("%Y-%m-%d"), "Log": "계좌 개설"}], "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0, "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 성장 곡선", "📝 매매 일지"]}
+            st.session_state['accounts'][new_acc] = {"portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS], "history": [{"Date": datetime.now().strftime("%Y-%m-%d"), "Log": "계좌 개설"}], "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0, "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]}
             save_accounts_data(st.session_state['accounts']); st.rerun()
     st.divider()
     for acc in list(st.session_state['accounts'].keys()):
@@ -925,7 +949,8 @@ with st.sidebar.expander("💾 백업 및 복구"):
     up_f = st.file_uploader("📤 복구 업로드", type=['json'])
     if up_f and st.button("⚠️ 복구 실행"):
         st.session_state['accounts'] = json.load(up_f)
-        save_accounts_data(st.session_state['accounts']); st.rerun()
+        save_accounts_data(st.session_state['accounts'])
+        st.rerun()
 
 pages = {
     "시스템": [st.Page(page_market_dashboard, title="마켓 터미널", icon="🌐"), st.Page(page_amls_backtest, title="백테스트 엔진", icon="🦅")],
