@@ -340,7 +340,7 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
     df = pd.DataFrame(index=data.index)
     for t in data.columns: df[t] = data[t]
 
-    df['QQQ_MA50'] = df['QQQ'].rolling(window=50).mean()
+    df['QQQ_MA50'] = df['QQQ'].rolling(50).mean()
     df['QQQ_MA200'] = df['QQQ'].rolling(window=200).mean()
     df['QQQ_RSI'] = ta.rsi(df['QQQ'], length=14)
     df['SMH_MA50'] = df['SMH'].rolling(window=50).mean()
@@ -646,7 +646,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지 구성: AI 시스템 분석관 (타이틀 분리 및 겹침 원천 차단본)
+# [6] 페이지 구성: AI 시스템 분석관 (UI 겹침 원천 차단 개편본)
 # =====================================================================
 def page_ai_analyst():
     st.title("⚡ AI 시스템 분석관")
@@ -712,7 +712,7 @@ def page_ai_analyst():
     quotes_r4 = ["남들이 겁을 먹고 있을 때 욕심을 부려라. - 워런 버핏", "공포가 절정에 달했을 때가 가장 안전한 매수 시점이다. - 존 템플턴"]
     q_list = quotes_r1 if ms['regime']==1 else (quotes_r2 if ms['regime']==2 else (quotes_r3 if ms['regime']==3 else quotes_r4))
 
-    # 🔥 [완벽 해결] Title 속성 완전 삭제 + st.markdown으로 레이아웃 완벽 분리
+    # 🔥 [개편] 텍스트를 차트 밖으로 완전히 빼내어 글씨 겹침을 구조적으로 차단
     st.markdown("#### 📊 시장 핵심 지표 판독기")
     
     if mobile_mode:
@@ -723,10 +723,8 @@ def page_ai_analyst():
         col3.metric("SMH RSI", f"{ms['smh_rsi']:.1f}", "과열" if ms['smh_rsi']>70 else ("침체" if ms['smh_rsi']<30 else "보통"), delta_color="off")
     else:
         col1, col2, col3 = st.columns(3)
-        
         with col1:
             with st.container(border=True):
-                # 텍스트와 게이지를 물리적으로 완전히 분리
                 st.markdown(f"<div style='text-align:center; font-weight:bold; font-size:1.1rem; color:{TEXT_SUB}; margin-bottom:5px;'>📉 시장 공포지수 (VIX)</div>", unsafe_allow_html=True)
                 fig_vix = go.Figure(go.Indicator(
                     mode="number+gauge", value=vix_c,
@@ -781,7 +779,6 @@ def page_ai_analyst():
 
     st.write("")
 
-    # 컨테이너 기반 유연한 리포트 (글씨 잘림 100% 완벽 방지)
     st.markdown("#### 🤖 AI 전략 분석관 Report")
     with st.container(border=True):
         st.markdown(f"### 현재 국면: {reg_t}")
@@ -951,7 +948,6 @@ def make_portfolio_page(acc_name):
                 curr_acc_data["seed_history"][today_str] = {"seed": auto_seed, "equity": total_val_now}
                 history_changed = True
         if history_changed: save_accounts_data(st.session_state['accounts'])
-
 
         for block in current_layout:
             
@@ -1247,22 +1243,23 @@ with st.sidebar.expander("💾 백업 및 복구"):
         st.session_state['accounts'] = json.load(up_f)
         save_accounts_data(st.session_state['accounts']); st.rerun()
 
-# 🔥 좌측 카테고리 (AI 시스템 분석관 등록 정상화 완료)
+# 🔥 좌측 카테고리 (아이콘 렌더링 겹침 버그 완벽 해결)
 pages = {
     "시스템": [
-        st.Page(page_market_dashboard, title="마켓 터미널", icon="🌐"), 
-        st.Page(page_amls_backtest, title="백테스트 엔진", icon="🦅"),
-        st.Page(page_ai_analyst, title="AI 시스템 분석관", icon="⚡") 
+        st.Page(page_market_dashboard, title="🌐 마켓 터미널"), 
+        st.Page(page_amls_backtest, title="🦅 백테스트 엔진"),
+        st.Page(page_ai_analyst, title="⚡ AI 시스템 분석관") 
     ],
     "포트폴리오": [],
     "설정": [
-        st.Page(page_strategy_specification, title="전략 명세서", icon="📜"), 
-        st.Page(page_manage_accounts, title="계좌 관리", icon="⚙️")
+        st.Page(page_strategy_specification, title="📜 전략 명세서"), 
+        st.Page(page_manage_accounts, title="⚙️ 계좌 관리")
     ]
 }
 
+# 포트폴리오 목록 렌더링 방식 수정 (아이콘 옵션 제거, 타이틀 직관적 통합)
 for name in st.session_state['accounts'].keys(): 
-    pages["포트폴리오"].append(st.Page(make_portfolio_page(name), title=name, icon="💼"))
+    pages["포트폴리오"].append(st.Page(make_portfolio_page(name), title=f"💼 {name}"))
 
 pg = st.navigation(pages)
 pg.run()
