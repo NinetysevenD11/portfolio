@@ -646,7 +646,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지 구성: AI 시스템 분석관 (UI 글씨 겹침 해결 & 트렌디 개편본)
+# [6] 페이지 구성: AI 시스템 분석관 (타이틀 분리 및 겹침 원천 차단본)
 # =====================================================================
 def page_ai_analyst():
     st.title("⚡ AI 시스템 분석관")
@@ -712,7 +712,7 @@ def page_ai_analyst():
     quotes_r4 = ["남들이 겁을 먹고 있을 때 욕심을 부려라. - 워런 버핏", "공포가 절정에 달했을 때가 가장 안전한 매수 시점이다. - 존 템플턴"]
     q_list = quotes_r1 if ms['regime']==1 else (quotes_r2 if ms['regime']==2 else (quotes_r3 if ms['regime']==3 else quotes_r4))
 
-    # 🔥 트렌디한 모던 원형 게이지 (텍스트 겹침 해결)
+    # 🔥 [완벽 해결] Title 속성 완전 삭제 + st.markdown으로 레이아웃 완벽 분리
     st.markdown("#### 📊 시장 핵심 지표 판독기")
     
     if mobile_mode:
@@ -723,74 +723,65 @@ def page_ai_analyst():
         col3.metric("SMH RSI", f"{ms['smh_rsi']:.1f}", "과열" if ms['smh_rsi']>70 else ("침체" if ms['smh_rsi']<30 else "보통"), delta_color="off")
     else:
         col1, col2, col3 = st.columns(3)
+        
         with col1:
             with st.container(border=True):
-                # 텍스트는 밖으로 빼서 st.markdown으로 렌더링 (겹침 원천 차단)
-                st.markdown(f"<div style='text-align:center; font-weight:bold; font-size:1.1rem; color:{TEXT_SUB}; margin-bottom:5px;'>시장 공포지수 (VIX)</div>", unsafe_allow_html=True)
+                # 텍스트와 게이지를 물리적으로 완전히 분리
+                st.markdown(f"<div style='text-align:center; font-weight:bold; font-size:1.1rem; color:{TEXT_SUB}; margin-bottom:5px;'>📉 시장 공포지수 (VIX)</div>", unsafe_allow_html=True)
                 fig_vix = go.Figure(go.Indicator(
-                    mode="gauge+number", value=vix_c,
-                    number={'font': {'size': 38, 'color': TEXT_COLOR, 'family': "Pretendard"}, 'valueformat': '.1f'},
+                    mode="number+gauge", value=vix_c,
+                    number={'valueformat': ".1f", 'font': {'size': 32, 'color': TEXT_COLOR, 'family': "Pretendard"}},
                     gauge={
-                        'axis': {'range': [0, 80], 'visible': False},
-                        'bar': {'color': C_UP if vix_c < 25 else (C_WARN if vix_c < 40 else C_DOWN), 'thickness': 0.15},
-                        'bgcolor': "rgba(150,150,150,0.1)",
-                        'steps': [
-                            {'range': [0, 25], 'color': "rgba(46,204,113,0.15)"},
-                            {'range': [25, 40], 'color': "rgba(243,156,18,0.15)"},
-                            {'range': [40, 80], 'color': "rgba(231,76,60,0.15)"}
-                        ],
-                        'threshold': {'line': {'color': "red", 'width': 2}, 'thickness': 0.75, 'value': 40}
+                        'shape': "bullet", 'axis': {'range': [0, 60], 'visible': False},
+                        'threshold': {'line': {'color': "red", 'width': 3}, 'thickness': 0.75, 'value': 40},
+                        'steps': [{'range': [0, 25], 'color': "rgba(46,204,113,0.2)"},
+                                  {'range': [25, 40], 'color': "rgba(243,156,18,0.2)"},
+                                  {'range': [40, 60], 'color': "rgba(231,76,60,0.2)"}],
+                        'bar': {'color': C_UP if vix_c < 25 else (C_WARN if vix_c < 40 else C_DOWN), 'thickness': 0.5}
                     }
                 ))
-                # 여백 극도로 최소화하여 콤팩트하게 렌더링
-                fig_vix.update_layout(height=160, margin=dict(t=10, b=0, l=10, r=10), paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Pretendard, sans-serif"))
+                fig_vix.update_layout(height=60, margin=dict(t=0, b=0, l=10, r=30), paper_bgcolor="rgba(0,0,0,0)")
                 st.plotly_chart(fig_vix, use_container_width=True, config={'displayModeBar': False})
 
         with col2:
             with st.container(border=True):
                 gap_pct = (qqq_c / ma200_c - 1) * 100
-                st.markdown(f"<div style='text-align:center; font-weight:bold; font-size:1.1rem; color:{TEXT_SUB}; margin-bottom:5px;'>나스닥 200일선 이격도</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='text-align:center; font-weight:bold; font-size:1.1rem; color:{TEXT_SUB}; margin-bottom:5px;'>📈 나스닥 200일선 이격도</div>", unsafe_allow_html=True)
                 fig_qqq = go.Figure(go.Indicator(
-                    mode="gauge+number", value=gap_pct,
-                    number={'font': {'size': 38, 'color': TEXT_COLOR, 'family': "Pretendard"}, 'valueformat': '+.1f', 'suffix': '%'},
+                    mode="number+gauge", value=gap_pct,
+                    number={'valueformat': "+.1f", 'suffix': "%", 'font': {'size': 32, 'color': TEXT_COLOR, 'family': "Pretendard"}},
                     gauge={
-                        'axis': {'range': [-30, 30], 'visible': False},
-                        'bar': {'color': C_UP if gap_pct > 0 else C_DOWN, 'thickness': 0.15},
-                        'bgcolor': "rgba(150,150,150,0.1)",
-                        'steps': [
-                            {'range': [-30, 0], 'color': "rgba(231,76,60,0.15)"},
-                            {'range': [0, 30], 'color': "rgba(46,204,113,0.15)"}
-                        ],
-                        'threshold': {'line': {'color': "orange", 'width': 2}, 'thickness': 0.75, 'value': 0}
+                        'shape': "bullet", 'axis': {'range': [-30, 30], 'visible': False},
+                        'threshold': {'line': {'color': "orange", 'width': 3}, 'thickness': 0.75, 'value': 0},
+                        'steps': [{'range': [-30, 0], 'color': "rgba(231,76,60,0.2)"},
+                                  {'range': [0, 30], 'color': "rgba(46,204,113,0.2)"}],
+                        'bar': {'color': C_UP if gap_pct > 0 else C_DOWN, 'thickness': 0.5}
                     }
                 ))
-                fig_qqq.update_layout(height=160, margin=dict(t=10, b=0, l=10, r=10), paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Pretendard, sans-serif"))
+                fig_qqq.update_layout(height=60, margin=dict(t=0, b=0, l=10, r=30), paper_bgcolor="rgba(0,0,0,0)")
                 st.plotly_chart(fig_qqq, use_container_width=True, config={'displayModeBar': False})
 
         with col3:
             with st.container(border=True):
-                st.markdown(f"<div style='text-align:center; font-weight:bold; font-size:1.1rem; color:{TEXT_SUB}; margin-bottom:5px;'>반도체(SMH) 단기 RSI</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='text-align:center; font-weight:bold; font-size:1.1rem; color:{TEXT_SUB}; margin-bottom:5px;'>🔥 반도체(SMH) 단기 RSI</div>", unsafe_allow_html=True)
                 fig_rsi = go.Figure(go.Indicator(
-                    mode="gauge+number", value=ms['smh_rsi'],
-                    number={'font': {'size': 38, 'color': TEXT_COLOR, 'family': "Pretendard"}, 'valueformat': '.1f'},
+                    mode="number+gauge", value=ms['smh_rsi'],
+                    number={'valueformat': ".1f", 'font': {'size': 32, 'color': TEXT_COLOR, 'family': "Pretendard"}},
                     gauge={
-                        'axis': {'range': [0, 100], 'visible': False},
-                        'bar': {'color': "#3498db" if ms['smh_rsi'] > 50 else C_DOWN, 'thickness': 0.15},
-                        'bgcolor': "rgba(150,150,150,0.1)",
-                        'steps': [
-                            {'range': [0, 30], 'color': "rgba(231,76,60,0.15)"},
-                            {'range': [30, 70], 'color': "rgba(52,152,219,0.15)"},
-                            {'range': [70, 100], 'color': "rgba(243,156,18,0.15)"}
-                        ],
-                        'threshold': {'line': {'color': "green", 'width': 2}, 'thickness': 0.75, 'value': 50}
+                        'shape': "bullet", 'axis': {'range': [0, 100], 'visible': False},
+                        'threshold': {'line': {'color': "green", 'width': 3}, 'thickness': 0.75, 'value': 50},
+                        'steps': [{'range': [0, 30], 'color': "rgba(231,76,60,0.2)"},
+                                  {'range': [30, 70], 'color': "rgba(52,152,219,0.2)"},
+                                  {'range': [70, 100], 'color': "rgba(243,156,18,0.2)"}],
+                        'bar': {'color': "#3498db" if ms['smh_rsi'] > 50 else C_DOWN, 'thickness': 0.5}
                     }
                 ))
-                fig_rsi.update_layout(height=160, margin=dict(t=10, b=0, l=10, r=10), paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Pretendard, sans-serif"))
+                fig_rsi.update_layout(height=60, margin=dict(t=0, b=0, l=10, r=30), paper_bgcolor="rgba(0,0,0,0)")
                 st.plotly_chart(fig_rsi, use_container_width=True, config={'displayModeBar': False})
 
     st.write("")
 
-    # 🔥 네이티브 컨테이너 기반의 유연한 리포트 (글씨 잘림 방지 유지)
+    # 컨테이너 기반 유연한 리포트 (글씨 잘림 100% 완벽 방지)
     st.markdown("#### 🤖 AI 전략 분석관 Report")
     with st.container(border=True):
         st.markdown(f"### 현재 국면: {reg_t}")
@@ -1256,7 +1247,7 @@ with st.sidebar.expander("💾 백업 및 복구"):
         st.session_state['accounts'] = json.load(up_f)
         save_accounts_data(st.session_state['accounts']); st.rerun()
 
-# 🔥 좌측 카테고리 (AI 시스템 분석관 등록 완료)
+# 🔥 좌측 카테고리 (AI 시스템 분석관 등록 정상화 완료)
 pages = {
     "시스템": [
         st.Page(page_market_dashboard, title="마켓 터미널", icon="🌐"), 
