@@ -143,7 +143,6 @@ elif current_theme == "엑셀 테마":
     C_UP = "#107C41"; C_DOWN = "#C00000"; C_WARN = "#FFB900"; C_SAFE = "#0078D4"
     BASE_CHART_COLORS = {'TQQQ':'#C00000', 'SOXL':'#800080', 'USD':'#0078D4', 'QLD':'#FFB900', 'SSO':'#E36C09', 'QQQ':'#0078D4', 'SPY':'#107C41', 'GLD':'#FFC000', 'BTC-USD':'#f7931a', 'CASH':'#7F7F7F'}
 
-
 if "last_theme" not in st.session_state['settings'] or st.session_state['settings']["last_theme"] != current_theme:
     st.session_state['settings']["text_color"] = DEFAULT_TEXT_COLOR
     st.session_state['settings']["last_theme"] = current_theme
@@ -244,7 +243,6 @@ def get_market_status():
         if pd.isna(m200): target_regimes.append(2); continue
         if v > 40: target_regimes.append(4)
         elif q < m200: target_regimes.append(3)
-        # 🔥 이 부분의 오타(vix -> v)를 완벽하게 수정했습니다.
         elif q >= m200 and m50 >= m200 and v < 25: target_regimes.append(1)
         else: target_regimes.append(2)
         
@@ -306,7 +304,7 @@ def get_realtime_prices():
         if rt.empty: return None
         return rt.ffill().iloc[-1].to_dict()
     except: return None
-
+    
 @st.cache_data(ttl=3600)
 def get_regime_chart_data():
     tkrs = ['QQQ', '^VIX']
@@ -473,16 +471,6 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
 # =====================================================================
 # [4] 페이지 구성: 글로벌 마켓 대시보드
 # =====================================================================
-@st.cache_data(ttl=3600)
-def get_dashboard_data():
-    tickers = ['^GSPC', '^IXIC', '^VIX', 'USDKRW=X']
-    try:
-        df = yf.download(tickers, start=datetime.today()-timedelta(days=365), progress=False)['Close'].ffill()
-        if df.empty: raise ValueError
-        return df
-    except:
-        return pd.DataFrame()
-
 def page_market_dashboard():
     st.title("🌐 매크로 터미널")
     
@@ -508,21 +496,23 @@ def page_market_dashboard():
     with col_left:
         with st.container(border=True):
             st.markdown("##### 📈 주요 지수 및 시장 심리")
-            indices_df = get_dashboard_data()
-            
-            if not indices_df.empty and len(indices_df) >= 2:
-                c1, c2 = st.columns(2); latest = indices_df.iloc[-1]; prev = indices_df.iloc[-2]
-                c1.metric("S&P 500", f"{latest.get('^GSPC', 0):,.0f}", f"{(latest.get('^GSPC',0)/prev.get('^GSPC',1)-1)*100:+.2f}%")
-                c2.metric("NASDAQ", f"{latest.get('^IXIC', 0):,.0f}", f"{(latest.get('^IXIC',0)/prev.get('^IXIC',1)-1)*100:+.2f}%")
-                c3, c4 = st.columns(2)
-                c3.metric("VIX", f"{latest.get('^VIX', 0):,.2f}", f"{(latest.get('^VIX',0)/prev.get('^VIX',1)-1)*100:+.2f}%", delta_color="inverse")
-                c4.metric("USD/KRW", f"₩{latest.get('USDKRW=X', 0):,.1f}", f"{(latest.get('USDKRW=X',0)/prev.get('USDKRW=X',1)-1)*100:+.2f}%", delta_color="inverse")
-                
-                vix_val = latest.get('^VIX', 20)
-                fg_score = max(0, min(100, 100 - (vix_val - 10) * 2.5))
-                st.markdown(f"**🧠 시장 공포 & 탐욕 지수:** `{'극심한 공포' if fg_score<25 else '공포' if fg_score<45 else '중립' if fg_score<55 else '탐욕' if fg_score<75 else '극심한 탐욕'}`")
-                st.progress(fg_score / 100.0)
-            else:
+            tickers = ['^GSPC', '^IXIC', '^VIX', 'USDKRW=X']
+            try:
+                indices_df = yf.download(tickers, start=datetime.today()-timedelta(days=365), progress=False)['Close'].ffill()
+                if not indices_df.empty and len(indices_df) >= 2:
+                    c1, c2 = st.columns(2); latest = indices_df.iloc[-1]; prev = indices_df.iloc[-2]
+                    c1.metric("S&P 500", f"{latest.get('^GSPC', 0):,.0f}", f"{(latest.get('^GSPC',0)/prev.get('^GSPC',1)-1)*100:+.2f}%")
+                    c2.metric("NASDAQ", f"{latest.get('^IXIC', 0):,.0f}", f"{(latest.get('^IXIC',0)/prev.get('^IXIC',1)-1)*100:+.2f}%")
+                    c3, c4 = st.columns(2)
+                    c3.metric("VIX", f"{latest.get('^VIX', 0):,.2f}", f"{(latest.get('^VIX',0)/prev.get('^VIX',1)-1)*100:+.2f}%", delta_color="inverse")
+                    c4.metric("USD/KRW", f"₩{latest.get('USDKRW=X', 0):,.1f}", f"{(latest.get('USDKRW=X',0)/prev.get('USDKRW=X',1)-1)*100:+.2f}%", delta_color="inverse")
+                    
+                    vix_val = latest.get('^VIX', 20)
+                    fg_score = max(0, min(100, 100 - (vix_val - 10) * 2.5))
+                    st.markdown(f"**🧠 시장 공포 & 탐욕 지수:** `{'극심한 공포' if fg_score<25 else '공포' if fg_score<45 else '중립' if fg_score<55 else '탐욕' if fg_score<75 else '극심한 탐욕'}`")
+                    st.progress(fg_score / 100.0)
+                else: raise ValueError
+            except:
                 st.warning("⚠️ 야후 파이낸스 서버 혼잡(Rate Limit)으로 지표를 불러오지 못했습니다. 잠시 후 다시 접속해 주세요.")
 
     with col_right:
@@ -554,7 +544,7 @@ def page_market_dashboard():
 
 
 # =====================================================================
-# [5] 페이지 구성: AMLS 백테스트 
+# [5] 페이지 구성: AMLS 백테스트
 # =====================================================================
 def page_amls_backtest():
     st.title("🦅 전략 시뮬레이터 (Tearsheet)")
@@ -672,7 +662,6 @@ def page_ai_analyst():
         if pd.notna(rt_prices.get('QQQ', None)): ms['qqq'] = rt_prices['QQQ']
         if pd.notna(rt_prices.get('SMH', None)): ms['smh'] = rt_prices['SMH']
         
-        # 실시간 레짐 재계산
         vix_rt, qqq_rt = ms['vix'], ms['qqq']
         if vix_rt > 40: rt_tgt = 4
         elif qqq_rt < ms['ma200']: rt_tgt = 3
@@ -693,7 +682,6 @@ def page_ai_analyst():
     rsi_stat = "통과" if ms['smh_rsi'] > 50 else "미달"
     soxl_res = "승인" if (smh_c > smh_ma50_c and ms['smh_3m_ret'] > 0.05 and ms['smh_rsi'] > 50) else "보류"
 
-    # 레짐별 설명
     if app_reg == 1:
         reg_t = "[R1: 완벽 강세장]"
         reg_d = f"VIX({vix_c:.1f}) 안정권 및 나스닥({qqq_c:.0f}) 정배열 유지. 하방 리스크가 제한적이므로 3배 레버리지를 가동해 상승분을 캡처하십시오."
@@ -707,7 +695,6 @@ def page_ai_analyst():
         reg_t = "[R4: 시스템 패닉]"
         reg_d = f"VIX({vix_c:.1f}) 40 돌파. 시장이 이성을 상실한 시스템 리스크 구간입니다. 주식을 전량 매도하고 안전자산으로 대피하십시오."
 
-    # 신규 자금 조언
     dir_map = {"ascending": "상향 전환", "descending": "하향 전환", "stable": "현재 상태 유지"}
     dir_kr = dir_map.get(direction, "-")
     
@@ -718,40 +705,86 @@ def page_ai_analyst():
     elif dur > 60: summ = "레짐 장기화로 추세 반전 리스크 누적. 보수적인 분할 진입을 추천합니다."
     else: summ = "레짐 안정적. 시스템 룰에 맞춰 평소처럼 자금을 정상 운용하십시오."
 
-    # 거물의 속삭임 
     quotes_r1 = ["강세장은 비관 속에서 태어나, 회의 속에서 자라며, 낙관 속에서 성숙하고, 행복 속에서 죽는다. - 존 템플턴", "10년 이상 볼 것이 아니면 단 10분도 그 주식을 갖고 있지 마라. - 워런 버핏"]
     quotes_r2 = ["위험은 자신이 무엇을 하는지 모르는 데서 온다. - 워런 버핏", "투자의 가장 큰 적은 바로 자기 자신이다. - 벤저민 그레이엄"]
     quotes_r3 = ["떨어지는 칼날을 맨손으로 잡지 마라. - 피터 린치", "성공적인 투자는 영원히 기다리는 것이다. - 찰리 멍거"]
     quotes_r4 = ["남들이 겁을 먹고 있을 때 욕심을 부려라. - 워런 버핏", "공포가 절정에 달했을 때가 가장 안전한 매수 시점이다. - 존 템플턴"]
     q_list = quotes_r1 if ms['regime']==1 else (quotes_r2 if ms['regime']==2 else (quotes_r3 if ms['regime']==3 else quotes_r4))
 
-    # 🔥 [개편] 투박한 게이지를 없애고 세련된 모던 메트릭 위젯 도입 (글씨 잘림 방지)
+    # 🔥 트렌디한 네이티브 수평 바 형 게이지 (Bullet Chart) 도입
     st.markdown("#### 📊 시장 핵심 지표 판독기")
-    col1, col2, col3 = st.columns(3)
     
-    with col1:
-        with st.container(border=True):
-            st.metric(label="시장 공포지수 (VIX)", value=f"{vix_c:.2f}", delta="안정권" if vix_c < 25 else "위험권", delta_color="inverse")
-    with col2:
-        with st.container(border=True):
-            gap_pct = (qqq_c / ma200_c - 1) * 100
-            st.metric(label="나스닥 200일선 이격도", value=f"{gap_pct:+.2f}%", delta="추세 상회" if gap_pct > 0 else "추세 하회", delta_color="normal")
-    with col3:
-        with st.container(border=True):
-            rsi_val = ms['smh_rsi']
-            rsi_status = "과열" if rsi_val > 70 else ("침체" if rsi_val < 30 else "보통")
-            st.metric(label="반도체(SMH) 단기 RSI", value=f"{rsi_val:.1f}", delta=rsi_status, delta_color="off")
-            
+    if mobile_mode:
+        col1, col2, col3 = st.columns(3)
+        col1.metric("VIX", f"{vix_c:.1f}", "위험" if vix_c>=25 else "안정", delta_color="inverse")
+        gap = (qqq_c/ma200_c-1)*100
+        col2.metric("QQQ 200일 이격", f"{gap:+.1f}%", "하회" if gap<0 else "상회", delta_color="normal")
+        col3.metric("SMH RSI", f"{ms['smh_rsi']:.1f}", "과열" if ms['smh_rsi']>70 else ("침체" if ms['smh_rsi']<30 else "보통"), delta_color="off")
+    else:
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            with st.container(border=True):
+                st.markdown(f"<div style='text-align:center; font-weight:bold; margin-bottom:10px;'>📉 시장 공포지수 (VIX)</div>", unsafe_allow_html=True)
+                fig_vix = go.Figure(go.Indicator(
+                    mode="number+gauge", value=vix_c,
+                    number={'valueformat': ".1f", 'font': {'size': 24, 'color': TEXT_COLOR}},
+                    gauge={
+                        'shape': "bullet", 'axis': {'range': [0, 60], 'visible': False},
+                        'threshold': {'line': {'color': "red", 'width': 3}, 'thickness': 0.75, 'value': 40},
+                        'steps': [{'range': [0, 25], 'color': "rgba(46,204,113,0.3)"},
+                                  {'range': [25, 40], 'color': "rgba(243,156,18,0.3)"},
+                                  {'range': [40, 60], 'color': "rgba(231,76,60,0.3)"}],
+                        'bar': {'color': C_UP if vix_c < 25 else (C_WARN if vix_c < 40 else C_DOWN), 'thickness': 0.5}
+                    }
+                ))
+                fig_vix.update_layout(height=70, margin=dict(t=0, b=0, l=10, r=30), paper_bgcolor="rgba(0,0,0,0)")
+                st.plotly_chart(fig_vix, use_container_width=True, config={'displayModeBar': False})
+
+        with col2:
+            with st.container(border=True):
+                gap_pct = (qqq_c / ma200_c - 1) * 100
+                st.markdown(f"<div style='text-align:center; font-weight:bold; margin-bottom:10px;'>📈 나스닥 200일선 이격도</div>", unsafe_allow_html=True)
+                fig_qqq = go.Figure(go.Indicator(
+                    mode="number+gauge", value=gap_pct,
+                    number={'valueformat': "+.1f", 'suffix': "%", 'font': {'size': 24, 'color': TEXT_COLOR}},
+                    gauge={
+                        'shape': "bullet", 'axis': {'range': [-30, 30], 'visible': False},
+                        'threshold': {'line': {'color': "orange", 'width': 3}, 'thickness': 0.75, 'value': 0},
+                        'steps': [{'range': [-30, 0], 'color': "rgba(231,76,60,0.3)"},
+                                  {'range': [0, 30], 'color': "rgba(46,204,113,0.3)"}],
+                        'bar': {'color': C_UP if gap_pct > 0 else C_DOWN, 'thickness': 0.5}
+                    }
+                ))
+                fig_qqq.update_layout(height=70, margin=dict(t=0, b=0, l=10, r=30), paper_bgcolor="rgba(0,0,0,0)")
+                st.plotly_chart(fig_qqq, use_container_width=True, config={'displayModeBar': False})
+
+        with col3:
+            with st.container(border=True):
+                st.markdown(f"<div style='text-align:center; font-weight:bold; margin-bottom:10px;'>🔥 반도체(SMH) RSI</div>", unsafe_allow_html=True)
+                fig_rsi = go.Figure(go.Indicator(
+                    mode="number+gauge", value=ms['smh_rsi'],
+                    number={'valueformat': ".1f", 'font': {'size': 24, 'color': TEXT_COLOR}},
+                    gauge={
+                        'shape': "bullet", 'axis': {'range': [0, 100], 'visible': False},
+                        'threshold': {'line': {'color': "green", 'width': 3}, 'thickness': 0.75, 'value': 50},
+                        'steps': [{'range': [0, 30], 'color': "rgba(231,76,60,0.3)"},
+                                  {'range': [30, 50], 'color': "rgba(243,156,18,0.3)"},
+                                  {'range': [50, 100], 'color': "rgba(52,152,219,0.3)"}],
+                        'bar': {'color': "#3498db" if ms['smh_rsi'] > 50 else C_DOWN, 'thickness': 0.5}
+                    }
+                ))
+                fig_rsi.update_layout(height=70, margin=dict(t=0, b=0, l=10, r=30), paper_bgcolor="rgba(0,0,0,0)")
+                st.plotly_chart(fig_rsi, use_container_width=True, config={'displayModeBar': False})
+
     st.write("")
 
-    # 🔥 [개편] HTML 박스를 없애고 네이티브 컨테이너 기반의 유연한 리포트 (글씨 잘림 완벽 방지)
+    # 🔥 네이티브 컨테이너 기반의 유연한 리포트 (글씨 잘림 100% 완벽 방지)
     st.markdown("#### 🤖 AI 전략 분석관 Report")
     with st.container(border=True):
         st.markdown(f"### 현재 국면: {reg_t}")
         st.markdown(f"**진단:** {reg_d}")
         st.markdown(f"**⏱️ 상태 유지 기간:** 현재 R{app_reg} 체류 {dur}일째")
         
-        # 하락장 경고창 트렌디하게 변경
         if is_wait and tgt_reg < app_reg:
             st.warning(f"**⏳ 상향 전환 검증 진행 중 ({wait_d}/5일차)**\n\n현재 시장 지표는 **[R{tgt_reg}]** 조건을 충족했으나, 휩쏘(속임수)를 피하기 위해 5일 연속 체류를 확인 중입니다. 대기 기간 동안은 보수적으로 비중을 유지합니다.")
         elif tgt_reg > app_reg:
@@ -763,7 +796,7 @@ def page_ai_analyst():
 
     st.write("")
     
-    # 🔥 [개편] 투박한 HTML 박스를 없애고 유연한 컨테이너 기반 2분할 (글씨 잘림 방지)
+    # 🔥 유연한 2분할 컨테이너 (SOXL / 신규 자금 투입 가이드)
     col_soxl, col_entry = st.columns(2)
     with col_soxl:
         with st.container(border=True):
@@ -786,33 +819,35 @@ def page_ai_analyst():
 
     st.write("")
     
-    # 레짐 판단 근거 차트 (기존 유지)
     st.markdown("#### 🔍 레짐 판단 근거 시각화")
-    c_df = get_regime_chart_data()
-    if not c_df.empty:
-        fig_rc = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.7, 0.3], vertical_spacing=0.08, subplot_titles=("나스닥 (QQQ) 장단기 추세", "시장 공포지수 (VIX)"))
-        
-        fig_rc.add_trace(go.Scatter(x=c_df.index, y=c_df['QQQ'], name="QQQ (Price)", line=dict(color=C_SAFE, width=2)), row=1, col=1)
-        fig_rc.add_trace(go.Scatter(x=c_df.index, y=c_df['MA50'], name="50MA", line=dict(color=C_WARN, width=1.5, dash='dot')), row=1, col=1)
-        fig_rc.add_trace(go.Scatter(x=c_df.index, y=c_df['MA200'], name="200MA", line=dict(color=C_DOWN, width=2)), row=1, col=1)
-        
-        fig_rc.add_trace(go.Scatter(x=c_df.index, y=c_df['^VIX'], name="VIX", line=dict(color='#9b59b6', width=1.5), fill='tozeroy'), row=2, col=1)
-        fig_rc.add_hline(y=40, line_dash="dash", line_color="red", row=2, col=1, annotation_text="패닉 (40)")
-        fig_rc.add_hline(y=25, line_dash="dash", line_color="orange", row=2, col=1, annotation_text="경계 (25)")
-        
-        cust_rc = THEME_LAYOUT.copy()
-        cust_rc.update(height=500, hovermode="x unified", margin=dict(l=0, r=0, t=30, b=0))
-        fig_rc.update_layout(**cust_rc)
-        
-        with st.container(border=True):
-            st.plotly_chart(fig_rc, use_container_width=True)
-            st.caption("💡 **레짐 판단의 핵심 지표:** 나스닥(QQQ)이 200일 이동평균선(빨간선) 위에 있는지, 공포지수(VIX)가 25나 40을 넘었는지가 전략의 핵심입니다.")
+    if mobile_mode:
+        st.info("📱 모바일 간편뷰 모드에서는 복잡한 차트가 생략됩니다.")
     else:
-        st.error("데이터를 불러오지 못했습니다.")
+        c_df = get_regime_chart_data()
+        if not c_df.empty:
+            fig_rc = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.7, 0.3], vertical_spacing=0.08, subplot_titles=("나스닥 (QQQ) 장단기 추세", "시장 공포지수 (VIX)"))
+            
+            fig_rc.add_trace(go.Scatter(x=c_df.index, y=c_df['QQQ'], name="QQQ (Price)", line=dict(color=C_SAFE, width=2)), row=1, col=1)
+            fig_rc.add_trace(go.Scatter(x=c_df.index, y=c_df['MA50'], name="50MA", line=dict(color=C_WARN, width=1.5, dash='dot')), row=1, col=1)
+            fig_rc.add_trace(go.Scatter(x=c_df.index, y=c_df['MA200'], name="200MA", line=dict(color=C_DOWN, width=2)), row=1, col=1)
+            
+            fig_rc.add_trace(go.Scatter(x=c_df.index, y=c_df['^VIX'], name="VIX", line=dict(color='#9b59b6', width=1.5), fill='tozeroy'), row=2, col=1)
+            fig_rc.add_hline(y=40, line_dash="dash", line_color="red", row=2, col=1, annotation_text="패닉 (40)")
+            fig_rc.add_hline(y=25, line_dash="dash", line_color="orange", row=2, col=1, annotation_text="경계 (25)")
+            
+            cust_rc = THEME_LAYOUT.copy()
+            cust_rc.update(height=500, hovermode="x unified", margin=dict(l=0, r=0, t=30, b=0))
+            fig_rc.update_layout(**cust_rc)
+            
+            with st.container(border=True):
+                st.plotly_chart(fig_rc, use_container_width=True)
+                st.caption("💡 **레짐 판단의 핵심 지표:** 나스닥(QQQ)이 200일 이동평균선(빨간선) 위에 있는지, 공포지수(VIX)가 25나 40을 넘었는지가 전략의 핵심입니다.")
+        else:
+            st.error("데이터를 불러오지 못했습니다.")
 
 
 # =====================================================================
-# [7] 페이지 구성: 내 포트폴리오 관리 
+# [7] 페이지 구성: 내 포트폴리오 관리
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
@@ -953,7 +988,7 @@ def make_portfolio_page(acc_name):
                 mdd_now = (total_val_now / max_eq - 1) * 100 if max_eq > 0 else 0
                 if mdd_now < -15: st.warning(f"🚨 **MDD 경고:** 현재 자산이 전고점 대비 **{mdd_now:.1f}%** 하락한 상태입니다. 리스크 관리에 유의하십시오.")
 
-                # 🔥 HTML 텍스트 박스 대신 깔끔하고 세련된 네이티브 st.metric 활용 (글씨 안잘림)
+                # 🔥 계좌 요약도 글씨 안 잘리는 네이티브 컨테이너 방식 적용
                 c1, c2, c3, c4 = st.columns(4)
                 with c1:
                     with st.container(border=True):
@@ -1211,7 +1246,7 @@ with st.sidebar.expander("💾 백업 및 복구"):
         st.session_state['accounts'] = json.load(up_f)
         save_accounts_data(st.session_state['accounts']); st.rerun()
 
-# 🔥 좌측 카테고리
+# 🔥 좌측 카테고리 (AI 시스템 분석관 등록 정상화)
 pages = {
     "시스템": [
         st.Page(page_market_dashboard, title="마켓 터미널", icon="🌐"), 
