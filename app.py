@@ -107,9 +107,10 @@ if needs_save: save_accounts_data(st.session_state['accounts'])
 
 
 # =====================================================================
-# [2] 동적 테마 및 레이아웃 설정 (엑셀 제거, 칠판 테마 추가)
+# [2] 동적 테마 및 레이아웃 설정 (엑셀 삭제, 학교 칠판 테마 추가!)
 # =====================================================================
 current_theme = st.session_state['settings'].get("theme", "애플 테마")
+# 🔥 엑셀 제거, 칠판 테마 추가
 theme_list = ["애플 테마", "1930년대 타자기 테마", "월스트리트 저널 테마", "학교 칠판 테마"]
 
 if current_theme not in theme_list:
@@ -136,13 +137,13 @@ elif current_theme == "월스트리트 저널 테마":
     C_UP = "#006400"; C_DOWN = "#8B0000"; C_WARN = "#B8860B"; C_SAFE = "#000080"
     BASE_CHART_COLORS = {'TQQQ':'#8B0000', 'SOXL':'#556b2f', 'USD':'#2F4F4F', 'QLD':'#B8860B', 'SSO':'#DAA520', 'QQQ':'#000080', 'SPY':'#4682B4', 'GLD':'#BDB76B', 'BTC-USD':'#f7931a', 'CASH':'#696969'}
 
+# 🔥 신규 칠판 테마 색상 설정
 elif current_theme == "학교 칠판 테마":
     DEFAULT_TEXT_COLOR = "#fdfdfd"; TEXT_SUB = "#dcdcdc"
     PANEL_BG = "rgba(45, 68, 54, 0.85)"; PANEL_BORDER = "2px dashed #a8b5a3"; PANEL_RADIUS = "8px"
     WIDGET_THEME = "dark"
     C_UP = "#ff6961"; C_DOWN = "#77dd77"; C_WARN = "#fdfd96"; C_SAFE = "#aec6cf"
     BASE_CHART_COLORS = {'TQQQ':'#ff6961', 'SOXL':'#cbaacb', 'USD':'#aec6cf', 'QLD':'#fdfd96', 'SSO':'#ffb347', 'QQQ':'#aec6cf', 'SPY':'#77dd77', 'GLD':'#fdfd96', 'BTC-USD':'#ffb347', 'CASH':'#dcdcdc'}
-
 
 if "last_theme" not in st.session_state['settings'] or st.session_state['settings']["last_theme"] != current_theme:
     st.session_state['settings']["text_color"] = DEFAULT_TEXT_COLOR
@@ -163,7 +164,7 @@ chart_font = "Nanum Pen Script, cursive" if current_theme == "학교 칠판 테�
 THEME_LAYOUT = dict(template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(family=chart_font, color=TEXT_COLOR, size=16 if current_theme == "학교 칠판 테마" else 13), margin=dict(l=0, r=0, t=30, b=0))
 
 def apply_custom_css():
-    # 🔥 아이콘 폰트 깨짐 방지를 위해 `*` 전체 선택자 대신 텍스트/마크다운 태그에만 선택적으로 폰트 주입
+    # 🔥 메뉴 아이콘(arrow_light) 깨짐 버그 원천 차단: 텍스트 영역에만 폰트를 적용
     css_base = f"""
     @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
     @import url('https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap');
@@ -190,7 +191,6 @@ def apply_custom_css():
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; border: 1px solid transparent; border-radius: 0px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-weight: bold; font-size: 0.95rem; transition: background-color 0.2s; }}
         .sidebar-link:hover {{ background-color: rgba(0,0,0,0.1); border: 1px dashed {TEXT_COLOR}; }}
         """
-        css_panel = f".info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; min-height: 100%; height: auto; box-shadow: 4px 4px 0px {TEXT_COLOR}; }}"
     elif current_theme == "월스트리트 저널 테마":
         css_base += f"""
         [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
@@ -200,9 +200,10 @@ def apply_custom_css():
         .sidebar-link:hover {{ background-color: #DDDDDD; }}
         """
     elif current_theme == "학교 칠판 테마":
+        # 🔥 신규: 학교 칠판 테마 배경 및 분필 감성 CSS
         css_base += f"""
         [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background-color: transparent !important; }}
-        .stApp {{ color: {TEXT_COLOR} !important; background-color: #26382a; background-image: url('https://www.transparenttextures.com/patterns/black-board.png'); }}
+        .stApp {{ color: {TEXT_COLOR} !important; background-color: #26382a; background-image: url('https://www.transparenttextures.com/patterns/black-board.png'); font-size: 1.1rem; }}
         div[data-testid="stVerticalBlockBorderWrapper"] > div {{ background: {PANEL_BG} !important; border: {PANEL_BORDER} !important; border-radius: {PANEL_RADIUS} !important; padding: 1.5rem !important; height: 100%; }}
         .sidebar-link {{ display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; text-decoration: none !important; color: {TEXT_COLOR} !important; font-size: 1.3rem; border-bottom: 1px solid transparent; }}
         .sidebar-link:hover {{ border-bottom: 1px dashed {TEXT_COLOR}; background-color: rgba(255,255,255,0.05); }}
@@ -653,12 +654,12 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지 구성: AI 시스템 분석관 (트렌디 HTML 카드 위젯 도입본)
+# [6] 페이지 구성: AI 시스템 분석관 (트렌디 위젯 UI 및 버그 해결본)
 # =====================================================================
 def make_metric_card(title, value, subtitle, prog_pct, bar_color):
-    """트렌디하고 겹침 없는 100% 반응형 커스텀 카드 위젯"""
+    """HTML 기반의 반응형 트렌디 카드 위젯 (글씨 겹침 원천 차단)"""
     return f"""
-    <div style="background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: center; word-wrap: break-word;">
+    <div style="background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: center; word-wrap: break-word; min-height: 140px;">
         <div style="color: {TEXT_COLOR}; font-size: 0.95rem; font-weight: 600; opacity: 0.8; margin-bottom: 8px;">{title}</div>
         <div style="font-size: 2.2rem; font-weight: 800; color: {TEXT_COLOR}; margin-bottom: 5px; line-height: 1.1;">{value}</div>
         <div style="font-size: 0.95rem; font-weight: 700; color: {bar_color}; margin-bottom: 12px;">{subtitle}</div>
@@ -726,7 +727,7 @@ def page_ai_analyst():
     elif dur > 60: summ = "레짐 장기화로 추세 반전 리스크 누적. 보수적인 분할 진입을 추천합니다."
     else: summ = "레짐 안정적. 시스템 룰에 맞춰 평소처럼 자금을 정상 운용하십시오."
 
-    quotes_r1 = ["강세장은 비관 속에서 태어나, 회의 속에서 자라며, 낙관 속에서 성숙하고, 행복 속에서 죽는다. - 존 템플턴", "10년 이상 볼 마이 아니면 단 10분도 그 주식을 갖고 있지 마라. - 워런 버핏"]
+    quotes_r1 = ["강세장은 비관 속에서 태어나, 회의 속에서 자라며, 낙관 속에서 성숙하고, 행복 속에서 죽는다. - 존 템플턴", "10년 이상 볼 것이 아니면 단 10분도 그 주식을 갖고 있지 마라. - 워런 버핏"]
     quotes_r2 = ["위험은 자신이 무엇을 하는지 모르는 데서 온다. - 워런 버핏", "투자의 가장 큰 적은 바로 자기 자신이다. - 벤저민 그레이엄"]
     quotes_r3 = ["떨어지는 칼날을 맨손으로 잡지 마라. - 피터 린치", "성공적인 투자는 영원히 기다리는 것이다. - 찰리 멍거"]
     quotes_r4 = ["남들이 겁을 먹고 있을 때 욕심을 부려라. - 워런 버핏", "공포가 절정에 달했을 때가 가장 안전한 매수 시점이다. - 존 템플턴"]
@@ -750,9 +751,11 @@ def page_ai_analyst():
     rsi_stat = "상승 모멘텀 (과열)" if rsi_val > 70 else ("하락 모멘텀 (침체)" if rsi_val < 30 else "보통 (중립)")
     
     if mobile_mode:
-        st.components.v1.html(make_metric_card("📉 시장 공포지수 (VIX)", f"{vix_c:.1f}", vix_stat, vix_prog, vix_color), height=140)
-        st.components.v1.html(make_metric_card("📈 나스닥 200일선 이격도", f"{gap_pct:+.1f}%", gap_stat, gap_prog, gap_color), height=140)
-        st.components.v1.html(make_metric_card("🔥 반도체(SMH) 단기 RSI", f"{rsi_val:.1f}", rsi_stat, rsi_val, rsi_color), height=140)
+        st.markdown(make_metric_card("📉 시장 공포지수 (VIX)", f"{vix_c:.1f}", vix_stat, vix_prog, vix_color), unsafe_allow_html=True)
+        st.write("")
+        st.markdown(make_metric_card("📈 나스닥 200일선 이격도", f"{gap_pct:+.1f}%", gap_stat, gap_prog, gap_color), unsafe_allow_html=True)
+        st.write("")
+        st.markdown(make_metric_card("🔥 반도체(SMH) 단기 RSI", f"{rsi_val:.1f}", rsi_stat, rsi_val, rsi_color), unsafe_allow_html=True)
     else:
         col1, col2, col3 = st.columns(3)
         with col1: st.markdown(make_metric_card("📉 시장 공포지수 (VIX)", f"{vix_c:.1f}", vix_stat, vix_prog, vix_color), unsafe_allow_html=True)
@@ -1034,7 +1037,7 @@ def make_portfolio_page(acc_name):
                                 cust_p2 = THEME_LAYOUT.copy()
                                 cust_p2.update(height=280, showlegend=False, margin=dict(t=10, b=10, l=10, r=10), annotations=[dict(text=f"100%", x=0.5, y=0.5, showarrow=False, font=dict(color=TEXT_COLOR, size=16))])
                                 fig.update_layout(**cust_p2)
-                                fig.update_traces(textposition='inside', textinfo='percent+label', textfont_size=13, textfont_color="#fff" if current_theme in ["1930년대 타자기 테마", "월스트리트 저널 테마"] else TEXT_COLOR)
+                                fig.update_traces(textposition='inside', textinfo='percent+label', textfont_size=13, textfont_color="#fff" if current_theme in ["1930년대 타자기 테마", "월스트리트 저널 테마", "학교 칠판 테마"] else TEXT_COLOR)
                                 st.plotly_chart(fig, use_container_width=True)
                             else:
                                 st.markdown("<div style='height: 280px; display: flex; align-items: center; justify-content: center; color: #888;'>자산을 입력해 주세요.</div>", unsafe_allow_html=True)
@@ -1228,23 +1231,23 @@ with st.sidebar.expander("💾 백업 및 복구"):
         st.session_state['accounts'] = json.load(up_f)
         save_accounts_data(st.session_state['accounts']); st.rerun()
 
-# 🔥 좌측 카테고리 (아이콘 렌더링 정상 적용)
+# 🔥 좌측 카테고리 (아이콘 렌더링 글씨 깨짐 방지 - 직관적 병합 방식)
 pages = {
     "시스템": [
-        st.Page(page_market_dashboard, title="마켓 터미널", icon="🌐"), 
-        st.Page(page_amls_backtest, title="백테스트 엔진", icon="🦅"),
-        st.Page(page_ai_analyst, title="AI 시스템 분석관", icon="⚡") 
+        st.Page(page_market_dashboard, title="🌐 마켓 터미널"), 
+        st.Page(page_amls_backtest, title="🦅 백테스트 엔진"),
+        st.Page(page_ai_analyst, title="⚡ AI 시스템 분석관") 
     ],
     "포트폴리오": [],
     "설정": [
-        st.Page(page_strategy_specification, title="전략 명세서", icon="📜"), 
-        st.Page(page_manage_accounts, title="계좌 관리", icon="⚙️")
+        st.Page(page_strategy_specification, title="📜 전략 명세서"), 
+        st.Page(page_manage_accounts, title="⚙️ 계좌 관리")
     ]
 }
 
 # 계좌명 자동 등록 
 for name in st.session_state['accounts'].keys(): 
-    pages["포트폴리오"].append(st.Page(make_portfolio_page(name), title=name, icon="💼"))
+    pages["포트폴리오"].append(st.Page(make_portfolio_page(name), title=f"💼 {name}"))
 
 pg = st.navigation(pages)
 pg.run()
