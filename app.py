@@ -59,7 +59,6 @@ if 'accounts' not in st.session_state:
             "AMLS v4.4": {  
                 "portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS],
                 "history": [], "first_entry_date": None, "journal_text": "", "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0,
-                # 모든 기능이 포함된 마스터 레이아웃 리스트
                 "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "🚀 실전 퀀트 무기", "🧩 자산 상관관계 히트맵", "🔮 10년 은퇴 시뮬레이션", "📈 성장 곡선", "📈 목표 달성률 추이", "📝 매매 일지"]
             }
         }
@@ -134,7 +133,7 @@ def apply_custom_css():
     div[data-testid="stMetricValue"] {{ font-weight: bold; font-size: 1.8rem; color: {TEXT_COLOR}; }}
     .info-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }}
     @media (max-width: 800px) {{ .info-grid {{ grid-template-columns: 1fr; }} }}
-    .info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }}
+    .info-panel {{ background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; height: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: center; }}
     """
     st.markdown(f"<style>{css_base}</style>", unsafe_allow_html=True)
 
@@ -183,17 +182,18 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
     for i in range(len(df)):
         tr = df['Target_Regime'].iloc[i]
         
-        # AMLS v4.4 5일 대기 로직 적용
         if tr > current_v4_4: 
             current_v4_4 = tr; pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4.append(current_v4_4)
-        elif tr < current_v4_4: 
+        elif tr < current_v4_4:
             if tr == pend_v4_4:
                 cnt_v4_4 += 1
                 if cnt_v4_4 >= 5: current_v4_4 = tr; pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4.append(current_v4_4)
                 else: actual_regime_v4_4.append(current_v4_4 - 1)
-            else: pend_v4_4 = tr; cnt_v4_4 = 1; actual_regime_v4_4.append(current_v4_4 - 1)
-        else: pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4.append(current_v4_4)
-
+            else: 
+                pend_v4_4 = tr; cnt_v4_4 = 1; actual_regime_v4_4.append(current_v4_4 - 1)
+        else: 
+            pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4.append(current_v4_4)
+            
     df['Signal_Regime_v4_4'] = pd.Series(actual_regime_v4_4, index=df.index).shift(1).bfill()
 
     def get_v4_4_weights(regime, use_soxl):
@@ -505,7 +505,7 @@ def page_amls_backtest():
 
 
 # =====================================================================
-# [6] 페이지 구성: 내 포트폴리오 관리 (통합 마스터판)
+# [6] 페이지 구성: 내 포트폴리오 관리 (통합 마스터판 + AI 판단근거)
 # =====================================================================
 def make_portfolio_page(acc_name):
     def page_func():
@@ -722,7 +722,7 @@ def make_portfolio_page(acc_name):
 
 
         # -------------------------------------------------------------
-        # 레이아웃 편집기 UI (사이드바로 이동)
+        # 레이아웃 편집기 UI (사이드바 이동)
         # -------------------------------------------------------------
         with st.sidebar.expander("🛠️ 화면 레이아웃 편집"):
             st.caption("위아래 버튼으로 순서를 변경하세요.")
@@ -776,6 +776,7 @@ def make_portfolio_page(acc_name):
                 pn_col = C_UP if daily_diff > 0 else (C_DOWN if daily_diff < 0 else TEXT_COLOR)
                 pn_ico = "▲" if daily_diff > 0 else ("▼" if daily_diff < 0 else "-")
                 
+                # 가로 정렬 강제 적용
                 st.markdown(f"""
                 <div class='info-panel' style='display:flex; flex-direction:row; justify-content:space-between; align-items:center; text-align:center; padding:20px;'>
                     <div style='flex:1; border-right:1px dashed rgba(150,150,150,0.4); padding:0 10px;'>
@@ -806,6 +807,7 @@ def make_portfolio_page(acc_name):
                 start_dt = ms['regime_start_date'].strftime('%Y-%m-%d')
                 
                 vix_c = ms['vix']; qqq_c = ms['qqq']; ma200_c = ms['ma200']; smh_c = ms['smh']; smh_ma50_c = ms['smh_ma50']
+                ma50_c = ms['ma50']
                 
                 s_stat = f"<span style='color:{C_UP}; font-weight:bold;'>돌파</span>" if smh_c > smh_ma50_c else f"<span style='color:{C_DOWN}; font-weight:bold;'>붕괴</span>"
                 r_stat = f"<span style='color:{C_UP}; font-weight:bold;'>통과</span>" if ms['smh_3m_ret'] > 0.05 else f"<span style='color:{C_DOWN}; font-weight:bold;'>미달</span>"
@@ -833,6 +835,18 @@ def make_portfolio_page(acc_name):
                     reg_t = f"<span style='color:{C_DOWN}; font-weight:bold;'>[R4: 시스템 패닉]</span>"
                     reg_d = f"VIX({vix_c:.1f}) 40 돌파. 극심한 시장 패닉 상태입니다. 주식을 전량 매도하고 대피하십시오.{dur_text}{wait_msg}"
 
+                # 🔥 판단 근거 시각화 매트릭스 변수 세팅
+                vix_status = "🔴 패닉 (>40)" if vix_c > 40 else ("🟡 경계 (25~40)" if vix_c >= 25 else "🟢 안정 (<25)")
+                vix_col = C_DOWN if vix_c > 40 else (C_WARN if vix_c >= 25 else C_UP)
+                
+                trend_status = "🟢 상승" if qqq_c >= ma200_c else "🔴 하락"
+                trend_col = C_UP if qqq_c >= ma200_c else C_DOWN
+                trend_gap = (qqq_c / ma200_c - 1) * 100
+                
+                align_status = "🟢 정배열" if ma50_c >= ma200_c else "🔴 역배열"
+                align_col = C_UP if ma50_c >= ma200_c else C_DOWN
+                align_gap = (ma50_c / ma200_c - 1) * 100
+
                 st.markdown(f"""<div class='info-grid'>
 <div class='info-panel' style='display:flex; flex-direction:column; justify-content:center;'>
 <div style='font-weight:bold; margin-bottom:8px; border-bottom:1px solid currentColor; padding-bottom:4px; opacity:0.8;'>⚡ SOXL 진입 판독기</div>
@@ -851,6 +865,28 @@ def make_portfolio_page(acc_name):
 • <b>상태:</b> {reg_t}<br>
 <span style='opacity:0.9;'>{reg_d}</span>
 </div>
+
+<div style='margin-top: 15px; padding-top: 15px; border-top: 1px dashed currentColor; opacity: 0.9;'>
+    <div style='font-weight:bold; margin-bottom:10px; font-size: 0.85rem;'>🔍 타겟 국면(Regime) 판단 근거 <span style='font-weight:normal; opacity:0.8;'>(현재 AI 타겟: R{tgt_reg})</span></div>
+    <div style='display: flex; gap: 10px; text-align: center; flex-wrap: wrap;'>
+        <div style='flex: 1; padding: 10px; background: rgba(0,0,0,0.04); border-radius: 8px; min-width: 120px;'>
+            <div style='font-size: 0.75rem; opacity: 0.8;'>조건 1. 공포 지수 (VIX)</div>
+            <div style='font-size: 1.05rem; font-weight: bold; color: {vix_col}; margin-top: 5px;'>{vix_status}</div>
+            <div style='font-size: 0.75rem; margin-top: 2px;'>현재: {vix_c:.2f}</div>
+        </div>
+        <div style='flex: 1; padding: 10px; background: rgba(0,0,0,0.04); border-radius: 8px; min-width: 120px;'>
+            <div style='font-size: 0.75rem; opacity: 0.8;'>조건 2. 장기 추세 (QQQ)</div>
+            <div style='font-size: 1.05rem; font-weight: bold; color: {trend_col}; margin-top: 5px;'>{trend_status}</div>
+            <div style='font-size: 0.75rem; margin-top: 2px;'>200MA 이격: {trend_gap:+.1f}%</div>
+        </div>
+        <div style='flex: 1; padding: 10px; background: rgba(0,0,0,0.04); border-radius: 8px; min-width: 120px;'>
+            <div style='font-size: 0.75rem; opacity: 0.8;'>조건 3. 이평선 배열</div>
+            <div style='font-size: 1.05rem; font-weight: bold; color: {align_col}; margin-top: 5px;'>{align_status}</div>
+            <div style='font-size: 0.75rem; margin-top: 2px;'>50MA-200MA 이격: {align_gap:+.1f}%</div>
+        </div>
+    </div>
+</div>
+
 </div>
 </div>""", unsafe_allow_html=True)
                 st.write("")
@@ -858,33 +894,28 @@ def make_portfolio_page(acc_name):
             elif block == "🚀 실전 퀀트 무기":
                 st.markdown("#### 🚀 실전 퀀트 무기 (Macro & Momentum)")
                 
-                # 1. Smart DCA
                 q_rsi = ms['qqq_rsi']
                 if q_rsi > 70: dca_col, dca_stat, dca_desc = C_DOWN, "🔥 과열 (Overbought)", "QQQ RSI가 70 초과. 신규 자금 투입 <b>보류 권장</b>."
                 elif q_rsi < 30: dca_col, dca_stat, dca_desc = C_UP, "❄️ 바닥 (Oversold)", "QQQ RSI가 30 미만. 적립금 <b>200% 투입 권장</b>."
                 else: dca_col, dca_stat, dca_desc = C_SAFE, "🟢 정상 (Neutral)", "적절한 가격대. 계획된 <b>월 적립금 정상 투입</b>."
 
-                # 2. Smart Money
                 sm_curr, sm_ma50 = ms['hyg_ief_curr'], ms['hyg_ief_ma50']
                 if pd.notna(sm_curr) and pd.notna(sm_ma50):
                     if sm_curr < sm_ma50: sm_col, sm_stat, sm_desc = C_DOWN, "🚨 자금 이탈 (Risk-Off)", "하이일드 투매 현상. 증시 폭락 선행 지표 감지."
                     else: sm_col, sm_stat, sm_desc = C_UP, "✅ 자금 유입 (Risk-On)", "스마트머니가 위험 자산에 안정적으로 체류 중."
                 else: sm_col, sm_stat, sm_desc = TEXT_SUB, "데이터 부족", "데이터 로딩 중"
 
-                # 3. Market Breadth
                 q_20, qe_20 = ms['qqq_20d'], ms['qqqe_20d']
                 if q_20 > 0 and qe_20 < 0: br_col, br_stat, br_desc = C_WARN, "⚠️ 가짜 상승 (Divergence)", "지수는 오르나 대다수 종목 하락. 소수 대형주 독주."
                 elif q_20 < 0 and qe_20 > 0: br_col, br_stat, br_desc = C_UP, "💡 숨은 강세 (Accumulation)", "지수는 내리나 대다수 반등 중. 폭넓은 매수세 유입."
                 else: br_col, br_stat, br_desc = C_SAFE, "🟢 건전한 동조화", "시총 가중치와 동일 가중치가 함께 움직임."
 
-                # 4. Sector Momentum
                 top_sectors = ms['top_sectors']
                 sec_html = ""
                 for i, (s_name, s_ret) in enumerate(top_sectors):
                     medals = ["🥇", "🥈", "🥉"]
                     sec_html += f"<div style='display:flex; justify-content:space-between; margin-bottom:4px;'><span style='font-weight:bold;'>{medals[i]} {s_name}</span><span style='color:{C_UP if s_ret>0 else C_DOWN};'>{s_ret*100:+.1f}%</span></div>"
 
-                # 화면 렌더링 (가로 3열 레이아웃 적용)
                 st.markdown(f"""
                 <div style='display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;'>
                     <div style='flex: 1; min-width: 250px; background: {PANEL_BG}; border: {PANEL_BORDER}; border-radius: {PANEL_RADIUS}; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);'>
@@ -962,7 +993,7 @@ def make_portfolio_page(acc_name):
                         else:
                             st.markdown("<div style='height: 280px; display: flex; align-items: center; justify-content: center; color: #888;'>자산을 입력해 주세요.</div>", unsafe_allow_html=True)
                 
-                # 🔥 기계적 리밸런싱 지침 (+1.5주 톨러런스 유지)
+                # 🔥 기계적 리밸런싱 지침 (+1.5주 톨러런스 적용 완료)
                 st.write("")
                 st.markdown("#### ⚖️ 기계적 리밸런싱 지침 (Tolerance: ±1.5주)")
                 with st.container(border=True):
@@ -1184,7 +1215,7 @@ def page_manage_accounts():
     new_acc = st.text_input("새 계좌명")
     if st.button("개설", type="primary") and new_acc:
         if new_acc not in st.session_state['accounts']:
-            st.session_state['accounts'][new_acc] = {"portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS], "history": [{"Date": datetime.now().strftime("%Y-%m-%d"), "Log": "계좌 개설"}], "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0, "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "🚀 실전 퀀트 무기", "🧩 자산 상관관계 히트맵", "🔮 10년 은퇴 시뮬레이션", "📈 성장 곡선", "📈 목표 달성률 추이", "📝 매매 일지"]}
+            st.session_state['accounts'][new_acc] = {"portfolio": [{"티커 (Ticker)": t, "수량 (주/달러)": 0.0, "평균 단가 ($)": 0.0, "매입 환율": 0.0, "태그": "코어"} for t in REQUIRED_TICKERS], "history": [{"Date": datetime.now().strftime("%Y-%m-%d"), "Log": "계좌 개설"}], "target_seed": 10000.0, "seed_history": {}, "target_portfolio_value": 100000.0, "layout_order": ["🎯 목표 달성률", "📊 실시간 요약", "⚡ 시스템 분석관", "💼 포트폴리오 & 리밸런싱", "📈 목표 달성률 추이", "📝 매매 일지"]}
             save_accounts_data(st.session_state['accounts']); st.rerun()
     st.divider()
     for acc in list(st.session_state['accounts'].keys()):
