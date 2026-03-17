@@ -14,7 +14,7 @@ import os
 warnings.filterwarnings('ignore')
 
 # =====================================================================
-# [0] 시스템 설정 및 동적 테마 엔진
+# [0] 시스템 설정
 # =====================================================================
 st.set_page_config(page_title="AMLS 퀀트 포트폴리오", layout="wide", initial_sidebar_state="expanded")
 
@@ -139,33 +139,32 @@ def apply_custom_css():
 
 apply_custom_css()
 
-# --- Plotly Sparkline (미니 차트) 생성 함수 ---
-def get_plotly_sparkline(data_list, color, hline=None):
-    if not data_list or all(pd.isna(x) for x in data_list): return go.Figure()
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(y=data_list, mode='lines', line=dict(color=color, width=2), hoverinfo='skip'))
-    if hline is not None:
-        fig.add_hline(y=hline, line_dash="dash", line_color="red", line_width=1)
-    fig.update_layout(
-        showlegend=False, margin=dict(l=0, r=0, t=0, b=0), height=40,
-        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
-    )
-    return fig
+# --- 미니 차트(Sparkline) 생성 함수 ---
+def get_svg_sparkline(data_list, color, hline=None):
+    if not data_list or all(pd.isna(x) for x in data_list): return ""
+    w, h = 100, 25
+    mi, ma = min(data_list), max(data_list)
+    if mi == ma: ma += 0.1
+    pts = []
+    for i, v in enumerate(data_list):
+        x = (i / (len(data_list)-1)) * w
+        y = h - ((v - mi) / (ma - mi)) * h
+        pts.append(f"{x},{y}")
+    line_str = ""
+    if hline is not None and mi <= hline <= ma:
+        y = h - ((hline - mi) / (ma - mi)) * h
+        line_str = f'<line x1="0" y1="{y}" x2="{w}" y2="{y}" stroke="rgba(255,0,0,0.5)" stroke-width="1.5" stroke-dasharray="2,2"/>'
+    return f'<svg width="{w}" height="{h}" style="margin-top:8px; overflow:visible;"><polyline points="{" ".join(pts)}" fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>{line_str}</svg>'
 
-def get_plotly_dual_sparkline(d1, d2, c1, c2):
-    if not d1 or not d2: return go.Figure()
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(y=d2, mode='lines', line=dict(color=c2, width=1.5, dash='dash'), hoverinfo='skip'))
-    fig.add_trace(go.Scatter(y=d1, mode='lines', line=dict(color=c1, width=2), hoverinfo='skip'))
-    fig.update_layout(
-        showlegend=False, margin=dict(l=0, r=0, t=0, b=0), height=40,
-        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
-    )
-    return fig
+def get_dual_svg(d1, d2, c1, c2):
+    if not d1 or not d2: return ""
+    w, h = 100, 25
+    combined = d1 + d2
+    mi, ma = min(combined), max(combined)
+    if mi == ma: ma += 0.1
+    pts1 = " ".join([f"{(i/(len(d1)-1))*w},{h - ((v-mi)/(ma-mi))*h}" for i,v in enumerate(d1)])
+    pts2 = " ".join([f"{(i/(len(d2)-1))*w},{h - ((v-mi)/(ma-mi))*h}" for i,v in enumerate(d2)])
+    return f'<svg width="{w}" height="{h}" style="margin-top:8px; overflow:visible;"><polyline points="{pts2}" fill="none" stroke="{c2}" stroke-width="1.5" stroke-dasharray="3,3"/><polyline points="{pts1}" fill="none" stroke="{c1}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 
 
 # =====================================================================
@@ -227,8 +226,8 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
         w = {t: 0.0 for t in data.columns}; semi = 'SOXL' if use_soxl else 'USD'
         if regime == 1: w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'], w['SPY'] = 0.30, 0.20, 0.20, 0.15, 0.10, 0.05
         elif regime == 2: w['QLD'], w['SSO'], w['GLD'], w['USD'], w['QQQ'], w['SPY'] = 0.30, 0.25, 0.25, 0.10, 0.05, 0.05
-        elif regime == 3: w['GLD'], w['QQQ'] = 0.50, 0.15
-        elif regime == 4: w['GLD'], w['QQQ'] = 0.50, 0.10
+        elif regime == 3: w['GLD'], w['QQQ'] = 0.50, 0.15 
+        elif regime == 4: w['GLD'], w['QQQ'] = 0.50, 0.10 
         total_w = sum(w.values())
         if total_w < 1.0: w['CASH'] = round(1.0 - total_w, 4)
         return w
@@ -754,6 +753,7 @@ def make_portfolio_page(acc_name):
                 history_changed = True
         if history_changed: save_accounts_data(st.session_state['accounts'])
 
+
         with st.sidebar.expander("🛠️ 화면 레이아웃 편집"):
             st.caption("위아래 버튼으로 순서를 변경하세요.")
             for i, block_name in enumerate(current_layout):
@@ -860,7 +860,7 @@ def make_portfolio_page(acc_name):
                     reg_t = f"<span style='color:{C_DOWN}; font-weight:bold;'>[R4: 시스템 패닉]</span>"
                     reg_d = f"VIX({vix_c:.1f}) 40 돌파. 극심한 시장 패닉 상태입니다. 주식을 전량 매도하고 대피하십시오.{dur_text}{wait_msg}"
 
-                vix_status = "🔴 패닉 (40 초과)" if vix_c > 40 else ("🟡 경계 (25~40)" if vix_c >= 25 else "🟢 안정 (25 미만)")
+                vix_status = "🔴 패닉 (>40)" if vix_c > 40 else ("🟡 경계 (25~40)" if vix_c >= 25 else "🟢 안정 (25 미만)")
                 vix_col = C_DOWN if vix_c > 40 else (C_WARN if vix_c >= 25 else C_UP)
                 
                 trend_status = "🟢 상승" if qqq_c >= ma200_c else "🔴 하락"
@@ -871,68 +871,71 @@ def make_portfolio_page(acc_name):
                 align_col = C_UP if ma50_c >= ma200_c else C_DOWN
                 align_gap = (ma50_c / ma200_c - 1) * 100
 
-                st.markdown(f"""<div class='info-grid'>
+                # 들여쓰기를 완벽히 제거하여 마크다운 파서가 코드 블록으로 오해하지 않도록 처리합니다.
+                html_str = f"""
+<div class='info-grid'>
 <div class='info-panel' style='display:flex; flex-direction:column; justify-content:center;'>
-    <div style='font-weight:bold; margin-bottom:8px; border-bottom:1px solid currentColor; padding-bottom:4px; opacity:0.8;'>⚡ SOXL 진입 판독기</div>
-    <div style='font-size:0.85rem; line-height:1.6; margin-bottom:8px;'>
-        <b>결론:</b> {soxl_res}
-    </div>
-    <div style='display: flex; gap: 5px; text-align: center; margin-top: auto;'>
-        <div style='flex: 1; padding: 8px 4px; background: rgba(0,0,0,0.04); border-radius: 8px;'>
-            <div style='font-size: 0.7rem; opacity: 0.8;'>① 50MA</div>
-            <div style='font-size: 0.95rem; font-weight: bold; color: {s_col}; margin-top: 3px;'>{s_stat}</div>
-        </div>
-        <div style='flex: 1; padding: 8px 4px; background: rgba(0,0,0,0.04); border-radius: 8px;'>
-            <div style='font-size: 0.7rem; opacity: 0.8;'>② 3M 수익</div>
-            <div style='font-size: 0.95rem; font-weight: bold; color: {r_col}; margin-top: 3px;'>{r_stat}</div>
-        </div>
-        <div style='flex: 1; padding: 8px 4px; background: rgba(0,0,0,0.04); border-radius: 8px;'>
-            <div style='font-size: 0.7rem; opacity: 0.8;'>③ RSI(14)</div>
-            <div style='font-size: 0.95rem; font-weight: bold; color: {rsi_col}; margin-top: 3px;'>{rsi_stat}</div>
-        </div>
-    </div>
+<div style='font-weight:bold; margin-bottom:8px; border-bottom:1px solid currentColor; padding-bottom:4px; opacity:0.8;'>⚡ SOXL 진입 판독기</div>
+<div style='font-size:0.85rem; line-height:1.6; margin-bottom:8px;'>
+<b>결론:</b> {soxl_res}
+</div>
+<div style='display: flex; gap: 5px; text-align: center; margin-top: auto;'>
+<div style='flex: 1; padding: 8px 4px; background: rgba(0,0,0,0.04); border-radius: 8px;'>
+<div style='font-size: 0.7rem; opacity: 0.8;'>① 50MA</div>
+<div style='font-size: 0.95rem; font-weight: bold; color: {s_col}; margin-top: 3px;'>{s_stat}</div>
+</div>
+<div style='flex: 1; padding: 8px 4px; background: rgba(0,0,0,0.04); border-radius: 8px;'>
+<div style='font-size: 0.7rem; opacity: 0.8;'>② 3M 수익</div>
+<div style='font-size: 0.95rem; font-weight: bold; color: {r_col}; margin-top: 3px;'>{r_stat}</div>
+</div>
+<div style='flex: 1; padding: 8px 4px; background: rgba(0,0,0,0.04); border-radius: 8px;'>
+<div style='font-size: 0.7rem; opacity: 0.8;'>③ RSI(14)</div>
+<div style='font-size: 0.95rem; font-weight: bold; color: {rsi_col}; margin-top: 3px;'>{rsi_stat}</div>
+</div>
+</div>
 </div>
 
 <div class='info-panel' style='grid-column: span 2; display:flex; flex-direction:column; justify-content:center;'>
-    <div style='font-weight:bold; margin-bottom:8px; border-bottom:1px solid currentColor; padding-bottom:4px; opacity:0.8;'>🤖 AI 전략 분석관 Report</div>
-    <div style='font-size:0.85rem; line-height:1.6;'>
-        • <b>상태:</b> {reg_t}<br>
-        <span style='opacity:0.9;'>{reg_d}</span>
-    </div>
-
-    <div style='margin-top: 15px; padding-top: 15px; border-top: 1px dashed currentColor; opacity: 0.9;'>
-        <div style='font-weight:bold; margin-bottom:10px; font-size: 0.85rem;'>🔍 타겟 국면 판단 근거 <span style='font-weight:normal; opacity:0.8;'>(현재 AI 타겟: R{tgt_reg})</span></div>
-    </div>
+<div style='font-weight:bold; margin-bottom:8px; border-bottom:1px solid currentColor; padding-bottom:4px; opacity:0.8;'>🤖 AI 전략 분석관 Report</div>
+<div style='font-size:0.85rem; line-height:1.6;'>
+• <b>상태:</b> {reg_t}<br>
+<span style='opacity:0.9;'>{reg_d}</span>
 </div>
-</div>""", unsafe_allow_html=True)
+
+<div style='margin-top: 15px; padding-top: 15px; border-top: 1px dashed currentColor; opacity: 0.9;'>
+<div style='font-weight:bold; margin-bottom:10px; font-size: 0.85rem;'>🔍 타겟 국면 판단 근거 <span style='font-weight:normal; opacity:0.8;'>(현재 AI 타겟: R{tgt_reg})</span></div>
+</div>
+</div>
+</div>
+"""
+                st.markdown(html_str, unsafe_allow_html=True)
                 
-                # 🔥 Plotly Sparkline 차트를 Streamlit의 순수 Column에 렌더링
+                # Plotly Sparkline 차트를 Streamlit Column 레이아웃에 직접 연결
                 m1, m2, m3 = st.columns(3)
                 
                 with m1:
                     st.markdown(f"""<div style='text-align:center; padding: 10px; background: rgba(0,0,0,0.04); border-radius: 8px; min-width: 120px;'>
-                        <div style='font-size: 0.75rem; opacity: 0.8;'>조건 1. 공포 지수 (VIX)</div>
-                        <div style='font-size: 1.05rem; font-weight: bold; color: {vix_col}; margin-top: 5px;'>{vix_status}</div>
-                    </div>""", unsafe_allow_html=True)
+<div style='font-size: 0.75rem; opacity: 0.8;'>조건 1. 공포 지수 (VIX)</div>
+<div style='font-size: 1.05rem; font-weight: bold; color: {vix_col}; margin-top: 5px;'>{vix_status}</div>
+</div>""", unsafe_allow_html=True)
                     st.plotly_chart(get_plotly_sparkline(ms['hist_vix'], vix_col, hline=40 if vix_c>30 else 25), use_container_width=True, config={'displayModeBar': False})
                     st.markdown(f"<div style='text-align:center; font-size: 0.7rem; margin-top: -10px; opacity: 0.7;'>현재: {vix_c:.2f}</div>", unsafe_allow_html=True)
 
                 with m2:
                     st.markdown(f"""<div style='text-align:center; padding: 10px; background: rgba(0,0,0,0.04); border-radius: 8px; min-width: 120px;'>
-                        <div style='font-size: 0.75rem; opacity: 0.8;'>조건 2. 장기 추세 (QQQ)</div>
-                        <div style='font-size: 1.05rem; font-weight: bold; color: {trend_col}; margin-top: 5px;'>{trend_status}</div>
-                    </div>""", unsafe_allow_html=True)
+<div style='font-size: 0.75rem; opacity: 0.8;'>조건 2. 장기 추세 (QQQ)</div>
+<div style='font-size: 1.05rem; font-weight: bold; color: {trend_col}; margin-top: 5px;'>{trend_status}</div>
+</div>""", unsafe_allow_html=True)
                     st.plotly_chart(get_plotly_dual_sparkline(ms['hist_qqq'], ms['hist_ma200'], trend_col, 'rgba(150,150,150,0.5)'), use_container_width=True, config={'displayModeBar': False})
                     st.markdown(f"<div style='text-align:center; font-size: 0.7rem; margin-top: -10px; opacity: 0.7;'>200MA 이격: {trend_gap:+.1f}%</div>", unsafe_allow_html=True)
                     
                 with m3:
                     st.markdown(f"""<div style='text-align:center; padding: 10px; background: rgba(0,0,0,0.04); border-radius: 8px; min-width: 120px;'>
-                        <div style='font-size: 0.75rem; opacity: 0.8;'>조건 3. 이평선 배열</div>
-                        <div style='font-size: 1.05rem; font-weight: bold; color: {align_col}; margin-top: 5px;'>{align_status}</div>
-                    </div>""", unsafe_allow_html=True)
+<div style='font-size: 0.75rem; opacity: 0.8;'>조건 3. 이평선 배열</div>
+<div style='font-size: 1.05rem; font-weight: bold; color: {align_col}; margin-top: 5px;'>{align_status}</div>
+</div>""", unsafe_allow_html=True)
                     st.plotly_chart(get_plotly_dual_sparkline(ms['hist_ma50'], ms['hist_ma200'], align_col, 'rgba(150,150,150,0.5)'), use_container_width=True, config={'displayModeBar': False})
                     st.markdown(f"<div style='text-align:center; font-size: 0.7rem; margin-top: -10px; opacity: 0.7;'>50MA 이격: {align_gap:+.1f}%</div>", unsafe_allow_html=True)
-
 
                 st.write("")
                 
