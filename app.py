@@ -228,8 +228,8 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
         w = {t: 0.0 for t in data.columns}; semi = 'SOXL' if use_soxl else 'USD'
         if regime == 1: w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'], w['SPY'] = 0.30, 0.20, 0.20, 0.15, 0.10, 0.05
         elif regime == 2: w['QLD'], w['SSO'], w['GLD'], w['USD'], w['QQQ'], w['SPY'] = 0.30, 0.25, 0.25, 0.10, 0.05, 0.05
-        elif regime == 3: w['GLD'], w['QQQ'] = 0.50, 0.15 
-        elif regime == 4: w['GLD'], w['QQQ'] = 0.50, 0.10 
+        elif regime == 3: w['GLD'], w['QQQ'] = 0.50, 0.15
+        elif regime == 4: w['GLD'], w['QQQ'] = 0.50, 0.10
         total_w = sum(w.values())
         if total_w < 1.0: w['CASH'] = round(1.0 - total_w, 4)
         return w
@@ -285,6 +285,22 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
     df['Invested'] = inv_arr
     return df, logs, data.columns
 
+# 마켓 터미널 전용 주도 섹터 스캐너 함수
+@st.cache_data(ttl=3600)
+def get_sector_momentum():
+    sectors = {'XLK':'기술', 'XLV':'헬스케어', 'XLE':'에너지', 'XLF':'금융', 'XLI':'산업재',
+               'XLY':'소비재', 'XLP':'필수소비재', 'XLU':'유틸리티', 'XLB':'소재', 'XLRE':'부동산'}
+    try:
+        data = yf.download(list(sectors.keys()), period="6mo", progress=False)['Close'].ffill()
+        sector_returns = {}
+        for s, k_name in sectors.items():
+            if s in data.columns and not data[s].dropna().empty:
+                if len(data[s].dropna()) > 63:
+                    ret3m = (data[s].iloc[-1] / data[s].iloc[-64]) - 1
+                    sector_returns[k_name] = ret3m
+        return sorted(sector_returns.items(), key=lambda x: x[1], reverse=True)[:3]
+    except:
+        return []
 
 # =====================================================================
 # [4] 페이지 구성: 글로벌 마켓 대시보드
@@ -407,6 +423,18 @@ def page_market_dashboard():
                     mc4.metric(macro_names['BTC-USD'], f"${latest_m.get('BTC-USD', 0):,.0f}", f"{(latest_m.get('BTC-USD', 0)/prev_m.get('BTC-USD', 1)-1)*100:+.2f}%")
             except:
                 st.info("데이터를 불러오는 중입니다...")
+                
+        with st.container(border=True):
+            st.markdown("##### 🔄 주도 섹터 스캐너 (3개월 수익률 TOP 3)")
+            top_sectors = get_sector_momentum()
+            if top_sectors:
+                sec_html = ""
+                for i, (s_name, s_ret) in enumerate(top_sectors):
+                    medals = ["🥇", "🥈", "🥉"]
+                    sec_html += f"<div style='display:flex; justify-content:space-between; margin-bottom:6px;'><span style='font-weight:bold; color:{TEXT_COLOR};'>{medals[i]} {s_name}</span><span style='color:{C_UP if s_ret>0 else C_DOWN}; font-weight:bold;'>{s_ret*100:+.1f}%</span></div>"
+                st.markdown(f"<div style='padding: 10px; border-radius: 10px; background-color: rgba(0,0,0,0.03);'>{sec_html}</div>", unsafe_allow_html=True)
+            else:
+                st.info("데이터 로딩 중...")
 
     with col_mac2:
         with st.container(border=True):
@@ -563,7 +591,7 @@ def make_portfolio_page(acc_name):
         @st.cache_data(ttl=1800)
         def get_market_status():
             TICKERS = ['QQQ', 'TQQQ', 'SOXL', 'USD', 'QLD', 'SSO', 'SPY', 'SMH', 'GLD', '^VIX',
-                       'HYG', 'IEF', 'QQQE', 'XLK', 'XLV', 'XLE', 'XLF', 'XLI', 'XLY', 'XLP', 'XLU', 'XLB', 'XLRE']
+                       'HYG', 'IEF', 'QQQE']
             data = yf.download(TICKERS, start=datetime.today()-timedelta(days=400), progress=False)['Close'].ffill()
             today = data.iloc[-1]; yesterday = data.iloc[-2]
             
@@ -623,15 +651,6 @@ def make_portfolio_page(acc_name):
                 qqqe_20d = (data['QQQE'].iloc[-1] / data['QQQE'].iloc[-21]) - 1
             else: qqqe_20d = qqq_20d
 
-            sectors = {'XLK':'기술', 'XLV':'헬스케어', 'XLE':'에너지', 'XLF':'금융', 'XLI':'산업재',
-                       'XLY':'소비재', 'XLP':'필수소비재', 'XLU':'유틸리티', 'XLB':'소재', 'XLRE':'부동산'}
-            sector_returns = {}
-            for s, k_name in sectors.items():
-                if s in data.columns and not data[s].dropna().empty:
-                    ret3m = (data[s].iloc[-1] / data[s].iloc[-64]) - 1 if len(data[s].dropna()) > 64 else 0
-                    sector_returns[k_name] = ret3m
-            top_sectors = sorted(sector_returns.items(), key=lambda x: x[1], reverse=True)[:3]
-
             try:
                 fx_data = yf.download('USDKRW=X', period='5d', progress=False)['Close'].ffill()
                 current_usdkrw = float(fx_data.iloc[:, 0].iloc[-1] if isinstance(fx_data, pd.DataFrame) else fx_data.iloc[-1])
@@ -651,7 +670,7 @@ def make_portfolio_page(acc_name):
                 'smh': today['SMH'], 'smh_ma50': smh_ma50_s.iloc[-1], 'smh_3m_ret': smh_3m_ret_s.iloc[-1], 'smh_rsi': smh_rsi_s.iloc[-1],
                 'prices': today.to_dict(), 'prev_prices': yesterday.to_dict(), 'date': data.index[-1], 'usdkrw': current_usdkrw,
                 'hyg_ief_curr': hyg_ief_curr, 'hyg_ief_ma50': hyg_ief_ma50,
-                'qqq_20d': qqq_20d, 'qqqe_20d': qqqe_20d, 'top_sectors': top_sectors,
+                'qqq_20d': qqq_20d, 'qqqe_20d': qqqe_20d,
                 'hist_vix': hist_vix, 'hist_qqq': hist_qqq, 'hist_ma200': hist_ma200, 'hist_ma50': hist_ma50
             }
 
@@ -861,7 +880,7 @@ def make_portfolio_page(acc_name):
                     reg_t = f"<span style='color:{C_DOWN}; font-weight:bold;'>[R4: 시스템 패닉]</span>"
                     reg_d = f"VIX({vix_c:.1f}) 40 돌파. 극심한 시장 패닉 상태입니다. 주식을 전량 매도하고 대피하십시오.{dur_text}{wait_msg}"
 
-                vix_status = "🔴 패닉 (>40)" if vix_c > 40 else ("🟡 경계 (25~40)" if vix_c >= 25 else "🟢 안정 (<25)")
+                vix_status = "🔴 패닉 (40 초과)" if vix_c > 40 else ("🟡 경계 (25~40)" if vix_c >= 25 else "🟢 안정 (25 미만)")
                 vix_col = C_DOWN if vix_c > 40 else (C_WARN if vix_c >= 25 else C_UP)
                 
                 trend_status = "🟢 상승" if qqq_c >= ma200_c else "🔴 하락"
@@ -872,7 +891,6 @@ def make_portfolio_page(acc_name):
                 align_col = C_UP if ma50_c >= ma200_c else C_DOWN
                 align_gap = (ma50_c / ma200_c - 1) * 100
 
-                # ⚠️ 들여쓰기를 제거하여 Markdown 파싱 충돌(코드블록 화) 현상 방지
                 html_str = f"""
 <div class='info-grid'>
 <div class='info-panel' style='display:flex; flex-direction:column; justify-content:center;'>
@@ -909,7 +927,7 @@ def make_portfolio_page(acc_name):
 """
                 st.markdown(html_str, unsafe_allow_html=True)
                 
-                # Plotly Sparkline 차트를 Streamlit Column 레이아웃에 직접 연결 (HTML 충돌 원천 차단)
+                # Plotly Sparkline 차트를 Streamlit Column 레이아웃에 직접 렌더링
                 m1, m2, m3 = st.columns(3)
                 
                 with m1:
@@ -936,7 +954,6 @@ def make_portfolio_page(acc_name):
                     st.plotly_chart(get_plotly_dual_sparkline(ms['hist_ma50'], ms['hist_ma200'], align_col, 'rgba(150,150,150,0.5)'), use_container_width=True, config={'displayModeBar': False})
                     st.markdown(f"<div style='text-align:center; font-size: 0.7rem; margin-top: -10px; opacity: 0.7;'>50MA 이격: {align_gap:+.1f}%</div>", unsafe_allow_html=True)
 
-
                 st.write("")
                 
             elif block == "🚀 실전 퀀트 무기":
@@ -957,12 +974,6 @@ def make_portfolio_page(acc_name):
                 if q_20 > 0 and qe_20 < 0: br_col, br_stat, br_desc = C_WARN, "⚠️ 가짜 상승 (Divergence)", "지수는 오르나 대다수 종목 하락. 소수 대형주 독주."
                 elif q_20 < 0 and qe_20 > 0: br_col, br_stat, br_desc = C_UP, "💡 숨은 강세 (Accumulation)", "지수는 내리나 대다수 반등 중. 폭넓은 매수세 유입."
                 else: br_col, br_stat, br_desc = C_SAFE, "🟢 건전한 동조화", "시총 가중치와 동일 가중치가 함께 움직임."
-
-                top_sectors = ms['top_sectors']
-                sec_html = ""
-                for i, (s_name, s_ret) in enumerate(top_sectors):
-                    medals = ["🥇", "🥈", "🥉"]
-                    sec_html += f"<div style='display:flex; justify-content:space-between; margin-bottom:4px;'><span style='font-weight:bold;'>{medals[i]} {s_name}</span><span style='color:{C_UP if s_ret>0 else C_DOWN};'>{s_ret*100:+.1f}%</span></div>"
 
                 st.markdown(f"""
                 <div style='display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;'>
@@ -989,14 +1000,6 @@ def make_portfolio_page(acc_name):
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
-
-                with st.container(border=True):
-                    st.markdown(f"#### 🔄 주도 섹터 스캐너 (최근 3개월 수익률 TOP 3)")
-                    st.markdown(f"""<div style='font-size:0.95rem; margin-bottom:10px;'>
-                    거물의 시선: 기술주가 쉴 때 시장의 돈이 어디로 몰리는지 파악하게. 위성 포트폴리오를 구성할 때 아래 3개 섹터를 최우선으로 담으면 알파(초과 수익)를 창출할 수 있네.
-                    </div><div style='padding: 15px; border-radius: 10px; background-color: rgba(0,0,0,0.03);'>
-                    {sec_html}
-                    </div>""", unsafe_allow_html=True)
                 st.write("")
 
             elif block == "💼 포트폴리오 & 리밸런싱":
