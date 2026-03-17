@@ -14,7 +14,7 @@ import os
 warnings.filterwarnings('ignore')
 
 # =====================================================================
-# [0] 시스템 설정 및 동적 테마 엔진
+# [0] 시스템 설정
 # =====================================================================
 st.set_page_config(page_title="AMLS 퀀트 포트폴리오", layout="wide", initial_sidebar_state="expanded")
 
@@ -209,7 +209,6 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
 
     for i in range(len(df)):
         tr = df['Target_Regime'].iloc[i]
-        
         if tr > current_v4_4: 
             current_v4_4 = tr; pend_v4_4 = None; cnt_v4_4 = 0; actual_regime_v4_4.append(current_v4_4)
         elif tr < current_v4_4:
@@ -228,8 +227,8 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
         w = {t: 0.0 for t in data.columns}; semi = 'SOXL' if use_soxl else 'USD'
         if regime == 1: w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'], w['SPY'] = 0.30, 0.20, 0.20, 0.15, 0.10, 0.05
         elif regime == 2: w['QLD'], w['SSO'], w['GLD'], w['USD'], w['QQQ'], w['SPY'] = 0.30, 0.25, 0.25, 0.10, 0.05, 0.05
-        elif regime == 3: w['GLD'], w['QQQ'] = 0.50, 0.15
-        elif regime == 4: w['GLD'], w['QQQ'] = 0.50, 0.10
+        elif regime == 3: w['GLD'], w['QQQ'] = 0.50, 0.15 
+        elif regime == 4: w['GLD'], w['QQQ'] = 0.50, 0.10 
         total_w = sum(w.values())
         if total_w < 1.0: w['CASH'] = round(1.0 - total_w, 4)
         return w
@@ -285,7 +284,6 @@ def load_amls_backtest_data(start, end, init_cap, monthly_cont, rebal_freq="월 
     df['Invested'] = inv_arr
     return df, logs, data.columns
 
-# 마켓 터미널 전용 주도 섹터 스캐너 함수
 @st.cache_data(ttl=3600)
 def get_sector_momentum():
     sectors = {'XLK':'기술', 'XLV':'헬스케어', 'XLE':'에너지', 'XLF':'금융', 'XLI':'산업재',
@@ -899,7 +897,7 @@ def make_portfolio_page(acc_name):
 <div style='display: flex; flex-direction: column; gap: 10px;'>
 <div style='background: rgba(0,0,0,0.04); padding: 10px 14px; border-radius: 8px; border-left: 4px solid {s_col};'>
 <div style='display: flex; justify-content: space-between; align-items: center;'>
-<span style='font-size: 0.75rem; opacity: 0.8;'>① 50MA 추세</span>
+<span style='font-size: 0.75rem; opacity: 0.8;'>① 단기 추세 (SMH 50MA)</span>
 <span style='font-size: 0.85rem; font-weight: bold; color: {s_col};'>{s_stat}</span>
 </div>
 <div style='display: flex; justify-content: space-between; align-items: center; margin-top: 4px;'>
@@ -909,7 +907,7 @@ def make_portfolio_page(acc_name):
 </div>
 <div style='background: rgba(0,0,0,0.04); padding: 10px 14px; border-radius: 8px; border-left: 4px solid {r_col};'>
 <div style='display: flex; justify-content: space-between; align-items: center;'>
-<span style='font-size: 0.75rem; opacity: 0.8;'>② 3M 수익률</span>
+<span style='font-size: 0.75rem; opacity: 0.8;'>② 3개월 모멘텀 (수익률)</span>
 <span style='font-size: 0.85rem; font-weight: bold; color: {r_col};'>{r_stat}</span>
 </div>
 <div style='display: flex; justify-content: space-between; align-items: center; margin-top: 4px;'>
@@ -919,7 +917,7 @@ def make_portfolio_page(acc_name):
 </div>
 <div style='background: rgba(0,0,0,0.04); padding: 10px 14px; border-radius: 8px; border-left: 4px solid {rsi_col};'>
 <div style='display: flex; justify-content: space-between; align-items: center;'>
-<span style='font-size: 0.75rem; opacity: 0.8;'>③ 과열/침체 (RSI)</span>
+<span style='font-size: 0.75rem; opacity: 0.8;'>③ 과열/침체 (RSI 14)</span>
 <span style='font-size: 0.85rem; font-weight: bold; color: {rsi_col};'>{rsi_stat}</span>
 </div>
 <div style='display: flex; justify-content: space-between; align-items: center; margin-top: 4px;'>
@@ -929,7 +927,8 @@ def make_portfolio_page(acc_name):
 </div>
 </div>
 <div style='margin-top:15px; padding:12px; border-radius:8px; background-color:{soxl_bg}; text-align: center;'>
-<div style='font-size: 1rem; font-weight: bold;'>{soxl_res}</div>
+<div style='font-size: 0.75rem; opacity: 0.8; margin-bottom: 4px;'>최종 판독 결과</div>
+<div style='font-size: 1.15rem; font-weight: bold; color: {soxl_res_col};'>{soxl_res}</div>
 </div>
 </div>
 
@@ -1293,8 +1292,52 @@ def page_manage_accounts():
 # --- 페이지 구성: 전략 명세서 ---
 def page_strategy_specification():
     st.title("📜 전략 명세서")
-    st.markdown("### 🏷️ 버전: v4.4 (최신 안정화 버전)")
-    st.table(pd.DataFrame({"우선순위": ["1", "2", "3", "4"], "조건": ["VIX > 40", "QQQ < 200일선", "정배열 & VIX < 25", "그 외 조건"], "레짐": ["R4 (위기)", "R3 (약세)", "R1 (강세)", "R2 (보통)"]}))
+    
+    st.markdown("""
+    ### 🏷️ 버전: v4.5 (Adaptive Multi-Leverage Strategy)
+    **기밀 등급: CLASSIFIED - 내부 전용**
+    
+    ---
+    
+    #### 1. 전략 개요 (Philosophy)
+    AMLS는 스탠 웬스타인(Stan Weinstein)의 '4단계 국면 이론(Stage Analysis)'을 현대적 퀀트 자산배분 기법으로 재해석한 전략입니다. 시장의 상승/하락 추세뿐만 아니라 **'공포 지수(VIX)'**를 결합하여, 국면별 최적의 레버리지 배수를 동적으로 조절합니다.
+    
+    #### 2. V4.5 핵심 변경점: Zero-Cash 최적화
+    기존 V4.3까지는 R1/R2 국면에서 일정 수준의 '현금(CASH)' 비중을 유지하여 방어력을 도모했습니다. 그러나 장기 백테스트 결과, 현금이 수익률 갉아먹는 '현금 드래그(Cash Drag)' 현상이 발견되었습니다.
+    
+    V4.5에서는 인플레이션을 방어하고 알파를 창출하기 위해 **R1/R2의 현금을 S&P 500(SPY) 및 금(GLD)으로 대체**하는 **[Zero-Cash 최적화]**가 적용되었습니다.
+    * **Regime 1:** 현금 5% ➔ SPY 5%
+    * **Regime 2:** 현금 10% ➔ SPY 5% + GLD 5% 추가
+    * **Regime 3/4:** 극한의 방어가 필요한 하락장에서는 여전히 현금 35~40%를 쥐고 관망합니다.
+    
+    ---
+
+    #### 3. 레짐(Regime) 판단 기준 및 배분표
+    AI 엔진은 매일 종가 기준으로 아래의 3가지 지표를 분석하여 내일의 타겟 레짐을 결정합니다.
+    
+    | 판단 순위 | 상태 | 진입 조건 (Daily Close) | 시장 상태 해석 | 레버리지(실효) |
+    |:---:|:---:|:---|:---|:---:|
+    | **1순위** | 🔴 R4 | **VIX > 40** | 이성을 잃은 패닉/투매 장세 | 0.10x |
+    | **2순위** | 🟠 R3 | VIX ≤ 40 & **QQQ < 200MA** | 베어마켓 진입, 장기 하락 추세 | 0.15x |
+    | **3순위** | 🟢 R1 | VIX < 25 & **QQQ ≥ 200MA** & **50MA ≥ 200MA** | 완벽한 정배열, 변동성이 낮은 대세 상승장 | 2.30x |
+    | **4순위** | 🟡 R2 | 위 조건에 해당하지 않는 모든 경우 | 단기 조정 또는 모멘텀 둔화 구간 | 1.80x |
+
+    <br>
+
+    #### 4. 포트폴리오 비중 세부 지침 (Weights)
+    * `SOXL_Cond`: SMH > 50MA & 3개월 수익률 > 5% & RSI > 50 (통과 시 SOXL, 미달 시 USD)
+    
+    * **R1 (강세):** TQQQ 30% / SOXL(USD) 20% / QLD 20% / SSO 15% / GLD 10% / SPY 5%
+    * **R2 (보통):** QLD 30% / SSO 25% / GLD 25% / USD 10% / QQQ 5% / SPY 5%
+    * **R3 (약세):** GLD 50% / CASH 35% / QQQ 15%
+    * **R4 (위기):** GLD 50% / CASH 40% / QQQ 10%
+    
+    ---
+    
+    #### 5. 휩쏘(가짜 신호) 방지: 비대칭 5일 대기 프로토콜
+    * **하향 돌파 (위험 회피):** 타겟 레짐이 현재 레짐보다 높아질 때(예: R1 ➔ R3), 시스템은 1초의 망설임 없이 **즉시 비중을 축소**합니다. 자본의 보호가 최우선이기 때문입니다.
+    * **상향 돌파 (가짜 반등 필터링):** 타겟 레짐이 현재 레짐보다 낮아져 공격적으로 변할 때(예: R3 ➔ R1), 베어마켓 랠리(가짜 반등)에 속아 레버리지를 고점에 무는 것을 막기 위해 **반드시 5영업일 연속으로 해당 조건이 충족**되어야만 비로소 진입합니다.
+    """)
 
 
 # =====================================================================
