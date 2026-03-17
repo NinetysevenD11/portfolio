@@ -139,32 +139,33 @@ def apply_custom_css():
 
 apply_custom_css()
 
-# --- 미니 차트(Sparkline) 생성 함수 ---
-def get_svg_sparkline(data_list, color, hline=None):
-    if not data_list or all(pd.isna(x) for x in data_list): return ""
-    w, h = 100, 25
-    mi, ma = min(data_list), max(data_list)
-    if mi == ma: ma += 0.1
-    pts = []
-    for i, v in enumerate(data_list):
-        x = (i / (len(data_list)-1)) * w
-        y = h - ((v - mi) / (ma - mi)) * h
-        pts.append(f"{x},{y}")
-    line_str = ""
-    if hline is not None and mi <= hline <= ma:
-        y = h - ((hline - mi) / (ma - mi)) * h
-        line_str = f'<line x1="0" y1="{y}" x2="{w}" y2="{y}" stroke="rgba(255,0,0,0.5)" stroke-width="1.5" stroke-dasharray="2,2"/>'
-    return f'<svg width="{w}" height="{h}" style="margin-top:8px; overflow:visible;"><polyline points="{" ".join(pts)}" fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>{line_str}</svg>'
+# --- Plotly Sparkline (미니 차트) 생성 함수 ---
+def get_plotly_sparkline(data_list, color, hline=None):
+    if not data_list or all(pd.isna(x) for x in data_list): return go.Figure()
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(y=data_list, mode='lines', line=dict(color=color, width=2), hoverinfo='skip'))
+    if hline is not None:
+        fig.add_hline(y=hline, line_dash="dash", line_color="red", line_width=1)
+    fig.update_layout(
+        showlegend=False, margin=dict(l=0, r=0, t=0, b=0), height=40,
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
+    )
+    return fig
 
-def get_dual_svg(d1, d2, c1, c2):
-    if not d1 or not d2: return ""
-    w, h = 100, 25
-    combined = d1 + d2
-    mi, ma = min(combined), max(combined)
-    if mi == ma: ma += 0.1
-    pts1 = " ".join([f"{(i/(len(d1)-1))*w},{h - ((v-mi)/(ma-mi))*h}" for i,v in enumerate(d1)])
-    pts2 = " ".join([f"{(i/(len(d2)-1))*w},{h - ((v-mi)/(ma-mi))*h}" for i,v in enumerate(d2)])
-    return f'<svg width="{w}" height="{h}" style="margin-top:8px; overflow:visible;"><polyline points="{pts2}" fill="none" stroke="{c2}" stroke-width="1.5" stroke-dasharray="3,3"/><polyline points="{pts1}" fill="none" stroke="{c1}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+def get_plotly_dual_sparkline(d1, d2, c1, c2):
+    if not d1 or not d2: return go.Figure()
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(y=d2, mode='lines', line=dict(color=c2, width=1.5, dash='dash'), hoverinfo='skip'))
+    fig.add_trace(go.Scatter(y=d1, mode='lines', line=dict(color=c1, width=2), hoverinfo='skip'))
+    fig.update_layout(
+        showlegend=False, margin=dict(l=0, r=0, t=0, b=0), height=40,
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
+    )
+    return fig
 
 
 # =====================================================================
@@ -861,17 +862,14 @@ def make_portfolio_page(acc_name):
 
                 vix_status = "🔴 패닉 (40 초과)" if vix_c > 40 else ("🟡 경계 (25~40)" if vix_c >= 25 else "🟢 안정 (25 미만)")
                 vix_col = C_DOWN if vix_c > 40 else (C_WARN if vix_c >= 25 else C_UP)
-                svg_vix = get_svg_sparkline(ms['hist_vix'], vix_col, hline=40 if vix_c>30 else 25)
                 
                 trend_status = "🟢 상승" if qqq_c >= ma200_c else "🔴 하락"
                 trend_col = C_UP if qqq_c >= ma200_c else C_DOWN
                 trend_gap = (qqq_c / ma200_c - 1) * 100
-                svg_qqq = get_dual_svg(ms['hist_qqq'], ms['hist_ma200'], trend_col, 'rgba(150,150,150,0.5)')
                 
                 align_status = "🟢 정배열" if ma50_c >= ma200_c else "🔴 역배열"
                 align_col = C_UP if ma50_c >= ma200_c else C_DOWN
                 align_gap = (ma50_c / ma200_c - 1) * 100
-                svg_align = get_dual_svg(ms['hist_ma50'], ms['hist_ma200'], align_col, 'rgba(150,150,150,0.5)')
 
                 st.markdown(f"""<div class='info-grid'>
 <div class='info-panel' style='display:flex; flex-direction:column; justify-content:center;'>
@@ -904,29 +902,38 @@ def make_portfolio_page(acc_name):
 
     <div style='margin-top: 15px; padding-top: 15px; border-top: 1px dashed currentColor; opacity: 0.9;'>
         <div style='font-weight:bold; margin-bottom:10px; font-size: 0.85rem;'>🔍 타겟 국면 판단 근거 <span style='font-weight:normal; opacity:0.8;'>(현재 AI 타겟: R{tgt_reg})</span></div>
-        <div style='display: flex; gap: 10px; text-align: center; flex-wrap: wrap;'>
-            <div style='flex: 1; padding: 10px; background: rgba(0,0,0,0.04); border-radius: 8px; min-width: 120px;'>
-                <div style='font-size: 0.75rem; opacity: 0.8;'>조건 1. 공포 지수 (VIX)</div>
-                <div style='font-size: 1.05rem; font-weight: bold; color: {vix_col}; margin-top: 5px;'>{vix_status}</div>
-                {svg_vix}
-                <div style='font-size: 0.7rem; margin-top: 2px; opacity: 0.7;'>현재: {vix_c:.2f}</div>
-            </div>
-            <div style='flex: 1; padding: 10px; background: rgba(0,0,0,0.04); border-radius: 8px; min-width: 120px;'>
-                <div style='font-size: 0.75rem; opacity: 0.8;'>조건 2. 장기 추세 (QQQ)</div>
-                <div style='font-size: 1.05rem; font-weight: bold; color: {trend_col}; margin-top: 5px;'>{trend_status}</div>
-                {svg_qqq}
-                <div style='font-size: 0.7rem; margin-top: 2px; opacity: 0.7;'>200MA 대비 이격: {trend_gap:+.1f}%</div>
-            </div>
-            <div style='flex: 1; padding: 10px; background: rgba(0,0,0,0.04); border-radius: 8px; min-width: 120px;'>
-                <div style='font-size: 0.75rem; opacity: 0.8;'>조건 3. 이평선 배열</div>
-                <div style='font-size: 1.05rem; font-weight: bold; color: {align_col}; margin-top: 5px;'>{align_status}</div>
-                {svg_align}
-                <div style='font-size: 0.7rem; margin-top: 2px; opacity: 0.7;'>50MA 대비 이격: {align_gap:+.1f}%</div>
-            </div>
-        </div>
     </div>
 </div>
 </div>""", unsafe_allow_html=True)
+                
+                # 🔥 Plotly Sparkline 차트를 Streamlit의 순수 Column에 렌더링
+                m1, m2, m3 = st.columns(3)
+                
+                with m1:
+                    st.markdown(f"""<div style='text-align:center; padding: 10px; background: rgba(0,0,0,0.04); border-radius: 8px; min-width: 120px;'>
+                        <div style='font-size: 0.75rem; opacity: 0.8;'>조건 1. 공포 지수 (VIX)</div>
+                        <div style='font-size: 1.05rem; font-weight: bold; color: {vix_col}; margin-top: 5px;'>{vix_status}</div>
+                    </div>""", unsafe_allow_html=True)
+                    st.plotly_chart(get_plotly_sparkline(ms['hist_vix'], vix_col, hline=40 if vix_c>30 else 25), use_container_width=True, config={'displayModeBar': False})
+                    st.markdown(f"<div style='text-align:center; font-size: 0.7rem; margin-top: -10px; opacity: 0.7;'>현재: {vix_c:.2f}</div>", unsafe_allow_html=True)
+
+                with m2:
+                    st.markdown(f"""<div style='text-align:center; padding: 10px; background: rgba(0,0,0,0.04); border-radius: 8px; min-width: 120px;'>
+                        <div style='font-size: 0.75rem; opacity: 0.8;'>조건 2. 장기 추세 (QQQ)</div>
+                        <div style='font-size: 1.05rem; font-weight: bold; color: {trend_col}; margin-top: 5px;'>{trend_status}</div>
+                    </div>""", unsafe_allow_html=True)
+                    st.plotly_chart(get_plotly_dual_sparkline(ms['hist_qqq'], ms['hist_ma200'], trend_col, 'rgba(150,150,150,0.5)'), use_container_width=True, config={'displayModeBar': False})
+                    st.markdown(f"<div style='text-align:center; font-size: 0.7rem; margin-top: -10px; opacity: 0.7;'>200MA 이격: {trend_gap:+.1f}%</div>", unsafe_allow_html=True)
+                    
+                with m3:
+                    st.markdown(f"""<div style='text-align:center; padding: 10px; background: rgba(0,0,0,0.04); border-radius: 8px; min-width: 120px;'>
+                        <div style='font-size: 0.75rem; opacity: 0.8;'>조건 3. 이평선 배열</div>
+                        <div style='font-size: 1.05rem; font-weight: bold; color: {align_col}; margin-top: 5px;'>{align_status}</div>
+                    </div>""", unsafe_allow_html=True)
+                    st.plotly_chart(get_plotly_dual_sparkline(ms['hist_ma50'], ms['hist_ma200'], align_col, 'rgba(150,150,150,0.5)'), use_container_width=True, config={'displayModeBar': False})
+                    st.markdown(f"<div style='text-align:center; font-size: 0.7rem; margin-top: -10px; opacity: 0.7;'>50MA 이격: {align_gap:+.1f}%</div>", unsafe_allow_html=True)
+
+
                 st.write("")
                 
             elif block == "🚀 실전 퀀트 무기":
