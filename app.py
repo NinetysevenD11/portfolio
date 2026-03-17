@@ -635,7 +635,6 @@ def make_portfolio_page(acc_name):
                 current_usdkrw = float(fx_data.iloc[:, 0].iloc[-1] if isinstance(fx_data, pd.DataFrame) else fx_data.iloc[-1])
             except: current_usdkrw = 0.0
 
-            # 🔥 미니 차트용 과거 데이터 45일치 추출
             hist_len = 45
             hist_vix = data['^VIX'].tail(hist_len).fillna(method='bfill').tolist()
             hist_qqq = data['QQQ'].tail(hist_len).fillna(method='bfill').tolist()
@@ -754,10 +753,6 @@ def make_portfolio_page(acc_name):
                 history_changed = True
         if history_changed: save_accounts_data(st.session_state['accounts'])
 
-
-        # -------------------------------------------------------------
-        # 레이아웃 편집기 UI (사이드바 이동)
-        # -------------------------------------------------------------
         with st.sidebar.expander("🛠️ 화면 레이아웃 편집"):
             st.caption("위아래 버튼으로 순서를 변경하세요.")
             for i, block_name in enumerate(current_layout):
@@ -772,9 +767,6 @@ def make_portfolio_page(acc_name):
                     curr_acc_data["layout_order"] = current_layout
                     save_accounts_data(st.session_state['accounts']); st.rerun()
 
-        # -------------------------------------------------------------
-        # 동적 레이아웃 렌더링 루프
-        # -------------------------------------------------------------
         for block in current_layout:
             
             if block == "🎯 목표 달성률":
@@ -805,10 +797,8 @@ def make_portfolio_page(acc_name):
 
             elif block == "📊 실시간 요약":
                 st.markdown(f"#### 📊 자산 및 시황 요약 (기준: {price_label})")
-                
                 pn_col = C_UP if daily_diff > 0 else (C_DOWN if daily_diff < 0 else TEXT_COLOR)
                 pn_ico = "▲" if daily_diff > 0 else ("▼" if daily_diff < 0 else "-")
-                
                 st.markdown(f"""
                 <div class='info-panel' style='display:flex; flex-direction:row; justify-content:space-between; align-items:center; text-align:center; padding:20px;'>
                     <div style='flex:1; border-right:1px dashed rgba(150,150,150,0.4); padding:0 10px;'>
@@ -869,8 +859,7 @@ def make_portfolio_page(acc_name):
                     reg_t = f"<span style='color:{C_DOWN}; font-weight:bold;'>[R4: 시스템 패닉]</span>"
                     reg_d = f"VIX({vix_c:.1f}) 40 돌파. 극심한 시장 패닉 상태입니다. 주식을 전량 매도하고 대피하십시오.{dur_text}{wait_msg}"
 
-                # 🔥 미니 차트 (SVG) 생성
-                vix_status = "🔴 패닉 (>40)" if vix_c > 40 else ("🟡 경계 (25~40)" if vix_c >= 25 else "🟢 안정 (<25)")
+                vix_status = "🔴 패닉 (40 초과)" if vix_c > 40 else ("🟡 경계 (25~40)" if vix_c >= 25 else "🟢 안정 (25 미만)")
                 vix_col = C_DOWN if vix_c > 40 else (C_WARN if vix_c >= 25 else C_UP)
                 svg_vix = get_svg_sparkline(ms['hist_vix'], vix_col, hline=40 if vix_c>30 else 25)
                 
@@ -1042,7 +1031,6 @@ def make_portfolio_page(acc_name):
                         else:
                             st.markdown("<div style='height: 280px; display: flex; align-items: center; justify-content: center; color: #888;'>자산을 입력해 주세요.</div>", unsafe_allow_html=True)
                 
-                # 🔥 기계적 리밸런싱 지침 (+1.5주 톨러런스 적용 완료)
                 st.write("")
                 st.markdown("#### ⚖️ 기계적 리밸런싱 지침 (Tolerance: ±1.5주)")
                 with st.container(border=True):
