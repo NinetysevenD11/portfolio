@@ -190,7 +190,7 @@ neo_tactile_css = """
     div.row-widget.stRadio > div > label:hover p { color: var(--accent-primary) !important; }
     div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) { box-shadow: var(--shadow-inset) !important; }
     div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) p { color: var(--accent-primary) !important; }
-    .neo-card { background-color: var(--base-bg); border-radius: 20px; padding: 25px; min-height: 520px; box-shadow: var(--shadow-raised); display: flex; flex-direction: column; margin-bottom: 20px; }
+    .neo-card { background-color: var(--base-bg); border-radius: 20px; padding: 25px; height: 560px; overflow-y: auto; box-shadow: var(--shadow-raised); display: flex; flex-direction: column; margin-bottom: 20px; }
     .neo-inset-box { background-color: var(--base-bg); border-radius: 12px; padding: 15px; box-shadow: var(--shadow-inset); text-align: center; margin-bottom: 20px;}
     .check-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-color); font-size: 0.95em; color: var(--text-main); }
     .check-value { font-family: 'Courier New', monospace; font-weight: bold; color: var(--accent-primary); }
@@ -211,7 +211,7 @@ elegant_dark_css = """
     div.row-widget.stRadio > div > label:hover { background-color: rgba(255,255,255,0.05); }
     div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) { background-color: rgba(139, 92, 246, 0.2) !important; border: 1px solid var(--accent-primary); box-shadow: 0 0 10px var(--accent-glow); }
     div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) p { color: var(--accent-primary) !important; }
-    .neo-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 25px; min-height: 520px; box-shadow: var(--shadow-raised); display: flex; flex-direction: column; margin-bottom: 20px; }
+    .neo-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 25px; height: 560px; overflow-y: auto; box-shadow: var(--shadow-raised); display: flex; flex-direction: column; margin-bottom: 20px; }
     .neo-inset-box { background: linear-gradient(145deg, rgba(139,92,246,0.1), rgba(0,0,0,0)); border: 1px solid var(--accent-primary); border-radius: 12px; padding: 15px; text-align: center; margin-bottom: 20px; box-shadow: 0 0 15px var(--accent-glow); }
     .check-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-color); font-size: 0.95em; color: var(--text-muted); }
     .check-value { font-family: 'Courier New', monospace; font-weight: bold; color: var(--text-main); }
@@ -302,7 +302,8 @@ glass_frost_css = """
         border: 1px solid var(--border-glass) !important;
         border-radius: 26px !important;
         padding: 26px !important;
-        min-height: 520px;
+        height: 560px;
+        overflow-y: auto;
         box-shadow: var(--shadow-glass) !important;
         display: flex;
         flex-direction: column;
