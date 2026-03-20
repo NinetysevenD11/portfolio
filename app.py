@@ -23,34 +23,58 @@ CORE_TICKERS = ['QQQ', 'TQQQ', 'SOXL', 'USD', 'QLD', 'SSO', 'SPY', 'SMH', 'GLD',
 TICKERS = CORE_TICKERS + SECTOR_TICKERS
 ASSET_LIST = ['TQQQ', 'SOXL', 'USD', 'QLD', 'SSO', 'SPY', 'QQQ', 'GLD', 'CASH']
 
+# ── 히스토리 데이터 (MA 계산용, 1시간 캐시) ──────────────────
 @st.cache_data(ttl=3600)
 def load_data():
     end_date = datetime.now()
-    start_date = end_date - timedelta(days=600)
-    data = yf.download(TICKERS, start=start_date.strftime("%Y-%m-%d"), end=end_date.strftime("%Y-%m-%d"), progress=False, auto_adjust=False)['Close']
+    start_date = end_date - timedelta(days=900)
+    # auto_adjust=True: 배당/분할 수정가 → MA200 왜곡 방지
+    data = yf.download(TICKERS, start=start_date.strftime("%Y-%m-%d"), end=end_date.strftime("%Y-%m-%d"), progress=False, auto_adjust=True)['Close']
     df = pd.DataFrame(index=data.index)
     for t in TICKERS: df[t] = data[t]
     df = df.ffill().bfill()
-    df['QQQ_MA50'] = df['QQQ'].rolling(window=50).mean()
-    df['QQQ_MA200'] = df['QQQ'].rolling(window=200).mean()
-    df['TQQQ_MA200'] = df['TQQQ'].rolling(window=200).mean() 
-    df['SMH_MA50'] = df['SMH'].rolling(window=50).mean()
-    df['VIX_MA5'] = df['^VIX'].rolling(window=5).mean()
+    df['QQQ_MA20']   = df['QQQ'].rolling(window=20).mean()
+    df['QQQ_MA50']   = df['QQQ'].rolling(window=50).mean()
+    df['QQQ_MA200']  = df['QQQ'].rolling(window=200).mean()
+    df['TQQQ_MA200'] = df['TQQQ'].rolling(window=200).mean()
+    df['SMH_MA50']   = df['SMH'].rolling(window=50).mean()
+    df['VIX_MA5']    = df['^VIX'].rolling(window=5).mean()
+    df['VIX_MA20']   = df['^VIX'].rolling(window=20).mean()
     df['SMH_3M_Ret'] = df['SMH'].pct_change(periods=63)
     df['SMH_1M_Ret'] = df['SMH'].pct_change(periods=21)
-    df['SMH_RSI'] = ta.rsi(df['SMH'], length=14)
+    df['SMH_RSI']    = ta.rsi(df['SMH'], length=14)
     df['HYG_IEF_Ratio'] = df['HYG'] / df['IEF']
-    df['HYG_IEF_MA50'] = df['HYG_IEF_Ratio'].rolling(window=50).mean()
-    df['QQQ_20d_Ret'] = df['QQQ'].pct_change(periods=20)
-    df['QQQE_20d_Ret'] = df['QQQE'].pct_change(periods=20)
-    df['QQQ_RSI'] = ta.rsi(df['QQQ'], length=14)
-    df['GLD_SPY_Ratio'] = df['GLD'] / df['SPY']
-    df['GLD_SPY_MA50'] = df['GLD_SPY_Ratio'].rolling(window=50).mean()
-    df['QQQ_High52'] = df['QQQ'].rolling(window=252).max() 
-    df['QQQ_DD'] = (df['QQQ'] / df['QQQ_High52']) - 1 
-    df['UUP_MA50'] = df['UUP'].rolling(window=50).mean() 
+    df['HYG_IEF_MA20']  = df['HYG_IEF_Ratio'].rolling(window=20).mean()
+    df['HYG_IEF_MA50']  = df['HYG_IEF_Ratio'].rolling(window=50).mean()
+    df['QQQ_20d_Ret']   = df['QQQ'].pct_change(periods=20)
+    df['QQQE_20d_Ret']  = df['QQQE'].pct_change(periods=20)
+    df['QQQ_RSI']    = ta.rsi(df['QQQ'], length=14)
+    df['GLD_SPY_Ratio']  = df['GLD'] / df['SPY']
+    df['GLD_SPY_MA50']   = df['GLD_SPY_Ratio'].rolling(window=50).mean()
+    df['QQQ_High52'] = df['QQQ'].rolling(window=252).max()
+    df['QQQ_DD']     = (df['QQQ'] / df['QQQ_High52']) - 1
+    df['UUP_MA50']   = df['UUP'].rolling(window=50).mean()
     for sec in SECTOR_TICKERS: df[f'{sec}_1M'] = df[sec].pct_change(periods=21)
     return df.dropna()
+
+# ── 실시간 현재가 (60초 캐시) ─────────────────────────────────
+# yfinance fast_info: 장중 실시간 / 장외 after-hours 가격 반환
+REALTIME_TICKERS = ['QQQ', 'TQQQ', 'SMH', '^VIX', 'HYG', 'IEF', 'UUP', 'GLD', 'SPY']
+
+@st.cache_data(ttl=60)
+def fetch_realtime_prices():
+    prices = {}
+    for ticker in REALTIME_TICKERS:
+        try:
+            t_obj = yf.Ticker(ticker)
+            info  = t_obj.fast_info
+            # last_price: 장중 현재가 / after-hours 포함
+            price = info.get('last_price') or info.get('lastPrice')
+            if price and price > 0:
+                prices[ticker] = float(price)
+        except Exception:
+            pass
+    return prices
 
 @st.cache_data(ttl=900)
 def fetch_macro_news():
@@ -70,29 +94,73 @@ def fetch_macro_news():
 
 with st.spinner('📰 데이터베이스 동기화 중...'):
     df = load_data()
+    rt_prices = fetch_realtime_prices()
+
+# ── 실시간 가격을 last_row에 주입 ────────────────────────────
+# MA200 등 이평선은 히스토리 그대로 사용, 현재가만 교체
+last_row = df.iloc[-1].copy()
+rt_injected = []
+for ticker, price in rt_prices.items():
+    if ticker in last_row.index and price > 0:
+        last_row[ticker] = price
+        rt_injected.append(ticker)
+
+# QQQ_DD도 실시간 QQQ 기준으로 재계산
+if 'QQQ' in rt_injected:
+    last_row['QQQ_DD'] = (last_row['QQQ'] / last_row['QQQ_High52']) - 1
+
+# 실시간 데이터 수신 여부 표시용
+rt_ok = len(rt_injected) >= 3
+rt_label = f"🟢 실시간 ({len(rt_injected)}개 종목)" if rt_ok else "🟡 지연 데이터 (장외/캐시)"
 
 # AMLS v4.5 코어 엔진 계산
-last_row = df.iloc[-1]
-vix_close, vix_ma5 = last_row['^VIX'], last_row['VIX_MA5']
+vix_close, vix_ma5, vix_ma20 = last_row['^VIX'], last_row['VIX_MA5'], last_row['VIX_MA20']
 qqq_close, qqq_ma50, qqq_ma200 = last_row['QQQ'], last_row['QQQ_MA50'], last_row['QQQ_MA200']
 smh_close, smh_ma50, smh_3m, smh_1m, smh_rsi = last_row['SMH'], last_row['SMH_MA50'], last_row['SMH_3M_Ret'], last_row['SMH_1M_Ret'], last_row['SMH_RSI']
 
 def get_target_v45(row):
-    if row['^VIX'] > 40: return 4 
-    if row['QQQ'] < row['QQQ_MA200']: return 3
-    if row['QQQ'] >= row['QQQ_MA200'] and row['QQQ_MA50'] >= row['QQQ_MA200'] and row['VIX_MA5'] < 25: return 1 
+    # ── R4: VIX 패닉 (즉시 발동) ────────────────────────────
+    if row['^VIX'] > 40:
+        return 4
+
+    # ── R3: 구조적 약세 ──────────────────────────────────────
+    # 조건A: QQQ가 200MA 아래로 이탈
+    # 조건B: 낙폭 -10% 초과 + 신용 스프레드 20MA 이탈 (선행 경보)
+    credit_stress = row['HYG_IEF_Ratio'] < row['HYG_IEF_MA20']
+    if row['QQQ'] < row['QQQ_MA200']:
+        return 3
+    if row['QQQ_DD'] < -0.10 and credit_stress:
+        return 3
+
+    # ── R1: 완전 강세 ────────────────────────────────────────
+    # VIX_MA20(20일 평균) 사용 → VIX_MA5 대비 노이즈 대폭 감소
+    # 신용 스프레드 정상 범위 확인 추가
+    bull_trend    = row['QQQ'] >= row['QQQ_MA200'] and row['QQQ_MA50'] >= row['QQQ_MA200']
+    low_vix       = row['VIX_MA20'] < 22          # MA5→MA20, 임계값 25→22
+    credit_ok     = row['HYG_IEF_Ratio'] >= row['HYG_IEF_MA50']
+    if bull_trend and low_vix and credit_ok:
+        return 1
+
+    # ── R2: 중립/조정 ────────────────────────────────────────
     return 2
 
 df['Target'] = df.apply(get_target_v45, axis=1)
 
+# ── 비대칭 확인 필터 ─────────────────────────────────────────
+# 상향(악화) R2→R3→R4: 즉시 반영 (리스크 우선)
+# 하향(개선) R3→R2→R1: 5일 연속 확인 (휩소 방지)
 res = []; curr = 3; pend = None; cnt = 0
 for t in df['Target']:
-    if t > curr: curr = t; pend = None; cnt = 0
-    elif t < curr:
+    if t > curr:                     # 악화 → 즉시
+        curr = t; pend = None; cnt = 0
+    elif t < curr:                   # 개선 → 5일 확인
         if t == pend:
-            cnt += 1; curr = t if cnt >= 5 else curr; pend = None if cnt >= 5 else pend; cnt = 0 if cnt >= 5 else cnt
-        else: pend = t; cnt = 1
-    else: pend = None; cnt = 0
+            cnt += 1
+            if cnt >= 5: curr = t; pend = None; cnt = 0
+        else:
+            pend = t; cnt = 1
+    else:
+        pend = None; cnt = 0
     res.append(curr)
 df['Regime'] = pd.Series(res, index=df.index).shift(1).bfill()
 
@@ -437,6 +505,7 @@ st.markdown(f"""
     <div style="text-align: right; font-weight: bold; color: {h_color};">
         <div style="font-size: 1.2em;">AMLS V4.5 ENGINE</div>
         <div style="font-size: 0.9em; color: {h_muted};">{edition_label} Edition</div>
+        <div style="font-size: 0.8em; margin-top: 4px; color: {h_muted};">{rt_label}</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -518,7 +587,7 @@ if page == "📊 시장 분석관 (Home)":
             {render_row('① VIX 패닉 임계점 (< 40)', f"{vix_close:.2f}", vix_close<=40)}
             {render_row('② 장기 지지선 (QQQ > 200MA)', f"${qqq_close:.0f} vs ${qqq_ma200:.0f}", qqq_close>=qqq_ma200)}
             {render_row('③ 추세 정배열 (50MA ≥ 200MA)', f"${qqq_ma50:.0f} vs ${qqq_ma200:.0f}", qqq_ma50>=qqq_ma200)}
-            {render_row('④ 노이즈 필터 (5일선 < 25)', f"{vix_ma5:.2f}", vix_ma5<25)}
+            {render_row('④ 노이즈 필터 (20일선 < 22)', f"{vix_ma20:.2f}", vix_ma20<22)}
             <div style="margin-top: auto; padding: 15px; font-size: 0.85em; color: {h_muted}; text-align: center; background-color: {msg_bg}; border-radius: 8px;">
                 💡 위원회: {"모든 조건이 현재 국면에 부합합니다." if curr_regime == target_regime else f"R{target_regime} 전환 대기 중입니다."}
             </div>
@@ -562,11 +631,11 @@ if page == "📊 시장 분석관 (Home)":
         """, unsafe_allow_html=True)
 
     m1, m2, m3, m4, m5 = st.columns(5)
-    m1.metric("QQQ vs 200MA", f"${last_row['QQQ']:.2f}", f"{(last_row['QQQ']/last_row['QQQ_MA200']-1)*100:+.2f}%")
-    m2.metric("TQQQ vs 200MA", f"${last_row['TQQQ']:.2f}", f"{(last_row['TQQQ']/last_row['TQQQ_MA200']-1)*100:+.2f}%", delta_color="inverse")
-    m3.metric("VIX (5D MA)", f"{last_row['VIX_MA5']:.2f}", f"종가:{last_row['^VIX']:.2f}")
-    m4.metric("반도체 1M", f"{last_row['SMH_1M_Ret']*100:+.2f}%")
-    m5.metric("반도체 3M", f"{last_row['SMH_3M_Ret']*100:+.2f}%")
+    m1.metric("QQQ vs 200MA",   f"${last_row['QQQ']:.2f}",   f"{(last_row['QQQ']/last_row['QQQ_MA200']-1)*100:+.2f}%")
+    m2.metric("TQQQ vs 200MA",  f"${last_row['TQQQ']:.2f}",  f"{(last_row['TQQQ']/last_row['TQQQ_MA200']-1)*100:+.2f}%", delta_color="inverse")
+    m3.metric("VIX (20D MA)",   f"{last_row['VIX_MA20']:.2f}", f"종가:{last_row['^VIX']:.2f}")
+    m4.metric("반도체 1M",       f"{last_row['SMH_1M_Ret']*100:+.2f}%", f"vs MA50: {(last_row['SMH']/last_row['SMH_MA50']-1)*100:+.2f}%")
+    m5.metric("반도체 3M",       f"{last_row['SMH_3M_Ret']*100:+.2f}%", f"RSI: {last_row['SMH_RSI']:.1f}")
 
     if last_row['TQQQ'] < last_row['TQQQ_MA200'] and last_row['QQQ'] >= last_row['QQQ_MA200']:
         st.warning("⚠️ **[선행 경보]** TQQQ가 200일선을 이탈했습니다. 하락 전조 주의.")
