@@ -24,7 +24,6 @@ st.markdown("""
     .main .block-container { max-width: 1300px; margin: 0 auto; padding-top: 2rem; }
     h1, h2, h3, h4, h5, h6 { font-family: 'Pretendard', sans-serif !important; color: #1A1A1A !important; letter-spacing: 0.5px; font-weight: 800 !important; }
     
-    /* 🚨 알림 박스 (초콜릿 모양으로 높이 고정하여 삐뚤어짐 방지) */
     div[data-testid="stAlert"] { 
         background-color: #FFFDF7; border: 1px solid #2C2C2C; border-radius: 4px; 
         color: #1A1A1A; box-shadow: none; padding: 10px; min-height: 65px; 
@@ -67,8 +66,8 @@ ASSET_LIST = ['TQQQ', 'SOXL', 'USD', 'QLD', 'SSO', 'SPY', 'QQQ', 'GLD', 'CASH']
 @st.cache_data(ttl=3600)
 def load_data():
     end_date = datetime.now()
-    start_date = "2006-01-01"
-    data = yf.download(TICKERS, start=start_date, end=end_date.strftime("%Y-%m-%d"), progress=False, auto_adjust=False)['Close']
+    start_date = end_date - timedelta(days=600)
+    data = yf.download(TICKERS, start=start_date.strftime("%Y-%m-%d"), end=end_date.strftime("%Y-%m-%d"), progress=False, auto_adjust=False)['Close']
     
     df = pd.DataFrame(index=data.index)
     for t in TICKERS: df[t] = data[t]
@@ -148,7 +147,25 @@ def get_weights_v45(reg, smh_ok):
 last_row = df.iloc[-1]
 curr_regime = int(last_row['Regime'])
 target_regime = int(last_row['Target'])
-smh_cond = (last_row['SMH'] > last_row['SMH_MA50']) and ((last_row['SMH_3M_Ret'] > 0.05) or (last_row['SMH_1M_Ret'] > 0.10)) and (last_row['SMH_RSI'] > 50)
+
+# 데이터 변수 추출
+vix_close = last_row['^VIX']
+vix_ma5 = last_row['VIX_MA5']
+qqq_close = last_row['QQQ']
+qqq_ma50 = last_row['QQQ_MA50']
+qqq_ma200 = last_row['QQQ_MA200']
+smh_close = last_row['SMH']
+smh_ma50 = last_row['SMH_MA50']
+smh_3m = last_row['SMH_3M_Ret']
+smh_1m = last_row['SMH_1M_Ret']
+smh_rsi = last_row['SMH_RSI']
+
+# 조건 불리언 판독
+smh_c1 = smh_close > smh_ma50
+smh_c2 = (smh_3m > 0.05) or (smh_1m > 0.10)
+smh_c3 = smh_rsi > 50
+smh_cond = smh_c1 and smh_c2 and smh_c3
+
 target_weights = get_weights_v45(curr_regime, smh_cond)
 
 regime_info = {
@@ -158,7 +175,6 @@ regime_info = {
     4: ("🔴 R4 (패닉장)", "최대 방어 모드")
 }
 
-# 공통 차트 레이아웃
 chart_layout = dict(paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7', font=dict(family="Pretendard", color="#1A1A1A"), margin=dict(l=0, r=0, t=40, b=0))
 radar_layout = dict(height=200, margin=dict(l=10, r=10, t=15, b=15), paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7', font=dict(family="Pretendard", color="#1A1A1A"))
 regime_colors = {1: 'rgba(0, 0, 0, 0.02)', 2: 'rgba(0, 0, 0, 0.08)', 3: 'rgba(139, 0, 0, 0.1)', 4: 'rgba(139, 0, 0, 0.2)'}
@@ -166,19 +182,44 @@ regime_colors = {1: 'rgba(0, 0, 0, 0.02)', 2: 'rgba(0, 0, 0, 0.08)', 3: 'rgba(13
 # ==========================================
 # 4. 탭 구성
 # ==========================================
-tab1, tab2, tab3, tab4 = st.tabs(["I. 시장 분석관", "II. 역사적 폭락장 아카이브", "III. 초콜릿 보드 (8-Pack 레이더)", "IV. 매크로 뉴스 & AI 브리핑"])
+tab1, tab2, tab3, tab4 = st.tabs(["I. 시장 분석관 (판독 리포트)", "II. 역사적 폭락장 아카이브", "III. 초콜릿 보드 (8-Pack 레이더)", "IV. 매크로 뉴스 & AI 브리핑"])
 
 # ------------------------------------------
-# 탭 1: MARKET ANALYSIS
+# 탭 1: MARKET ANALYSIS & EXPLANATION
 # ------------------------------------------
 with tab1:
-    c1, c2 = st.columns([1, 1])
-    with c1:
+    col_regime, col_soxl, col_weight = st.columns([1.2, 1.2, 1])
+    
+    with col_regime:
         st.subheader("현재 시장 국면 (REGIME)")
         st.info(f"### {regime_info[curr_regime][0]}\n**적용 로직:** {regime_info[curr_regime][1]}")
-        if curr_regime != target_regime: st.warning(f"⏳ **상태 변경 대기 중:** 시장이 R{target_regime} 조건을 터치했습니다.")
-        else: st.success("✅ **상태 양호:** 현재 국면이 안정적으로 유지되고 있습니다.")
-    with c2:
+        
+        st.markdown("#### 🔍 국면 판독 알고리즘 해부")
+        st.markdown(f"- **① VIX 패닉 임계점 (< 40):** 현재 {vix_close:.2f} {'✅ 통과' if vix_close <= 40 else '❌ 패닉 (R4)'}")
+        st.markdown(f"- **② 장기 대세 지지선 (QQQ > 200MA):** 종가 ${qqq_close:.0f} vs 200선 ${qqq_ma200:.0f} {'✅ 지지 중' if qqq_close >= qqq_ma200 else '❌ 붕괴 (R3)'}")
+        st.markdown(f"- **③ 중단기 추세 정배열 (50MA ≥ 200MA):** 50선 ${qqq_ma50:.0f} vs 200선 ${qqq_ma200:.0f} {'✅ 정배열' if qqq_ma50 >= qqq_ma200 else '❌ 역배열'}")
+        st.markdown(f"- **④ VIX 휩쏘 방어 (5일선 < 25):** 현재 {vix_ma5:.2f} {'✅ 안정' if vix_ma5 < 25 else '❌ 변동성 경계'}")
+        
+        if curr_regime != target_regime: 
+            st.warning(f"**💡 위원회 의견:** 시장이 R{target_regime} 조건을 터치했으나, 휩쏘(가짜 신호) 방지를 위해 5일 연속 충족 여부를 대기하고 있습니다.")
+        else: 
+            st.success("**💡 위원회 의견:** 모든 조건이 현재 국면에 부합하여 안정적으로 유지되고 있습니다.")
+            
+    with col_soxl:
+        st.subheader("반도체(SOXL) 진입 판독관")
+        if smh_cond:
+            st.success("### 🔥 승인: SOXL 편입\n**적용 로직:** 3배수 반도체 공격적 진입")
+        else:
+            st.warning("### 🛡️ 기각: USD 편입\n**적용 로직:** 변동성 방어용 2배수 편입")
+            
+        st.markdown("#### 🔍 SOXL 3중 필터 해부")
+        st.markdown(f"- **① 정배열 추세 (SMH > 50MA):** 종가 ${smh_close:.1f} vs 50선 ${smh_ma50:.1f} {'✅ 상승 추세' if smh_c1 else '❌ 하락 추세'}")
+        st.markdown(f"- **② 급반등 모멘텀 (1M > 10% or 3M > 5%):** 1개월 {smh_1m*100:.1f}%, 3개월 {smh_3m*100:.1f}% {'✅ 모멘텀 확인' if smh_c2 else '❌ 모멘텀 부족'}")
+        st.markdown(f"- **③ 매수 심리 강도 (RSI > 50):** 현재 {smh_rsi:.1f} {'✅ 매수 우위' if smh_c3 else '❌ 매도 우위'}")
+        
+        st.markdown("> *SOXL은 가장 극단적인 변동성을 수반하므로, 위 3가지(추세, 모멘텀, 심리) 필터를 모두 통과해야만 편입을 허가합니다.*")
+
+    with col_weight:
         st.subheader("V4.5 목표 포트폴리오")
         w_df = pd.DataFrame(list(target_weights.items()), columns=['자산 (ASSET)', '비중 (WEIGHT)'])
         w_df = w_df[w_df['비중 (WEIGHT)'] > 0].sort_values(by='비중 (WEIGHT)', ascending=False)
@@ -187,6 +228,9 @@ with tab1:
 
     st.divider()
     st.subheader("기술적 차트 모니터링 (QQQ & TQQQ)")
+    if last_row['TQQQ'] < last_row['TQQQ_MA200'] and last_row['QQQ'] >= last_row['QQQ_MA200']:
+        st.error("🚨 **[선행 경보 발동]** QQQ는 아직 200일선 위지만, **TQQQ가 200일선을 이탈했습니다.** 곧 R3로 강등될 위험이 높습니다!")
+        
     chart_col1, chart_col2 = st.columns(2)
     df_recent = df.iloc[-500:]
     
@@ -243,22 +287,25 @@ with tab2:
         st.info(f"💡 **시뮬레이터 분석:** 이 위기 구간(총 {len(df_crisis)} 거래일) 동안, V4.5 시스템은 **{r3_r4_days}일({r3_r4_days/len(df_crisis)*100:.1f}%)** 동안 붉은색 영역(R3/R4)에 머물며 **계좌의 녹아내림을 완벽하게 방어**했습니다.")
 
 # ------------------------------------------
-# 탭 3: 8-PACK EARLY WARNING RADAR (ALL VISUALIZED)
+# 탭 3: 8-PACK EARLY WARNING RADAR 
 # ------------------------------------------
 with tab3:
-    st.subheader("조기 경보 초콜릿 보드 (8-Pack 시각화 레이더)")
-    st.write("모든 텍스트 지표를 차트로 변환하고 4x2 그리드 배열로 고정했습니다. 시장의 8가지 맥박을 한눈에 감시하십시오.")
+    st.subheader("조기 경보 초콜릿 보드 (8-Pack Visual Radar)")
+    st.markdown("""
+    > **"군중은 속일 수 있어도, 돈의 흔적은 속일 수 없다."**
+    > 
+    > 이곳은 단순한 지표의 나열이 아닙니다. 월스트리트 거대 자본(Smart Money)의 은밀한 자금 이동과 군중의 비이성적 심리 상태를 꿰뚫어 보는 **8개의 정밀 광학 렌즈**입니다. 
+    > 표면적인 지수 상승에 속지 마십시오. 감정을 배제하고 오직 차트가 가리키는 냉혹한 진실에만 집중하십시오.
+    """)
+    st.divider()
     
-    # 분석용 데이터 슬라이싱 (최근 120일)
     df_view = df.iloc[-120:]
-    
     row1 = st.columns(4)
     row2 = st.columns(4)
     
     # ---------------- ROW 1 ----------------
     with row1[0]:
         st.markdown("##### 1. 스마트 DCA (RSI)")
-        qqq_rsi = last_row['QQQ_RSI']
         if qqq_rsi < 40 and last_row['QQQ'] < last_row['QQQ_MA200']: st.success("🔥 매수: 공포/과매도. 현금 투입.")
         elif qqq_rsi > 70: st.error("⚠️ 보류: 단기 과열. 현금 비축.")
         else: st.info("🟢 정상: 기계적 적립 유지.")
@@ -293,7 +340,6 @@ with tab3:
         elif fg_score > 70: st.error("⚠️ 극단적 탐욕: 추격 매수 자제.")
         else: st.info("🟢 중립: 심리 상태 안정적.")
         
-        # 글씨 잘림 방지를 위해 차트 안의 title 속성 제거하고 마진(여백) 최적화
         fig3 = go.Figure(go.Indicator(
             mode="gauge+number", value=fg_score, domain={'x': [0, 1], 'y': [0, 1]},
             gauge={'axis': {'range': [0, 100]}, 'bar': {'color': "#1A1A1A"},
@@ -372,15 +418,12 @@ with tab4:
     try:
         search_query = urllib.parse.quote("미국증시 OR 연준 OR 나스닥 OR 금리")
         url = f"https://news.google.com/rss/search?q={search_query}&hl=ko&gl=KR&ceid=KR:ko"
-        
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         xml_data = urllib.request.urlopen(req).read()
         root = ET.fromstring(xml_data)
         items = root.findall('.//item')[:15]
-        
         if items:
-            for item in items:
-                headlines_for_ai.append(item.find('title').text)
+            for item in items: headlines_for_ai.append(item.find('title').text)
     except Exception as e:
         st.error(f"통신망 연결에 실패했습니다: {e}")
 
