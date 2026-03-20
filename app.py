@@ -424,8 +424,9 @@ with tab4:
             else:
                 try:
                     with st.spinner("최신 전보를 해독하여 분석 중입니다..."):
+                        # 안정성을 위해 gemini-pro 모델 적용
                         genai.configure(api_key=api_key)
-                        model = genai.GenerativeModel('gemini-1.5-flash')
+                        model = genai.GenerativeModel('gemini-pro')
                         
                         prompt = (
                             "너는 1920년대 월스트리트의 날카롭고 이성적인 퀀트 애널리스트야. 말투도 딱딱하고 고전적인 비즈니스 신문 칼럼니스트처럼 해줘. "
