@@ -266,25 +266,28 @@ with tab2:
     crises = {"2008 금융위기 (서브프라임)": ("2007-08-01", "2009-12-31"), "2020 코로나 팬데믹": ("2020-01-01", "2020-12-31"), "2022 인플레이션 쇼크": ("2021-11-01", "2023-03-31")}
     selected_crisis = st.selectbox("조회할 역사적 위기를 선택하십시오:", list(crises.keys()))
     s_date, e_date = crises[selected_crisis]
-    df_crisis = df.loc[s_date:e_date]
     
-    if len(df_crisis) > 0:
-        crisis_fig = go.Figure()
-        crisis_fig.add_trace(go.Scatter(x=df_crisis.index, y=df_crisis['QQQ'], name='QQQ (나스닥)', line=dict(color='#1A1A1A', width=2)))
-        crisis_fig.add_trace(go.Scatter(x=df_crisis.index, y=df_crisis['QQQ_MA200'], name='200일선', line=dict(color='#8B0000', width=2, dash='dash')))
-        
-        r3_r4_days = 0
-        for i in range(1, len(df_crisis)):
-            if df_crisis['Regime'].iloc[i-1] != df_crisis['Regime'].iloc[i] or i == 1:
-                start_idx = df_crisis.index[i]
-                curr_r = df_crisis['Regime'].iloc[i]
-            if i == len(df_crisis)-1 or df_crisis['Regime'].iloc[i] != df_crisis['Regime'].iloc[i+1]:
-                crisis_fig.add_vrect(x0=start_idx, x1=df_crisis.index[i], fillcolor=regime_colors[curr_r], opacity=1, layer="below", line_width=0)
-            if df_crisis['Regime'].iloc[i] in [3, 4]: r3_r4_days += 1
-                
-        crisis_fig.update_layout(title=f"V4.5 백테스트 궤적: {selected_crisis}", height=450, **chart_layout)
-        st.plotly_chart(crisis_fig, use_container_width=True)
-        st.info(f"💡 **시뮬레이터 분석:** 이 위기 구간(총 {len(df_crisis)} 거래일) 동안, V4.5 시스템은 **{r3_r4_days}일({r3_r4_days/len(df_crisis)*100:.1f}%)** 동안 붉은색 영역(R3/R4)에 머물며 **계좌의 녹아내림을 완벽하게 방어**했습니다.")
+    try:
+        df_crisis = df.loc[s_date:e_date]
+        if len(df_crisis) > 0:
+            crisis_fig = go.Figure()
+            crisis_fig.add_trace(go.Scatter(x=df_crisis.index, y=df_crisis['QQQ'], name='QQQ (나스닥)', line=dict(color='#1A1A1A', width=2)))
+            crisis_fig.add_trace(go.Scatter(x=df_crisis.index, y=df_crisis['QQQ_MA200'], name='200일선', line=dict(color='#8B0000', width=2, dash='dash')))
+            
+            r3_r4_days = 0
+            for i in range(1, len(df_crisis)):
+                if df_crisis['Regime'].iloc[i-1] != df_crisis['Regime'].iloc[i] or i == 1:
+                    start_idx = df_crisis.index[i]
+                    curr_r = df_crisis['Regime'].iloc[i]
+                if i == len(df_crisis)-1 or df_crisis['Regime'].iloc[i] != df_crisis['Regime'].iloc[i+1]:
+                    crisis_fig.add_vrect(x0=start_idx, x1=df_crisis.index[i], fillcolor=regime_colors[curr_r], opacity=1, layer="below", line_width=0)
+                if df_crisis['Regime'].iloc[i] in [3, 4]: r3_r4_days += 1
+                    
+            crisis_fig.update_layout(title=f"V4.5 백테스트 궤적: {selected_crisis}", height=450, **chart_layout)
+            st.plotly_chart(crisis_fig, use_container_width=True)
+            st.info(f"💡 **시뮬레이터 분석:** 이 위기 구간(총 {len(df_crisis)} 거래일) 동안, V4.5 시스템은 **{r3_r4_days}일({r3_r4_days/len(df_crisis)*100:.1f}%)** 동안 붉은색 영역(R3/R4)에 머물며 **계좌의 녹아내림을 완벽하게 방어**했습니다.")
+    except Exception as e:
+        st.error("데이터 범위 오류: 2008년 데이터를 불러오지 못했습니다. 며칠 후 다시 시도해주세요.")
 
 # ------------------------------------------
 # 탭 3: 8-PACK EARLY WARNING RADAR 
@@ -306,6 +309,7 @@ with tab3:
     # ---------------- ROW 1 ----------------
     with row1[0]:
         st.markdown("##### 1. 스마트 DCA (RSI)")
+        qqq_rsi = last_row['QQQ_RSI'] # 💡 에러 발생했던 RSI 변수 선언 추가 완료!
         if qqq_rsi < 40 and last_row['QQQ'] < last_row['QQQ_MA200']: st.success("🔥 매수: 공포/과매도. 현금 투입.")
         elif qqq_rsi > 70: st.error("⚠️ 보류: 단기 과열. 현금 비축.")
         else: st.info("🟢 정상: 기계적 적립 유지.")
