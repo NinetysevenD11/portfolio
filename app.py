@@ -6,6 +6,7 @@ import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import urllib.request
+import urllib.parse
 import xml.etree.ElementTree as ET
 import warnings
 
@@ -39,16 +40,19 @@ def load_data():
     df = pd.DataFrame(index=data.index)
     for t in TICKERS: df[t] = data[t]
     
+    # 기본 이평선
     df['QQQ_MA50'] = df['QQQ'].rolling(window=50).mean()
     df['QQQ_MA200'] = df['QQQ'].rolling(window=200).mean()
     df['TQQQ_MA200'] = df['TQQQ'].rolling(window=200).mean() 
     df['SMH_MA50'] = df['SMH'].rolling(window=50).mean()
     
+    # V4.5 개선 지표
     df['VIX_MA5'] = df['^VIX'].rolling(window=5).mean()
     df['SMH_3M_Ret'] = df['SMH'].pct_change(periods=63)
     df['SMH_1M_Ret'] = df['SMH'].pct_change(periods=21)
     df['SMH_RSI'] = ta.rsi(df['SMH'], length=14)
     
+    # 조기 경보 지표
     df['HYG_IEF_Ratio'] = df['HYG'] / df['IEF']
     df['HYG_IEF_MA50'] = df['HYG_IEF_Ratio'].rolling(window=50).mean()
     df['QQQ_20d_Ret'] = df['QQQ'].pct_change(periods=20)
@@ -261,29 +265,32 @@ with tab3:
         st.metric("QQQE (동일가중) 20일 수익률", f"{qqqe_ret*100:+.2f}%")
 
 # ------------------------------------------
-# 탭 4: 매크로 뉴스룸 (신규 추가)
+# 탭 4: 매크로 뉴스룸
 # ------------------------------------------
 with tab4:
     st.subheader("📰 실시간 글로벌 매크로 뉴스")
     st.warning("⚠️ **[멘탈 주의보]** 뉴스는 단순 참고용입니다. 자극적인 헤드라인에 흔들리지 마시고, **반드시 V4.5 시스템의 숫자에 기반하여 매매하세요!**")
     
     try:
-        # 구글 뉴스 RSS 피드 (미국증시, 연준, 나스닥 관련)
-        url = "https://news.google.com/rss/search?q=미국증시+OR+연준+OR+나스닥+OR+금리&hl=ko&gl=KR&ceid=KR:ko"
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        search_query = urllib.parse.quote("미국증시 OR 연준 OR 나스닥 OR 금리")
+        url = f"https://news.google.com/rss/search?q={search_query}&hl=ko&gl=KR&ceid=KR:ko"
+        
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
         xml_data = urllib.request.urlopen(req).read()
         root = ET.fromstring(xml_data)
         items = root.findall('.//item')
         
-        for item in items[:15]: # 최신 15개 뉴스 가져오기
-            title = item.find('title').text
-            link = item.find('link').text
-            pubDate = item.find('pubDate').text
-            
-            # 날짜 포맷 정리 (UTC -> KST 변환 생략하고 단순 문자열 슬라이싱)
-            clean_date = pubDate[:-4] 
-            
-            st.markdown(f"- [{title}]({link}) <span style='color:gray; font-size:0.8em;'>({clean_date})</span>", unsafe_allow_html=True)
-            
+        if not items:
+            st.info("현재 불러올 수 있는 최신 뉴스가 없습니다.")
+        else:
+            for item in items[:15]:
+                title = item.find('title').text
+                link = item.find('link').text
+                pubDate = item.find('pubDate').text
+                
+                clean_date = pubDate[:-4] if pubDate else ""
+                
+                st.markdown(f"- [{title}]({link}) <span style='color:gray; font-size:0.8em;'>({clean_date})</span>", unsafe_allow_html=True)
+                
     except Exception as e:
-        st.error("뉴스를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.")
+        st.error(f"뉴스를 불러오는 중 오류가 발생했습니다. 상세 에러: {e}")
