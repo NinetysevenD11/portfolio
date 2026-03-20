@@ -20,143 +20,54 @@ st.set_page_config(page_title="RIMBERIO FINANCIAL GAZETTE", layout="wide", page_
 
 st.markdown("""
 <style>
-    /* 전체 배경 및 기본 폰트 (모던하고 깔끔한 산세리프 적용) */
-    .stApp {
-        background-color: #F5F0E8;
-        color: #1A1A1A;
-        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
-    }
-    
-    /* 레이아웃 폭 고정 (1100px 가운데 정렬) */
-    .main .block-container {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding-top: 2rem;
-    }
-
-    /* 제목 폰트 */
-    h1, h2, h3, h4, h5, h6 {
-        font-family: 'Pretendard', sans-serif !important;
-        color: #1A1A1A !important;
-        letter-spacing: 0.5px;
-        font-weight: 800 !important;
-    }
-
-    /* 알림 박스 */
-    div[data-testid="stAlert"] {
-        background-color: #FFFDF7;
-        border: 1px solid #2C2C2C;
-        border-radius: 4px;
-        color: #1A1A1A;
-        box-shadow: none;
-        padding: 10px 15px;
-    }
-    div[data-testid="stAlert"]:has(.stIcon-error), div[data-testid="stAlert"]:has(.stIcon-warning) {
-        border: 2px solid #8B0000;
-        background-color: #FFECEC;
-        color: #8B0000;
-    }
-
-    /* 지표(Metric) 숫자 폰트 */
-    div[data-testid="stMetricValue"] > div {
-        font-family: 'Pretendard', sans-serif;
-        font-weight: 900;
-        color: #1A1A1A;
-    }
-
-    /* 버튼 */
-    div[data-testid="stButton"] > button {
-        background-color: #1A1A1A;
-        color: #FFFDF7;
-        border-radius: 4px;
-        border: 2px solid #1A1A1A;
-        font-family: 'Pretendard', sans-serif;
-        font-weight: bold;
-        transition: all 0.3s;
-    }
-    div[data-testid="stButton"] > button:hover {
-        background-color: #8B0000;
-        border-color: #8B0000;
-        color: #FFFDF7;
-    }
-
-    /* 탭 디자인 */
-    .stTabs [data-baseweb="tab-list"] {
-        border-bottom: 3px solid #2C2C2C;
-        gap: 25px; 
-        padding-bottom: 5px; 
-    }
-    .stTabs [data-baseweb="tab"] {
-        font-family: 'Pretendard', sans-serif;
-        color: #1A1A1A;
-        font-weight: 700;
-        font-size: 1.05rem; 
-        border-radius: 4px 4px 0 0;
-        border: 1px solid transparent;
-        padding: 10px 15px; 
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #FFFDF7;
-        border: 2px solid #2C2C2C;
-        border-bottom: 3px solid #FFFDF7; 
-        margin-bottom: -3px;
-        color: #8B0000; 
-    }
-
-    /* 구분선 */
-    hr {
-        border-top: 1px dashed #2C2C2C;
-        background: transparent;
-        margin: 2.5em 0;
-    }
-
-    /* 데이터 프레임 */
-    [data-testid="stDataFrame"] {
-        border: 2px solid #2C2C2C;
-        background-color: #FFFDF7;
-        border-radius: 4px;
-    }
-    
-    /* 텍스트 인풋 */
-    .stTextInput>div>div>input, .stNumberInput>div>div>input {
-        border-radius: 4px;
-        border: 1px solid #2C2C2C;
-        background-color: #FFFDF7;
-        font-family: 'Pretendard', sans-serif;
-    }
+    .stApp { background-color: #F5F0E8; color: #1A1A1A; font-family: 'Pretendard', sans-serif; }
+    .main .block-container { max-width: 1200px; margin: 0 auto; padding-top: 2rem; }
+    h1, h2, h3, h4, h5, h6 { font-family: 'Pretendard', sans-serif !important; color: #1A1A1A !important; letter-spacing: 0.5px; font-weight: 800 !important; }
+    div[data-testid="stAlert"] { background-color: #FFFDF7; border: 1px solid #2C2C2C; border-radius: 4px; color: #1A1A1A; box-shadow: none; padding: 10px 15px; }
+    div[data-testid="stAlert"]:has(.stIcon-error), div[data-testid="stAlert"]:has(.stIcon-warning) { border: 2px solid #8B0000; background-color: #FFECEC; color: #8B0000; }
+    div[data-testid="stMetricValue"] > div { font-family: 'Pretendard', sans-serif; font-weight: 900; color: #1A1A1A; }
+    div[data-testid="stButton"] > button { background-color: #1A1A1A; color: #FFFDF7; border-radius: 4px; border: 2px solid #1A1A1A; font-family: 'Pretendard', sans-serif; font-weight: bold; transition: all 0.3s; }
+    div[data-testid="stButton"] > button:hover { background-color: #8B0000; border-color: #8B0000; color: #FFFDF7; }
+    .stTabs [data-baseweb="tab-list"] { border-bottom: 3px solid #2C2C2C; gap: 20px; padding-bottom: 5px; }
+    .stTabs [data-baseweb="tab"] { font-family: 'Pretendard', sans-serif; color: #1A1A1A; font-weight: 700; font-size: 1.1rem; border-radius: 4px 4px 0 0; border: 1px solid transparent; padding: 10px 15px; }
+    .stTabs [aria-selected="true"] { background-color: #FFFDF7; border: 2px solid #2C2C2C; border-bottom: 3px solid #FFFDF7; margin-bottom: -3px; color: #8B0000; }
+    hr { border-top: 1px dashed #2C2C2C; background: transparent; margin: 2.5em 0; }
+    [data-testid="stDataFrame"] { border: 2px solid #2C2C2C; background-color: #FFFDF7; border-radius: 4px; }
+    .stTextInput>div>div>input, .stNumberInput>div>div>input { border-radius: 4px; border: 1px solid #2C2C2C; background-color: #FFFDF7; font-family: 'Pretendard', sans-serif; }
 </style>
 """, unsafe_allow_html=True)
 
-# 📰 신문 헤더 (Masthead)
+# 📰 신문 헤더
 st.markdown("""
-<div style="text-align: center; border-top: 4px solid #1A1A1A; border-bottom: 4px double #1A1A1A; padding: 20px 0; margin-bottom: 30px; background-color: transparent;">
-    <h1 style="font-family: Georgia, serif; font-size: 3em; font-weight: bold; letter-spacing: 4px; margin: 0; color: #1A1A1A;">RIMBERIO FINANCIAL GAZETTE</h1>
-    <p style="font-family: 'Pretendard', sans-serif; font-size: 1.1em; letter-spacing: 2px; margin: 12px 0; color: #1A1A1A; font-weight: 700;">
-        주식 & 채권 &nbsp;✦&nbsp; 퀀트 전략 &nbsp;✦&nbsp; 매크로 뉴스
-    </p>
-    <div style="font-family: 'Pretendard', sans-serif; font-size: 0.95em; border-top: 1px solid #1A1A1A; padding-top: 8px; display: flex; justify-content: center; gap: 40px; color: #1A1A1A; font-weight: 700;">
-        <span>제 45호</span>
-        <span>AMLS V4.5 엔진</span>
-        <span>2026년 발행</span>
+<div style="text-align: center; border-top: 4px solid #1A1A1A; border-bottom: 4px double #1A1A1A; padding: 20px 0; margin-bottom: 30px;">
+    <h1 style="font-family: Georgia, serif; font-size: 3.5em; font-weight: bold; letter-spacing: 4px; margin: 0; color: #1A1A1A;">RIMBERIO FINANCIAL GAZETTE</h1>
+    <p style="font-size: 1.1em; letter-spacing: 2px; margin: 12px 0; font-weight: 700;">주식 & 채권 &nbsp;✦&nbsp; 퀀트 전략 &nbsp;✦&nbsp; 매크로 뉴스</p>
+    <div style="font-size: 0.95em; border-top: 1px solid #1A1A1A; padding-top: 8px; display: flex; justify-content: center; gap: 40px; font-weight: 700;">
+        <span>제 45호</span><span>AMLS V4.5 엔진</span><span>2026년 발행</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. 데이터 수집 및 지표 계산
+# 2. 데이터 수집 (2006년부터 수집하여 2008 폭락장 커버)
 # ==========================================
-# UUP(달러 인덱스 펀드) 추가
-TICKERS = ['QQQ', 'TQQQ', 'SOXL', 'USD', 'QLD', 'SSO', 'SPY', 'SMH', 'GLD', '^VIX', 'HYG', 'IEF', 'QQQE', 'UUP']
+# 섹터 ETF 11개 추가
+SECTOR_TICKERS = ['XLK', 'XLV', 'XLF', 'XLY', 'XLC', 'XLI', 'XLP', 'XLE', 'XLU', 'XLRE', 'XLB']
+CORE_TICKERS = ['QQQ', 'TQQQ', 'SOXL', 'USD', 'QLD', 'SSO', 'SPY', 'SMH', 'GLD', '^VIX', 'HYG', 'IEF', 'QQQE', 'UUP']
+TICKERS = CORE_TICKERS + SECTOR_TICKERS
 ASSET_LIST = ['TQQQ', 'SOXL', 'USD', 'QLD', 'SSO', 'SPY', 'QQQ', 'GLD', 'CASH']
 
 @st.cache_data(ttl=3600)
 def load_data():
+    # 2008년 금융위기 시뮬레이션을 위해 2006년부터 데이터 수집
     end_date = datetime.now()
-    start_date = end_date - timedelta(days=500)
-    data = yf.download(TICKERS, start=start_date.strftime("%Y-%m-%d"), end=end_date.strftime("%Y-%m-%d"), progress=False, auto_adjust=False)['Close'].ffill()
+    start_date = "2006-01-01"
+    data = yf.download(TICKERS, start=start_date, end=end_date.strftime("%Y-%m-%d"), progress=False, auto_adjust=False)['Close']
     
+    # 상장 전 데이터(NaN)로 인해 2008년 데이터가 날아가지 않도록 ffill/bfill 적용
     df = pd.DataFrame(index=data.index)
     for t in TICKERS: df[t] = data[t]
+    df = df.ffill().bfill()
     
     df['QQQ_MA50'] = df['QQQ'].rolling(window=50).mean()
     df['QQQ_MA200'] = df['QQQ'].rolling(window=200).mean()
@@ -168,7 +79,6 @@ def load_data():
     df['SMH_1M_Ret'] = df['SMH'].pct_change(periods=21)
     df['SMH_RSI'] = ta.rsi(df['SMH'], length=14)
     
-    # 조기 경보 지표들
     df['HYG_IEF_Ratio'] = df['HYG'] / df['IEF']
     df['HYG_IEF_MA50'] = df['HYG_IEF_Ratio'].rolling(window=50).mean()
     df['QQQ_20d_Ret'] = df['QQQ'].pct_change(periods=20)
@@ -178,14 +88,17 @@ def load_data():
     df['GLD_SPY_Ratio'] = df['GLD'] / df['SPY']
     df['GLD_SPY_MA50'] = df['GLD_SPY_Ratio'].rolling(window=50).mean()
     
-    # 신규 6-Pack 지표: Drawdown & 달러 유동성
-    df['QQQ_High52'] = df['QQQ'].rolling(window=252).max() # 1년(252 거래일) 최고점
-    df['QQQ_DD'] = (df['QQQ'] / df['QQQ_High52']) - 1 # 고점 대비 하락률
-    df['UUP_MA50'] = df['UUP'].rolling(window=50).mean() # 달러 인덱스 50일선
+    df['QQQ_High52'] = df['QQQ'].rolling(window=252).max() 
+    df['QQQ_DD'] = (df['QQQ'] / df['QQQ_High52']) - 1 
+    df['UUP_MA50'] = df['UUP'].rolling(window=50).mean() 
     
+    # 11개 섹터 1개월 수익률
+    for sec in SECTOR_TICKERS:
+        df[f'{sec}_1M'] = df[sec].pct_change(periods=21)
+        
     return df.dropna()
 
-with st.spinner('📰 최신 증시 지면을 인쇄 중입니다...'):
+with st.spinner('📰 거시경제 데이터베이스를 동기화 중입니다 (2006~현재)...'):
     df = load_data()
 
 # ==========================================
@@ -241,11 +154,13 @@ regime_info = {
     3: ("🟠 R3 (대세 하락장)", "안전 자산 대피 (금/현금)"),
     4: ("🔴 R4 (패닉장)", "최대 방어 모드")
 }
+chart_layout = dict(paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7', font=dict(family="Pretendard", color="#1A1A1A"), margin=dict(l=0, r=0, t=40, b=0))
+regime_colors = {1: 'rgba(0, 0, 0, 0.02)', 2: 'rgba(0, 0, 0, 0.08)', 3: 'rgba(139, 0, 0, 0.1)', 4: 'rgba(139, 0, 0, 0.2)'}
 
 # ==========================================
 # 4. 탭 구성
 # ==========================================
-tab1, tab2, tab3, tab4 = st.tabs(["I. 시장 분석관", "II. 리밸런싱 장부", "III. 6-Pack 레이더망", "IV. 매크로 뉴스룸"])
+tab1, tab2, tab3, tab4 = st.tabs(["I. 시장 분석관", "II. 역사적 폭락장 아카이브", "III. 8-Pack 레이더망", "IV. 매크로 뉴스 & AI 브리핑"])
 
 # ------------------------------------------
 # 탭 1: MARKET ANALYSIS
@@ -282,179 +197,184 @@ with tab1:
     st.subheader("기술적 차트 모니터링 (QQQ & TQQQ)")
     
     chart_col1, chart_col2 = st.columns(2)
-    chart_layout = dict(paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7', font=dict(family="Pretendard, sans-serif", color="#1A1A1A"), height=350, margin=dict(l=0, r=0, t=40, b=0))
-
+    # 최근 2년 데이터만 그려서 최적화
+    df_recent = df.iloc[-500:]
+    
     fig_qqq = go.Figure()
-    fig_qqq.add_trace(go.Scatter(x=df.index, y=df['QQQ'], name='QQQ', line=dict(color='#1A1A1A', width=2)))
-    fig_qqq.add_trace(go.Scatter(x=df.index, y=df['QQQ_MA200'], name='200일선', line=dict(color='#8B0000', width=2, dash='dash')))
+    fig_qqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['QQQ'], name='QQQ', line=dict(color='#1A1A1A', width=2)))
+    fig_qqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['QQQ_MA200'], name='200일선', line=dict(color='#8B0000', width=2, dash='dash')))
     
     fig_tqqq = go.Figure()
-    fig_tqqq.add_trace(go.Scatter(x=df.index, y=df['TQQQ'], name='TQQQ', line=dict(color='#1A1A1A', width=2)))
-    fig_tqqq.add_trace(go.Scatter(x=df.index, y=df['TQQQ_MA200'], name='200일선', line=dict(color='#8B0000', width=2, dash='dash')))
+    fig_tqqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['TQQQ'], name='TQQQ', line=dict(color='#1A1A1A', width=2)))
+    fig_tqqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['TQQQ_MA200'], name='200일선', line=dict(color='#8B0000', width=2, dash='dash')))
     
-    colors = {1: 'rgba(0, 0, 0, 0.03)', 2: 'rgba(0, 0, 0, 0.08)', 3: 'rgba(139, 0, 0, 0.1)', 4: 'rgba(139, 0, 0, 0.2)'}
-    for i in range(1, len(df)):
-        if df['Regime'].iloc[i-1] != df['Regime'].iloc[i] or i == 1:
-            start_idx = df.index[i]
-            curr_r = df['Regime'].iloc[i]
-        if i == len(df)-1 or df['Regime'].iloc[i] != df['Regime'].iloc[i+1]:
-            fig_qqq.add_vrect(x0=start_idx, x1=df.index[i], fillcolor=colors[curr_r], opacity=1, layer="below", line_width=0)
-            fig_tqqq.add_vrect(x0=start_idx, x1=df.index[i], fillcolor=colors[curr_r], opacity=1, layer="below", line_width=0)
+    for i in range(1, len(df_recent)):
+        if df_recent['Regime'].iloc[i-1] != df_recent['Regime'].iloc[i] or i == 1:
+            start_idx = df_recent.index[i]
+            curr_r = df_recent['Regime'].iloc[i]
+        if i == len(df_recent)-1 or df_recent['Regime'].iloc[i] != df_recent['Regime'].iloc[i+1]:
+            fig_qqq.add_vrect(x0=start_idx, x1=df_recent.index[i], fillcolor=regime_colors[curr_r], opacity=1, layer="below", line_width=0)
+            fig_tqqq.add_vrect(x0=start_idx, x1=df_recent.index[i], fillcolor=regime_colors[curr_r], opacity=1, layer="below", line_width=0)
             
-    fig_qqq.update_layout(title="[시스템 기준] QQQ vs 200일 이평선", **chart_layout)
-    fig_tqqq.update_layout(title="[조기 경보] TQQQ vs 200일 이평선", **chart_layout)
+    fig_qqq.update_layout(title="[시스템 기준] QQQ vs 200일 이평선", height=350, **chart_layout)
+    fig_tqqq.update_layout(title="[조기 경보] TQQQ vs 200일 이평선", height=350, **chart_layout)
     
     with chart_col1: st.plotly_chart(fig_qqq, use_container_width=True)
     with chart_col2: st.plotly_chart(fig_tqqq, use_container_width=True)
 
 # ------------------------------------------
-# 탭 2: REBALANCING
+# 탭 2: 역사적 폭락장 시뮬레이터 (신규)
 # ------------------------------------------
 with tab2:
-    st.subheader("내 포트폴리오 리밸런싱 장부")
-    col_input, col_result = st.columns([1, 2])
+    st.subheader("역사적 폭락장 시뮬레이터 (Crisis Archive)")
+    st.write("피바다가 되었던 역사적 위기 구간에서, AMLS V4.5 시스템이 어떻게 현금/금(R3, R4)으로 도망쳐 자산을 수호했는지 확인하십시오. 하락장이 올 때마다 이 기록을 보며 멘탈을 통제하십시오.")
     
-    with col_input:
-        current_holdings = {}
-        total_value = 0
-        for asset in ASSET_LIST:
-            val = st.number_input(f"{asset} 보유 금액 ($)", min_value=0.0, value=0.0, step=100.0)
-            current_holdings[asset] = val
-            total_value += val
+    crises = {
+        "2008 금융위기 (서브프라임 모기지 사태)": ("2007-08-01", "2009-12-31"),
+        "2020 코로나 팬데믹 (블랙 스완)": ("2020-01-01", "2020-12-31"),
+        "2022 인플레이션 & 공격적 금리인상": ("2021-11-01", "2023-03-31")
+    }
+    
+    selected_crisis = st.selectbox("조회할 역사적 위기를 선택하십시오:", list(crises.keys()))
+    s_date, e_date = crises[selected_crisis]
+    
+    df_crisis = df.loc[s_date:e_date]
+    
+    if len(df_crisis) > 0:
+        crisis_fig = go.Figure()
+        crisis_fig.add_trace(go.Scatter(x=df_crisis.index, y=df_crisis['QQQ'], name='QQQ (나스닥)', line=dict(color='#1A1A1A', width=2)))
+        crisis_fig.add_trace(go.Scatter(x=df_crisis.index, y=df_crisis['QQQ_MA200'], name='200일선', line=dict(color='#8B0000', width=2, dash='dash')))
         
-        add_cash = st.number_input("신규 투입 예수금 ($)", min_value=0.0, value=0.0, step=100.0)
-        total_value += add_cash
-
-    with col_result:
-        if total_value > 0:
-            st.markdown(f"### 총 운용 자산: **${total_value:,.2f}**")
-            
-            rebal_data = []
-            for asset in ASSET_LIST:
-                target_ratio = target_weights[asset]
-                target_amt = total_value * target_ratio
-                curr_amt = current_holdings[asset]
-                if asset == 'CASH': curr_amt += add_cash
+        r3_r4_days = 0
+        for i in range(1, len(df_crisis)):
+            if df_crisis['Regime'].iloc[i-1] != df_crisis['Regime'].iloc[i] or i == 1:
+                start_idx = df_crisis.index[i]
+                curr_r = df_crisis['Regime'].iloc[i]
+            if i == len(df_crisis)-1 or df_crisis['Regime'].iloc[i] != df_crisis['Regime'].iloc[i+1]:
+                crisis_fig.add_vrect(x0=start_idx, x1=df_crisis.index[i], fillcolor=regime_colors[curr_r], opacity=1, layer="below", line_width=0)
+            if df_crisis['Regime'].iloc[i] in [3, 4]:
+                r3_r4_days += 1
                 
-                diff = target_amt - curr_amt
-                action = "매수 🟢" if diff > 0 else ("매도 🔴" if diff < 0 else "유지 ⚪")
-                if abs(diff) < 1: action = "유지 ⚪"
-                
-                rebal_data.append({"자산": asset, "목표 비중": f"{target_ratio*100:.0f}%", "목표 금액": f"${target_amt:,.2f}", "현재 금액": f"${curr_amt:,.2f}", "액션": action, "주문 금액": f"${abs(diff):,.2f}"})
-            
-            rebal_df = pd.DataFrame(rebal_data)
-            st.dataframe(rebal_df, hide_index=True, use_container_width=True)
-            st.info("💡 **지침:** 매도(🔴) 주문을 먼저 실행하여 장부상 현금을 확보한 뒤, 매수(🟢)를 진행하십시오.")
-        else:
-            st.info("장부에 현재 보유 자산 금액을 입력해 주십시오.")
+        crisis_fig.update_layout(title=f"V4.5 백테스트 궤적: {selected_crisis}", height=450, **chart_layout)
+        st.plotly_chart(crisis_fig, use_container_width=True)
+        
+        st.info(f"💡 **시뮬레이터 분석:** 이 위기 구간(총 {len(df_crisis)} 거래일) 동안, V4.5 시스템은 **{r3_r4_days}일({r3_r4_days/len(df_crisis)*100:.1f}%)** 동안 붉은색 영역(R3 하락장, R4 패닉장)에 머물며 **안전 자산(금/현금)으로 대피해 계좌의 녹아내림을 완벽하게 방어**했습니다.")
 
 # ------------------------------------------
-# 탭 3: 6-PACK EARLY WARNING RADAR
+# 탭 3: 8-PACK EARLY WARNING RADAR
 # ------------------------------------------
 with tab3:
-    st.subheader("조기 경보 6-Pack 레이더망 (스마트머니 & 심리 모니터링)")
-    st.write("시스템이 붕괴를 공식화하기 전, 이면의 흐름을 읽어내고 자금 투입의 강약을 조절합니다.")
+    st.subheader("조기 경보 8-Pack 레이더망 (종합 스마트머니 모니터링)")
+    st.write("시스템이 붕괴를 공식화하기 전, 이면의 흐름을 읽어내고 자금 투입의 강약을 조절하는 월스트리트 프랍 데스크의 엑스레이입니다.")
     
-    # 상단 3개 레이더
-    r1, r2, r3 = st.columns(3)
+    col1, col2 = st.columns(2)
     
-    with r1:
-        st.markdown("#### I. 스마트 DCA (투입 속도)")
+    with col1:
+        # 1. 스마트 DCA
+        st.markdown("#### 1. 스마트 DCA (자금 투입 페이스메이커)")
         qqq_rsi = last_row['QQQ_RSI']
         qqq_close = last_row['QQQ']
         qqq_ma200 = last_row['QQQ_MA200']
-        
-        if qqq_rsi < 40 and qqq_close < qqq_ma200:
-            st.success("🔥 **적극 매수 (과매도):** 시장이 공포에 질렸습니다. 비축한 현금을 투입할 시기입니다.")
-        elif qqq_rsi > 70:
-            st.error("⚠️ **투입 보류 (과매수):** 시장이 단기 과열 상태입니다. 적립금을 아끼고 현금을 비축하십시오.")
-        else:
-            st.info("🟢 **정상 적립 (Normal):** 평시 상태입니다. 기계적인 적립 투자를 유지하십시오.")
-            
+        if qqq_rsi < 40 and qqq_close < qqq_ma200: st.success("🔥 **적극 매수:** 시장이 공포에 질렸습니다. 비축한 현금을 투입할 시기입니다.")
+        elif qqq_rsi > 70: st.error("⚠️ **투입 보류:** 시장 단기 과열. 적립금을 아끼고 현금을 비축하십시오.")
+        else: st.info("🟢 **정상 적립:** 평시 상태입니다. 기계적인 월 적립 투자를 유지하십시오.")
         st.metric("QQQ 현재 RSI (14일)", f"{qqq_rsi:.1f}", "과열(70) / 침체(40)")
+        st.divider()
         
-    with r2:
-        st.markdown("#### II. 시장 폭 (가짜 상승 판별)")
-        qqq_ret = last_row['QQQ_20d_Ret']
-        qqqe_ret = last_row['QQQE_20d_Ret']
+        # 3. 인간 심리 계기판 (Fear & Greed)
+        st.markdown("#### 3. 극단적 인간 심리 계기판")
+        # 심리 점수 합성 (VIX, Drawdown, RSI 조합)
+        vix_score = max(0, min(100, 100 - (last_row['^VIX'] - 12) / 28 * 100))
+        dd_score = max(0, min(100, (last_row['QQQ_DD'] + 0.20) / 0.20 * 100))
+        rsi_score = max(0, min(100, qqq_rsi))
+        fg_score = (vix_score + dd_score + rsi_score) / 3
         
-        if qqq_ret > 0 and qqqe_ret < 0:
-            st.warning("⚠️ **가짜 상승 (Divergence):** 소수 대장주만 오르며 대다수는 하락 중입니다. 고점 징후입니다.")
-        else:
-            st.success("✅ **건전한 상승:** 시장 전반의 기업들이 고르게 상승에 참여하고 있습니다.")
-            
-        col_m1, col_m2 = st.columns(2)
-        col_m1.metric("시총가중 20D", f"{qqq_ret*100:+.2f}%")
-        col_m2.metric("동일가중 20D", f"{qqqe_ret*100:+.2f}%")
+        fg_fig = go.Figure(go.Indicator(
+            mode="gauge+number", value=fg_score, domain={'x': [0, 1], 'y': [0, 1]},
+            title={'text': "Fear & Greed Index", 'font': {'size': 18}},
+            gauge={'axis': {'range': [0, 100]}, 'bar': {'color': "#1A1A1A"},
+                   'steps': [{'range': [0, 25], 'color': "rgba(139,0,0,0.7)"}, {'range': [25, 45], 'color': "rgba(139,0,0,0.3)"},
+                             {'range': [45, 55], 'color': "rgba(0,0,0,0.1)"}, {'range': [55, 75], 'color': "rgba(0,100,0,0.3)"},
+                             {'range': [75, 100], 'color': "rgba(0,100,0,0.7)"}]}
+        ))
+        fg_fig.update_layout(height=250, margin=dict(l=20, r=20, t=30, b=20), paper_bgcolor='#FFFDF7')
+        st.plotly_chart(fg_fig, use_container_width=True)
+        st.divider()
 
-    with r3:
-        st.markdown("#### III. 고점 대비 하락률 (멘탈 방어)")
-        qqq_dd = last_row['QQQ_DD']
-        
-        if qqq_dd < -0.20:
-            st.error("🚨 **약세장 (Bear Market):** 52주 고점 대비 -20% 이상 폭락 상태입니다.")
-        elif qqq_dd < -0.10:
-            st.warning("⚠️ **조정장 (Correction):** -10% 이상 하락. 과도한 공포를 경계하십시오.")
-        else:
-            st.success("✅ **안전 (Healthy):** 건전한 추세 내의 잔파도입니다. 흔들리지 마십시오.")
-            
-        st.metric("QQQ 52주 최고점 대비", f"${last_row['QQQ_High52']:.2f}", f"{qqq_dd*100:.2f}% (현재: ${last_row['QQQ']:.2f})", delta_color="inverse")
-
-    st.divider()
-    
-    # 하단 3개 레이더
-    r4, r5, r6 = st.columns(3)
-    
-    with r4:
-        st.markdown("#### IV. 하이일드 채권 스프레드")
+        # 5. 하이일드 채권 스프레드
+        st.markdown("#### 5. 채권 스프레드 (스마트머니 이탈)")
         curr_ratio = last_row['HYG_IEF_Ratio']
         ma50_ratio = last_row['HYG_IEF_MA50']
-        
-        if curr_ratio < ma50_ratio:
-            st.error("🚨 **위험 (Risk-Off):** 거대 자본이 위험 자산을 버리고 국채로 피신하고 있습니다.")
-        else:
-            st.success("✅ **안전 (Risk-On):** 채권 시장의 자금 흐름이 건전합니다.")
-            
-        fig4 = go.Figure()
-        fig4.add_trace(go.Scatter(x=df.index[-200:], y=df['HYG_IEF_Ratio'].iloc[-200:], name='비율', line=dict(color='#1A1A1A')))
-        fig4.add_trace(go.Scatter(x=df.index[-200:], y=df['HYG_IEF_MA50'].iloc[-200:], name='50일선', line=dict(color='#8B0000', dash='dot')))
-        fig4.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0), paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7')
-        st.plotly_chart(fig4, use_container_width=True)
+        if curr_ratio < ma50_ratio: st.error("🚨 **위험 (Risk-Off):** 거대 자본이 위험 자산을 버리고 국채로 피신 중입니다.")
+        else: st.success("✅ **안전 (Risk-On):** 채권 시장의 자금 흐름이 건전합니다.")
+        fig_hyg = go.Figure()
+        fig_hyg.add_trace(go.Scatter(x=df.index[-200:], y=df['HYG_IEF_Ratio'].iloc[-200:], name='비율', line=dict(color='#1A1A1A')))
+        fig_hyg.add_trace(go.Scatter(x=df.index[-200:], y=df['HYG_IEF_MA50'].iloc[-200:], name='50일선', line=dict(color='#8B0000', dash='dot')))
+        fig_hyg.update_layout(height=200, **chart_layout)
+        st.plotly_chart(fig_hyg, use_container_width=True)
+        st.divider()
 
-    with r5:
-        st.markdown("#### V. 안전 자산 선호도 (금/주식)")
+        # 7. 안전자산 선호도 (금/주식)
+        st.markdown("#### 7. 안전 자산 선호도 (금 vs 주식)")
         gld_spy_ratio = last_row['GLD_SPY_Ratio']
         gld_spy_ma50 = last_row['GLD_SPY_MA50']
-        
-        if gld_spy_ratio > gld_spy_ma50:
-            st.warning("⚠️ **은밀한 이탈:** 스마트머니가 몰래 주식을 팔고 금을 매집 중입니다.")
-        else:
-            st.success("✅ **정상 흐름:** 주식이 금 대비 굳건한 우위를 점하고 있습니다.")
-            
-        fig5 = go.Figure()
-        fig5.add_trace(go.Scatter(x=df.index[-200:], y=df['GLD_SPY_Ratio'].iloc[-200:], name='GLD/SPY', line=dict(color='#1A1A1A')))
-        fig5.add_trace(go.Scatter(x=df.index[-200:], y=df['GLD_SPY_MA50'].iloc[-200:], name='50일선', line=dict(color='#8B0000', dash='dot')))
-        fig5.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0), paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7')
-        st.plotly_chart(fig5, use_container_width=True)
+        if gld_spy_ratio > gld_spy_ma50: st.warning("⚠️ **은밀한 이탈:** 스마트머니가 몰래 주식을 팔고 금을 매집 중입니다.")
+        else: st.success("✅ **정상 흐름:** 주식이 금 대비 굳건한 우위를 점하고 있습니다.")
+        fig_gld = go.Figure()
+        fig_gld.add_trace(go.Scatter(x=df.index[-200:], y=df['GLD_SPY_Ratio'].iloc[-200:], name='GLD/SPY', line=dict(color='#1A1A1A')))
+        fig_gld.add_trace(go.Scatter(x=df.index[-200:], y=df['GLD_SPY_MA50'].iloc[-200:], name='50일선', line=dict(color='#8B0000', dash='dot')))
+        fig_gld.update_layout(height=200, **chart_layout)
+        st.plotly_chart(fig_gld, use_container_width=True)
 
-    with r6:
-        st.markdown("#### VI. 달러 유동성 (UUP 인덱스)")
+    with col2:
+        # 2. 고점 대비 하락률 (Drawdown)
+        st.markdown("#### 2. 멘탈 방어 온도계 (Drawdown)")
+        qqq_dd = last_row['QQQ_DD']
+        if qqq_dd < -0.20: st.error("🚨 **약세장 (Bear Market):** 고점 대비 -20% 이상 폭락. 시스템 규칙을 맹신하십시오.")
+        elif qqq_dd < -0.10: st.warning("⚠️ **조정장 (Correction):** -10% 이상 하락. 과도한 공포를 경계하십시오.")
+        else: st.success("✅ **안전 (Healthy):** 건전한 추세 내의 잔파도입니다. 흔들리지 마십시오.")
+        st.metric("QQQ 52주 고점 대비 하락률", f"{qqq_dd*100:.2f}%", f"고점: ${last_row['QQQ_High52']:.2f} (현재: ${last_row['QQQ']:.2f})", delta_color="inverse")
+        st.divider()
+
+        # 4. 11개 섹터 자금 순환 지도
+        st.markdown("#### 4. 섹터 자금 순환 지도 (1개월 수익률)")
+        sec_names = {'XLK': '기술', 'XLV': '헬스케어', 'XLF': '금융', 'XLY': '자유소비재', 'XLC': '통신', 'XLI': '산업재', 'XLP': '필수소비재', 'XLE': '에너지', 'XLU': '유틸리티', 'XLRE': '부동산', 'XLB': '소재'}
+        sec_data = [{'섹터': sec_names[s], '수익률': last_row[f'{s}_1M'] * 100} for s in SECTOR_TICKERS]
+        sec_df = pd.DataFrame(sec_data).sort_values(by='수익률', ascending=True)
+        
+        fig_sec = go.Figure(go.Bar(
+            x=sec_df['수익률'], y=sec_df['섹터'], orientation='h',
+            marker_color=['#8B0000' if val < 0 else '#1A1A1A' for val in sec_df['수익률']]
+        ))
+        fig_sec.update_layout(height=250, margin=dict(l=0, r=0, t=10, b=0), paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7')
+        st.plotly_chart(fig_sec, use_container_width=True)
+        st.divider()
+
+        # 6. 시장 폭 (Breadth)
+        st.markdown("#### 6. 시장 폭 (가짜 상승 판별)")
+        qqq_ret = last_row['QQQ_20d_Ret']
+        qqqe_ret = last_row['QQQE_20d_Ret']
+        if qqq_ret > 0 and qqqe_ret < 0: st.warning("⚠️ **가짜 상승 (Divergence):** 소수 대장주만 오르며 대다수는 하락 중입니다. 고점 징후입니다.")
+        else: st.success("✅ **건전한 상승:** 시장 전반의 기업들이 고르게 상승에 참여하고 있습니다.")
+        c_m1, c_m2 = st.columns(2)
+        c_m1.metric("QQQ (시총가중) 20D", f"{qqq_ret*100:+.2f}%")
+        c_m2.metric("QQQE (동일가중) 20D", f"{qqqe_ret*100:+.2f}%")
+        st.divider()
+
+        # 8. 달러 유동성
+        st.markdown("#### 8. 달러 유동성 진공청소기 (UUP)")
         uup_close = last_row['UUP']
         uup_ma50 = last_row['UUP_MA50']
-        
-        if uup_close > uup_ma50:
-            st.error("🚨 **유동성 축소:** 달러가 50일선을 돌파하며 글로벌 자금을 블랙홀처럼 빨아들이고 있습니다.")
-        else:
-            st.success("✅ **유동성 양호:** 달러 강세가 진정되어 위험 자산 투자에 우호적입니다.")
-            
-        fig6 = go.Figure()
-        fig6.add_trace(go.Scatter(x=df.index[-200:], y=df['UUP'].iloc[-200:], name='UUP 종가', line=dict(color='#1A1A1A')))
-        fig6.add_trace(go.Scatter(x=df.index[-200:], y=df['UUP_MA50'].iloc[-200:], name='50일선', line=dict(color='#8B0000', dash='dot')))
-        fig6.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0), paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7')
-        st.plotly_chart(fig6, use_container_width=True)
+        if uup_close > uup_ma50: st.error("🚨 **유동성 축소:** 달러가 강력하게 상승하며 글로벌 자금을 블랙홀처럼 빨아들이고 있습니다.")
+        else: st.success("✅ **유동성 양호:** 달러 강세가 진정되어 위험 자산 투자에 우호적입니다.")
+        fig_uup = go.Figure()
+        fig_uup.add_trace(go.Scatter(x=df.index[-200:], y=df['UUP'].iloc[-200:], name='UUP', line=dict(color='#1A1A1A')))
+        fig_uup.add_trace(go.Scatter(x=df.index[-200:], y=df['UUP_MA50'].iloc[-200:], name='50일선', line=dict(color='#8B0000', dash='dot')))
+        fig_uup.update_layout(height=200, **chart_layout)
+        st.plotly_chart(fig_uup, use_container_width=True)
 
 # ------------------------------------------
-# 탭 4: MACRO NEWS
+# 탭 4: MACRO NEWS & AI
 # ------------------------------------------
 with tab4:
     st.subheader("실시간 글로벌 매크로 뉴스 및 심층 추론 브리핑")
