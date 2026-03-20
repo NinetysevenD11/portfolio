@@ -14,102 +14,50 @@ import google.generativeai as genai
 warnings.filterwarnings('ignore')
 
 # ==========================================
-# 1. 대시보드 기본 설정 및 리얼 웹사이트 CSS
+# 1. 대시보드 기본 설정 및 CSS 삽입
 # ==========================================
-st.set_page_config(page_title="RIMBERIO FINANCIAL GAZETTE", layout="wide", page_icon="📰", initial_sidebar_state="expanded")
+st.set_page_config(page_title="RIMBERIO FINANCIAL GAZETTE", layout="wide", page_icon="📰")
 
 st.markdown("""
 <style>
     .stApp { background-color: #F5F0E8; color: #1A1A1A; font-family: 'Pretendard', sans-serif; }
-    header { visibility: hidden; }
-    #MainMenu { visibility: hidden; }
-    footer { visibility: hidden; }
-    .main .block-container { max-width: 1300px; padding-top: 1rem; padding-bottom: 2rem; }
+    .main .block-container { max-width: 1300px; margin: 0 auto; padding-top: 2rem; }
+    h1, h2, h3, h4, h5, h6 { font-family: 'Pretendard', sans-serif !important; color: #1A1A1A !important; letter-spacing: 0.5px; font-weight: 800 !important; }
     
-    /* 사이드바 스타일 */
-    [data-testid="stSidebar"] { background-color: #EBE4D3; border-right: 2px solid #2C2C2C; }
-    [data-testid="stSidebarNav"] { display: none; } 
-    
-    div.row-widget.stRadio > div { background-color: transparent; gap: 10px; }
-    div.row-widget.stRadio > div > label {
-        background-color: transparent; border: 1px solid transparent; padding: 10px 15px;
-        border-radius: 4px; font-family: 'Pretendard', sans-serif; font-weight: bold; font-size: 1.1rem; color: #1A1A1A; transition: all 0.2s; cursor: pointer;
-    }
-    div.row-widget.stRadio > div > label:hover { background-color: #DFD7C2; border: 1px solid #2C2C2C; }
-
-    h1, h2, h3, h4, h5, h6 { font-family: 'Pretendard', sans-serif !important; color: #1A1A1A !important; font-weight: 800 !important; letter-spacing: 0.5px; }
-    
-    /* 통합 카드 UI 스타일 */
-    .analysis-card {
-        border: 2px solid #2C2C2C;
-        background-color: #FFFDF7;
-        padding: 20px;
-        border-radius: 8px;
-        min-height: 520px;
-        box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
-        display: flex;
-        flex-direction: column;
-        margin-bottom: 20px;
-    }
-    
-    /* 🚨 알림 박스 (AI 리포트 흰색 배경 & 검은 글씨 강제 적용) */
+    /* 🚨 알림 박스 (초콜릿 모양으로 높이 고정하여 삐뚤어짐 방지) */
     div[data-testid="stAlert"] { 
-        background-color: #FFFFFF !important; 
-        border: 2px solid #1A1A1A !important; border-radius: 4px; 
-        box-shadow: 2px 2px 0px rgba(0,0,0,0.1); padding: 10px;
+        background-color: #FFFDF7; border: 1px solid #2C2C2C; border-radius: 4px; 
+        color: #1A1A1A; box-shadow: none; padding: 10px; min-height: 65px; 
+        display: flex; align-items: center; justify-content: flex-start; font-size: 0.9em;
     }
-    div[data-testid="stAlert"] * { color: #000000 !important; }
+    div[data-testid="stAlert"]:has(.stIcon-error), div[data-testid="stAlert"]:has(.stIcon-warning) { 
+        border: 2px solid #8B0000; background-color: #FFECEC; color: #8B0000; font-weight: bold;
+    }
     
     div[data-testid="stMetricValue"] > div { font-family: 'Pretendard', sans-serif; font-weight: 900; color: #1A1A1A; }
-    div[data-testid="stButton"] > button { background-color: #1A1A1A; color: #FFFDF7; border-radius: 4px; border: 2px solid #1A1A1A; font-family: 'Pretendard', sans-serif; font-weight: bold; width: 100%; transition: all 0.3s; }
-    
-    hr { border-top: 1px dashed #2C2C2C; background: transparent; margin: 2em 0; }
+    div[data-testid="stButton"] > button { background-color: #1A1A1A; color: #FFFDF7; border-radius: 4px; border: 2px solid #1A1A1A; font-family: 'Pretendard', sans-serif; font-weight: bold; transition: all 0.3s; }
+    div[data-testid="stButton"] > button:hover { background-color: #8B0000; border-color: #8B0000; color: #FFFDF7; }
+    .stTabs [data-baseweb="tab-list"] { border-bottom: 3px solid #2C2C2C; gap: 20px; padding-bottom: 5px; }
+    .stTabs [data-baseweb="tab"] { font-family: 'Pretendard', sans-serif; color: #1A1A1A; font-weight: 700; font-size: 1.1rem; border-radius: 4px 4px 0 0; border: 1px solid transparent; padding: 10px 15px; }
+    .stTabs [aria-selected="true"] { background-color: #FFFDF7; border: 2px solid #2C2C2C; border-bottom: 3px solid #FFFDF7; margin-bottom: -3px; color: #8B0000; }
+    hr { border-top: 1px dashed #2C2C2C; background: transparent; margin: 2.5em 0; }
+    [data-testid="stDataFrame"] { border: 2px solid #2C2C2C; background-color: #FFFDF7; border-radius: 4px; }
 </style>
 """, unsafe_allow_html=True)
 
-# ==========================================
-# 2. 사이드바 (변수 'page' 선언 위치 - 중요!)
-# ==========================================
-with st.sidebar:
-    st.markdown("""
-        <div style="text-align: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #1A1A1A;">
-            <h2 style="font-family: Georgia, serif; margin: 0; font-size: 1.8rem; letter-spacing: 1px;">RIMBERIO</h2>
-            <h4 style="font-family: Georgia, serif; margin: 0; font-size: 1rem; color: #8B0000;">FINANCIAL GAZETTE</h4>
-            <p style="font-size: 0.8rem; margin-top: 5px; font-weight: bold;">EST. 2026 | QUANT DESK</p>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    # 💡 여기서 'page' 변수가 정의됩니다!
-    page = st.radio(
-        "NAVIGATION MENU",
-        ["📊 시장 분석관 (Home)", "🍫 8-Pack 레이더망", "📉 폭락장 아카이브", "📰 매크로 뉴스룸"],
-        label_visibility="collapsed"
-    )
-    
-    st.markdown("<br><br><br>", unsafe_allow_html=True)
-    st.markdown("""
-        <div style="position: absolute; bottom: 10px; text-align: center; width: 100%; font-size: 0.8em; color: #555;">
-            Powered by AMLS V4.5 Engine<br>
-            &copy; 2026 SEYOON. All rights reserved.
-        </div>
-    """, unsafe_allow_html=True)
-
-# 📰 글로벌 상단 헤더
+# 📰 신문 헤더
 st.markdown("""
-<div style="border-bottom: 4px double #1A1A1A; padding-bottom: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
-    <div>
-        <h1 style="font-family: Georgia, serif; font-size: 2.8em; margin: 0; color: #1A1A1A;">RIMBERIO FINANCIAL GAZETTE</h1>
-        <p style="font-family: 'Pretendard', sans-serif; font-size: 1.1em; letter-spacing: 1px; margin: 5px 0 0 0; font-weight: 700; color: #8B0000;">THE WALL STREET QUANTITATIVE JOURNAL</p>
-    </div>
-    <div style="text-align: right; font-family: 'Pretendard', sans-serif; font-weight: bold; color: #1A1A1A;">
-        <div style="font-size: 1.2em;">AMLS V4.5 ENGINE</div>
-        <div style="font-size: 0.9em; color: #555;">실시간 매크로 판독 터미널</div>
+<div style="text-align: center; border-top: 4px solid #1A1A1A; border-bottom: 4px double #1A1A1A; padding: 20px 0; margin-bottom: 30px;">
+    <h1 style="font-family: Georgia, serif; font-size: 3.5em; font-weight: bold; letter-spacing: 4px; margin: 0; color: #1A1A1A;">RIMBERIO FINANCIAL GAZETTE</h1>
+    <p style="font-size: 1.1em; letter-spacing: 2px; margin: 12px 0; font-weight: 700;">주식 & 채권 &nbsp;✦&nbsp; 퀀트 전략 &nbsp;✦&nbsp; 매크로 뉴스</p>
+    <div style="font-size: 0.95em; border-top: 1px solid #1A1A1A; padding-top: 8px; display: flex; justify-content: center; gap: 40px; font-weight: 700;">
+        <span>제 45호</span><span>AMLS V4.5 엔진</span><span>2026년 발행</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. 데이터 및 엔진 로직 (기존과 동일)
+# 2. 데이터 수집
 # ==========================================
 SECTOR_TICKERS = ['XLK', 'XLV', 'XLF', 'XLY', 'XLC', 'XLI', 'XLP', 'XLE', 'XLU', 'XLRE', 'XLB']
 CORE_TICKERS = ['QQQ', 'TQQQ', 'SOXL', 'USD', 'QLD', 'SSO', 'SPY', 'SMH', 'GLD', '^VIX', 'HYG', 'IEF', 'QQQE', 'UUP']
@@ -118,193 +66,437 @@ ASSET_LIST = ['TQQQ', 'SOXL', 'USD', 'QLD', 'SSO', 'SPY', 'QQQ', 'GLD', 'CASH']
 
 @st.cache_data(ttl=3600)
 def load_data():
-    data = yf.download(TICKERS, start="2006-01-01", end=datetime.now().strftime("%Y-%m-%d"), progress=False, auto_adjust=False)['Close']
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=600)
+    data = yf.download(TICKERS, start=start_date.strftime("%Y-%m-%d"), end=end_date.strftime("%Y-%m-%d"), progress=False, auto_adjust=False)['Close']
+    
     df = pd.DataFrame(index=data.index)
     for t in TICKERS: df[t] = data[t]
     df = df.ffill().bfill()
+    
     df['QQQ_MA50'] = df['QQQ'].rolling(window=50).mean()
     df['QQQ_MA200'] = df['QQQ'].rolling(window=200).mean()
     df['TQQQ_MA200'] = df['TQQQ'].rolling(window=200).mean() 
     df['SMH_MA50'] = df['SMH'].rolling(window=50).mean()
+    
     df['VIX_MA5'] = df['^VIX'].rolling(window=5).mean()
     df['SMH_3M_Ret'] = df['SMH'].pct_change(periods=63)
     df['SMH_1M_Ret'] = df['SMH'].pct_change(periods=21)
     df['SMH_RSI'] = ta.rsi(df['SMH'], length=14)
+    
     df['HYG_IEF_Ratio'] = df['HYG'] / df['IEF']
     df['HYG_IEF_MA50'] = df['HYG_IEF_Ratio'].rolling(window=50).mean()
     df['QQQ_20d_Ret'] = df['QQQ'].pct_change(periods=20)
     df['QQQE_20d_Ret'] = df['QQQE'].pct_change(periods=20)
+    
     df['QQQ_RSI'] = ta.rsi(df['QQQ'], length=14)
     df['GLD_SPY_Ratio'] = df['GLD'] / df['SPY']
     df['GLD_SPY_MA50'] = df['GLD_SPY_Ratio'].rolling(window=50).mean()
+    
     df['QQQ_High52'] = df['QQQ'].rolling(window=252).max() 
     df['QQQ_DD'] = (df['QQQ'] / df['QQQ_High52']) - 1 
     df['UUP_MA50'] = df['UUP'].rolling(window=50).mean() 
-    for sec in SECTOR_TICKERS: df[f'{sec}_1M'] = df[sec].pct_change(periods=21)
+    
+    for sec in SECTOR_TICKERS:
+        df[f'{sec}_1M'] = df[sec].pct_change(periods=21)
+        
     return df.dropna()
 
-@st.cache_data(ttl=900)
-def fetch_macro_news():
-    headlines_for_ai, news_items = [], []
+with st.spinner('📰 거시경제 데이터베이스를 동기화 중입니다...'):
+    df = load_data()
+
+# ==========================================
+# 3. AMLS v4.5 코어 엔진
+# ==========================================
+def get_target_v45(row):
+    v_close, v_ma5, q, m2, m5 = row['^VIX'], row['VIX_MA5'], row['QQQ'], row['QQQ_MA200'], row['QQQ_MA50']
+    if v_close > 40: return 4 
+    if q < m2: return 3
+    if q >= m2 and m5 >= m2 and v_ma5 < 25: return 1 
+    return 2
+
+df['Target'] = df.apply(get_target_v45, axis=1)
+
+def apply_delay(targets):
+    res = []; curr = 3; pend = None; cnt = 0
+    for t in targets:
+        if t > curr: curr = t; pend = None; cnt = 0
+        elif t < curr:
+            if t == pend:
+                cnt += 1
+                if cnt >= 5: curr = t; pend = None; cnt = 0
+            else: pend = t; cnt = 1
+        else: pend = None; cnt = 0
+        res.append(curr)
+    return pd.Series(res, index=targets.index).shift(1).bfill()
+
+df['Regime'] = apply_delay(df['Target'])
+
+def get_weights_v45(reg, smh_ok):
+    w = {t: 0.0 for t in ASSET_LIST}
+    semi = 'SOXL' if smh_ok else 'USD'
+    if reg == 1: 
+        w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'], w['SPY'] = 0.30, 0.20, 0.20, 0.15, 0.10, 0.05
+    elif reg == 2: 
+        w['TQQQ'], w['QLD'], w['SSO'], w['GLD'], w['USD'], w['SPY'] = 0.15, 0.35, 0.20, 0.20, 0.10, 0.00
+    elif reg == 3: 
+        w['GLD'], w['CASH'], w['QQQ'] = 0.50, 0.35, 0.15
+    elif reg == 4: 
+        w['GLD'], w['CASH'], w['QQQ'] = 0.50, 0.40, 0.10
+    return w
+
+last_row = df.iloc[-1]
+curr_regime = int(last_row['Regime'])
+target_regime = int(last_row['Target'])
+
+# 데이터 변수 추출
+vix_close = last_row['^VIX']
+vix_ma5 = last_row['VIX_MA5']
+qqq_close = last_row['QQQ']
+qqq_ma50 = last_row['QQQ_MA50']
+qqq_ma200 = last_row['QQQ_MA200']
+smh_close = last_row['SMH']
+smh_ma50 = last_row['SMH_MA50']
+smh_3m = last_row['SMH_3M_Ret']
+smh_1m = last_row['SMH_1M_Ret']
+smh_rsi = last_row['SMH_RSI']
+
+# 조건 불리언 판독
+smh_c1 = smh_close > smh_ma50
+smh_c2 = (smh_3m > 0.05) or (smh_1m > 0.10)
+smh_c3 = smh_rsi > 50
+smh_cond = smh_c1 and smh_c2 and smh_c3
+
+target_weights = get_weights_v45(curr_regime, smh_cond)
+
+regime_info = {
+    1: ("🟢 R1 (대세 강세장)", "풀 레버리지 가동"),
+    2: ("🟡 R2 (경계/조정장)", "세윤's Rule (TQQQ 15% 방어 모드)"),
+    3: ("🟠 R3 (대세 하락장)", "안전 자산 대피 (금/현금)"),
+    4: ("🔴 R4 (패닉장)", "최대 방어 모드")
+}
+
+chart_layout = dict(paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7', font=dict(family="Pretendard", color="#1A1A1A"), margin=dict(l=0, r=0, t=40, b=0))
+radar_layout = dict(height=200, margin=dict(l=10, r=10, t=15, b=15), paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7', font=dict(family="Pretendard", color="#1A1A1A"))
+regime_colors = {1: 'rgba(0, 0, 0, 0.02)', 2: 'rgba(0, 0, 0, 0.08)', 3: 'rgba(139, 0, 0, 0.1)', 4: 'rgba(139, 0, 0, 0.2)'}
+
+# ==========================================
+# 4. 탭 구성
+# ==========================================
+tab1, tab2, tab3, tab4 = st.tabs(["I. 시장 분석관 (판독 리포트)", "II. 역사적 폭락장 아카이브", "III. 초콜릿 보드 (8-Pack 레이더)", "IV. 매크로 뉴스 & AI 브리핑"])
+
+# ------------------------------------------
+# 탭 1: MARKET ANALYSIS & EXPLANATION
+# ------------------------------------------
+with tab1:
+    col_regime, col_soxl, col_weight = st.columns([1.2, 1.2, 1])
+    
+    with col_regime:
+        st.subheader("현재 시장 국면 (REGIME)")
+        st.info(f"### {regime_info[curr_regime][0]}\n**적용 로직:** {regime_info[curr_regime][1]}")
+        
+        st.markdown("#### 🔍 국면 판독 알고리즘 해부")
+        st.markdown(f"- **① VIX 패닉 임계점 (< 40):** 현재 {vix_close:.2f} {'✅ 통과' if vix_close <= 40 else '❌ 패닉 (R4)'}")
+        st.markdown(f"- **② 장기 대세 지지선 (QQQ > 200MA):** 종가 ${qqq_close:.0f} vs 200선 ${qqq_ma200:.0f} {'✅ 지지 중' if qqq_close >= qqq_ma200 else '❌ 붕괴 (R3)'}")
+        st.markdown(f"- **③ 중단기 추세 정배열 (50MA ≥ 200MA):** 50선 ${qqq_ma50:.0f} vs 200선 ${qqq_ma200:.0f} {'✅ 정배열' if qqq_ma50 >= qqq_ma200 else '❌ 역배열'}")
+        st.markdown(f"- **④ VIX 휩쏘 방어 (5일선 < 25):** 현재 {vix_ma5:.2f} {'✅ 안정' if vix_ma5 < 25 else '❌ 변동성 경계'}")
+        
+        if curr_regime != target_regime: 
+            st.warning(f"**💡 위원회 의견:** 시장이 R{target_regime} 조건을 터치했으나, 휩쏘(가짜 신호) 방지를 위해 5일 연속 충족 여부를 대기하고 있습니다.")
+        else: 
+            st.success("**💡 위원회 의견:** 모든 조건이 현재 국면에 부합하여 안정적으로 유지되고 있습니다.")
+            
+    with col_soxl:
+        st.subheader("반도체(SOXL) 진입 판독관")
+        if smh_cond:
+            st.success("### 🔥 승인: SOXL 편입\n**적용 로직:** 3배수 반도체 공격적 진입")
+        else:
+            st.warning("### 🛡️ 기각: USD 편입\n**적용 로직:** 변동성 방어용 2배수 편입")
+            
+        st.markdown("#### 🔍 SOXL 3중 필터 해부")
+        st.markdown(f"- **① 정배열 추세 (SMH > 50MA):** 종가 ${smh_close:.1f} vs 50선 ${smh_ma50:.1f} {'✅ 상승 추세' if smh_c1 else '❌ 하락 추세'}")
+        st.markdown(f"- **② 급반등 모멘텀 (1M > 10% or 3M > 5%):** 1개월 {smh_1m*100:.1f}%, 3개월 {smh_3m*100:.1f}% {'✅ 모멘텀 확인' if smh_c2 else '❌ 모멘텀 부족'}")
+        st.markdown(f"- **③ 매수 심리 강도 (RSI > 50):** 현재 {smh_rsi:.1f} {'✅ 매수 우위' if smh_c3 else '❌ 매도 우위'}")
+        
+        st.markdown("> *SOXL은 가장 극단적인 변동성을 수반하므로, 위 3가지(추세, 모멘텀, 심리) 필터를 모두 통과해야만 편입을 허가합니다.*")
+
+    with col_weight:
+        st.subheader("V4.5 목표 포트폴리오")
+        w_df = pd.DataFrame(list(target_weights.items()), columns=['자산 (ASSET)', '비중 (WEIGHT)'])
+        w_df = w_df[w_df['비중 (WEIGHT)'] > 0].sort_values(by='비중 (WEIGHT)', ascending=False)
+        w_df['비중 (WEIGHT)'] = w_df['비중 (WEIGHT)'].apply(lambda x: f"{x*100:.0f}%")
+        st.dataframe(w_df, hide_index=True, use_container_width=True)
+
+    st.divider()
+    st.subheader("기술적 차트 모니터링 (QQQ & TQQQ)")
+    if last_row['TQQQ'] < last_row['TQQQ_MA200'] and last_row['QQQ'] >= last_row['QQQ_MA200']:
+        st.error("🚨 **[선행 경보 발동]** QQQ는 아직 200일선 위지만, **TQQQ가 200일선을 이탈했습니다.** 곧 R3로 강등될 위험이 높습니다!")
+        
+    chart_col1, chart_col2 = st.columns(2)
+    df_recent = df.iloc[-500:]
+    
+    fig_qqq = go.Figure()
+    fig_qqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['QQQ'], name='QQQ', line=dict(color='#1A1A1A', width=2)))
+    fig_qqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['QQQ_MA200'], name='200일선', line=dict(color='#8B0000', width=2, dash='dash')))
+    
+    fig_tqqq = go.Figure()
+    fig_tqqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['TQQQ'], name='TQQQ', line=dict(color='#1A1A1A', width=2)))
+    fig_tqqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['TQQQ_MA200'], name='200일선', line=dict(color='#8B0000', width=2, dash='dash')))
+    
+    for i in range(1, len(df_recent)):
+        if df_recent['Regime'].iloc[i-1] != df_recent['Regime'].iloc[i] or i == 1:
+            start_idx = df_recent.index[i]
+            curr_r = df_recent['Regime'].iloc[i]
+        if i == len(df_recent)-1 or df_recent['Regime'].iloc[i] != df_recent['Regime'].iloc[i+1]:
+            fig_qqq.add_vrect(x0=start_idx, x1=df_recent.index[i], fillcolor=regime_colors[curr_r], opacity=1, layer="below", line_width=0)
+            fig_tqqq.add_vrect(x0=start_idx, x1=df_recent.index[i], fillcolor=regime_colors[curr_r], opacity=1, layer="below", line_width=0)
+            
+    fig_qqq.update_layout(title="[시스템 기준] QQQ vs 200일 이평선", height=350, **chart_layout)
+    fig_tqqq.update_layout(title="[조기 경보] TQQQ vs 200일 이평선", height=350, **chart_layout)
+    
+    with chart_col1: st.plotly_chart(fig_qqq, use_container_width=True)
+    with chart_col2: st.plotly_chart(fig_tqqq, use_container_width=True)
+
+# ------------------------------------------
+# 탭 2: 역사적 폭락장 시뮬레이터
+# ------------------------------------------
+with tab2:
+    st.subheader("역사적 폭락장 시뮬레이터 (Crisis Archive)")
+    st.write("하락장이 올 때마다 이 기록을 보며 멘탈을 통제하십시오. V4.5 시스템은 역사적 피바다 속에서 항상 안전 자산으로 도망쳐 있었습니다.")
+    
+    crises = {"2008 금융위기 (서브프라임)": ("2007-08-01", "2009-12-31"), "2020 코로나 팬데믹": ("2020-01-01", "2020-12-31"), "2022 인플레이션 쇼크": ("2021-11-01", "2023-03-31")}
+    selected_crisis = st.selectbox("조회할 역사적 위기를 선택하십시오:", list(crises.keys()))
+    s_date, e_date = crises[selected_crisis]
+    
+    try:
+        df_crisis = df.loc[s_date:e_date]
+        if len(df_crisis) > 0:
+            crisis_fig = go.Figure()
+            crisis_fig.add_trace(go.Scatter(x=df_crisis.index, y=df_crisis['QQQ'], name='QQQ (나스닥)', line=dict(color='#1A1A1A', width=2)))
+            crisis_fig.add_trace(go.Scatter(x=df_crisis.index, y=df_crisis['QQQ_MA200'], name='200일선', line=dict(color='#8B0000', width=2, dash='dash')))
+            
+            r3_r4_days = 0
+            for i in range(1, len(df_crisis)):
+                if df_crisis['Regime'].iloc[i-1] != df_crisis['Regime'].iloc[i] or i == 1:
+                    start_idx = df_crisis.index[i]
+                    curr_r = df_crisis['Regime'].iloc[i]
+                if i == len(df_crisis)-1 or df_crisis['Regime'].iloc[i] != df_crisis['Regime'].iloc[i+1]:
+                    crisis_fig.add_vrect(x0=start_idx, x1=df_crisis.index[i], fillcolor=regime_colors[curr_r], opacity=1, layer="below", line_width=0)
+                if df_crisis['Regime'].iloc[i] in [3, 4]: r3_r4_days += 1
+                    
+            crisis_fig.update_layout(title=f"V4.5 백테스트 궤적: {selected_crisis}", height=450, **chart_layout)
+            st.plotly_chart(crisis_fig, use_container_width=True)
+            st.info(f"💡 **시뮬레이터 분석:** 이 위기 구간(총 {len(df_crisis)} 거래일) 동안, V4.5 시스템은 **{r3_r4_days}일({r3_r4_days/len(df_crisis)*100:.1f}%)** 동안 붉은색 영역(R3/R4)에 머물며 **계좌의 녹아내림을 완벽하게 방어**했습니다.")
+    except Exception as e:
+        st.error("데이터 범위 오류: 2008년 데이터를 불러오지 못했습니다. 며칠 후 다시 시도해주세요.")
+
+# ------------------------------------------
+# 탭 3: 8-PACK EARLY WARNING RADAR 
+# ------------------------------------------
+with tab3:
+    st.subheader("조기 경보 초콜릿 보드 (8-Pack Visual Radar)")
+    
+    st.markdown("""
+    <div style="background-color: #FFFDF7; border-left: 5px solid #8B0000; padding: 20px; margin-bottom: 25px;">
+        <h4 style="margin-top: 0; color: #8B0000;">"군중의 환희는 속일 수 있어도, 거대 자본이 남기는 발자국은 결코 속일 수 없다."</h4>
+        <p style="font-size: 1.05em; line-height: 1.6; margin-bottom: 0;">
+            친애하는 투자자 여러분, 이곳은 단순한 보조 지표의 나열이 아닙니다. 월스트리트 프랍 데스크(Prop Desk)의 심장부에서나 볼 수 있는 <strong>'8-Pack 정밀 광학 렌즈'</strong>, 일명 초콜릿 보드입니다. 우리는 이 완벽한 4x2 배열의 레이더망을 통해 겉으로 평온해 보이는 시장을 3차원으로 낱낱이 해부합니다.
+        </p>
+        <ul style="margin-top: 10px; margin-bottom: 15px; font-size: 1.05em; line-height: 1.6;">
+            <li>🎯 <strong>제 1열 ~ 3열 (심리와 타점):</strong> 시장이 비이성적인 공포에 질렸는지, 아니면 피를 흘리고 있는지를 진단하여 당신의 <strong>'자금 투입(DCA) 속도'</strong>를 기계적으로 통제합니다.</li>
+            <li>🔍 <strong>제 4열 ~ 8열 (스마트머니 추적):</strong> 지수는 오르는데 대장주만 오르는 가짜 상승은 아닌지(시장 폭), 기관들이 몰래 금(GLD)이나 안전한 국채(IEF)로 도망치고 있지는 않은지(스프레드), 달러가 시장의 피(유동성)를 말리고 있지는 않은지를 감시합니다.</li>
+        </ul>
+        <p style="font-weight: bold; margin-bottom: 0; color: #1A1A1A;">
+            폭락은 예고 없이 오지 않습니다. 8개의 모니터에 하나둘씩 붉은 경고등이 켜진다면, 시스템이 R3를 선언하기 전이라도 이미 거대한 폭풍이 몰려오고 있음을 직감하십시오. 오직 이 냉혹한 진실의 판에만 집중하십시오.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    df_view = df.iloc[-120:]
+    row1 = st.columns(4)
+    row2 = st.columns(4)
+    
+    # ---------------- ROW 1 ----------------
+    with row1[0]:
+        st.markdown("##### 1. 스마트 DCA (RSI)")
+        qqq_rsi = last_row['QQQ_RSI'] 
+        if qqq_rsi < 40 and last_row['QQQ'] < last_row['QQQ_MA200']: st.success("🔥 매수: 공포/과매도. 현금 투입.")
+        elif qqq_rsi > 70: st.error("⚠️ 보류: 단기 과열. 현금 비축.")
+        else: st.info("🟢 정상: 기계적 적립 유지.")
+        
+        fig1 = go.Figure()
+        fig1.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQ_RSI'], line=dict(color='#1A1A1A', width=2)))
+        fig1.add_hline(y=70, line_dash='dash', line_color='#8B0000')
+        fig1.add_hline(y=30, line_dash='dash', line_color='green')
+        fig1.update_layout(**radar_layout, yaxis=dict(range=[10, 90]), showlegend=False)
+        st.plotly_chart(fig1, use_container_width=True)
+
+    with row1[1]:
+        st.markdown("##### 2. 멘탈 방어 (Drawdown)")
+        qqq_dd = last_row['QQQ_DD']
+        if qqq_dd < -0.20: st.error("🚨 약세장: -20% 돌파. 공포 통제.")
+        elif qqq_dd < -0.10: st.warning("⚠️ 조정장: -10% 돌파. 건강한 뷰 유지.")
+        else: st.success("✅ 안전: 고점 부근 순항 중.")
+        
+        fig2 = go.Figure()
+        fig2.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQ_DD'], fill='tozeroy', line=dict(color='#8B0000', width=2)))
+        fig2.update_layout(**radar_layout, yaxis=dict(tickformat='.0%'), showlegend=False)
+        st.plotly_chart(fig2, use_container_width=True)
+
+    with row1[2]:
+        st.markdown("##### 3. 시장 심리 (Fear & Greed)")
+        vix_score = max(0, min(100, 100 - (last_row['^VIX'] - 12) / 28 * 100))
+        dd_score = max(0, min(100, (qqq_dd + 0.20) / 0.20 * 100))
+        rsi_score = max(0, min(100, qqq_rsi))
+        fg_score = (vix_score + dd_score + rsi_score) / 3
+        
+        if fg_score < 30: st.success("🔥 극단적 공포: 저점 매집 찬스.")
+        elif fg_score > 70: st.error("⚠️ 극단적 탐욕: 추격 매수 자제.")
+        else: st.info("🟢 중립: 심리 상태 안정적.")
+        
+        fig3 = go.Figure(go.Indicator(
+            mode="gauge+number", value=fg_score, domain={'x': [0, 1], 'y': [0, 1]},
+            gauge={'axis': {'range': [0, 100]}, 'bar': {'color': "#1A1A1A"},
+                   'steps': [{'range': [0, 25], 'color': "rgba(139,0,0,0.7)"}, {'range': [25, 45], 'color': "rgba(139,0,0,0.3)"},
+                             {'range': [45, 55], 'color': "rgba(0,0,0,0.1)"}, {'range': [55, 75], 'color': "rgba(0,100,0,0.3)"},
+                             {'range': [75, 100], 'color': "rgba(0,100,0,0.7)"}]}
+        ))
+        fig3.update_layout(height=200, margin=dict(l=15, r=15, t=10, b=10), paper_bgcolor='#FFFDF7', font=dict(family="Pretendard", color="#1A1A1A"))
+        st.plotly_chart(fig3, use_container_width=True)
+
+    with row1[3]:
+        st.markdown("##### 4. 섹터 순환 (1M 수익률)")
+        sec_names = {'XLK': '기술', 'XLV': '헬스', 'XLF': '금융', 'XLY': '소비', 'XLC': '통신', 'XLI': '산업', 'XLP': '필수', 'XLE': '에너지', 'XLU': '유틸', 'XLRE': '부동산', 'XLB': '소재'}
+        sec_data = [{'섹터': sec_names[s], '수익률': last_row[f'{s}_1M'] * 100} for s in SECTOR_TICKERS]
+        sec_df = pd.DataFrame(sec_data).sort_values(by='수익률', ascending=True)
+        top_sec, bot_sec = sec_df.iloc[-1]['섹터'], sec_df.iloc[0]['섹터']
+        st.info(f"🏆 강세: {top_sec} / 📉 약세: {bot_sec}")
+        
+        fig4 = go.Figure(go.Bar(x=sec_df['수익률'], y=sec_df['섹터'], orientation='h', marker_color=['#8B0000' if val < 0 else '#1A1A1A' for val in sec_df['수익률']]))
+        fig4.update_layout(**radar_layout, showlegend=False)
+        st.plotly_chart(fig4, use_container_width=True)
+
+    # ---------------- ROW 2 ----------------
+    with row2[0]:
+        st.markdown("##### 5. 채권 스프레드 (HYG/IEF)")
+        if last_row['HYG_IEF_Ratio'] < last_row['HYG_IEF_MA50']: st.error("🚨 위험: 국채로 자본 도피 중.")
+        else: st.success("✅ 안전: 위험 자산(회사채) 선호.")
+        
+        fig5 = go.Figure()
+        fig5.add_trace(go.Scatter(x=df_view.index, y=df_view['HYG_IEF_Ratio'], line=dict(color='#1A1A1A', width=2)))
+        fig5.add_trace(go.Scatter(x=df_view.index, y=df_view['HYG_IEF_MA50'], line=dict(color='#8B0000', dash='dot')))
+        fig5.update_layout(**radar_layout, showlegend=False)
+        st.plotly_chart(fig5, use_container_width=True)
+
+    with row2[1]:
+        st.markdown("##### 6. 시장 폭 (QQQ vs QQQE)")
+        if last_row['QQQ_20d_Ret'] > 0 and last_row['QQQE_20d_Ret'] < 0: st.warning("⚠️ 가짜 상승: 대장주 쏠림 현상 심화.")
+        else: st.success("✅ 건전한 상승: 시장 전반 고른 상승.")
+        
+        fig6 = go.Figure()
+        fig6.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQ_20d_Ret'], name='QQQ', line=dict(color='#1A1A1A', width=2)))
+        fig6.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQE_20d_Ret'], name='QQQE', line=dict(color='#8B0000', dash='dot')))
+        fig6.update_layout(**radar_layout, showlegend=False, yaxis=dict(tickformat='.0%'))
+        st.plotly_chart(fig6, use_container_width=True)
+
+    with row2[2]:
+        st.markdown("##### 7. 안전 자산 선호 (금/주식)")
+        if last_row['GLD_SPY_Ratio'] > last_row['GLD_SPY_MA50']: st.warning("⚠️ 이탈: 금(GLD)으로 자금 피신 중.")
+        else: st.success("✅ 정상: 주식(SPY) 선호도 우위.")
+        
+        fig7 = go.Figure()
+        fig7.add_trace(go.Scatter(x=df_view.index, y=df_view['GLD_SPY_Ratio'], line=dict(color='#1A1A1A', width=2)))
+        fig7.add_trace(go.Scatter(x=df_view.index, y=df_view['GLD_SPY_MA50'], line=dict(color='#8B0000', dash='dot')))
+        fig7.update_layout(**radar_layout, showlegend=False)
+        st.plotly_chart(fig7, use_container_width=True)
+
+    with row2[3]:
+        st.markdown("##### 8. 달러 유동성 (UUP)")
+        if last_row['UUP'] > last_row['UUP_MA50']: st.error("🚨 유동성 축소: 강달러 압박 심화.")
+        else: st.success("✅ 유동성 양호: 달러 강세 진정됨.")
+        
+        fig8 = go.Figure()
+        fig8.add_trace(go.Scatter(x=df_view.index, y=df_view['UUP'], line=dict(color='#1A1A1A', width=2)))
+        fig8.add_trace(go.Scatter(x=df_view.index, y=df_view['UUP_MA50'], line=dict(color='#8B0000', dash='dot')))
+        fig8.update_layout(**radar_layout, showlegend=False)
+        st.plotly_chart(fig8, use_container_width=True)
+
+# ------------------------------------------
+# 탭 4: MACRO NEWS & AI
+# ------------------------------------------
+with tab4:
+    st.subheader("실시간 글로벌 매크로 뉴스 및 심층 추론 브리핑")
+    st.warning("⚠️ **[멘탈 주의보]** 쏟아지는 뉴스는 단순 참고용입니다. 자극적인 헤드라인에 흔들리지 마시고, 오직 시스템의 숫자에만 의존하십시오.")
+    
+    headlines_for_ai = []
     try:
         search_query = urllib.parse.quote("미국증시 OR 연준 OR 나스닥 OR 금리")
         url = f"https://news.google.com/rss/search?q={search_query}&hl=ko&gl=KR&ceid=KR:ko"
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         xml_data = urllib.request.urlopen(req).read()
         root = ET.fromstring(xml_data)
-        items = root.findall('.//item')[:12]
-        for item in items:
-            t, l, d = item.find('title').text, item.find('link').text, item.find('pubDate').text
-            headlines_for_ai.append(t); news_items.append({"title": t, "link": l, "date": d[:-4]})
-    except: pass
-    return headlines_for_ai, news_items
+        items = root.findall('.//item')[:15]
+        if items:
+            for item in items: headlines_for_ai.append(item.find('title').text)
+    except Exception as e:
+        st.error(f"통신망 연결에 실패했습니다: {e}")
 
-with st.spinner('📰 통신 중...'):
-    df = load_data()
-
-# 엔진 계산
-last_row = df.iloc[-1]
-vix_close, vix_ma5 = last_row['^VIX'], last_row['VIX_MA5']
-qqq_close, qqq_ma50, qqq_ma200 = last_row['QQQ'], last_row['QQQ_MA50'], last_row['QQQ_MA200']
-smh_close, smh_ma50, smh_3m, smh_1m, smh_rsi = last_row['SMH'], last_row['SMH_MA50'], last_row['SMH_3M_Ret'], last_row['SMH_1M_Ret'], last_row['SMH_RSI']
-
-def get_target_v45(row):
-    if row['^VIX'] > 40: return 4 
-    if row['QQQ'] < row['QQQ_MA200']: return 3
-    if row['QQQ'] >= row['QQQ_MA200'] and row['QQQ_MA50'] >= row['QQQ_MA200'] and row['VIX_MA5'] < 25: return 1 
-    return 2
-
-df['Target'] = df.apply(get_target_v45, axis=1)
-
-# 레짐 지연 로직 생략(df['Regime'] 계산은 기존 로직 활용)
-res = []; curr = 3; pend = None; cnt = 0
-for t in df['Target']:
-    if t > curr: curr = t; pend = None; cnt = 0
-    elif t < curr:
-        if t == pend:
-            cnt += 1
-            if cnt >= 5: curr = t; pend = None; cnt = 0
-        else: pend = t; cnt = 1
-    else: pend = None; cnt = 0
-    res.append(curr)
-df['Regime'] = pd.Series(res, index=df.index).shift(1).bfill()
-
-curr_regime = int(df.iloc[-1]['Regime'])
-target_regime = int(df.iloc[-1]['Target'])
-smh_c1, smh_c2, smh_c3 = smh_close > smh_ma50, (smh_3m > 0.05 or smh_1m > 0.10), smh_rsi > 50
-smh_cond = smh_c1 and smh_c2 and smh_c3
-
-def get_weights_v45(reg, smh_ok):
-    w = {t: 0.0 for t in ASSET_LIST}
-    semi = 'SOXL' if smh_ok else 'USD'
-    if reg == 1: w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'], w['SPY'] = 0.30, 0.20, 0.20, 0.15, 0.10, 0.05
-    elif reg == 2: w['TQQQ'], w['QLD'], w['SSO'], w['GLD'], w['USD'], w['SPY'] = 0.15, 0.35, 0.20, 0.20, 0.10, 0.00
-    elif reg == 3: w['GLD'], w['CASH'], w['QQQ'] = 0.50, 0.35, 0.15
-    elif reg == 4: w['GLD'], w['CASH'], w['QQQ'] = 0.50, 0.40, 0.10
-    return w
-
-target_weights = get_weights_v45(curr_regime, smh_cond)
-regime_info = {1: ("🟢 R1 (강세장)", "풀 가동"), 2: ("🟡 R2 (조정장)", "TQQQ 15% 방어"), 3: ("🟠 R3 (하락장)", "현금/금 대피"), 4: ("🔴 R4 (패닉장)", "최대 방어")}
-
-# ==========================================
-# 6. 페이지 라우팅
-# ==========================================
-
-# ------------------------------------------
-# PAGE 1: Home (리마스터 레이더)
-# ------------------------------------------
-if page == "📊 시장 분석관 (Home)":
-    st.subheader("I. 시장 분석관 (Market Intelligence)")
-    
-    # 헬퍼 함수
-    def check_item(label, val, passed):
-        icon = "<span style='color:green;'>✅</span>" if passed else "<span style='color:red;'>❌</span>"
-        return f"<div style='display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px dashed #ccc;'><span>{label}</span><b>{val} {icon}</b></div>"
-
-    c1, c2, c3 = st.columns([1.3, 1.3, 1])
-    
-    with c1:
-        st.markdown(f"""
-        <div class="analysis-card">
-            <div style="font-family:Georgia; font-size:1.3em; font-weight:bold; border-bottom:2px solid #1A1A1A; padding-bottom:10px; margin-bottom:15px;">🏛️ 현재 시장 국면 (REGIME)</div>
-            <div style="background:#FFFAEB; border:1px solid #FFC107; padding:15px; border-radius:6px; text-align:center; margin-bottom:20px;">
-                <h3 style="margin:0;">{regime_info[curr_regime][0]}</h3>
-                <p style="margin:0; font-size:0.9em;">전략: {regime_info[curr_regime][1]}</p>
-            </div>
-            {check_item('① VIX 임계점(<40)', f"{vix_close:.2f}", vix_close<=40)}
-            {check_item('② 장기 지지(QQQ>200MA)', f"${qqq_close:.0f}", qqq_close>=qqq_ma200)}
-            {check_item('③ 추세(50MA≥200MA)', f"${qqq_ma50:.0f}", qqq_ma50>=qqq_ma200)}
-            {check_item('④ 노이즈(VIX 5일<25)', f"{vix_ma5:.2f}", vix_ma5<25)}
-            <div style="margin-top:auto; background:#FFF3CD; padding:10px; font-size:0.85em; border-left:4px solid #FFC107;">
-                💡 <b>위원회:</b> {"안정 유지 중" if curr_regime == target_regime else f"R{target_regime} 전환 대기 중"}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with c2:
-        st.markdown(f"""
-        <div class="analysis-card">
-            <div style="font-family:Georgia; font-size:1.3em; font-weight:bold; border-bottom:2px solid #1A1A1A; padding-bottom:10px; margin-bottom:15px;">💻 반도체(SOXL) 판독관</div>
-            <div style="background:{'#F1F8E9' if smh_cond else '#FFF5F5'}; border:1px solid {'#006400' if smh_cond else '#8B0000'}; padding:15px; border-radius:6px; text-align:center; margin-bottom:20px;">
-                <h3 style="margin:0;">{'🔥 SOXL 승인' if smh_cond else '🛡️ USD 기각'}</h3>
-            </div>
-            {check_item('① 정배열(SMH>50MA)', f"${smh_close:.1f}", smh_c1)}
-            {check_item('② 모멘텀 확인', f"{smh_3m*100:.1f}%", smh_c2)}
-            {check_item('③ 매수 심리(RSI>50)', f"{smh_rsi:.1f}", smh_c3)}
-            <div style="margin-top:auto; padding:10px; font-size:0.85em; background:#F8F9FA; border-left:4px solid #CCC; font-style:italic;">
-                SOXL은 3가지 필터를 모두 통과해야 편입합니다.
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with c3:
-        rows = "".join([f"<div style='display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #EBE4D3;'><b style='color:#1A1A1A;'>{k}</b><b style='color:#8B0000;'>{v*100:.0f}%</b></div>" for k, v in target_weights.items() if v > 0])
-        st.markdown(f"""
-        <div class="analysis-card">
-            <div style="font-family:Georgia; font-size:1.3em; font-weight:bold; border-bottom:2px solid #1A1A1A; padding-bottom:10px; margin-bottom:15px;">🛒 V4.5 목표 비중</div>
-            {rows}
-        </div>
-        """, unsafe_allow_html=True)
+    with st.expander("✨ System-2 심층 추론 애널리스트에게 시장 분석 지시 (클릭하여 열기)", expanded=True):
+        api_key = st.text_input("🔑 API KEY 입력:", type="password")
+        if st.button("🚀 심층 추론 요약 실행"):
+            if not api_key: st.warning("API Key가 필요합니다.")
+            elif not headlines_for_ai: st.warning("분석할 전보 데이터가 없습니다.")
+            else:
+                try:
+                    with st.spinner("최신 전보를 해독하며, 다각도 검증 및 심층 추론을 진행 중입니다..."):
+                        genai.configure(api_key=api_key)
+                        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+                        if not available_models: st.error("사용 가능한 AI 모델이 없습니다.")
+                        else:
+                            target_model = next((m for m in available_models if 'flash' in m.lower() or 'pro' in m.lower()), available_models[0])
+                            clean_model_name = target_model.replace('models/', '')
+                            model = genai.GenerativeModel(clean_model_name)
+                            
+                            prompt = (
+                                "너는 1920년대 월스트리트의 날카롭고 이성적인 퀀트 애널리스트야. 고전적이고 단호한 비즈니스 신문 칼럼니스트의 말투를 사용해.\n\n"
+                                "[System Instructions]\n"
+                                "Ultra-deep thinking mode. Greater rigor, attention to detail, and multi-angle verification. "
+                                "Start by outlining the task and breaking down the problem into subtasks. "
+                                "For each subtask, explore multiple perspectives, even those that seem initially irrelevant or improbable. "
+                                "Purposefully attempt to disprove or challenge your own assumptions at every step. Triple-verify everything. "
+                                "Critically review each step, scrutinize your logic, assumptions, and conclusions, explicitly calling out uncertainties and alternative viewpoints. "
+                                "Independently verify your reasoning using alternative methodologies or tools, cross-checking every fact, inference, and conclusion against external data, calculation, or authoritative sources. "
+                                "Deliberately seek out and employ at least twice as many verification tools or methods as you typically would. "
+                                "Use mathematical validations, web searches, logic evaluation frameworks, and additional resources explicitly and liberally to cross-verify your claims. "
+                                "Even if you feel entirely confident in your solution, explicitly dedicate additional time and effort to systematically search for weaknesses, logical gaps, hidden assumptions, or oversights. "
+                                "Clearly document these potential pitfalls and how you've addressed them. "
+                                "Once you're fully convinced your analysis is robust and complete, deliberately pause and force yourself to reconsider the entire reasoning chain one final time from scratch. "
+                                "Explicitly detail this last reflective step.\n"
+                                "답변은 반드시 처음부터 끝까지 한국말로 작성해.\n\n"
+                                "🚨 [중요: 출력 형식 제한] 🚨\n"
+                                "위의 심층 추론 과정은 너의 내부 논리로만 사용하고, 최종 출력되는 답변에는 다음 3가지 목차만 정확히 포함해서 작성해. 개별 뉴스 분석 등은 절대 화면에 출력하지 마.\n"
+                                "1. 주요 뉴스 헤드라인 분류 및 초기 분석\n"
+                                "2. 현재 주식 시장의 핵심 쟁점 및 잠재적 리스크 도출\n"
+                                "3. 최종 고찰 (Reconsideration from Scratch)\n\n"
+                                "[Task]\n"
+                                "방금 수집된 미국의 증시, 나스닥, 연준 관련 최신 뉴스 헤드라인 15개야. 철저하게 분석하고 3가지 목차로만 결과물을 도출해 줘.\n\n"
+                                "[뉴스 헤드라인]\n" + "\n".join(headlines_for_ai)
+                            )
+                            response = model.generate_content(prompt)
+                            st.success(f"✅ 심층 추론 분석이 완료되었습니다. (사용 모델: {clean_model_name})")
+                            st.info(f"**🤖 System-2 애널리스트 심층 리포트:**\n\n{response.text}")
+                            with st.expander("📋 리포트 텍스트 복사하기"): st.code(response.text, language="markdown")
+                except Exception as e:
+                    st.error(f"분석 중 오류가 발생했습니다. 상세 에러: {e}")
 
     st.divider()
-    m1, m2, m3, m4, m5 = st.columns(5)
-    m1.metric("QQQ vs 200MA", f"${last_row['QQQ']:.2f}", f"{(last_row['QQQ']/last_row['QQQ_MA200']-1)*100:+.2f}%")
-    m2.metric("TQQQ vs 200MA", f"${last_row['TQQQ']:.2f}", f"{(last_row['TQQQ']/last_row['TQQQ_MA200']-1)*100:+.2f}%", delta_color="inverse")
-    m3.metric("VIX (5D MA)", f"{last_row['VIX_MA5']:.2f}", f"종가:{last_row['^VIX']:.2f}")
-    m4.metric("반도체 1M", f"{last_row['SMH_1M_Ret']*100:+.2f}%")
-    m5.metric("반도체 3M", f"{last_row['SMH_3M_Ret']*100:+.2f}%")
-
-    if last_row['TQQQ'] < last_row['TQQQ_MA200'] and last_row['QQQ'] >= last_row['QQQ_MA200']:
-        st.error("### 🚨 [중대 경보] TQQQ가 200일선을 먼저 이탈했습니다. 하락 전조일 확률이 매우 높습니다!")
-
-# ------------------------------------------
-# PAGE 2, 3, 4 (생략 - 기존 로직과 동일하게 유지하되 위 page 변수에 따라 routing)
-# ------------------------------------------
-elif page == "🍫 8-Pack 레이더망":
-    st.subheader("II. 조기 경보 초콜릿 보드")
-    df_view = df.iloc[-120:]
-    row1, row2 = st.columns(4), st.columns(4)
-    # (기존 8-pack 차트 코드 유지...)
-    with row1[0]: st.markdown("##### 1. 스마트 DCA (RSI)"); fig1 = go.Figure(); fig1.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQ_RSI'], line=dict(color='#1A1A1A'))); fig1.update_layout(height=200, margin=dict(l=0,r=0,t=0,b=0)); st.plotly_chart(fig1, use_container_width=True)
-    # ... 나머지 차트들도 유사하게 구현 ...
-
-elif page == "📉 폭락장 아카이브":
-    st.subheader("III. 역사적 폭락장 아카이브")
-    crises = {"2008 금융위기": ("2007-08-01", "2009-12-31"), "2020 코로나": ("2020-01-01", "2020-12-31")}
-    c_name = st.selectbox("위기 선택", list(crises.keys()))
-    # (기존 시뮬레이터 차트 코드 유지...)
-
-elif page == "📰 매크로 뉴스룸":
-    st.subheader("IV. 실시간 뉴스 & AI")
-    headlines, news_items = fetch_macro_news()
-    # (기존 뉴스 갤러리 + AI 분석 코드 유지...)
-    if st.button("🚀 AI 분석 실행"):
-        api_key = st.secrets["GEMINI_API_KEY"]
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        res = model.generate_content(f"뉴스 요약해줘: {headlines}")
-        st.info(res.text)
-    
-    cols = st.columns(3)
-    for i, item in enumerate(news_items):
-        with cols[i%3]: st.markdown(f"<div style='background:white; border:1px solid #1A1A1A; padding:10px; border-radius:4px; height:120px;'><b><a href='{item['link']}'>{item['title']}</a></b><br><small>{item['date']}</small></div>", unsafe_allow_html=True)
+    st.markdown("#### 📝 최신 경제 헤드라인 원문")
+    if items:
+        for item in items:
+            title = item.find('title').text
+            link = item.find('link').text
+            pubDate = item.find('pubDate').text
+            clean_date = pubDate[:-4] if pubDate else ""
+            st.markdown(f"- [{title}]({link}) <span style='color:#8B0000; font-family:Pretendard, sans-serif; font-size:0.8em;'>({clean_date})</span>", unsafe_allow_html=True)
+    else:
+        st.write("수신된 뉴스가 없습니다.")
