@@ -24,6 +24,7 @@ st.markdown("""
     .main .block-container { max-width: 1300px; margin: 0 auto; padding-top: 2rem; }
     h1, h2, h3, h4, h5, h6 { font-family: 'Pretendard', sans-serif !important; color: #1A1A1A !important; letter-spacing: 0.5px; font-weight: 800 !important; }
     
+    /* 🚨 알림 박스 (초콜릿 모양으로 높이 고정하여 삐뚤어짐 방지) */
     div[data-testid="stAlert"] { 
         background-color: #FFFDF7; border: 1px solid #2C2C2C; border-radius: 4px; 
         color: #1A1A1A; box-shadow: none; padding: 10px; min-height: 65px; 
@@ -294,13 +295,22 @@ with tab2:
 # ------------------------------------------
 with tab3:
     st.subheader("조기 경보 초콜릿 보드 (8-Pack Visual Radar)")
+    
     st.markdown("""
-    > **"군중은 속일 수 있어도, 돈의 흔적은 속일 수 없다."**
-    > 
-    > 이곳은 단순한 지표의 나열이 아닙니다. 월스트리트 거대 자본(Smart Money)의 은밀한 자금 이동과 군중의 비이성적 심리 상태를 꿰뚫어 보는 **8개의 정밀 광학 렌즈**입니다. 
-    > 표면적인 지수 상승에 속지 마십시오. 감정을 배제하고 오직 차트가 가리키는 냉혹한 진실에만 집중하십시오.
-    """)
-    st.divider()
+    <div style="background-color: #FFFDF7; border-left: 5px solid #8B0000; padding: 20px; margin-bottom: 25px;">
+        <h4 style="margin-top: 0; color: #8B0000;">"군중의 환희는 속일 수 있어도, 거대 자본이 남기는 발자국은 결코 속일 수 없다."</h4>
+        <p style="font-size: 1.05em; line-height: 1.6; margin-bottom: 0;">
+            친애하는 투자자 여러분, 이곳은 단순한 보조 지표의 나열이 아닙니다. 월스트리트 프랍 데스크(Prop Desk)의 심장부에서나 볼 수 있는 <strong>'8-Pack 정밀 광학 렌즈'</strong>, 일명 초콜릿 보드입니다. 우리는 이 완벽한 4x2 배열의 레이더망을 통해 겉으로 평온해 보이는 시장을 3차원으로 낱낱이 해부합니다.
+        </p>
+        <ul style="margin-top: 10px; margin-bottom: 15px; font-size: 1.05em; line-height: 1.6;">
+            <li>🎯 <strong>제 1열 ~ 3열 (심리와 타점):</strong> 시장이 비이성적인 공포에 질렸는지, 아니면 피를 흘리고 있는지를 진단하여 당신의 <strong>'자금 투입(DCA) 속도'</strong>를 기계적으로 통제합니다.</li>
+            <li>🔍 <strong>제 4열 ~ 8열 (스마트머니 추적):</strong> 지수는 오르는데 대장주만 오르는 가짜 상승은 아닌지(시장 폭), 기관들이 몰래 금(GLD)이나 안전한 국채(IEF)로 도망치고 있지는 않은지(스프레드), 달러가 시장의 피(유동성)를 말리고 있지는 않은지를 감시합니다.</li>
+        </ul>
+        <p style="font-weight: bold; margin-bottom: 0; color: #1A1A1A;">
+            폭락은 예고 없이 오지 않습니다. 8개의 모니터에 하나둘씩 붉은 경고등이 켜진다면, 시스템이 R3를 선언하기 전이라도 이미 거대한 폭풍이 몰려오고 있음을 직감하십시오. 오직 이 냉혹한 진실의 판에만 집중하십시오.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
     
     df_view = df.iloc[-120:]
     row1 = st.columns(4)
@@ -309,7 +319,7 @@ with tab3:
     # ---------------- ROW 1 ----------------
     with row1[0]:
         st.markdown("##### 1. 스마트 DCA (RSI)")
-        qqq_rsi = last_row['QQQ_RSI'] # 💡 에러 발생했던 RSI 변수 선언 추가 완료!
+        qqq_rsi = last_row['QQQ_RSI'] 
         if qqq_rsi < 40 and last_row['QQQ'] < last_row['QQQ_MA200']: st.success("🔥 매수: 공포/과매도. 현금 투입.")
         elif qqq_rsi > 70: st.error("⚠️ 보류: 단기 과열. 현금 비축.")
         else: st.info("🟢 정상: 기계적 적립 유지.")
