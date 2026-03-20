@@ -5,6 +5,8 @@ import pandas_ta as ta
 import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
+import urllib.request
+import xml.etree.ElementTree as ET
 import warnings
 
 warnings.filterwarnings('ignore')
@@ -37,19 +39,16 @@ def load_data():
     df = pd.DataFrame(index=data.index)
     for t in TICKERS: df[t] = data[t]
     
-    # 기본 이평선
     df['QQQ_MA50'] = df['QQQ'].rolling(window=50).mean()
     df['QQQ_MA200'] = df['QQQ'].rolling(window=200).mean()
-    df['TQQQ_MA200'] = df['TQQQ'].rolling(window=200).mean() # 🚨 조기 경보용 TQQQ 200일선
+    df['TQQQ_MA200'] = df['TQQQ'].rolling(window=200).mean() 
     df['SMH_MA50'] = df['SMH'].rolling(window=50).mean()
     
-    # V4.5 개선 지표
     df['VIX_MA5'] = df['^VIX'].rolling(window=5).mean()
     df['SMH_3M_Ret'] = df['SMH'].pct_change(periods=63)
     df['SMH_1M_Ret'] = df['SMH'].pct_change(periods=21)
     df['SMH_RSI'] = ta.rsi(df['SMH'], length=14)
     
-    # 조기 경보 지표
     df['HYG_IEF_Ratio'] = df['HYG'] / df['IEF']
     df['HYG_IEF_MA50'] = df['HYG_IEF_Ratio'].rolling(window=50).mean()
     df['QQQ_20d_Ret'] = df['QQQ'].pct_change(periods=20)
@@ -117,7 +116,7 @@ regime_info = {
 # ==========================================
 # 4. 탭 구성
 # ==========================================
-tab1, tab2, tab3 = st.tabs(["📊 시스템 분석관", "🧮 리밸런싱 계산기", "🚨 실전 퀀트 무기"])
+tab1, tab2, tab3, tab4 = st.tabs(["📊 시스템 분석관", "🧮 리밸런싱 계산기", "🚨 실전 퀀트 무기", "📰 매크로 뉴스룸"])
 
 # ------------------------------------------
 # 탭 1: 시스템 분석관
@@ -132,7 +131,6 @@ with tab1:
         else:
             st.success("✅ 현재 국면이 안정적으로 유지되고 있습니다.")
             
-        # 🚨 TQQQ 선행 경보 로직
         if last_row['TQQQ'] < last_row['TQQQ_MA200'] and last_row['QQQ'] >= last_row['QQQ_MA200']:
             st.error("🚨 **[선행 경보 발동]** QQQ는 아직 200일선 위지만, **TQQQ가 200일선을 이탈했습니다.** 곧 R3로 강등될 위험이 높습니다!")
             
@@ -154,31 +152,25 @@ with tab1:
     st.divider()
     st.subheader("📈 QQQ & TQQQ 200일선 모니터링 (조기 경보)")
     
-    # 두 개의 차트를 좌우로 배치
     chart_col1, chart_col2 = st.columns(2)
     
-    # --- 1) 왼쪽: QQQ 차트 ---
     fig_qqq = go.Figure()
     fig_qqq.add_trace(go.Scatter(x=df.index, y=df['QQQ'], name='QQQ', line=dict(color='black', width=2)))
     fig_qqq.add_trace(go.Scatter(x=df.index, y=df['QQQ_MA200'], name='QQQ 200일선', line=dict(color='red', width=2, dash='dash')))
     
-    # --- 2) 오른쪽: TQQQ 차트 ---
     fig_tqqq = go.Figure()
     fig_tqqq.add_trace(go.Scatter(x=df.index, y=df['TQQQ'], name='TQQQ', line=dict(color='blue', width=2)))
     fig_tqqq.add_trace(go.Scatter(x=df.index, y=df['TQQQ_MA200'], name='TQQQ 200일선', line=dict(color='orange', width=2, dash='dash')))
     
-    # --- 레짐 백그라운드 공통 적용 로직 ---
     colors = {1: 'rgba(0, 255, 0, 0.1)', 2: 'rgba(255, 255, 0, 0.1)', 3: 'rgba(255, 165, 0, 0.1)', 4: 'rgba(255, 0, 0, 0.1)'}
     for i in range(1, len(df)):
         if df['Regime'].iloc[i-1] != df['Regime'].iloc[i] or i == 1:
             start_idx = df.index[i]
             curr_r = df['Regime'].iloc[i]
         if i == len(df)-1 or df['Regime'].iloc[i] != df['Regime'].iloc[i+1]:
-            # QQQ, TQQQ 차트에 각각 음영 추가
             fig_qqq.add_vrect(x0=start_idx, x1=df.index[i], fillcolor=colors[curr_r], opacity=0.5, layer="below", line_width=0)
             fig_tqqq.add_vrect(x0=start_idx, x1=df.index[i], fillcolor=colors[curr_r], opacity=0.5, layer="below", line_width=0)
             
-    # 레이아웃 업데이트 및 출력
     fig_qqq.update_layout(title="[시스템 기준] QQQ vs 200일 이평선", height=350, template='plotly_white', margin=dict(l=0, r=0, t=40, b=0))
     fig_tqqq.update_layout(title="[조기 경보] TQQQ vs 200일 이평선", height=350, template='plotly_white', margin=dict(l=0, r=0, t=40, b=0))
     
@@ -192,8 +184,6 @@ with tab1:
 # ------------------------------------------
 with tab2:
     st.subheader("💼 내 포트폴리오 리밸런싱 계산기")
-    st.write("현재 보유 중인 자산의 평가 금액을 입력하면, V4.5 목표 비중에 맞춘 정확한 매수/매도 금액을 계산해 드립니다.")
-    
     col_input, col_result = st.columns([1, 2])
     
     with col_input:
@@ -233,17 +223,12 @@ with tab2:
             
             rebal_df = pd.DataFrame(rebal_data)
             st.dataframe(rebal_df, hide_index=True, use_container_width=True)
-            st.info("💡 **Tip:** 매도 🔴를 먼저 실행하여 예수금을 확보한 뒤, 매수 🟢를 진행하세요.")
-        else:
-            st.warning("왼쪽에 현재 보유 자산 금액을 입력해 주세요.")
 
 # ------------------------------------------
 # 탭 3: 실전 퀀트 무기 (선행 지표)
 # ------------------------------------------
 with tab3:
     st.subheader("🚨 조기 경보 레이더 (선행 지표)")
-    st.write("시스템(후행 지표)이 폭락을 인지하기 전에 미리 위험을 감지하는 스마트머니 지표입니다.")
-    
     r1, r2 = st.columns(2)
     
     with r1:
@@ -252,9 +237,9 @@ with tab3:
         ma50_ratio = last_row['HYG_IEF_MA50']
         
         if curr_ratio < ma50_ratio:
-            st.error("🚨 **위험 (Risk-Off):** 스마트머니가 회사채를 팔고 안전한 국채로 도망가고 있습니다. 하락장 대비가 필요합니다.")
+            st.error("🚨 **위험 (Risk-Off):** 스마트머니 이탈 중.")
         else:
-            st.success("✅ **안전 (Risk-On):** 채권 시장의 자금 흐름이 건전합니다.")
+            st.success("✅ **안전 (Risk-On):** 자금 흐름 건전.")
             
         fig2 = go.Figure()
         fig2.add_trace(go.Scatter(x=df.index[-200:], y=df['HYG_IEF_Ratio'].iloc[-200:], name='HYG/IEF 비율', line=dict(color='blue')))
@@ -268,9 +253,37 @@ with tab3:
         qqqe_ret = last_row['QQQE_20d_Ret']
         
         if qqq_ret > 0 and qqqe_ret < 0:
-            st.warning("⚠️ **가짜 상승 (Divergence):** 소수의 대장주만 오르고 대다수 주식은 하락 중입니다. 고점 징후일 수 있습니다.")
+            st.warning("⚠️ **가짜 상승 (Divergence):** 소수 대장주만 오르는 중.")
         else:
-            st.success("✅ **건전한 상승:** 대장주와 개별주가 함께 움직이고 있습니다.")
+            st.success("✅ **건전한 상승:** 시장 전체가 오르는 중.")
             
         st.metric("QQQ (시총가중) 20일 수익률", f"{qqq_ret*100:+.2f}%")
         st.metric("QQQE (동일가중) 20일 수익률", f"{qqqe_ret*100:+.2f}%")
+
+# ------------------------------------------
+# 탭 4: 매크로 뉴스룸 (신규 추가)
+# ------------------------------------------
+with tab4:
+    st.subheader("📰 실시간 글로벌 매크로 뉴스")
+    st.warning("⚠️ **[멘탈 주의보]** 뉴스는 단순 참고용입니다. 자극적인 헤드라인에 흔들리지 마시고, **반드시 V4.5 시스템의 숫자에 기반하여 매매하세요!**")
+    
+    try:
+        # 구글 뉴스 RSS 피드 (미국증시, 연준, 나스닥 관련)
+        url = "https://news.google.com/rss/search?q=미국증시+OR+연준+OR+나스닥+OR+금리&hl=ko&gl=KR&ceid=KR:ko"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        xml_data = urllib.request.urlopen(req).read()
+        root = ET.fromstring(xml_data)
+        items = root.findall('.//item')
+        
+        for item in items[:15]: # 최신 15개 뉴스 가져오기
+            title = item.find('title').text
+            link = item.find('link').text
+            pubDate = item.find('pubDate').text
+            
+            # 날짜 포맷 정리 (UTC -> KST 변환 생략하고 단순 문자열 슬라이싱)
+            clean_date = pubDate[:-4] 
+            
+            st.markdown(f"- [{title}]({link}) <span style='color:gray; font-size:0.8em;'>({clean_date})</span>", unsafe_allow_html=True)
+            
+    except Exception as e:
+        st.error("뉴스를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.")
