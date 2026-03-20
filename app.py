@@ -10,6 +10,9 @@ import urllib.parse
 import xml.etree.ElementTree as ET
 import warnings
 
+# 🤖 Gemini API 연동을 위한 라이브러리
+import google.generativeai as genai 
+
 warnings.filterwarnings('ignore')
 
 # ==========================================
@@ -40,19 +43,16 @@ def load_data():
     df = pd.DataFrame(index=data.index)
     for t in TICKERS: df[t] = data[t]
     
-    # 기본 이평선
     df['QQQ_MA50'] = df['QQQ'].rolling(window=50).mean()
     df['QQQ_MA200'] = df['QQQ'].rolling(window=200).mean()
     df['TQQQ_MA200'] = df['TQQQ'].rolling(window=200).mean() 
     df['SMH_MA50'] = df['SMH'].rolling(window=50).mean()
     
-    # V4.5 개선 지표
     df['VIX_MA5'] = df['^VIX'].rolling(window=5).mean()
     df['SMH_3M_Ret'] = df['SMH'].pct_change(periods=63)
     df['SMH_1M_Ret'] = df['SMH'].pct_change(periods=21)
     df['SMH_RSI'] = ta.rsi(df['SMH'], length=14)
     
-    # 조기 경보 지표
     df['HYG_IEF_Ratio'] = df['HYG'] / df['IEF']
     df['HYG_IEF_MA50'] = df['HYG_IEF_Ratio'].rolling(window=50).mean()
     df['QQQ_20d_Ret'] = df['QQQ'].pct_change(periods=20)
@@ -120,7 +120,7 @@ regime_info = {
 # ==========================================
 # 4. 탭 구성
 # ==========================================
-tab1, tab2, tab3, tab4 = st.tabs(["📊 시스템 분석관", "🧮 리밸런싱 계산기", "🚨 실전 퀀트 무기", "📰 매크로 뉴스룸"])
+tab1, tab2, tab3, tab4 = st.tabs(["📊 시스템 분석관", "🧮 리밸런싱 계산기", "🚨 실전 퀀트 무기", "📰 매크로 뉴스 & AI 요약"])
 
 # ------------------------------------------
 # 탭 1: 시스템 분석관
@@ -265,32 +265,69 @@ with tab3:
         st.metric("QQQE (동일가중) 20일 수익률", f"{qqqe_ret*100:+.2f}%")
 
 # ------------------------------------------
-# 탭 4: 매크로 뉴스룸
+# 탭 4: 매크로 뉴스 & AI 요약 (신규 추가)
 # ------------------------------------------
 with tab4:
-    st.subheader("📰 실시간 글로벌 매크로 뉴스")
-    st.warning("⚠️ **[멘탈 주의보]** 뉴스는 단순 참고용입니다. 자극적인 헤드라인에 흔들리지 마시고, **반드시 V4.5 시스템의 숫자에 기반하여 매매하세요!**")
+    st.subheader("📰 실시간 뉴스 및 🤖 AI 시장 분위기 요약")
+    st.write("구글 뉴스 헤드라인을 바탕으로 현재 시장의 핵심 쟁점을 AI가 요약합니다.")
     
+    # 1. 뉴스 데이터 가져오기
+    headlines_for_ai = []
     try:
         search_query = urllib.parse.quote("미국증시 OR 연준 OR 나스닥 OR 금리")
         url = f"https://news.google.com/rss/search?q={search_query}&hl=ko&gl=KR&ceid=KR:ko"
         
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         xml_data = urllib.request.urlopen(req).read()
         root = ET.fromstring(xml_data)
-        items = root.findall('.//item')
+        items = root.findall('.//item')[:15] # 최신 15개
         
-        if not items:
-            st.info("현재 불러올 수 있는 최신 뉴스가 없습니다.")
-        else:
-            for item in items[:15]:
+        if items:
+            for item in items:
                 title = item.find('title').text
-                link = item.find('link').text
-                pubDate = item.find('pubDate').text
-                
-                clean_date = pubDate[:-4] if pubDate else ""
-                
-                st.markdown(f"- [{title}]({link}) <span style='color:gray; font-size:0.8em;'>({clean_date})</span>", unsafe_allow_html=True)
-                
+                headlines_for_ai.append(title)
     except Exception as e:
-        st.error(f"뉴스를 불러오는 중 오류가 발생했습니다. 상세 에러: {e}")
+        st.error(f"뉴스 데이터를 가져오는 중 오류가 발생했습니다: {e}")
+
+    # 2. AI 요약 기능 (Gemini API)
+    with st.expander("✨ AI에게 현재 시장 요약 시키기 (클릭하여 열기)", expanded=True):
+        st.markdown("**1. 무료 API Key 발급받기:** [Google AI Studio](https://aistudio.google.com/app/apikey)에 접속하여 'Create API key' 버튼을 눌러 키를 복사하세요.")
+        
+        api_key = st.text_input("🔑 발급받은 Gemini API Key를 입력하세요:", type="password")
+        
+        if st.button("🚀 헤드라인 요약 실행"):
+            if not api_key:
+                st.warning("API Key를 먼저 입력해 주세요!")
+            elif not headlines_for_ai:
+                st.warning("분석할 뉴스 데이터가 없습니다.")
+            else:
+                try:
+                    with st.spinner("AI가 최신 뉴스 15개를 분석 중입니다... 잠시만 기다려주세요."):
+                        genai.configure(api_key=api_key)
+                        model = genai.GenerativeModel('gemini-1.5-flash')
+                        
+                        prompt = (
+                            "너는 월스트리트의 날카로운 퀀트 애널리스트야. "
+                            "다음은 방금 수집된 미국의 증시, 나스닥, 연준, 금리 관련 최신 뉴스 헤드라인 15개야. "
+                            "이 헤드라인들을 바탕으로 현재 주식 시장의 전반적인 분위기와 가장 주의해야 할 리스크를 3~4줄로 아주 명확하고 객관적으로 요약해 줘.\n\n"
+                            "[뉴스 헤드라인]\n" + "\n".join(headlines_for_ai)
+                        )
+                        
+                        response = model.generate_content(prompt)
+                        st.success("✅ AI 분석 완료!")
+                        st.info(f"**🤖 AI 애널리스트 요약 리포트:**\n\n{response.text}")
+                except Exception as e:
+                    st.error(f"AI 분석 중 오류가 발생했습니다. API Key가 정확한지 확인해 주세요. 상세 에러: {e}")
+
+    # 3. 뉴스 원문 리스트 출력
+    st.divider()
+    st.markdown("#### 📝 최신 뉴스 헤드라인 원문")
+    if items:
+        for item in items:
+            title = item.find('title').text
+            link = item.find('link').text
+            pubDate = item.find('pubDate').text
+            clean_date = pubDate[:-4] if pubDate else ""
+            st.markdown(f"- [{title}]({link}) <span style='color:gray; font-size:0.8em;'>({clean_date})</span>", unsafe_allow_html=True)
+    else:
+        st.write("표시할 뉴스가 없습니다.")
