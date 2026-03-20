@@ -46,7 +46,7 @@ st.markdown("""
     div[data-testid="stAlert"] {
         background-color: #FFFDF7;
         border: 1px solid #2C2C2C;
-        border-radius: 4px; /* 살짝 둥글게 모던함 추가 */
+        border-radius: 4px;
         color: #1A1A1A;
         box-shadow: none;
     }
@@ -83,24 +83,24 @@ st.markdown("""
     /* 탭 디자인 (여백과 공간감 대폭 개선) */
     .stTabs [data-baseweb="tab-list"] {
         border-bottom: 3px solid #2C2C2C;
-        gap: 25px; /* 탭 사이 간격 확보 */
-        padding-bottom: 5px; /* 하단 선과의 간격 확보 */
+        gap: 25px; 
+        padding-bottom: 5px; 
     }
     .stTabs [data-baseweb="tab"] {
         font-family: 'Pretendard', sans-serif;
         color: #1A1A1A;
         font-weight: 700;
-        font-size: 1.05rem; /* 글씨 크기 살짝 확대 */
+        font-size: 1.05rem; 
         border-radius: 4px 4px 0 0;
         border: 1px solid transparent;
-        padding: 10px 15px; /* 탭 내부 여백 넓게 */
+        padding: 10px 15px; 
     }
     .stTabs [aria-selected="true"] {
         background-color: #FFFDF7;
         border: 2px solid #2C2C2C;
-        border-bottom: 3px solid #FFFDF7; /* 하단 선을 덮어서 열린 느낌 */
+        border-bottom: 3px solid #FFFDF7; 
         margin-bottom: -3px;
-        color: #8B0000; /* 선택된 탭은 포인트 컬러 */
+        color: #8B0000; 
     }
 
     /* 구분선 */
@@ -127,7 +127,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 📰 신문 헤더 (Masthead) 삽입 - 영문 타이틀 폰트(Georgia)만 유지하여 빈티지 감성 보존
+# 📰 신문 헤더 (Masthead) 삽입
 st.markdown("""
 <div style="text-align: center; border-top: 4px solid #1A1A1A; border-bottom: 4px double #1A1A1A; padding: 20px 0; margin-bottom: 30px; background-color: transparent;">
     <h1 style="font-family: Georgia, serif; font-size: 3em; font-weight: bold; letter-spacing: 4px; margin: 0; color: #1A1A1A;">RIMBERIO FINANCIAL GAZETTE</h1>
@@ -272,7 +272,6 @@ with tab1:
     
     chart_col1, chart_col2 = st.columns(2)
     
-    # 모던 빈티지 톤 차트 속성
     chart_layout = dict(
         paper_bgcolor='#FFFDF7',
         plot_bgcolor='#FFFDF7',
@@ -428,20 +427,32 @@ with tab4:
                 st.warning("분석할 전보 데이터가 없습니다.")
             else:
                 try:
-                    with st.spinner("최신 전보를 해독하여 분석 중입니다..."):
+                    with st.spinner("최신 전보를 해독하여 구글 서버와 통신 중입니다..."):
                         genai.configure(api_key=api_key)
-                        model = genai.GenerativeModel('gemini-pro')
                         
-                        prompt = (
-                            "너는 1920년대 월스트리트의 날카롭고 이성적인 퀀트 애널리스트야. 말투도 딱딱하고 고전적인 비즈니스 신문 칼럼니스트처럼 해줘. "
-                            "다음은 방금 수집된 미국의 증시, 나스닥, 연준 관련 최신 뉴스 헤드라인 15개야. "
-                            "이걸 바탕으로 현재 주식 시장의 핵심 쟁점과 리스크를 3~4줄로 명확하게 요약해 줘.\n\n"
-                            "[뉴스 헤드라인]\n" + "\n".join(headlines_for_ai)
-                        )
+                        # 💡 꿀팁: 하드코딩된 이름 대신 구글 서버에 현재 사용 가능한 텍스트 모델 목록을 직접 물어보고 가져옵니다!
+                        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
                         
-                        response = model.generate_content(prompt)
-                        st.success("✅ AI 분석이 완료되었습니다.")
-                        st.info(f"**🤖 애널리스트 요약 리포트:**\n\n{response.text}")
+                        if not available_models:
+                            st.error("API Key에 접근 가능한 AI 모델이 없습니다. 설정을 확인해 주세요.")
+                        else:
+                            # flash나 pro가 들어간 모델을 우선 선택하고, 없으면 첫 번째 모델 사용
+                            target_model = next((m for m in available_models if 'flash' in m.lower() or 'pro' in m.lower()), available_models[0])
+                            
+                            # 모델 이름에서 'models/' 접두사 제거
+                            clean_model_name = target_model.replace('models/', '')
+                            model = genai.GenerativeModel(clean_model_name)
+                            
+                            prompt = (
+                                "너는 1920년대 월스트리트의 날카롭고 이성적인 퀀트 애널리스트야. 말투도 딱딱하고 고전적인 비즈니스 신문 칼럼니스트처럼 해줘. "
+                                "다음은 방금 수집된 미국의 증시, 나스닥, 연준 관련 최신 뉴스 헤드라인 15개야. "
+                                "이걸 바탕으로 현재 주식 시장의 핵심 쟁점과 리스크를 3~4줄로 명확하게 요약해 줘.\n\n"
+                                "[뉴스 헤드라인]\n" + "\n".join(headlines_for_ai)
+                            )
+                            
+                            response = model.generate_content(prompt)
+                            st.success(f"✅ AI 분석이 완료되었습니다. (사용 모델: {clean_model_name})")
+                            st.info(f"**🤖 애널리스트 요약 리포트:**\n\n{response.text}")
                 except Exception as e:
                     st.error(f"분석 중 오류가 발생했습니다. 키 값을 확인하십시오. 상세 에러: {e}")
 
