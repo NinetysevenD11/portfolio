@@ -49,6 +49,7 @@ st.markdown("""
         border-radius: 4px;
         color: #1A1A1A;
         box-shadow: none;
+        padding: 10px 15px;
     }
     div[data-testid="stAlert"]:has(.stIcon-error), div[data-testid="stAlert"]:has(.stIcon-warning) {
         border: 2px solid #8B0000;
@@ -144,7 +145,8 @@ st.markdown("""
 # ==========================================
 # 2. 데이터 수집 및 지표 계산
 # ==========================================
-TICKERS = ['QQQ', 'TQQQ', 'SOXL', 'USD', 'QLD', 'SSO', 'SPY', 'SMH', 'GLD', '^VIX', 'HYG', 'IEF', 'QQQE']
+# UUP(달러 인덱스 펀드) 추가
+TICKERS = ['QQQ', 'TQQQ', 'SOXL', 'USD', 'QLD', 'SSO', 'SPY', 'SMH', 'GLD', '^VIX', 'HYG', 'IEF', 'QQQE', 'UUP']
 ASSET_LIST = ['TQQQ', 'SOXL', 'USD', 'QLD', 'SSO', 'SPY', 'QQQ', 'GLD', 'CASH']
 
 @st.cache_data(ttl=3600)
@@ -172,10 +174,14 @@ def load_data():
     df['QQQ_20d_Ret'] = df['QQQ'].pct_change(periods=20)
     df['QQQE_20d_Ret'] = df['QQQE'].pct_change(periods=20)
     
-    # 신규 지표: 스마트 DCA용 RSI 및 안전자산 선호도
     df['QQQ_RSI'] = ta.rsi(df['QQQ'], length=14)
     df['GLD_SPY_Ratio'] = df['GLD'] / df['SPY']
     df['GLD_SPY_MA50'] = df['GLD_SPY_Ratio'].rolling(window=50).mean()
+    
+    # 신규 6-Pack 지표: Drawdown & 달러 유동성
+    df['QQQ_High52'] = df['QQQ'].rolling(window=252).max() # 1년(252 거래일) 최고점
+    df['QQQ_DD'] = (df['QQQ'] / df['QQQ_High52']) - 1 # 고점 대비 하락률
+    df['UUP_MA50'] = df['UUP'].rolling(window=50).mean() # 달러 인덱스 50일선
     
     return df.dropna()
 
@@ -239,7 +245,7 @@ regime_info = {
 # ==========================================
 # 4. 탭 구성
 # ==========================================
-tab1, tab2, tab3, tab4 = st.tabs(["I. 시장 분석관", "II. 리밸런싱 장부", "III. 조기 경보 레이더", "IV. 매크로 뉴스룸"])
+tab1, tab2, tab3, tab4 = st.tabs(["I. 시장 분석관", "II. 리밸런싱 장부", "III. 6-Pack 레이더망", "IV. 매크로 뉴스룸"])
 
 # ------------------------------------------
 # 탭 1: MARKET ANALYSIS
@@ -343,80 +349,109 @@ with tab2:
             st.info("장부에 현재 보유 자산 금액을 입력해 주십시오.")
 
 # ------------------------------------------
-# 탭 3: EARLY WARNING (4개의 레이더망)
+# 탭 3: 6-PACK EARLY WARNING RADAR
 # ------------------------------------------
 with tab3:
-    st.subheader("조기 경보 레이더 (스마트머니 & 자금 투입 동향)")
+    st.subheader("조기 경보 6-Pack 레이더망 (스마트머니 & 심리 모니터링)")
     st.write("시스템이 붕괴를 공식화하기 전, 이면의 흐름을 읽어내고 자금 투입의 강약을 조절합니다.")
     
-    # 상단 2개 (DCA, 시장폭)
-    r1, r2 = st.columns(2)
+    # 상단 3개 레이더
+    r1, r2, r3 = st.columns(3)
     
     with r1:
-        st.markdown("#### I. 스마트 DCA (자금 투입 페이스메이커)")
+        st.markdown("#### I. 스마트 DCA (투입 속도)")
         qqq_rsi = last_row['QQQ_RSI']
         qqq_close = last_row['QQQ']
         qqq_ma200 = last_row['QQQ_MA200']
         
         if qqq_rsi < 40 and qqq_close < qqq_ma200:
-            st.success("🔥 **적극 매수 (Deep Discount):** 시장이 공포에 질려 과매도 상태입니다. 비축한 현금을 공격적으로 투입할 시기입니다.")
+            st.success("🔥 **적극 매수 (과매도):** 시장이 공포에 질렸습니다. 비축한 현금을 투입할 시기입니다.")
         elif qqq_rsi > 70:
-            st.error("⚠️ **투입 보류 (Overbought):** 시장이 단기 과열(과매수) 상태입니다. 적립금을 아끼고 현금을 비축하십시오.")
+            st.error("⚠️ **투입 보류 (과매수):** 시장이 단기 과열 상태입니다. 적립금을 아끼고 현금을 비축하십시오.")
         else:
-            st.info("🟢 **정상 적립 (Normal DCA):** 평시 상태입니다. 기계적인 월 적립 투자를 유지하십시오.")
+            st.info("🟢 **정상 적립 (Normal):** 평시 상태입니다. 기계적인 적립 투자를 유지하십시오.")
             
         st.metric("QQQ 현재 RSI (14일)", f"{qqq_rsi:.1f}", "과열(70) / 침체(40)")
         
     with r2:
-        st.markdown("#### II. 시장 폭 (Market Breadth)")
+        st.markdown("#### II. 시장 폭 (가짜 상승 판별)")
         qqq_ret = last_row['QQQ_20d_Ret']
         qqqe_ret = last_row['QQQE_20d_Ret']
         
         if qqq_ret > 0 and qqqe_ret < 0:
-            st.warning("⚠️ **가짜 상승 (Divergence):** 소수의 대장주만 지수를 끌어올리고 있으며, 대다수 기업은 하락 중입니다. 고점 징후입니다.")
+            st.warning("⚠️ **가짜 상승 (Divergence):** 소수 대장주만 오르며 대다수는 하락 중입니다. 고점 징후입니다.")
         else:
             st.success("✅ **건전한 상승:** 시장 전반의 기업들이 고르게 상승에 참여하고 있습니다.")
             
         col_m1, col_m2 = st.columns(2)
-        col_m1.metric("QQQ (시총가중) 20일", f"{qqq_ret*100:+.2f}%")
-        col_m2.metric("QQQE (동일가중) 20일", f"{qqqe_ret*100:+.2f}%")
+        col_m1.metric("시총가중 20D", f"{qqq_ret*100:+.2f}%")
+        col_m2.metric("동일가중 20D", f"{qqqe_ret*100:+.2f}%")
+
+    with r3:
+        st.markdown("#### III. 고점 대비 하락률 (멘탈 방어)")
+        qqq_dd = last_row['QQQ_DD']
+        
+        if qqq_dd < -0.20:
+            st.error("🚨 **약세장 (Bear Market):** 52주 고점 대비 -20% 이상 폭락 상태입니다.")
+        elif qqq_dd < -0.10:
+            st.warning("⚠️ **조정장 (Correction):** -10% 이상 하락. 과도한 공포를 경계하십시오.")
+        else:
+            st.success("✅ **안전 (Healthy):** 건전한 추세 내의 잔파도입니다. 흔들리지 마십시오.")
+            
+        st.metric("QQQ 52주 최고점 대비", f"${last_row['QQQ_High52']:.2f}", f"{qqq_dd*100:.2f}% (현재: ${last_row['QQQ']:.2f})", delta_color="inverse")
 
     st.divider()
     
-    # 하단 2개 (채권 스프레드, 안전자산 선호도)
-    r3, r4 = st.columns(2)
+    # 하단 3개 레이더
+    r4, r5, r6 = st.columns(3)
     
-    with r3:
-        st.markdown("#### III. 하이일드 채권 스프레드 (HYG/IEF)")
+    with r4:
+        st.markdown("#### IV. 하이일드 채권 스프레드")
         curr_ratio = last_row['HYG_IEF_Ratio']
         ma50_ratio = last_row['HYG_IEF_MA50']
         
         if curr_ratio < ma50_ratio:
-            st.error("🚨 **위험 (Risk-Off):** 거대 자본이 위험 자산을 버리고 안전 자산(국채)으로 피신하고 있습니다.")
+            st.error("🚨 **위험 (Risk-Off):** 거대 자본이 위험 자산을 버리고 국채로 피신하고 있습니다.")
         else:
             st.success("✅ **안전 (Risk-On):** 채권 시장의 자금 흐름이 건전합니다.")
             
-        fig2 = go.Figure()
-        fig2.add_trace(go.Scatter(x=df.index[-200:], y=df['HYG_IEF_Ratio'].iloc[-200:], name='비율', line=dict(color='#1A1A1A')))
-        fig2.add_trace(go.Scatter(x=df.index[-200:], y=df['HYG_IEF_MA50'].iloc[-200:], name='50일선', line=dict(color='#8B0000', dash='dot')))
-        fig2.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0), paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7')
-        st.plotly_chart(fig2, use_container_width=True)
+        fig4 = go.Figure()
+        fig4.add_trace(go.Scatter(x=df.index[-200:], y=df['HYG_IEF_Ratio'].iloc[-200:], name='비율', line=dict(color='#1A1A1A')))
+        fig4.add_trace(go.Scatter(x=df.index[-200:], y=df['HYG_IEF_MA50'].iloc[-200:], name='50일선', line=dict(color='#8B0000', dash='dot')))
+        fig4.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0), paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7')
+        st.plotly_chart(fig4, use_container_width=True)
 
-    with r4:
-        st.markdown("#### IV. 안전 자산 선호도 (금/주식 비율)")
+    with r5:
+        st.markdown("#### V. 안전 자산 선호도 (금/주식)")
         gld_spy_ratio = last_row['GLD_SPY_Ratio']
         gld_spy_ma50 = last_row['GLD_SPY_MA50']
         
         if gld_spy_ratio > gld_spy_ma50:
-            st.warning("⚠️ **은밀한 이탈 (Flight to Safety):** 시장 붕괴 전, 스마트머니가 주식(SPY)을 팔고 금(GLD)을 매집하는 징후가 포착되었습니다.")
+            st.warning("⚠️ **은밀한 이탈:** 스마트머니가 몰래 주식을 팔고 금을 매집 중입니다.")
         else:
-            st.success("✅ **정상 흐름:** 여전히 주식(SPY)이 금(GLD) 대비 우위를 점하고 있습니다.")
+            st.success("✅ **정상 흐름:** 주식이 금 대비 굳건한 우위를 점하고 있습니다.")
             
-        fig3 = go.Figure()
-        fig3.add_trace(go.Scatter(x=df.index[-200:], y=df['GLD_SPY_Ratio'].iloc[-200:], name='GLD/SPY 비율', line=dict(color='#1A1A1A')))
-        fig3.add_trace(go.Scatter(x=df.index[-200:], y=df['GLD_SPY_MA50'].iloc[-200:], name='50일선', line=dict(color='#8B0000', dash='dot')))
-        fig3.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0), paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7')
-        st.plotly_chart(fig3, use_container_width=True)
+        fig5 = go.Figure()
+        fig5.add_trace(go.Scatter(x=df.index[-200:], y=df['GLD_SPY_Ratio'].iloc[-200:], name='GLD/SPY', line=dict(color='#1A1A1A')))
+        fig5.add_trace(go.Scatter(x=df.index[-200:], y=df['GLD_SPY_MA50'].iloc[-200:], name='50일선', line=dict(color='#8B0000', dash='dot')))
+        fig5.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0), paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7')
+        st.plotly_chart(fig5, use_container_width=True)
+
+    with r6:
+        st.markdown("#### VI. 달러 유동성 (UUP 인덱스)")
+        uup_close = last_row['UUP']
+        uup_ma50 = last_row['UUP_MA50']
+        
+        if uup_close > uup_ma50:
+            st.error("🚨 **유동성 축소:** 달러가 50일선을 돌파하며 글로벌 자금을 블랙홀처럼 빨아들이고 있습니다.")
+        else:
+            st.success("✅ **유동성 양호:** 달러 강세가 진정되어 위험 자산 투자에 우호적입니다.")
+            
+        fig6 = go.Figure()
+        fig6.add_trace(go.Scatter(x=df.index[-200:], y=df['UUP'].iloc[-200:], name='UUP 종가', line=dict(color='#1A1A1A')))
+        fig6.add_trace(go.Scatter(x=df.index[-200:], y=df['UUP_MA50'].iloc[-200:], name='50일선', line=dict(color='#8B0000', dash='dot')))
+        fig6.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0), paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7')
+        st.plotly_chart(fig6, use_container_width=True)
 
 # ------------------------------------------
 # 탭 4: MACRO NEWS
