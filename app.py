@@ -112,7 +112,7 @@ def get_weights_v45(reg, smh_ok):
 target_weights = get_weights_v45(curr_regime, smh_cond)
 
 # ==========================================
-# 2. 사이드바 (UI/UX 컨트롤)
+# 2. 사이드바 (UI/UX 컨트롤 - 단일 메뉴로 통합)
 # ==========================================
 sidebar_top = st.sidebar.container()
 
@@ -123,10 +123,16 @@ page = st.sidebar.radio(
 )
 
 st.sidebar.markdown("<br><hr><br>", unsafe_allow_html=True)
-ui_style = st.sidebar.radio("🎨 UI 테마 선택", ["Light Mode", "Dark Mode"])
-is_dark = ui_style == "Dark Mode"
 
-glass_mode = st.sidebar.toggle("✨ 글래스 효과 (Glass Mode)", value=False)
+# 🚀 하나로 통합된 테마 스위처
+ui_style = st.sidebar.radio(
+    "🎨 UI 테마 선택", 
+    ["Light Mode", "Dark Mode", "Glass Light", "Glass Dark"]
+)
+
+# 선택된 값에 따라 내부 논리 자동 변환
+is_dark = "Dark" in ui_style
+glass_mode = "Glass" in ui_style
 
 # 테마에 따른 변수 할당
 h_color = "#FFFFFF" if is_dark else "#3A2E28"
@@ -207,6 +213,15 @@ dynamic_css = f"""
     #MainMenu {{ visibility: hidden; }} footer {{ visibility: hidden; }}
     .main .block-container {{ max-width: 1300px; padding-top: 0rem; padding-bottom: 2rem; }}
     h1, h2, h3, h4, h5, h6 {{ font-family: 'Pretendard', sans-serif !important; }}
+    
+    /* 라디오 버튼 디자인 덮어쓰기 */
+    div.row-widget.stRadio > div > label {{ background-color: transparent; border-radius: 12px; transition: all 0.3s; padding: 8px; border: 1px solid transparent; }}
+    div.row-widget.stRadio > div > label:hover {{ background-color: {border_color}; }}
+    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) {{ 
+        background-color: {'rgba(139, 92, 246, 0.2)' if is_dark else 'rgba(178, 106, 71, 0.1)'} !important; 
+        border: 1px solid {accent_primary}; 
+    }}
+    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) p {{ color: {accent_primary} !important; }}
 </style>
 """
 st.markdown(dynamic_css, unsafe_allow_html=True)
@@ -220,7 +235,7 @@ st.markdown(f"""
     </div>
     <div style="text-align: right; font-weight: bold; color: {h_color};">
         <div style="font-size: 1.2em;">AMLS V4.5 ENGINE</div>
-        <div style="font-size: 0.9em; color: {h_muted};">{'Dark Mode' if is_dark else 'Light Mode'}{' + Glass' if glass_mode else ''}</div>
+        <div style="font-size: 0.9em; color: {h_muted};">{ui_style} Edition</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
