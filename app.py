@@ -19,6 +19,7 @@ st.markdown("""
 * 🛡️ **VIX 5일 이평선:** 단기 노이즈 필터링 (불필요한 잦은 매매 차단)
 * 📉 **세윤's Rule (R2):** TQQQ 15% + QLD 35% (충격 흡수 및 멘탈 방어)
 * ⚡ **반도체 모멘텀:** 1개월 10% 급반등 조건 추가 (V자 반등 초입 포착)
+* 🚨 **TQQQ 200일선 경보:** QQQ보다 선행하는 레버리지 붕괴 조기 감지
 """)
 
 # ==========================================
@@ -39,6 +40,7 @@ def load_data():
     # 기본 이평선
     df['QQQ_MA50'] = df['QQQ'].rolling(window=50).mean()
     df['QQQ_MA200'] = df['QQQ'].rolling(window=200).mean()
+    df['TQQQ_MA200'] = df['TQQQ'].rolling(window=200).mean() # 🚨 조기 경보용 TQQQ 200일선
     df['SMH_MA50'] = df['SMH'].rolling(window=50).mean()
     
     # V4.5 개선 지표
@@ -130,6 +132,10 @@ with tab1:
         else:
             st.success("✅ 현재 국면이 안정적으로 유지되고 있습니다.")
             
+        # 🚨 TQQQ 선행 경보 로직 추가
+        if last_row['TQQQ'] < last_row['TQQQ_MA200'] and last_row['QQQ'] >= last_row['QQQ_MA200']:
+            st.error("🚨 **[선행 경보 발동]** QQQ는 아직 200일선 위지만, **TQQQ가 200일선을 이탈했습니다.** 곧 R3로 강등될 위험이 높습니다!")
+            
     with c2:
         st.subheader("V4.5 목표 비중")
         w_df = pd.DataFrame(list(target_weights.items()), columns=['자산', '비중'])
@@ -138,11 +144,13 @@ with tab1:
         st.dataframe(w_df, hide_index=True, use_container_width=True)
 
     st.divider()
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("QQQ 종가 vs 200일선", f"${last_row['QQQ']:.2f}", f"{(last_row['QQQ']/last_row['QQQ_MA200'] - 1)*100:+.2f}%")
-    m2.metric("VIX (5일 이평선)", f"{last_row['VIX_MA5']:.2f}", f"종가: {last_row['^VIX']:.2f}")
-    m3.metric("반도체 1M 수익률", f"{last_row['SMH_1M_Ret']*100:+.2f}%", "SOXL 조건")
-    m4.metric("반도체 3M 수익률", f"{last_row['SMH_3M_Ret']*100:+.2f}%", "")
+    # 5개의 컬럼으로 늘려서 TQQQ 추가
+    m1, m2, m3, m4, m5 = st.columns(5)
+    m1.metric("QQQ 종가 vs 200선", f"${last_row['QQQ']:.2f}", f"{(last_row['QQQ']/last_row['QQQ_MA200'] - 1)*100:+.2f}%")
+    m2.metric("TQQQ 종가 vs 200선", f"${last_row['TQQQ']:.2f}", f"{(last_row['TQQQ']/last_row['TQQQ_MA200'] - 1)*100:+.2f}%", delta_color="inverse") # 떨어질때 빨간색
+    m3.metric("VIX (5일 이평선)", f"{last_row['VIX_MA5']:.2f}", f"종가: {last_row['^VIX']:.2f}")
+    m4.metric("반도체 1M 수익률", f"{last_row['SMH_1M_Ret']*100:+.2f}%", "SOXL 조건")
+    m5.metric("반도체 3M 수익률", f"{last_row['SMH_3M_Ret']*100:+.2f}%", "")
 
     st.subheader("📈 나스닥(QQQ) 200일선 및 레짐 시각화")
     fig = go.Figure()
