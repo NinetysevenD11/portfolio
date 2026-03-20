@@ -98,8 +98,7 @@ df['Regime'] = pd.Series(res, index=df.index).shift(1).bfill()
 
 curr_regime = int(df.iloc[-1]['Regime'])
 target_regime = int(df.iloc[-1]['Target'])
-smh_c1, smh_c2, smh_c3 = smh_close > smh_ma50, (smh_3m > 0.05 or smh_1m > 0.10), smh_rsi > 50
-smh_cond = smh_c1 and smh_c2 and smh_c3
+smh_cond = (smh_close > smh_ma50) and (smh_3m > 0.05 or smh_1m > 0.10) and (smh_rsi > 50)
 
 def get_weights_v45(reg, smh_ok):
     w = {t: 0.0 for t in ASSET_LIST}
@@ -113,7 +112,7 @@ def get_weights_v45(reg, smh_ok):
 target_weights = get_weights_v45(curr_regime, smh_cond)
 
 # ==========================================
-# 2. 사이드바 (구조 변경 - 변수 스위칭 선행)
+# 2. 사이드바 (UI/UX 컨트롤)
 # ==========================================
 sidebar_top = st.sidebar.container()
 
@@ -124,15 +123,18 @@ page = st.sidebar.radio(
 )
 
 st.sidebar.markdown("<br><hr><br>", unsafe_allow_html=True)
-ui_style = st.sidebar.radio("🎨 UI 테마 선택", ["Light Mode (Neo-Tactile)", "Dark Mode (Elegant Theme)"])
-is_neo_style = ui_style == "Light Mode (Neo-Tactile)"
+ui_style = st.sidebar.radio("🎨 UI 테마 선택", ["Light Mode", "Dark Mode"])
+is_dark = ui_style == "Dark Mode"
 
-h_color = "#3A2E28" if is_neo_style else "#FFFFFF"
-h_accent = "#B26A47" if is_neo_style else "#8B5CF6"
-h_muted = "#8A7668" if is_neo_style else "#A0AEC0"
-h_border = "rgba(139,94,60,0.1)" if is_neo_style else "rgba(255,255,255,0.05)"
-h_shadow = "2px 2px 4px rgba(255,255,255,0.8)" if is_neo_style else "2px 2px 4px rgba(0,0,0,0.5)"
-h_sidebar_text = "#3A2E28" if is_neo_style else "#FFFFFF"
+glass_mode = st.sidebar.toggle("✨ 글래스 효과 (Glass Mode)", value=False)
+
+# 테마에 따른 변수 할당
+h_color = "#FFFFFF" if is_dark else "#3A2E28"
+h_accent = "#8B5CF6" if is_dark else "#B26A47"
+h_muted = "#A0AEC0" if is_dark else "#8A7668"
+h_border = "rgba(255,255,255,0.05)" if is_dark else "rgba(139,94,60,0.1)"
+h_shadow = "2px 2px 4px rgba(0,0,0,0.5)" if is_dark else "2px 2px 4px rgba(255,255,255,0.8)"
+h_sidebar_text = "#FFFFFF" if is_dark else "#3A2E28"
 
 sidebar_top.markdown(f"""
     <div style="text-align: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid {h_border};">
@@ -142,87 +144,74 @@ sidebar_top.markdown(f"""
 """, unsafe_allow_html=True)
 
 st.sidebar.markdown(f"""
-    <br><br><br>
+    <br><br>
     <div style="position: absolute; bottom: 10px; text-align: center; width: 100%; font-size: 0.8em; color: {h_sidebar_text};">
         Powered by AMLS V4.5 Engine<br>&copy; 2026 SEYOON.
     </div>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. 통합 CSS 및 헤더 (조건부 스위칭)
+# 3. 반응형 CSS 동적 생성 (테마 & 글래스 결합)
 # ==========================================
-neo_tactile_css = """
+# 기본 배경 및 컬러 팔레트 설정
+base_bg = "#121418" if is_dark else "#EBE5DF"
+text_main = "#FFFFFF" if is_dark else "#3A2E28"
+accent_primary = "#8B5CF6" if is_dark else "#B26A47"
+border_color = "rgba(255,255,255,0.1)" if is_dark else "rgba(139,94,60,0.1)"
+
+# 글래스 모드 여부에 따른 카드 배경 및 질감
+if glass_mode:
+    card_bg = "rgba(28, 31, 40, 0.4)" if is_dark else "rgba(255, 255, 255, 0.3)"
+    backdrop = "backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);"
+    card_border = "1px solid rgba(255,255,255,0.15)" if is_dark else "1px solid rgba(255,255,255,0.5)"
+    inset_bg = "rgba(0, 0, 0, 0.2)" if is_dark else "rgba(255, 255, 255, 0.4)"
+    card_shadow = "0 8px 32px 0 rgba(0, 0, 0, 0.3)" if is_dark else "0 8px 32px 0 rgba(139, 94, 60, 0.1)"
+else:
+    card_bg = "#1C1F28" if is_dark else "#EBE5DF"
+    backdrop = ""
+    card_border = "1px solid rgba(255, 255, 255, 0.05)" if is_dark else "none"
+    inset_bg = "linear-gradient(145deg, rgba(139,92,246,0.1), rgba(0,0,0,0))" if is_dark else "transparent"
+    card_shadow = "0 10px 25px rgba(0,0,0,0.5)" if is_dark else "6px 6px 12px rgba(139,94,60,0.25), -6px -6px 12px rgba(255,255,255,0.85)"
+
+dynamic_css = f"""
 <style>
-    :root {
-        --base-bg: #EBE5DF; --text-main: #3A2E28; --accent-primary: #B26A47;
-        --shadow-dark: rgba(139, 94, 60, 0.25); --shadow-light: rgba(255, 255, 255, 0.85);
-        --shadow-raised: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
-        --shadow-inset: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
-        --border-color: rgba(139,94,60,0.1);
-    }
-    .stApp { background-color: var(--base-bg); color: var(--text-main); font-family: 'Pretendard', sans-serif; }
-    [data-testid="stSidebar"] { background-color: var(--base-bg); box-shadow: 4px 0px 10px var(--shadow-dark); border: none; }
-    [data-testid="stSidebar"] p { color: var(--text-main) !important; font-weight: bold; }
-    div.row-widget.stRadio > div > label { background-color: var(--base-bg); border-radius: 12px; box-shadow: var(--shadow-raised); transition: all 0.3s; }
-    div.row-widget.stRadio > div > label:hover p { color: var(--accent-primary) !important; }
-    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) { box-shadow: var(--shadow-inset) !important; }
-    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) p { color: var(--accent-primary) !important; }
+    /* 기본 앱 배경 및 폰트 */
+    .stApp {{ background-color: {base_bg}; color: {text_main}; font-family: 'Pretendard', sans-serif; }}
+    [data-testid="stSidebar"] {{ background-color: {base_bg}; border-right: 1px solid {border_color}; }}
+    [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label {{ color: {text_main} !important; font-weight: bold; }}
     
-    .neo-card { background-color: var(--base-bg); border-radius: 20px; padding: 25px; min-height: 520px; box-shadow: var(--shadow-raised); display: flex; flex-direction: column; margin-bottom: 20px; }
-    .neo-inset-box { background-color: var(--base-bg); border-radius: 12px; padding: 15px; box-shadow: var(--shadow-inset); text-align: center; margin-bottom: 20px;}
-    .check-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-color); font-size: 0.95em; color: var(--text-main); }
-    .check-value { font-family: 'Courier New', monospace; font-weight: bold; color: var(--accent-primary); }
+    /* 카드 컴포넌트 CSS */
+    .neo-card {{
+        background-color: {card_bg} !important;
+        border: {card_border} !important;
+        {backdrop}
+        border-radius: 20px; padding: 25px; min-height: 520px;
+        box-shadow: {card_shadow} !important;
+        display: flex; flex-direction: column; margin-bottom: 20px;
+    }}
+    
+    /* 인셋(강조) 박스 CSS */
+    .neo-inset-box {{
+        background: {inset_bg} !important;
+        border-radius: 12px; padding: 15px; text-align: center; margin-bottom: 20px;
+        border: 1px solid {accent_primary if is_dark and not glass_mode else border_color} !important;
+        {backdrop}
+    }}
+    
+    /* 리스트 및 표 스타일 */
+    .check-row {{ display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid {border_color}; font-size: 0.95em; color: {text_main}; opacity: 0.9; }}
+    .check-value {{ font-family: 'Courier New', monospace; font-weight: bold; color: {accent_primary}; }}
+    
+    /* 기타 UI 숨김 및 헤더 정리 */
+    [data-testid="stHeader"] {{ background-color: transparent !important; }}
+    #MainMenu {{ visibility: hidden; }} footer {{ visibility: hidden; }}
+    .main .block-container {{ max-width: 1300px; padding-top: 0rem; padding-bottom: 2rem; }}
+    h1, h2, h3, h4, h5, h6 {{ font-family: 'Pretendard', sans-serif !important; }}
 </style>
 """
+st.markdown(dynamic_css, unsafe_allow_html=True)
 
-elegant_dark_css = """
-<style>
-    :root {
-        --base-bg: #121418;       
-        --card-bg: #1C1F28;       
-        --text-main: #FFFFFF;     
-        --text-muted: #A0AEC0;    
-        --accent-primary: #8B5CF6; 
-        --accent-glow: rgba(139, 92, 246, 0.4);
-        --border-color: rgba(255, 255, 255, 0.05); 
-        --shadow-raised: 0 10px 25px rgba(0, 0, 0, 0.5); 
-    }
-    .stApp { background-color: var(--base-bg); color: var(--text-main); font-family: 'Pretendard', sans-serif; }
-    [data-testid="stSidebar"] { background-color: var(--base-bg); border-right: 1px solid var(--border-color); }
-    
-    /* 🚨 다크모드 사이드바 내부 글씨 강제 흰색 패치 */
-    [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label { color: #FFFFFF !important; font-weight: bold; }
-    
-    div.row-widget.stRadio > div > label { background-color: transparent; border-radius: 12px; border: 1px solid transparent; transition: all 0.3s; }
-    div.row-widget.stRadio > div > label:hover { background-color: rgba(255,255,255,0.05); }
-    
-    /* 🚨 선택된 메뉴는 보라색으로 하이라이트 */
-    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) { background-color: rgba(139, 92, 246, 0.2) !important; border: 1px solid var(--accent-primary); box-shadow: 0 0 10px var(--accent-glow); }
-    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) p { color: var(--accent-primary) !important; }
-    
-    .neo-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 25px; min-height: 520px; box-shadow: var(--shadow-raised); display: flex; flex-direction: column; margin-bottom: 20px; }
-    .neo-inset-box { background: linear-gradient(145deg, rgba(139,92,246,0.1), rgba(0,0,0,0)); border: 1px solid var(--accent-primary); border-radius: 12px; padding: 15px; text-align: center; margin-bottom: 20px; box-shadow: 0 0 15px var(--accent-glow); }
-    .check-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-color); font-size: 0.95em; color: var(--text-muted); }
-    .check-value { font-family: 'Courier New', monospace; font-weight: bold; color: var(--text-main); }
-    
-    [data-testid="stMetric"] { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: var(--shadow-raised); padding: 15px; }
-    div[data-testid="stMetricValue"] > div { color: var(--text-main) !important; }
-    div[data-testid="stMetricDelta"] > div { color: var(--accent-primary) !important; }
-</style>
-"""
-
-if is_neo_style: st.markdown(neo_tactile_css, unsafe_allow_html=True)
-else: st.markdown(elegant_dark_css, unsafe_allow_html=True)
-
-st.markdown("""
-<style>
-    [data-testid="stHeader"] { background-color: transparent !important; }
-    #MainMenu { visibility: hidden; } footer { visibility: hidden; }
-    .main .block-container { max-width: 1300px; padding-top: 0rem; padding-bottom: 2rem; }
-    h1, h2, h3, h4, h5, h6 { font-family: 'Pretendard', sans-serif !important; }
-</style>
-""", unsafe_allow_html=True)
-
+# 메인 타이틀 바
 st.markdown(f"""
 <div style="padding-bottom: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; margin-top: -20px; border-bottom: 2px solid {h_border};">
     <div>
@@ -231,33 +220,39 @@ st.markdown(f"""
     </div>
     <div style="text-align: right; font-weight: bold; color: {h_color};">
         <div style="font-size: 1.2em;">AMLS V4.5 ENGINE</div>
-        <div style="font-size: 0.9em; color: {h_muted};">{'Neo-Tactile' if is_neo_style else 'Elegant Dark'} Edition</div>
+        <div style="font-size: 0.9em; color: {h_muted};">{'Dark Mode' if is_dark else 'Light Mode'}{' + Glass' if glass_mode else ''}</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-b_color = '#EBE5DF' if is_neo_style else '#1C1F28'
-t_color = '#3A2E28' if is_neo_style else '#A0AEC0'
-line_c = '#3A2E28' if is_neo_style else '#8B5CF6' 
-dash_c = '#B26A47' if is_neo_style else '#3B82F6'
+# 차트 컬러 팔레트
+b_color = base_bg if not glass_mode else 'rgba(0,0,0,0)' # 글래스 모드 시 차트 배경 투명화
+t_color = text_main
+line_c = accent_primary if is_dark else text_main
+dash_c = "#3B82F6" if is_dark else accent_primary
+
 chart_layout = dict(paper_bgcolor=b_color, plot_bgcolor=b_color, font=dict(family="Pretendard", color=t_color), margin=dict(l=0, r=0, t=40, b=0))
 radar_layout = dict(height=200, margin=dict(l=10, r=10, t=15, b=15), paper_bgcolor=b_color, plot_bgcolor=b_color, font=dict(family="Pretendard", color=t_color))
-regime_colors = {1: 'rgba(0,0,0,0.0)', 2: 'rgba(139,94,60,0.05)' if is_neo_style else 'rgba(139,92,246,0.05)', 3: 'rgba(178,106,71,0.1)' if is_neo_style else 'rgba(248,113,113,0.1)', 4: 'rgba(178,106,71,0.2)' if is_neo_style else 'rgba(248,113,113,0.2)'}
+regime_colors = {1: 'rgba(0,0,0,0.0)', 
+                 2: 'rgba(139,92,246,0.05)' if is_dark else 'rgba(139,94,60,0.05)', 
+                 3: 'rgba(248,113,113,0.1)' if is_dark else 'rgba(178,106,71,0.1)', 
+                 4: 'rgba(248,113,113,0.2)' if is_dark else 'rgba(178,106,71,0.2)'}
 regime_info = {1: ("🟢 R1 (강세장)", "풀 가동"), 2: ("🟡 R2 (조정장)", "TQQQ 15% 방어"), 3: ("🟠 R3 (하락장)", "현금/금 대피"), 4: ("🔴 R4 (패닉장)", "최대 방어")}
 
 # ==========================================
-# 5. 페이지 라우팅
+# 5. 페이지 라우팅 
 # ==========================================
 if page == "📊 시장 분석관 (Home)":
     
     def render_row(label, val, passed):
-        icon = "<span style='color:#6B8E23;'>✔</span>" if passed and is_neo_style else "<span style='color:#34D399;'>✔</span>" if passed else "<span style='color:#B26A47;'>✕</span>" if not passed and is_neo_style else "<span style='color:#F87171;'>✕</span>"
+        passed_icon = "<span style='color:#34D399;'>✔</span>" if is_dark else "<span style='color:#6B8E23;'>✔</span>"
+        failed_icon = "<span style='color:#F87171;'>✕</span>" if is_dark else "<span style='color:#B26A47;'>✕</span>"
+        icon = passed_icon if passed else failed_icon
         return f"<div class='check-row'><span>{label}</span><span class='check-value'>{val} {icon}</span></div>"
 
     c1, c2, c3 = st.columns([1.2, 1.2, 1])
     
     with c1:
-        msg_bg = 'transparent' if is_neo_style else 'rgba(139,92,246,0.1)'
         st.markdown(f"""
         <div class="neo-card">
             <div style="font-size: 1.4em; font-weight: bold; color: {h_color}; border-bottom: 2px solid {h_border}; padding-bottom: 10px; margin-bottom: 15px;">🏛️ 현재 시장 국면</div>
@@ -270,25 +265,26 @@ if page == "📊 시장 분석관 (Home)":
             {render_row('② 장기 지지선 (QQQ > 200MA)', f"${qqq_close:.0f} vs ${qqq_ma200:.0f}", qqq_close>=qqq_ma200)}
             {render_row('③ 추세 정배열 (50MA ≥ 200MA)', f"${qqq_ma50:.0f} vs ${qqq_ma200:.0f}", qqq_ma50>=qqq_ma200)}
             {render_row('④ 노이즈 필터 (5일선 < 25)', f"{vix_ma5:.2f}", vix_ma5<25)}
-            <div style="margin-top: auto; padding: 15px; font-size: 0.85em; color: {h_muted}; text-align: center; background-color: {msg_bg}; border-radius: 8px;">
+            <div style="margin-top: auto; padding: 15px; font-size: 0.85em; color: {h_color}; text-align: center; border-top: 1px dashed {h_border};">
                 💡 위원회: {"모든 조건이 현재 국면에 부합합니다." if curr_regime == target_regime else f"R{target_regime} 전환 대기 중입니다."}
             </div>
         </div>
         """, unsafe_allow_html=True)
 
     with c2:
+        approved_color = '#34D399' if is_dark else '#6B8E23'
         s_title = '🔥 승인: SOXL 편입' if smh_cond else '🛡️ 기각: USD 편입'
         st.markdown(f"""
         <div class="neo-card">
             <div style="font-size: 1.4em; font-weight: bold; color: {h_color}; border-bottom: 2px solid {h_border}; padding-bottom: 10px; margin-bottom: 15px;">💻 반도체(SOXL) 판독관</div>
             <div class="neo-inset-box">
-                <h2 style="margin: 0; color: {h_accent if not smh_cond else '#34D399'};">{s_title}</h2>
+                <h2 style="margin: 0; color: {approved_color if smh_cond else h_accent};">{s_title}</h2>
                 <p style="margin: 5px 0 0 0; font-weight: bold; color: {h_muted};">전략: {'3배수 공격적 진입' if smh_cond else '변동성 방어용 2배수'}</p>
             </div>
             <div style="font-weight: 800; margin-bottom: 5px; color: {h_color};">🔍 3중 필터 해부</div>
-            {render_row('① 정배열 추세 (SMH > 50MA)', f"${smh_close:.1f} vs ${smh_ma50:.1f}", smh_c1)}
-            {render_row('② 모멘텀 (1M>10% or 3M>5%)', f"3M {smh_3m*100:.1f}%", smh_c2)}
-            {render_row('③ 매수 심리 강도 (RSI > 50)', f"{smh_rsi:.1f}", smh_c3)}
+            {render_row('① 정배열 추세 (SMH > 50MA)', f"${smh_close:.1f} vs ${smh_ma50:.1f}", smh_close > smh_ma50)}
+            {render_row('② 모멘텀 (1M>10% or 3M>5%)', f"3M {smh_3m*100:.1f}%", smh_3m > 0.05 or smh_1m > 0.10)}
+            {render_row('③ 매수 심리 강도 (RSI > 50)', f"{smh_rsi:.1f}", smh_rsi > 50)}
             <div style="margin-top: auto; padding: 15px; font-size: 0.85em; color: {h_muted}; text-align: center; border-top: 1px dashed {h_border};">
                 ※ SOXL은 극단적 변동성을 수반하므로 필터 모두 통과 필수.
             </div>
@@ -369,7 +365,7 @@ elif page == "🍫 8-Pack 레이더망":
         fig1 = go.Figure()
         fig1.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQ_RSI'], line=dict(color=line_c, width=2)))
         fig1.add_hline(y=70, line_dash='dash', line_color=dash_c)
-        fig1.add_hline(y=30, line_dash='dash', line_color='#34D399' if not is_neo_style else '#6B8E23')
+        fig1.add_hline(y=30, line_dash='dash', line_color='#34D399' if is_dark else '#6B8E23')
         fig1.update_layout(**radar_layout, yaxis=dict(range=[10, 90]), showlegend=False)
         st.plotly_chart(fig1, use_container_width=True)
 
@@ -396,14 +392,20 @@ elif page == "🍫 8-Pack 레이더망":
         elif fg_score > 70: st.error("⚠️ 극단 탐욕")
         else: st.info("🟢 중립")
             
+        ext_fear_c = "rgba(248,113,113,0.7)" if is_dark else "rgba(178,106,71,0.7)"
+        fear_c = "rgba(248,113,113,0.3)" if is_dark else "rgba(178,106,71,0.3)"
+        neutral_c = "rgba(255,255,255,0.05)" if is_dark else "rgba(139,94,60,0.1)"
+        greed_c = "rgba(52,211,153,0.3)" if is_dark else "rgba(107,142,35,0.3)"
+        ext_greed_c = "rgba(52,211,153,0.7)" if is_dark else "rgba(107,142,35,0.7)"
+
         fig3 = go.Figure(go.Indicator(
             mode="gauge+number", value=fg_score, domain={'x': [0, 1], 'y': [0, 1]},
             gauge={'axis': {'range': [0, 100]}, 'bar': {'color': line_c},
-                   'steps': [{'range': [0, 25], 'color': "rgba(248,113,113,0.7)" if not is_neo_style else "rgba(178,106,71,0.7)"}, 
-                             {'range': [25, 45], 'color': "rgba(248,113,113,0.3)" if not is_neo_style else "rgba(178,106,71,0.3)"},
-                             {'range': [45, 55], 'color': "rgba(255,255,255,0.05)" if not is_neo_style else "rgba(139,94,60,0.1)"}, 
-                             {'range': [55, 75], 'color': "rgba(52,211,153,0.3)" if not is_neo_style else "rgba(107,142,35,0.3)"},
-                             {'range': [75, 100], 'color': "rgba(52,211,153,0.7)" if not is_neo_style else "rgba(107,142,35,0.7)"}]}
+                   'steps': [{'range': [0, 25], 'color': ext_fear_c}, 
+                             {'range': [25, 45], 'color': fear_c},
+                             {'range': [45, 55], 'color': neutral_c}, 
+                             {'range': [55, 75], 'color': greed_c},
+                             {'range': [75, 100], 'color': ext_greed_c}]}
         ))
         fig3.update_layout(height=200, margin=dict(l=15, r=15, t=10, b=10), paper_bgcolor=b_color, font=dict(family="Pretendard", color=t_color))
         st.plotly_chart(fig3, use_container_width=True)
@@ -510,36 +512,39 @@ elif page == "📰 매크로 뉴스룸":
                 else:
                     with st.spinner("심층 추론 진행 중..."):
                         genai.configure(api_key=api_key)
-                        models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-                        model = genai.GenerativeModel(models[0].replace('models/', ''))
-                        prompt = "너는 1920년대 퀀트 애널리스트야. 1. 주요 뉴스 분류\n2. 잠재 리스크\n3. 최종 고찰 목차로 요약해.\n" + "\n".join(headlines_for_ai)
-                        response = model.generate_content(prompt)
-                        
-                        st.markdown(f"""
-                        <div style="background-color: #FFFFFF; border-radius: 12px; padding: 20px; box-shadow: inset 4px 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px;">
-                            <h3 style="color: #1A1A1A; border-bottom: 2px solid #1A1A1A; padding-bottom: 10px; margin-top: 0;">✅ 분석 완료</h3>
-                            <div style="font-size: 1.05em; color: #000000;">{response.text.replace(chr(10), '<br>')}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        with st.expander("📋 텍스트 복사하기"): st.code(response.text, language="markdown")
+                        models = [m for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+                        if not models:
+                            st.error("🚨 사용 가능한 모델이 없습니다.")
+                        else:
+                            model = genai.GenerativeModel(models[0].name.replace('models/', ''))
+                            prompt = "너는 1920년대 퀀트 애널리스트야. 1. 주요 뉴스 분류\n2. 잠재 리스크\n3. 최종 고찰 목차로 요약해.\n" + "\n".join(headlines_for_ai)
+                            response = model.generate_content(prompt)
+                            
+                            st.markdown(f"""
+                            <div style="background-color: {'rgba(255,255,255,0.1)' if is_dark else '#FFFFFF'}; border-radius: 12px; padding: 20px; box-shadow: inset 4px 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px; backdrop-filter: blur(10px);">
+                                <h3 style="color: {h_color}; border-bottom: 2px solid {h_border}; padding-bottom: 10px; margin-top: 0;">✅ 분석 완료</h3>
+                                <div style="font-size: 1.05em; color: {text_main};">{response.text.replace(chr(10), '<br>')}</div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            with st.expander("📋 텍스트 복사하기"): st.code(response.text, language="markdown")
             except KeyError: st.error("🚨 Secrets에 'GEMINI_API_KEY'를 설정해주세요.")
 
     st.divider()
     st.markdown("#### 🖼️ 최신 경제 헤드라인 갤러리")
     if news_items:
         cols = st.columns(3)
-        c_bg = '#FFFFFF' if not is_neo_style else '#FFFDF7' 
-        c_brd = '1px solid var(--border-color)' if not is_neo_style else 'none'
-        c_shd = 'none' if not is_neo_style else 'var(--shadow-raised)'
+        c_bg = 'rgba(28,31,40,0.4)' if is_dark and glass_mode else '#1C1F28' if is_dark else 'rgba(255,255,255,0.4)' if glass_mode else '#FFFDF7' 
+        c_brd = '1px solid rgba(255, 255, 255, 0.15)' if is_dark and glass_mode else '1px solid rgba(255, 255, 255, 0.05)' if is_dark else '1px solid rgba(139,94,60,0.2)' if glass_mode else 'none'
+        c_shd = 'none' if is_dark else '0 4px 12px rgba(139,94,60,0.1)'
         
         for idx, item in enumerate(news_items):
             with cols[idx % 3]:
                 st.markdown(f"""
-                <div style="background-color: {c_bg}; border: {c_brd}; padding: 15px; margin-bottom: 15px; border-radius: 12px; height: 140px; box-shadow: {c_shd}; display: flex; flex-direction: column; justify-content: space-between;">
+                <div style="background-color: {c_bg}; border: {c_brd}; padding: 15px; margin-bottom: 15px; border-radius: 12px; height: 140px; box-shadow: {c_shd}; backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: space-between;">
                     <div style="font-weight: bold; font-size: 1.05em; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
-                        <a href="{item['link']}" target="_blank" style="color: {'#1A1A1A' if not is_neo_style else 'var(--text-main)'}; text-decoration: none;">{item['title']}</a>
+                        <a href="{item['link']}" target="_blank" style="color: {text_main}; text-decoration: none;">{item['title']}</a>
                     </div>
-                    <div style="color: var(--accent-primary); font-size: 0.85em; margin-top: 10px; font-weight: bold;">{item['date']}</div>
+                    <div style="color: {h_accent}; font-size: 0.85em; margin-top: 10px; font-weight: bold;">{item['date']}</div>
                 </div>
                 """, unsafe_allow_html=True)
     else:
