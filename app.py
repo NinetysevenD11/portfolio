@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import yfinance as yf
 import pandas as pd
 import pandas_ta as ta
@@ -567,68 +568,274 @@ if page == "📊 시장 분석관 (Home)":
         return f"<div class='check-row'><span>{label}</span><span class='check-value'>{val} {icon}</span></div>"
 
     c1, c2, c3 = st.columns([1.2, 1.2, 1])
-    
-    with c1:
-        if is_neo_style:
-            msg_bg = 'transparent'
-        elif is_glass_style:
-            msg_bg = 'rgba(37,99,235,0.06)'
-        else:
-            msg_bg = 'rgba(139,92,246,0.1)'
 
-        st.markdown(f"""
-        <div class="neo-card">
-            <div style="font-size: 1.4em; font-weight: bold; color: {h_color}; border-bottom: 2px solid {h_border}; padding-bottom: 10px; margin-bottom: 15px;">🏛️ 현재 시장 국면</div>
-            <div class="neo-inset-box">
-                <h2 style="margin: 0; color: {h_accent};">{regime_info[curr_regime][0]}</h2>
-                <p style="margin: 5px 0 0 0; font-weight: bold; color: {h_muted};">전략: {regime_info[curr_regime][1]}</p>
-            </div>
-            <div style="font-weight: 800; margin-bottom: 5px; color: {h_color};">🔍 알고리즘 해부</div>
-            {render_row('① VIX 패닉 임계점 (< 40)', f"{vix_close:.2f}", vix_close<=40)}
-            {render_row('② 장기 지지선 (QQQ > 200MA)', f"${qqq_close:.0f} vs ${qqq_ma200:.0f}", qqq_close>=qqq_ma200)}
-            {render_row('③ 추세 정배열 (50MA ≥ 200MA)', f"${qqq_ma50:.0f} vs ${qqq_ma200:.0f}", qqq_ma50>=qqq_ma200)}
-            {render_row('④ 노이즈 필터 (20일선 < 22)', f"{vix_ma20:.2f}", vix_ma20<22)}
-            <div style="margin-top: auto; padding: 15px; font-size: 0.85em; color: {h_muted}; text-align: center; background-color: {msg_bg}; border-radius: 8px;">
-                💡 위원회: {"모든 조건이 현재 국면에 부합합니다." if curr_regime == target_regime else f"R{target_regime} 전환 대기 중입니다."}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+    # ── Glass 모드: st.components.v1.html로 완전 재구현 ──────
+    if is_glass_style:
 
-    with c2:
-        if is_glass_style:
-            soxl_ok_color = '#10B981'
-        else:
+        def ck(label, val, passed):
+            icon  = "✔" if passed else "✕"
+            color = "#10B981" if passed else "#EF4444"
+            return f"""
+            <div class="crow">
+              <span class="clabel">{label}</span>
+              <span class="cval" style="color:{color};">{val} {icon}</span>
+            </div>"""
+
+        weight_rows = "".join([
+            f'<div class="crow"><span class="clabel">{k}</span><span class="cval">{v*100:.0f}%</span></div>'
+            for k, v in target_weights.items() if v > 0
+        ])
+        regime_title  = regime_info[curr_regime][0]
+        regime_strat  = regime_info[curr_regime][1]
+        regime_msg    = "모든 조건이 현재 국면에 부합합니다." if curr_regime == target_regime else f"R{target_regime} 전환 대기 중입니다."
+        soxl_title    = "🔥 승인: SOXL 편입" if smh_cond else "🛡️ 기각: USD 편입"
+        soxl_strat    = "3배수 공격적 진입" if smh_cond else "변동성 방어용 2배수"
+        soxl_color    = "#10B981" if smh_cond else "#2563EB"
+
+        glass_html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * {{ margin:0; padding:0; box-sizing:border-box; }}
+
+  body {{
+    font-family: 'DM Sans', sans-serif;
+    min-height: 600px;
+    background:
+      radial-gradient(ellipse at 15% 10%,  rgba(147,197,253,0.55) 0%, transparent 45%),
+      radial-gradient(ellipse at 85% 85%,  rgba(253,186,116,0.45) 0%, transparent 45%),
+      radial-gradient(ellipse at 80% 10%,  rgba(196,181,253,0.30) 0%, transparent 35%),
+      radial-gradient(ellipse at 20% 90%,  rgba(110,231,183,0.20) 0%, transparent 35%),
+      #D1D5E8;
+    padding: 16px 8px 0 8px;
+  }}
+
+  .grid {{
+    display: grid;
+    grid-template-columns: 1.2fr 1.2fr 1fr;
+    gap: 14px;
+    align-items: start;
+  }}
+
+  /* ── Glassmorphism 카드 ── */
+  .card {{
+    background: rgba(255,255,255,0.45);
+    backdrop-filter: blur(28px) saturate(200%);
+    -webkit-backdrop-filter: blur(28px) saturate(200%);
+    border: 1px solid rgba(255,255,255,0.82);
+    border-radius: 24px;
+    padding: 22px 20px;
+    height: 560px;
+    display: flex;
+    flex-direction: column;
+    box-shadow:
+      0 8px 32px rgba(31,38,135,0.10),
+      0 2px 8px  rgba(0,0,0,0.05),
+      inset 0 1px 0 rgba(255,255,255,0.95);
+    overflow: hidden;
+  }}
+
+  .card-title {{
+    font-size: 1.15em;
+    font-weight: 700;
+    color: #1C1C1E;
+    border-bottom: 1.5px solid rgba(0,0,0,0.07);
+    padding-bottom: 11px;
+    margin-bottom: 14px;
+  }}
+
+  /* ── Inset 박스 ── */
+  .inset {{
+    background: rgba(255,255,255,0.80);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.95);
+    border-radius: 18px;
+    padding: 18px 14px;
+    text-align: center;
+    margin-bottom: 16px;
+    box-shadow:
+      inset 0 2px 8px rgba(0,0,0,0.05),
+      inset 0 1px 0 rgba(255,255,255,1),
+      0 4px 16px rgba(37,99,235,0.06);
+  }}
+  .inset h2 {{
+    font-size: 1.45em;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }}
+  .inset p {{
+    font-size: 0.88em;
+    color: #6B7280;
+    font-weight: 500;
+  }}
+
+  .section-label {{
+    font-size: 0.85em;
+    font-weight: 700;
+    color: #1C1C1E;
+    margin-bottom: 4px;
+    letter-spacing: 0.2px;
+  }}
+
+  /* ── 체크 행 ── */
+  .crow {{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.055);
+    font-size: 0.875em;
+  }}
+  .clabel {{ color: #374151; font-weight: 500; }}
+  .cval   {{ font-family: 'DM Mono','Courier New',monospace; font-weight: 700; font-size:0.95em; }}
+
+  /* ── 하단 메시지 ── */
+  .footer-msg {{
+    margin-top: auto;
+    padding: 12px 14px;
+    font-size: 0.82em;
+    color: #6B7280;
+    text-align: center;
+    background: rgba(37,99,235,0.06);
+    border-radius: 12px;
+    font-weight: 500;
+  }}
+  .footer-dashed {{
+    margin-top: auto;
+    padding: 12px 14px;
+    font-size: 0.82em;
+    color: #6B7280;
+    text-align: center;
+    border-top: 1.5px dashed rgba(0,0,0,0.12);
+    font-weight: 500;
+  }}
+
+  /* ── 비중 테이블 헤더 ── */
+  .weight-header {{
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78em;
+    font-weight: 700;
+    color: #9CA3AF;
+    border-bottom: 1.5px solid rgba(0,0,0,0.09);
+    padding-bottom: 7px;
+    margin-bottom: 2px;
+    letter-spacing: 0.4px;
+  }}
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <!-- 카드 1: 현재 시장 국면 -->
+  <div class="card">
+    <div class="card-title">🏛️ 현재 시장 국면</div>
+    <div class="inset">
+      <h2 style="color:#2563EB;">{regime_title}</h2>
+      <p>전략: {regime_strat}</p>
+    </div>
+    <div class="section-label">🔍 알고리즘 해부</div>
+    {ck('① VIX 패닉 임계점 (&lt; 40)',        f'{vix_close:.2f}',                        vix_close  <= 40)}
+    {ck('② 장기 지지선 (QQQ &gt; 200MA)',      f'${qqq_close:.0f} vs ${qqq_ma200:.0f}',   qqq_close  >= qqq_ma200)}
+    {ck('③ 추세 정배열 (50MA ≥ 200MA)',        f'${qqq_ma50:.0f} vs ${qqq_ma200:.0f}',    qqq_ma50   >= qqq_ma200)}
+    {ck('④ 노이즈 필터 (20일선 &lt; 22)',       f'{vix_ma20:.2f}',                         vix_ma20   < 22)}
+    <div class="footer-msg">💡 위원회: {regime_msg}</div>
+  </div>
+
+  <!-- 카드 2: 반도체 판독관 -->
+  <div class="card">
+    <div class="card-title">💻 반도체(SOXL) 판독관</div>
+    <div class="inset">
+      <h2 style="color:{soxl_color};">{soxl_title}</h2>
+      <p>전략: {soxl_strat}</p>
+    </div>
+    <div class="section-label">🔍 3중 필터 해부</div>
+    {ck('① 정배열 추세 (SMH &gt; 50MA)',       f'${smh_close:.1f} vs ${smh_ma50:.1f}',    smh_c1)}
+    {ck('② 모멘텀 (1M&gt;10% or 3M&gt;5%)',   f'3M {smh_3m*100:.1f}%',                   smh_c2)}
+    {ck('③ 매수 심리 강도 (RSI &gt; 50)',       f'{smh_rsi:.1f}',                           smh_c3)}
+    <div class="footer-dashed">※ SOXL은 극단적 변동성을 수반하므로 필터 모두 통과 필수.</div>
+  </div>
+
+  <!-- 카드 3: 목표 비중 -->
+  <div class="card">
+    <div class="card-title">🛒 V4.5 목표 비중</div>
+    <div class="weight-header">
+      <span>자산 (ASSET)</span><span>비중 (WEIGHT)</span>
+    </div>
+    {weight_rows}
+  </div>
+
+</div>
+</body>
+</html>
+"""
+        # 컬럼 레이아웃 무시하고 full-width로 렌더링
+        components.html(glass_html, height=610, scrolling=False)
+
+    # ── Neo-Tactile / Dark 모드: 기존 방식 유지 ──────────────
+    else:
+        def render_row(label, val, passed):
+            if is_neo_style:
+                icon = "<span style='color:#6B8E23;'>✔</span>" if passed else "<span style='color:#B26A47;'>✕</span>"
+            else:
+                icon = "<span style='color:#34D399;'>✔</span>" if passed else "<span style='color:#F87171;'>✕</span>"
+            return f"<div class='check-row'><span>{label}</span><span class='check-value'>{val} {icon}</span></div>"
+
+        with c1:
+            msg_bg = 'transparent' if is_neo_style else 'rgba(139,92,246,0.1)'
+            st.markdown(f"""
+            <div class="neo-card">
+                <div style="font-size: 1.4em; font-weight: bold; color: {h_color}; border-bottom: 2px solid {h_border}; padding-bottom: 10px; margin-bottom: 15px;">🏛️ 현재 시장 국면</div>
+                <div class="neo-inset-box">
+                    <h2 style="margin: 0; color: {h_accent};">{regime_info[curr_regime][0]}</h2>
+                    <p style="margin: 5px 0 0 0; font-weight: bold; color: {h_muted};">전략: {regime_info[curr_regime][1]}</p>
+                </div>
+                <div style="font-weight: 800; margin-bottom: 5px; color: {h_color};">🔍 알고리즘 해부</div>
+                {render_row('① VIX 패닉 임계점 (< 40)', f"{vix_close:.2f}", vix_close<=40)}
+                {render_row('② 장기 지지선 (QQQ > 200MA)', f"${qqq_close:.0f} vs ${qqq_ma200:.0f}", qqq_close>=qqq_ma200)}
+                {render_row('③ 추세 정배열 (50MA ≥ 200MA)', f"${qqq_ma50:.0f} vs ${qqq_ma200:.0f}", qqq_ma50>=qqq_ma200)}
+                {render_row('④ 노이즈 필터 (20일선 < 22)', f"{vix_ma20:.2f}", vix_ma20<22)}
+                <div style="margin-top: auto; padding: 15px; font-size: 0.85em; color: {h_muted}; text-align: center; background-color: {msg_bg}; border-radius: 8px;">
+                    💡 위원회: {"모든 조건이 현재 국면에 부합합니다." if curr_regime == target_regime else f"R{target_regime} 전환 대기 중입니다."}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with c2:
             soxl_ok_color = '#34D399'
+            s_title = '🔥 승인: SOXL 편입' if smh_cond else '🛡️ 기각: USD 편입'
+            st.markdown(f"""
+            <div class="neo-card">
+                <div style="font-size: 1.4em; font-weight: bold; color: {h_color}; border-bottom: 2px solid {h_border}; padding-bottom: 10px; margin-bottom: 15px;">💻 반도체(SOXL) 판독관</div>
+                <div class="neo-inset-box">
+                    <h2 style="margin: 0; color: {soxl_ok_color if smh_cond else h_accent};">{s_title}</h2>
+                    <p style="margin: 5px 0 0 0; font-weight: bold; color: {h_muted};">전략: {'3배수 공격적 진입' if smh_cond else '변동성 방어용 2배수'}</p>
+                </div>
+                <div style="font-weight: 800; margin-bottom: 5px; color: {h_color};">🔍 3중 필터 해부</div>
+                {render_row('① 정배열 추세 (SMH > 50MA)', f"${smh_close:.1f} vs ${smh_ma50:.1f}", smh_c1)}
+                {render_row('② 모멘텀 (1M>10% or 3M>5%)', f"3M {smh_3m*100:.1f}%", smh_c2)}
+                {render_row('③ 매수 심리 강도 (RSI > 50)', f"{smh_rsi:.1f}", smh_c3)}
+                <div style="margin-top: auto; padding: 15px; font-size: 0.85em; color: {h_muted}; text-align: center; border-top: 1px dashed {h_border};">
+                    ※ SOXL은 극단적 변동성을 수반하므로 필터 모두 통과 필수.
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
-        s_title = '🔥 승인: SOXL 편입' if smh_cond else '🛡️ 기각: USD 편입'
-        st.markdown(f"""
-        <div class="neo-card">
-            <div style="font-size: 1.4em; font-weight: bold; color: {h_color}; border-bottom: 2px solid {h_border}; padding-bottom: 10px; margin-bottom: 15px;">💻 반도체(SOXL) 판독관</div>
-            <div class="neo-inset-box">
-                <h2 style="margin: 0; color: {soxl_ok_color if smh_cond else h_accent};">{s_title}</h2>
-                <p style="margin: 5px 0 0 0; font-weight: bold; color: {h_muted};">전략: {'3배수 공격적 진입' if smh_cond else '변동성 방어용 2배수'}</p>
+        with c3:
+            rows = "".join([f"<div class='check-row'><span>{k}</span><span class='check-value'>{v*100:.0f}%</span></div>" for k, v in target_weights.items() if v > 0])
+            st.markdown(f"""
+            <div class="neo-card">
+                <div style="font-size: 1.4em; font-weight: bold; color: {h_color}; border-bottom: 2px solid {h_border}; padding-bottom: 10px; margin-bottom: 15px;">🛒 V4.5 목표 비중</div>
+                <div style="display:flex; justify-content:space-between; border-bottom: 1px solid {h_border}; padding-bottom:5px; font-size:0.8em; font-weight:bold; color:{h_muted};">
+                    <span>자산 (ASSET)</span><span>비중 (WEIGHT)</span>
+                </div>
+                {rows}
             </div>
-            <div style="font-weight: 800; margin-bottom: 5px; color: {h_color};">🔍 3중 필터 해부</div>
-            {render_row('① 정배열 추세 (SMH > 50MA)', f"${smh_close:.1f} vs ${smh_ma50:.1f}", smh_c1)}
-            {render_row('② 모멘텀 (1M>10% or 3M>5%)', f"3M {smh_3m*100:.1f}%", smh_c2)}
-            {render_row('③ 매수 심리 강도 (RSI > 50)', f"{smh_rsi:.1f}", smh_c3)}
-            <div style="margin-top: auto; padding: 15px; font-size: 0.85em; color: {h_muted}; text-align: center; border-top: 1px dashed {h_border};">
-                ※ SOXL은 극단적 변동성을 수반하므로 필터 모두 통과 필수.
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with c3:
-        rows = "".join([f"<div class='check-row'><span>{k}</span><span class='check-value'>{v*100:.0f}%</span></div>" for k, v in target_weights.items() if v > 0])
-        st.markdown(f"""
-        <div class="neo-card">
-            <div style="font-size: 1.4em; font-weight: bold; color: {h_color}; border-bottom: 2px solid {h_border}; padding-bottom: 10px; margin-bottom: 15px;">🛒 V4.5 목표 비중</div>
-            <div style="display:flex; justify-content:space-between; border-bottom: 1px solid {h_border}; padding-bottom:5px; font-size:0.8em; font-weight:bold; color:{h_muted};">
-                <span>자산 (ASSET)</span><span>비중 (WEIGHT)</span>
-            </div>
-            {rows}
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
 
     m1, m2, m3, m4, m5 = st.columns(5)
     m1.metric("QQQ vs 200MA",   f"${last_row['QQQ']:.2f}",   f"{(last_row['QQQ']/last_row['QQQ_MA200']-1)*100:+.2f}%")
