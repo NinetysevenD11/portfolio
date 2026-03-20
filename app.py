@@ -20,50 +20,25 @@ st.set_page_config(page_title="RIMBERIO FINANCIAL GAZETTE", layout="wide", page_
 
 st.markdown("""
 <style>
-    /* 전체 배경 및 폰트 */
     .stApp { background-color: #F5F0E8; color: #1A1A1A; font-family: 'Pretendard', sans-serif; }
-    
-    /* Streamlit 기본 헤더 및 푸터 숨기기 (리얼 웹사이트처럼) */
     header { visibility: hidden; }
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
-    
-    /* 메인 컨테이너 여백 최적화 */
     .main .block-container { max-width: 1300px; padding-top: 1rem; padding-bottom: 2rem; }
     
-    /* 좌측 사이드바 (웹사이트 네비게이션 메뉴) 디자인 */
-    [data-testid="stSidebar"] {
-        background-color: #EBE4D3;
-        border-right: 2px solid #2C2C2C;
-    }
-    [data-testid="stSidebarNav"] { display: none; } /* 기본 네비 숨기기 */
+    [data-testid="stSidebar"] { background-color: #EBE4D3; border-right: 2px solid #2C2C2C; }
+    [data-testid="stSidebarNav"] { display: none; } 
     
-    /* 사이드바 라디오 버튼을 웹 메뉴처럼 스타일링 */
     div.row-widget.stRadio > div { background-color: transparent; gap: 10px; }
     div.row-widget.stRadio > div > label {
-        background-color: transparent;
-        border: 1px solid transparent;
-        padding: 10px 15px;
-        border-radius: 4px;
-        font-family: 'Pretendard', sans-serif;
-        font-weight: bold;
-        font-size: 1.1rem;
-        color: #1A1A1A;
-        transition: all 0.2s;
-        cursor: pointer;
+        background-color: transparent; border: 1px solid transparent; padding: 10px 15px;
+        border-radius: 4px; font-family: 'Pretendard', sans-serif; font-weight: bold; font-size: 1.1rem; color: #1A1A1A; transition: all 0.2s; cursor: pointer;
     }
-    div.row-widget.stRadio > div > label:hover {
-        background-color: #DFD7C2;
-        border: 1px solid #2C2C2C;
-    }
-    /* 선택된 메뉴 하이라이트 */
-    div.row-widget.stRadio > div > label[data-baseweb="radio"] {
-        background-color: transparent;
-    }
+    div.row-widget.stRadio > div > label:hover { background-color: #DFD7C2; border: 1px solid #2C2C2C; }
+    div.row-widget.stRadio > div > label[data-baseweb="radio"] { background-color: transparent; }
 
     h1, h2, h3, h4, h5, h6 { font-family: 'Pretendard', sans-serif !important; color: #1A1A1A !important; font-weight: 800 !important; letter-spacing: 0.5px; }
     
-    /* 알림 박스 (카드 UI) */
     div[data-testid="stAlert"] { 
         background-color: #FFFDF7; border: 1px solid #2C2C2C; border-radius: 4px; 
         color: #1A1A1A; box-shadow: 2px 2px 0px rgba(0,0,0,0.1); padding: 10px; min-height: 65px; 
@@ -73,7 +48,6 @@ st.markdown("""
         border: 2px solid #8B0000; background-color: #FFECEC; color: #8B0000; font-weight: bold;
     }
     
-    /* 지표 및 버튼 */
     div[data-testid="stMetricValue"] > div { font-family: 'Pretendard', sans-serif; font-weight: 900; color: #1A1A1A; }
     div[data-testid="stButton"] > button { background-color: #1A1A1A; color: #FFFDF7; border-radius: 4px; border: 2px solid #1A1A1A; font-family: 'Pretendard', sans-serif; font-weight: bold; width: 100%; transition: all 0.3s; }
     div[data-testid="stButton"] > button:hover { background-color: #8B0000; border-color: #8B0000; color: #FFFDF7; }
@@ -96,7 +70,6 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
     
-    # 라디오 버튼을 이용한 페이지 이동 메뉴
     page = st.radio(
         "NAVIGATION MENU",
         ["📊 시장 분석관 (Home)", "🍫 8-Pack 레이더망", "📉 폭락장 아카이브", "📰 매크로 뉴스룸"],
@@ -111,7 +84,7 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
 
-# 📰 글로벌 상단 헤더 (모든 페이지 공통)
+# 📰 글로벌 상단 헤더
 st.markdown("""
 <div style="border-bottom: 4px double #1A1A1A; padding-bottom: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
     <div>
@@ -508,12 +481,13 @@ elif page == "📰 매크로 뉴스룸":
         st.error(f"통신망 연결에 실패했습니다: {e}")
 
     with st.expander("✨ System-2 심층 추론 애널리스트에게 시장 분석 지시 (클릭하여 열기)", expanded=True):
-        api_key = st.text_input("🔑 API KEY 입력:", type="password")
+        st.markdown("**(주의)** Streamlit Cloud의 `Secrets` 설정에 `GEMINI_API_KEY`를 먼저 등록해주십시오.")
+        
         if st.button("🚀 심층 추론 요약 실행"):
-            if not api_key: st.warning("API Key가 필요합니다.")
-            elif not headlines_for_ai: st.warning("분석할 전보 데이터가 없습니다.")
-            else:
-                try:
+            try:
+                api_key = st.secrets["GEMINI_API_KEY"]
+                if not headlines_for_ai: st.warning("분석할 전보 데이터가 없습니다.")
+                else:
                     with st.spinner("최신 전보를 해독하며, 다각도 검증 및 심층 추론을 진행 중입니다..."):
                         genai.configure(api_key=api_key)
                         available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
@@ -552,8 +526,10 @@ elif page == "📰 매크로 뉴스룸":
                             st.success(f"✅ 심층 추론 분석이 완료되었습니다. (사용 모델: {clean_model_name})")
                             st.info(f"**🤖 System-2 애널리스트 심층 리포트:**\n\n{response.text}")
                             with st.expander("📋 리포트 텍스트 복사하기"): st.code(response.text, language="markdown")
-                except Exception as e:
-                    st.error(f"분석 중 오류가 발생했습니다. 상세 에러: {e}")
+            except KeyError:
+                st.error("🚨 Streamlit Secrets에 'GEMINI_API_KEY'가 설정되지 않았습니다. [Settings] -> [Secrets] 메뉴에서 키를 먼저 등록해주세요!")
+            except Exception as e:
+                st.error(f"분석 중 오류가 발생했습니다. 상세 에러: {e}")
 
     st.divider()
     st.markdown("#### 📝 최신 경제 헤드라인 원문")
