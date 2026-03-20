@@ -132,7 +132,7 @@ with tab1:
         else:
             st.success("✅ 현재 국면이 안정적으로 유지되고 있습니다.")
             
-        # 🚨 TQQQ 선행 경보 로직 추가
+        # 🚨 TQQQ 선행 경보 로직
         if last_row['TQQQ'] < last_row['TQQQ_MA200'] and last_row['QQQ'] >= last_row['QQQ_MA200']:
             st.error("🚨 **[선행 경보 발동]** QQQ는 아직 200일선 위지만, **TQQQ가 200일선을 이탈했습니다.** 곧 R3로 강등될 위험이 높습니다!")
             
@@ -144,28 +144,48 @@ with tab1:
         st.dataframe(w_df, hide_index=True, use_container_width=True)
 
     st.divider()
-    # 5개의 컬럼으로 늘려서 TQQQ 추가
     m1, m2, m3, m4, m5 = st.columns(5)
     m1.metric("QQQ 종가 vs 200선", f"${last_row['QQQ']:.2f}", f"{(last_row['QQQ']/last_row['QQQ_MA200'] - 1)*100:+.2f}%")
-    m2.metric("TQQQ 종가 vs 200선", f"${last_row['TQQQ']:.2f}", f"{(last_row['TQQQ']/last_row['TQQQ_MA200'] - 1)*100:+.2f}%", delta_color="inverse") # 떨어질때 빨간색
+    m2.metric("TQQQ 종가 vs 200선", f"${last_row['TQQQ']:.2f}", f"{(last_row['TQQQ']/last_row['TQQQ_MA200'] - 1)*100:+.2f}%", delta_color="inverse")
     m3.metric("VIX (5일 이평선)", f"{last_row['VIX_MA5']:.2f}", f"종가: {last_row['^VIX']:.2f}")
     m4.metric("반도체 1M 수익률", f"{last_row['SMH_1M_Ret']*100:+.2f}%", "SOXL 조건")
     m5.metric("반도체 3M 수익률", f"{last_row['SMH_3M_Ret']*100:+.2f}%", "")
 
-    st.subheader("📈 나스닥(QQQ) 200일선 및 레짐 시각화")
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df.index, y=df['QQQ'], name='QQQ (나스닥)', line=dict(color='black', width=2)))
-    fig.add_trace(go.Scatter(x=df.index, y=df['QQQ_MA200'], name='200일 이평선', line=dict(color='red', width=2, dash='dash')))
+    st.divider()
+    st.subheader("📈 QQQ & TQQQ 200일선 모니터링 (조기 경보)")
     
+    # 두 개의 차트를 좌우로 배치
+    chart_col1, chart_col2 = st.columns(2)
+    
+    # --- 1) 왼쪽: QQQ 차트 ---
+    fig_qqq = go.Figure()
+    fig_qqq.add_trace(go.Scatter(x=df.index, y=df['QQQ'], name='QQQ', line=dict(color='black', width=2)))
+    fig_qqq.add_trace(go.Scatter(x=df.index, y=df['QQQ_MA200'], name='QQQ 200일선', line=dict(color='red', width=2, dash='dash')))
+    
+    # --- 2) 오른쪽: TQQQ 차트 ---
+    fig_tqqq = go.Figure()
+    fig_tqqq.add_trace(go.Scatter(x=df.index, y=df['TQQQ'], name='TQQQ', line=dict(color='blue', width=2)))
+    fig_tqqq.add_trace(go.Scatter(x=df.index, y=df['TQQQ_MA200'], name='TQQQ 200일선', line=dict(color='orange', width=2, dash='dash')))
+    
+    # --- 레짐 백그라운드 공통 적용 로직 ---
     colors = {1: 'rgba(0, 255, 0, 0.1)', 2: 'rgba(255, 255, 0, 0.1)', 3: 'rgba(255, 165, 0, 0.1)', 4: 'rgba(255, 0, 0, 0.1)'}
     for i in range(1, len(df)):
         if df['Regime'].iloc[i-1] != df['Regime'].iloc[i] or i == 1:
             start_idx = df.index[i]
             curr_r = df['Regime'].iloc[i]
         if i == len(df)-1 or df['Regime'].iloc[i] != df['Regime'].iloc[i+1]:
-            fig.add_vrect(x0=start_idx, x1=df.index[i], fillcolor=colors[curr_r], opacity=0.5, layer="below", line_width=0)
-    fig.update_layout(height=400, template='plotly_white', margin=dict(l=0, r=0, t=30, b=0))
-    st.plotly_chart(fig, use_container_width=True)
+            # QQQ, TQQQ 차트에 각각 음영 추가
+            fig_qqq.add_vrect(x0=start_idx, x1=df.index[i], fillcolor=colors[curr_r], opacity=0.5, layer="below", line_width=0)
+            fig_tqqq.add_vrect(x0=start_idx, x1=df.index[i], fillcolor=colors[curr_r], opacity=0.5, layer="below", line_width=0)
+            
+    # 레이아웃 업데이트 및 출력
+    fig_qqq.update_layout(title="[시스템 기준] QQQ vs 200일 이평선", height=350, template='plotly_white', margin=dict(l=0, r=0, t=40, b=0))
+    fig_tqqq.update_layout(title="[조기 경보] TQQQ vs 200일 이평선", height=350, template='plotly_white', margin=dict(l=0, r=0, t=40, b=0))
+    
+    with chart_col1:
+        st.plotly_chart(fig_qqq, use_container_width=True)
+    with chart_col2:
+        st.plotly_chart(fig_tqqq, use_container_width=True)
 
 # ------------------------------------------
 # 탭 2: 리밸런싱 계산기
