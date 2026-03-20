@@ -34,7 +34,7 @@ st.markdown("""
         padding-top: 2rem;
     }
 
-    /* 제목 폰트 (신문 섹션 느낌은 유지하되 깔끔하게) */
+    /* 제목 폰트 */
     h1, h2, h3, h4, h5, h6 {
         font-family: 'Pretendard', sans-serif !important;
         color: #1A1A1A !important;
@@ -42,7 +42,7 @@ st.markdown("""
         font-weight: 800 !important;
     }
 
-    /* 알림 박스 (경보, 성공 등 - 플랫하고 얇은 테두리) */
+    /* 알림 박스 */
     div[data-testid="stAlert"] {
         background-color: #FFFDF7;
         border: 1px solid #2C2C2C;
@@ -50,7 +50,6 @@ st.markdown("""
         color: #1A1A1A;
         box-shadow: none;
     }
-    /* 경고/에러 박스 (Breaking News 느낌의 붉은 테두리) */
     div[data-testid="stAlert"]:has(.stIcon-error), div[data-testid="stAlert"]:has(.stIcon-warning) {
         border: 2px solid #8B0000;
         background-color: #FFECEC;
@@ -110,14 +109,14 @@ st.markdown("""
         margin: 2.5em 0;
     }
 
-    /* 데이터 프레임/테이블 */
+    /* 데이터 프레임 */
     [data-testid="stDataFrame"] {
         border: 2px solid #2C2C2C;
         background-color: #FFFDF7;
         border-radius: 4px;
     }
     
-    /* 텍스트 인풋 등 */
+    /* 텍스트 인풋 */
     .stTextInput>div>div>input, .stNumberInput>div>div>input {
         border-radius: 4px;
         border: 1px solid #2C2C2C;
@@ -127,7 +126,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 📰 신문 헤더 (Masthead) 삽입
+# 📰 신문 헤더 (Masthead)
 st.markdown("""
 <div style="text-align: center; border-top: 4px solid #1A1A1A; border-bottom: 4px double #1A1A1A; padding: 20px 0; margin-bottom: 30px; background-color: transparent;">
     <h1 style="font-family: Georgia, serif; font-size: 3em; font-weight: bold; letter-spacing: 4px; margin: 0; color: #1A1A1A;">RIMBERIO FINANCIAL GAZETTE</h1>
@@ -167,10 +166,16 @@ def load_data():
     df['SMH_1M_Ret'] = df['SMH'].pct_change(periods=21)
     df['SMH_RSI'] = ta.rsi(df['SMH'], length=14)
     
+    # 조기 경보 지표들
     df['HYG_IEF_Ratio'] = df['HYG'] / df['IEF']
     df['HYG_IEF_MA50'] = df['HYG_IEF_Ratio'].rolling(window=50).mean()
     df['QQQ_20d_Ret'] = df['QQQ'].pct_change(periods=20)
     df['QQQE_20d_Ret'] = df['QQQE'].pct_change(periods=20)
+    
+    # 신규 지표: 스마트 DCA용 RSI 및 안전자산 선호도
+    df['QQQ_RSI'] = ta.rsi(df['QQQ'], length=14)
+    df['GLD_SPY_Ratio'] = df['GLD'] / df['SPY']
+    df['GLD_SPY_MA50'] = df['GLD_SPY_Ratio'].rolling(window=50).mean()
     
     return df.dropna()
 
@@ -232,7 +237,7 @@ regime_info = {
 }
 
 # ==========================================
-# 4. 탭 구성 (섹션)
+# 4. 탭 구성
 # ==========================================
 tab1, tab2, tab3, tab4 = st.tabs(["I. 시장 분석관", "II. 리밸런싱 장부", "III. 조기 경보 레이더", "IV. 매크로 뉴스룸"])
 
@@ -271,14 +276,7 @@ with tab1:
     st.subheader("기술적 차트 모니터링 (QQQ & TQQQ)")
     
     chart_col1, chart_col2 = st.columns(2)
-    
-    chart_layout = dict(
-        paper_bgcolor='#FFFDF7',
-        plot_bgcolor='#FFFDF7',
-        font=dict(family="Pretendard, sans-serif", color="#1A1A1A"),
-        height=350,
-        margin=dict(l=0, r=0, t=40, b=0)
-    )
+    chart_layout = dict(paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7', font=dict(family="Pretendard, sans-serif", color="#1A1A1A"), height=350, margin=dict(l=0, r=0, t=40, b=0))
 
     fig_qqq = go.Figure()
     fig_qqq.add_trace(go.Scatter(x=df.index, y=df['QQQ'], name='QQQ', line=dict(color='#1A1A1A', width=2)))
@@ -300,18 +298,14 @@ with tab1:
     fig_qqq.update_layout(title="[시스템 기준] QQQ vs 200일 이평선", **chart_layout)
     fig_tqqq.update_layout(title="[조기 경보] TQQQ vs 200일 이평선", **chart_layout)
     
-    with chart_col1:
-        st.plotly_chart(fig_qqq, use_container_width=True)
-    with chart_col2:
-        st.plotly_chart(fig_tqqq, use_container_width=True)
+    with chart_col1: st.plotly_chart(fig_qqq, use_container_width=True)
+    with chart_col2: st.plotly_chart(fig_tqqq, use_container_width=True)
 
 # ------------------------------------------
 # 탭 2: REBALANCING
 # ------------------------------------------
 with tab2:
     st.subheader("내 포트폴리오 리밸런싱 장부")
-    st.write("현재 보유 중인 자산의 평가 금액을 입력하면, V4.5 목표 비중에 맞춘 정확한 주문 금액을 계산합니다.")
-    
     col_input, col_result = st.columns([1, 2])
     
     with col_input:
@@ -340,14 +334,7 @@ with tab2:
                 action = "매수 🟢" if diff > 0 else ("매도 🔴" if diff < 0 else "유지 ⚪")
                 if abs(diff) < 1: action = "유지 ⚪"
                 
-                rebal_data.append({
-                    "자산": asset,
-                    "목표 비중": f"{target_ratio*100:.0f}%",
-                    "목표 금액": f"${target_amt:,.2f}",
-                    "현재 금액": f"${curr_amt:,.2f}",
-                    "액션": action,
-                    "주문 금액": f"${abs(diff):,.2f}"
-                })
+                rebal_data.append({"자산": asset, "목표 비중": f"{target_ratio*100:.0f}%", "목표 금액": f"${target_amt:,.2f}", "현재 금액": f"${curr_amt:,.2f}", "액션": action, "주문 금액": f"${abs(diff):,.2f}"})
             
             rebal_df = pd.DataFrame(rebal_data)
             st.dataframe(rebal_df, hide_index=True, use_container_width=True)
@@ -356,15 +343,51 @@ with tab2:
             st.info("장부에 현재 보유 자산 금액을 입력해 주십시오.")
 
 # ------------------------------------------
-# 탭 3: EARLY WARNING
+# 탭 3: EARLY WARNING (4개의 레이더망)
 # ------------------------------------------
 with tab3:
-    st.subheader("조기 경보 레이더 (스마트머니 동향)")
-    st.write("시스템이 폭락을 공식화하기 전에 자금 시장의 이면을 감지하는 지표입니다.")
+    st.subheader("조기 경보 레이더 (스마트머니 & 자금 투입 동향)")
+    st.write("시스템이 붕괴를 공식화하기 전, 이면의 흐름을 읽어내고 자금 투입의 강약을 조절합니다.")
+    
+    # 상단 2개 (DCA, 시장폭)
     r1, r2 = st.columns(2)
     
     with r1:
-        st.markdown("#### 1. 하이일드 채권 스프레드 (HYG/IEF)")
+        st.markdown("#### I. 스마트 DCA (자금 투입 페이스메이커)")
+        qqq_rsi = last_row['QQQ_RSI']
+        qqq_close = last_row['QQQ']
+        qqq_ma200 = last_row['QQQ_MA200']
+        
+        if qqq_rsi < 40 and qqq_close < qqq_ma200:
+            st.success("🔥 **적극 매수 (Deep Discount):** 시장이 공포에 질려 과매도 상태입니다. 비축한 현금을 공격적으로 투입할 시기입니다.")
+        elif qqq_rsi > 70:
+            st.error("⚠️ **투입 보류 (Overbought):** 시장이 단기 과열(과매수) 상태입니다. 적립금을 아끼고 현금을 비축하십시오.")
+        else:
+            st.info("🟢 **정상 적립 (Normal DCA):** 평시 상태입니다. 기계적인 월 적립 투자를 유지하십시오.")
+            
+        st.metric("QQQ 현재 RSI (14일)", f"{qqq_rsi:.1f}", "과열(70) / 침체(40)")
+        
+    with r2:
+        st.markdown("#### II. 시장 폭 (Market Breadth)")
+        qqq_ret = last_row['QQQ_20d_Ret']
+        qqqe_ret = last_row['QQQE_20d_Ret']
+        
+        if qqq_ret > 0 and qqqe_ret < 0:
+            st.warning("⚠️ **가짜 상승 (Divergence):** 소수의 대장주만 지수를 끌어올리고 있으며, 대다수 기업은 하락 중입니다. 고점 징후입니다.")
+        else:
+            st.success("✅ **건전한 상승:** 시장 전반의 기업들이 고르게 상승에 참여하고 있습니다.")
+            
+        col_m1, col_m2 = st.columns(2)
+        col_m1.metric("QQQ (시총가중) 20일", f"{qqq_ret*100:+.2f}%")
+        col_m2.metric("QQQE (동일가중) 20일", f"{qqqe_ret*100:+.2f}%")
+
+    st.divider()
+    
+    # 하단 2개 (채권 스프레드, 안전자산 선호도)
+    r3, r4 = st.columns(2)
+    
+    with r3:
+        st.markdown("#### III. 하이일드 채권 스프레드 (HYG/IEF)")
         curr_ratio = last_row['HYG_IEF_Ratio']
         ma50_ratio = last_row['HYG_IEF_MA50']
         
@@ -374,29 +397,32 @@ with tab3:
             st.success("✅ **안전 (Risk-On):** 채권 시장의 자금 흐름이 건전합니다.")
             
         fig2 = go.Figure()
-        fig2.add_trace(go.Scatter(x=df.index[-200:], y=df['HYG_IEF_Ratio'].iloc[-200:], name='HYG/IEF 비율', line=dict(color='#1A1A1A')))
+        fig2.add_trace(go.Scatter(x=df.index[-200:], y=df['HYG_IEF_Ratio'].iloc[-200:], name='비율', line=dict(color='#1A1A1A')))
         fig2.add_trace(go.Scatter(x=df.index[-200:], y=df['HYG_IEF_MA50'].iloc[-200:], name='50일선', line=dict(color='#8B0000', dash='dot')))
-        fig2.update_layout(height=250, margin=dict(l=0, r=0, t=10, b=0), paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7', font=dict(family="Pretendard, sans-serif", color="#1A1A1A"))
+        fig2.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0), paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7')
         st.plotly_chart(fig2, use_container_width=True)
 
-    with r2:
-        st.markdown("#### 2. 시장 폭 (가짜 상승 판별)")
-        qqq_ret = last_row['QQQ_20d_Ret']
-        qqqe_ret = last_row['QQQE_20d_Ret']
+    with r4:
+        st.markdown("#### IV. 안전 자산 선호도 (금/주식 비율)")
+        gld_spy_ratio = last_row['GLD_SPY_Ratio']
+        gld_spy_ma50 = last_row['GLD_SPY_MA50']
         
-        if qqq_ret > 0 and qqqe_ret < 0:
-            st.warning("⚠️ **가짜 상승 (Divergence):** 소수의 대장주만 지수를 끌어올리고 있으며, 대다수 기업은 하락 중입니다.")
+        if gld_spy_ratio > gld_spy_ma50:
+            st.warning("⚠️ **은밀한 이탈 (Flight to Safety):** 시장 붕괴 전, 스마트머니가 주식(SPY)을 팔고 금(GLD)을 매집하는 징후가 포착되었습니다.")
         else:
-            st.success("✅ **건전한 상승:** 시장 전반의 기업들이 고르게 상승에 참여하고 있습니다.")
+            st.success("✅ **정상 흐름:** 여전히 주식(SPY)이 금(GLD) 대비 우위를 점하고 있습니다.")
             
-        st.metric("QQQ (시총가중) 20일 수익률", f"{qqq_ret*100:+.2f}%")
-        st.metric("QQQE (동일가중) 20일 수익률", f"{qqqe_ret*100:+.2f}%")
+        fig3 = go.Figure()
+        fig3.add_trace(go.Scatter(x=df.index[-200:], y=df['GLD_SPY_Ratio'].iloc[-200:], name='GLD/SPY 비율', line=dict(color='#1A1A1A')))
+        fig3.add_trace(go.Scatter(x=df.index[-200:], y=df['GLD_SPY_MA50'].iloc[-200:], name='50일선', line=dict(color='#8B0000', dash='dot')))
+        fig3.update_layout(height=200, margin=dict(l=0, r=0, t=10, b=0), paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7')
+        st.plotly_chart(fig3, use_container_width=True)
 
 # ------------------------------------------
 # 탭 4: MACRO NEWS
 # ------------------------------------------
 with tab4:
-    st.subheader("실시간 글로벌 매크로 뉴스 및 심층 추론(Deep-Thought) 브리핑")
+    st.subheader("실시간 글로벌 매크로 뉴스 및 심층 추론 브리핑")
     st.warning("⚠️ **[멘탈 주의보]** 쏟아지는 뉴스는 단순 참고용입니다. 자극적인 헤드라인에 흔들리지 마시고, 오직 시스템의 숫자에만 의존하십시오.")
     
     headlines_for_ai = []
@@ -404,20 +430,18 @@ with tab4:
         search_query = urllib.parse.quote("미국증시 OR 연준 OR 나스닥 OR 금리")
         url = f"https://news.google.com/rss/search?q={search_query}&hl=ko&gl=KR&ceid=KR:ko"
         
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         xml_data = urllib.request.urlopen(req).read()
         root = ET.fromstring(xml_data)
         items = root.findall('.//item')[:15]
         
         if items:
             for item in items:
-                title = item.find('title').text
-                headlines_for_ai.append(title)
+                headlines_for_ai.append(item.find('title').text)
     except Exception as e:
         st.error(f"통신망 연결에 실패했습니다: {e}")
 
     with st.expander("✨ System-2 심층 추론 애널리스트에게 시장 분석 지시 (클릭하여 열기)", expanded=True):
-        st.markdown("발급받은 API Key를 입력하여 전보(Telegram)의 내용을 **초정밀 심층 분석(Ultra-deep thinking mode)** 하십시오. *(분석에 시간이 다소 소요될 수 있습니다)*")
         api_key = st.text_input("🔑 API KEY 입력:", type="password")
         
         if st.button("🚀 심층 추론 요약 실행"):
@@ -427,19 +451,17 @@ with tab4:
                 st.warning("분석할 전보 데이터가 없습니다.")
             else:
                 try:
-                    with st.spinner("최신 전보를 해독하며, 다각도 검증 및 심층 추론을 진행 중입니다. 잠시만 기다려주세요..."):
+                    with st.spinner("최신 전보를 해독하며, 다각도 검증 및 심층 추론을 진행 중입니다..."):
                         genai.configure(api_key=api_key)
-                        
                         available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
                         
                         if not available_models:
-                            st.error("API Key에 접근 가능한 AI 모델이 없습니다. 설정을 확인해 주세요.")
+                            st.error("사용 가능한 AI 모델이 없습니다.")
                         else:
                             target_model = next((m for m in available_models if 'flash' in m.lower() or 'pro' in m.lower()), available_models[0])
                             clean_model_name = target_model.replace('models/', '')
                             model = genai.GenerativeModel(clean_model_name)
                             
-                            # 🚨 세윤님의 Deep Thinking 프롬프트 + 출력 포맷 강제 룰 추가
                             prompt = (
                                 "너는 1920년대 월스트리트의 날카롭고 이성적인 퀀트 애널리스트야. 고전적이고 단호한 비즈니스 신문 칼럼니스트의 말투를 사용해.\n\n"
                                 "[System Instructions]\n"
@@ -471,12 +493,11 @@ with tab4:
                             st.success(f"✅ 심층 추론 분석이 완료되었습니다. (사용 모델: {clean_model_name})")
                             st.info(f"**🤖 System-2 애널리스트 심층 리포트:**\n\n{response.text}")
                             
-                            # 📋 복사 기능 (우측 상단 복사 아이콘 제공)
                             with st.expander("📋 리포트 텍스트 복사하기 (클릭하여 열기)"):
                                 st.code(response.text, language="markdown")
                                 
                 except Exception as e:
-                    st.error(f"분석 중 오류가 발생했습니다. 키 값을 확인하십시오. 상세 에러: {e}")
+                    st.error(f"분석 중 오류가 발생했습니다. 상세 에러: {e}")
 
     st.divider()
     st.markdown("#### 📝 최신 경제 헤드라인 원문")
