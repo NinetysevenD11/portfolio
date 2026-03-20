@@ -33,6 +33,7 @@ def load_data():
     df['QQQ_MA50'] = df['QQQ'].rolling(window=50).mean()
     df['QQQ_MA200'] = df['QQQ'].rolling(window=200).mean()
     df['SMH_MA50'] = df['SMH'].rolling(window=50).mean()
+    df['VIX_MA5'] = df['^VIX'].rolling(window=5).mean()  # 🚨 누락되었던 VIX 5일선 복구 완료!
     df['SMH_3M_Ret'] = df['SMH'].pct_change(periods=63)
     df['SMH_1M_Ret'] = df['SMH'].pct_change(periods=21)
     df['SMH_RSI'] = ta.rsi(df['SMH'], length=14)
@@ -62,7 +63,7 @@ with st.spinner('📰 데이터 분석 엔진 가동 중...'):
 # --- 코어 엔진 계산 ---
 last_row = df.iloc[-1]
 
-# V4 타겟 레짐
+# V4 타겟 레짐 (기존 VIX 종가 기준)
 def get_target_v4(row):
     v, q, m2, m5 = row['^VIX'], row['QQQ'], row['QQQ_MA200'], row['QQQ_MA50']
     if v > 40: return 4
@@ -71,12 +72,12 @@ def get_target_v4(row):
     return 2
 df['Target_V4'] = df.apply(get_target_v4, axis=1)
 
-# V5 Apex 타겟 레짐
+# V5 Apex 타겟 레짐 (VIX 5일선 기준 노이즈 필터 적용)
 def get_target_v5(row):
-    v, q, m2, m5 = row['^VIX'], row['QQQ'], row['QQQ_MA200'], row['QQQ_MA50']
-    if v > 40: return 4
+    v_close, v_ma5, q, m2, m5 = row['^VIX'], row['VIX_MA5'], row['QQQ'], row['QQQ_MA200'], row['QQQ_MA50']
+    if v_close > 40: return 4  # 패닉은 즉각 대응
     if q < m2: return 3
-    if q >= m2 and m5 >= m2 and v < 20: return 1
+    if q >= m2 and m5 >= m2 and v_ma5 < 20: return 1  # 5일선 & 기준치 20으로 강화
     return 2
 df['Target_V5'] = df.apply(get_target_v5, axis=1)
 
@@ -110,7 +111,7 @@ def get_w_v5(reg, soxl_ok):
     w = {t: 0.0 for t in ASSET_LIST}
     semi = 'SOXL' if soxl_ok else 'USD'
     if reg == 1: w['TQQQ'], w[semi], w['QLD'], w['GLD'] = 0.40, 0.30, 0.20, 0.10
-    elif reg == 2: w['QLD'], w['SSO'], w['GLD'], w['QQQ'], w['SPY'] = 0.35, 0.25, 0.25, 0.10, 0.05
+    elif reg == 2: w['QLD'], w['SSO'], w['GLD'], w['QQQ'], w['SPY'] = 0.35, 0.25, 0.25, 0.10, 0.05  # TQQQ 제거 (수비)
     elif reg == 3: w['GLD'], w['QQQ'] = 0.50, 0.15
     elif reg == 4: w['GLD'], w['QQQ'] = 0.50, 0.10
     return w
@@ -119,12 +120,11 @@ w_target_v4 = get_w_v4(curr_regime_v4, smh_cond_v4)
 w_target_v5 = get_w_v5(curr_regime_v5, smh_cond_v5)
 
 # ==========================================
-# 2. 통합 CSS 시스템 (에러 수정됨!)
+# 2. 통합 CSS 시스템 (이미지 디자인 완벽 반영)
 # ==========================================
 sidebar_style = st.sidebar.radio("🎨 UI 테마 선택", ["Light Mode", "Dark Mode"])
 is_dark = sidebar_style == "Dark Mode"
 
-# 🚨 누락되었던 핵심 컬러 변수들 선언!
 ACCENT = "#9D7BFF" if is_dark else "#7C4DFF" 
 GREEN = "#34D399"
 RED = "#F87171"
@@ -132,7 +132,6 @@ h_color = "#FFFFFF" if is_dark else "#1A1A1A"
 h_accent = ACCENT
 
 if not is_dark:
-    # --- Light Mode CSS ---
     st.markdown(f"""
     <style>
         .stApp {{ background-color: #F7F8FA; color: #2C3E50; font-family: 'Pretendard', sans-serif !important; }}
@@ -174,7 +173,6 @@ if not is_dark:
     </style>
     """, unsafe_allow_html=True)
 else:
-    # --- Dark Mode CSS ---
     st.markdown(f"""
     <style>
         .stApp {{ background-color: #121212; color: #ECF0F1; font-family: 'Pretendard', sans-serif !important; }}
@@ -278,8 +276,8 @@ with c2:
         </div>
         <div style="font-weight: 700; color: {h_color}; margin-bottom: 10px;">🔍 Apex 핵심 차별점</div>
         <div class="sc-data-row">
-            <span class="sc-data-label">R1 진입 VIX 기준 (강화)</span>
-            <span class="sc-data-value">{vix_val:.2f} {"<span style='color:"+GREEN+";'>✔ (<20)</span>" if vix_val<20 else "<span style='color:"+RED+";'>✕ (V4<25)</span>"}</span>
+            <span class="sc-data-label">R1 진입 VIX 기준 (5일선)</span>
+            <span class="sc-data-value">{vix_ma_val:.2f} {"<span style='color:"+GREEN+";'>✔ (<20)</span>" if vix_ma_val<20 else "<span style='color:"+RED+";'>✕ (V4<25)</span>"}</span>
         </div>
         <div class="sc-data-row">
             <span class="sc-data-label">SOXL 모멘텀 조건 (OR결합)</span>
