@@ -139,4 +139,110 @@ with tab1:
 
     st.divider()
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("QQQ 종가 vs 200일선", f"${last_row['QQQ']:.2f}", f"
+    m1.metric("QQQ 종가 vs 200일선", f"${last_row['QQQ']:.2f}", f"{(last_row['QQQ']/last_row['QQQ_MA200'] - 1)*100:+.2f}%")
+    m2.metric("VIX (5일 이평선)", f"{last_row['VIX_MA5']:.2f}", f"종가: {last_row['^VIX']:.2f}")
+    m3.metric("반도체 1M 수익률", f"{last_row['SMH_1M_Ret']*100:+.2f}%", "SOXL 조건")
+    m4.metric("반도체 3M 수익률", f"{last_row['SMH_3M_Ret']*100:+.2f}%", "")
+
+    st.subheader("📈 나스닥(QQQ) 200일선 및 레짐 시각화")
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=df.index, y=df['QQQ'], name='QQQ (나스닥)', line=dict(color='black', width=2)))
+    fig.add_trace(go.Scatter(x=df.index, y=df['QQQ_MA200'], name='200일 이평선', line=dict(color='red', width=2, dash='dash')))
+    
+    colors = {1: 'rgba(0, 255, 0, 0.1)', 2: 'rgba(255, 255, 0, 0.1)', 3: 'rgba(255, 165, 0, 0.1)', 4: 'rgba(255, 0, 0, 0.1)'}
+    for i in range(1, len(df)):
+        if df['Regime'].iloc[i-1] != df['Regime'].iloc[i] or i == 1:
+            start_idx = df.index[i]
+            curr_r = df['Regime'].iloc[i]
+        if i == len(df)-1 or df['Regime'].iloc[i] != df['Regime'].iloc[i+1]:
+            fig.add_vrect(x0=start_idx, x1=df.index[i], fillcolor=colors[curr_r], opacity=0.5, layer="below", line_width=0)
+    fig.update_layout(height=400, template='plotly_white', margin=dict(l=0, r=0, t=30, b=0))
+    st.plotly_chart(fig, use_container_width=True)
+
+# ------------------------------------------
+# 탭 2: 리밸런싱 계산기
+# ------------------------------------------
+with tab2:
+    st.subheader("💼 내 포트폴리오 리밸런싱 계산기")
+    st.write("현재 보유 중인 자산의 평가 금액을 입력하면, V4.5 목표 비중에 맞춘 정확한 매수/매도 금액을 계산해 드립니다.")
+    
+    col_input, col_result = st.columns([1, 2])
+    
+    with col_input:
+        current_holdings = {}
+        total_value = 0
+        for asset in ASSET_LIST:
+            val = st.number_input(f"{asset} 보유 금액 ($)", min_value=0.0, value=0.0, step=100.0)
+            current_holdings[asset] = val
+            total_value += val
+        
+        add_cash = st.number_input("추가 투입할 예수금 ($)", min_value=0.0, value=0.0, step=100.0)
+        total_value += add_cash
+
+    with col_result:
+        if total_value > 0:
+            st.markdown(f"### 총 운용 자산: **${total_value:,.2f}**")
+            
+            rebal_data = []
+            for asset in ASSET_LIST:
+                target_ratio = target_weights[asset]
+                target_amt = total_value * target_ratio
+                curr_amt = current_holdings[asset]
+                if asset == 'CASH': curr_amt += add_cash
+                
+                diff = target_amt - curr_amt
+                action = "매수 🟢" if diff > 0 else ("매도 🔴" if diff < 0 else "유지 ⚪")
+                if abs(diff) < 1: action = "유지 ⚪"
+                
+                rebal_data.append({
+                    "자산": asset,
+                    "목표 비중": f"{target_ratio*100:.0f}%",
+                    "목표 금액": f"${target_amt:,.2f}",
+                    "현재 금액": f"${curr_amt:,.2f}",
+                    "액션": action,
+                    "주문 금액": f"${abs(diff):,.2f}"
+                })
+            
+            rebal_df = pd.DataFrame(rebal_data)
+            st.dataframe(rebal_df, hide_index=True, use_container_width=True)
+            st.info("💡 **Tip:** 매도 🔴를 먼저 실행하여 예수금을 확보한 뒤, 매수 🟢를 진행하세요.")
+        else:
+            st.warning("왼쪽에 현재 보유 자산 금액을 입력해 주세요.")
+
+# ------------------------------------------
+# 탭 3: 실전 퀀트 무기 (선행 지표)
+# ------------------------------------------
+with tab3:
+    st.subheader("🚨 조기 경보 레이더 (선행 지표)")
+    st.write("시스템(후행 지표)이 폭락을 인지하기 전에 미리 위험을 감지하는 스마트머니 지표입니다.")
+    
+    r1, r2 = st.columns(2)
+    
+    with r1:
+        st.markdown("#### 1. 채권 스프레드 (HYG/IEF)")
+        curr_ratio = last_row['HYG_IEF_Ratio']
+        ma50_ratio = last_row['HYG_IEF_MA50']
+        
+        if curr_ratio < ma50_ratio:
+            st.error("🚨 **위험 (Risk-Off):** 스마트머니가 회사채를 팔고 안전한 국채로 도망가고 있습니다. 하락장 대비가 필요합니다.")
+        else:
+            st.success("✅ **안전 (Risk-On):** 채권 시장의 자금 흐름이 건전합니다.")
+            
+        fig2 = go.Figure()
+        fig2.add_trace(go.Scatter(x=df.index[-200:], y=df['HYG_IEF_Ratio'].iloc[-200:], name='HYG/IEF 비율', line=dict(color='blue')))
+        fig2.add_trace(go.Scatter(x=df.index[-200:], y=df['HYG_IEF_MA50'].iloc[-200:], name='50일 이평선', line=dict(color='orange', dash='dot')))
+        fig2.update_layout(height=250, margin=dict(l=0, r=0, t=10, b=0))
+        st.plotly_chart(fig2, use_container_width=True)
+
+    with r2:
+        st.markdown("#### 2. 시장 폭 (가짜 상승 판별)")
+        qqq_ret = last_row['QQQ_20d_Ret']
+        qqqe_ret = last_row['QQQE_20d_Ret']
+        
+        if qqq_ret > 0 and qqqe_ret < 0:
+            st.warning("⚠️ **가짜 상승 (Divergence):** 소수의 대장주만 오르고 대다수 주식은 하락 중입니다. 고점 징후일 수 있습니다.")
+        else:
+            st.success("✅ **건전한 상승:** 대장주와 개별주가 함께 움직이고 있습니다.")
+            
+        st.metric("QQQ (시총가중) 20일 수익률", f"{qqq_ret*100:+.2f}%")
+        st.metric("QQQE (동일가중) 20일 수익률", f"{qqqe_ret*100:+.2f}%")
