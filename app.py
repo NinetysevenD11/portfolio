@@ -439,7 +439,7 @@ with tab4:
                             clean_model_name = target_model.replace('models/', '')
                             model = genai.GenerativeModel(clean_model_name)
                             
-                            # 세윤님이 요청하신 Ultra-deep thinking mode 프롬프트 완벽 이식
+                            # 🚨 세윤님의 Deep Thinking 프롬프트 + 출력 포맷 강제 룰 추가
                             prompt = (
                                 "너는 1920년대 월스트리트의 날카롭고 이성적인 퀀트 애널리스트야. 고전적이고 단호한 비즈니스 신문 칼럼니스트의 말투를 사용해.\n\n"
                                 "[System Instructions]\n"
@@ -456,15 +456,25 @@ with tab4:
                                 "Once you're fully convinced your analysis is robust and complete, deliberately pause and force yourself to reconsider the entire reasoning chain one final time from scratch. "
                                 "Explicitly detail this last reflective step.\n"
                                 "답변은 반드시 처음부터 끝까지 한국말로 작성해.\n\n"
+                                "🚨 [중요: 출력 형식 제한] 🚨\n"
+                                "위의 심층 추론(Deep-thinking) 과정은 너의 내부 논리로만 사용하고, 최종 출력되는 답변에는 다음 3가지 목차만 정확히 포함해서 작성해. 개별 뉴스에 대한 세세한 분석 및 검증 과정은 절대 화면에 출력하지 마.\n"
+                                "1. 주요 뉴스 헤드라인 분류 및 초기 분석\n"
+                                "2. 현재 주식 시장의 핵심 쟁점 및 잠재적 리스크 도출\n"
+                                "3. 최종 고찰 (Reconsideration from Scratch)\n\n"
                                 "[Task]\n"
                                 "다음은 방금 수집된 미국의 증시, 나스닥, 연준 관련 최신 뉴스 헤드라인 15개야. "
-                                "위의 지침에 따라 이 헤드라인들을 철저하게 분석하고, 숨겨진 논리적 허점을 찾아내 검증한 뒤, 현재 주식 시장의 핵심 쟁점과 잠재적 리스크를 도출해 줘.\n\n"
+                                "이 헤드라인들을 철저하게 분석하고, 숨겨진 논리적 허점을 찾아내 검증한 뒤, 지시된 3가지 목차로만 결과물을 도출해 줘.\n\n"
                                 "[뉴스 헤드라인]\n" + "\n".join(headlines_for_ai)
                             )
                             
                             response = model.generate_content(prompt)
                             st.success(f"✅ 심층 추론 분석이 완료되었습니다. (사용 모델: {clean_model_name})")
                             st.info(f"**🤖 System-2 애널리스트 심층 리포트:**\n\n{response.text}")
+                            
+                            # 📋 복사 기능 (우측 상단 복사 아이콘 제공)
+                            with st.expander("📋 리포트 텍스트 복사하기 (클릭하여 열기)"):
+                                st.code(response.text, language="markdown")
+                                
                 except Exception as e:
                     st.error(f"분석 중 오류가 발생했습니다. 키 값을 확인하십시오. 상세 에러: {e}")
 
