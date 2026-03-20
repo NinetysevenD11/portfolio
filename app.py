@@ -16,7 +16,8 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 1. 대시보드 기본 설정 및 데이터 수집
 # ==========================================
-st.set_page_config(page_title="RIMBERIO FINANCIAL GAZETTE", layout="wide", page_icon="📰", initial_sidebar_state="expanded")
+# 🚨 탭 타이틀 변경
+st.set_page_config(page_title="AMLS V4.5 FINANCE STRATEGY", layout="wide", page_icon="📰", initial_sidebar_state="expanded")
 
 SECTOR_TICKERS = ['XLK', 'XLV', 'XLF', 'XLY', 'XLC', 'XLI', 'XLP', 'XLE', 'XLU', 'XLRE', 'XLB']
 CORE_TICKERS = ['QQQ', 'TQQQ', 'SOXL', 'USD', 'QLD', 'SSO', 'SPY', 'SMH', 'GLD', '^VIX', 'HYG', 'IEF', 'QQQE', 'UUP']
@@ -113,42 +114,46 @@ def get_weights_v45(reg, smh_ok):
 target_weights = get_weights_v45(curr_regime, smh_cond)
 
 # ==========================================
-# 2. 사이드바 (UI 스위치 통합)
+# 2. 사이드바 (구조 변경 - 변수 스위칭 선행)
 # ==========================================
-with st.sidebar:
-    st.markdown("""
-        <div style="text-align: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid rgba(139,94,60,0.1);">
-            <h2 style="font-family: Georgia, serif; margin: 0; font-size: 1.8rem; color: inherit;">RIMBERIO</h2>
-            <h4 style="font-family: Georgia, serif; margin: 0; font-size: 1rem; color: #8B5CF6;">FINANCIAL GAZETTE</h4>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    page = st.radio(
-        "NAVIGATION MENU",
-        ["📊 시장 분석관 (Home)", "🍫 8-Pack 레이더망", "📉 폭락장 아카이브", "📰 매크로 뉴스룸"],
-        label_visibility="collapsed"
-    )
-    
-    st.markdown("<br><hr><br>", unsafe_allow_html=True)
-    
-    # 🎨 UI 스타일 스위치
-    ui_style = st.radio("🎨 UI 테마 선택", ["Light Mode (Neo-Tactile)", "Dark Mode (Elegant Theme)"])
-    is_neo_style = ui_style == "Light Mode (Neo-Tactile)"
-    
-    st.markdown("<br><br><br>", unsafe_allow_html=True)
-    st.markdown("""
-        <div style="position: absolute; bottom: 10px; text-align: center; width: 100%; font-size: 0.8em; color: gray;">
-            Powered by AMLS V4.5 Engine<br>&copy; 2026 SEYOON.
-        </div>
-    """, unsafe_allow_html=True)
+# 사이드바 상단을 Container로 먼저 확보합니다.
+sidebar_top = st.sidebar.container()
+
+page = st.sidebar.radio(
+    "NAVIGATION MENU",
+    ["📊 시장 분석관 (Home)", "🍫 8-Pack 레이더망", "📉 폭락장 아카이브", "📰 매크로 뉴스룸"],
+    label_visibility="collapsed"
+)
+
+st.sidebar.markdown("<br><hr><br>", unsafe_allow_html=True)
+ui_style = st.sidebar.radio("🎨 UI 테마 선택", ["Light Mode (Neo-Tactile)", "Dark Mode (Elegant Theme)"])
+is_neo_style = ui_style == "Light Mode (Neo-Tactile)"
+
+# 🎨 테마 스위칭 변수 설정
+h_color = "#3A2E28" if is_neo_style else "#FFFFFF"
+h_accent = "#B26A47" if is_neo_style else "#8B5CF6"
+h_muted = "#8A7668" if is_neo_style else "#A0AEC0"
+h_border = "rgba(139,94,60,0.1)" if is_neo_style else "rgba(255,255,255,0.05)"
+h_shadow = "2px 2px 4px rgba(255,255,255,0.8)" if is_neo_style else "2px 2px 4px rgba(0,0,0,0.5)"
+
+# 확보해둔 사이드바 상단에 동적 스타일을 입힌 로고/타이틀 삽입
+sidebar_top.markdown(f"""
+    <div style="text-align: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid {h_border};">
+        <h2 style="font-family: Georgia, serif; margin: 0; font-size: 1.8rem; color: {h_color};">AMLS V4.5</h2>
+        <h4 style="font-family: Georgia, serif; margin: 0; font-size: 1rem; color: {h_accent};">FINANCE STRATEGY</h4>
+    </div>
+""", unsafe_allow_html=True)
+
+st.sidebar.markdown(f"""
+    <br><br><br>
+    <div style="position: absolute; bottom: 10px; text-align: center; width: 100%; font-size: 0.8em; color: {h_muted};">
+        Powered by AMLS V4.5 Engine<br>&copy; 2026 SEYOON.
+    </div>
+""", unsafe_allow_html=True)
 
 # ==========================================
 # 3. 통합 CSS 및 헤더 (조건부 스위칭)
 # ==========================================
-
-# ------------------------------------------
-# A. Light Mode: Neo-Tactile (뉴모피즘) CSS
-# ------------------------------------------
 neo_tactile_css = """
 <style>
     :root {
@@ -171,33 +176,31 @@ neo_tactile_css = """
 </style>
 """
 
-# ------------------------------------------
-# B. Dark Mode: Elegant Dark Theme CSS (이미지 기반 완벽 구현)
-# ------------------------------------------
 elegant_dark_css = """
 <style>
     :root {
-        --base-bg: #121418;       /* Very dark midnight blue/black */
-        --card-bg: #1C1F28;       /* Deep gray/blue for cards */
-        --text-main: #FFFFFF;     /* Pure white for headings */
-        --text-muted: #A0AEC0;    /* Soft gray for secondary text */
-        --accent-primary: #8B5CF6; /* Elegant Purple/Indigo from image */
+        --base-bg: #121418;       
+        --card-bg: #1C1F28;       
+        --text-main: #FFFFFF;     
+        --text-muted: #A0AEC0;    
+        --accent-primary: #8B5CF6; 
         --accent-glow: rgba(139, 92, 246, 0.4);
-        --border-color: rgba(255, 255, 255, 0.05); /* Subtle borders */
-        --shadow-raised: 0 10px 25px rgba(0, 0, 0, 0.5); /* Soft deep shadow */
+        --border-color: rgba(255, 255, 255, 0.05); 
+        --shadow-raised: 0 10px 25px rgba(0, 0, 0, 0.5); 
     }
     .stApp { background-color: var(--base-bg); color: var(--text-main); font-family: 'Pretendard', sans-serif; }
     [data-testid="stSidebar"] { background-color: var(--base-bg); border-right: 1px solid var(--border-color); }
-    div.row-widget.stRadio > div > label { background-color: transparent; border-radius: 12px; border: 1px solid transparent; transition: all 0.3s; color: var(--text-muted); }
-    div.row-widget.stRadio > div > label:hover { background-color: rgba(255,255,255,0.02); color: var(--text-main); }
-    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) { background-color: rgba(139, 92, 246, 0.1) !important; border: 1px solid var(--accent-primary); color: var(--accent-primary); box-shadow: 0 0 10px var(--accent-glow); }
+    
+    /* 🚨 다크모드 사이드바 글씨 순백색 강제 지정 */
+    div.row-widget.stRadio > div > label { background-color: transparent; border-radius: 12px; border: 1px solid transparent; transition: all 0.3s; color: #FFFFFF !important; }
+    div.row-widget.stRadio > div > label:hover { background-color: rgba(255,255,255,0.05); color: var(--text-main) !important; }
+    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) { background-color: rgba(139, 92, 246, 0.2) !important; border: 1px solid var(--accent-primary); color: var(--text-main) !important; box-shadow: 0 0 10px var(--accent-glow); }
     
     .neo-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 25px; min-height: 520px; box-shadow: var(--shadow-raised); display: flex; flex-direction: column; margin-bottom: 20px; }
     .neo-inset-box { background: linear-gradient(145deg, rgba(139,92,246,0.1), rgba(0,0,0,0)); border: 1px solid var(--accent-primary); border-radius: 12px; padding: 15px; text-align: center; margin-bottom: 20px; box-shadow: 0 0 15px var(--accent-glow); }
     .check-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-color); font-size: 0.95em; color: var(--text-muted); }
     .check-value { font-family: 'Courier New', monospace; font-weight: bold; color: var(--text-main); }
     
-    /* 메트릭 카드 오버라이드 */
     [data-testid="stMetric"] { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: var(--shadow-raised); padding: 15px; }
     div[data-testid="stMetricValue"] > div { color: var(--text-main); }
     div[data-testid="stMetricDelta"] > div { color: var(--accent-primary) !important; }
@@ -207,7 +210,7 @@ elegant_dark_css = """
 if is_neo_style: st.markdown(neo_tactile_css, unsafe_allow_html=True)
 else: st.markdown(elegant_dark_css, unsafe_allow_html=True)
 
-# 공통 헤더 숨김 처리 및 글로벌 CSS
+# 공통 헤더 숨김 처리
 st.markdown("""
 <style>
     [data-testid="stHeader"] { background-color: transparent !important; }
@@ -217,16 +220,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 📰 글로벌 상단 헤더 (조건부 스타일)
-h_color = "#3A2E28" if is_neo_style else "#FFFFFF"
-h_accent = "#B26A47" if is_neo_style else "#8B5CF6"
-h_muted = "#8A7668" if is_neo_style else "#A0AEC0"
-h_border = "rgba(139,94,60,0.1)" if is_neo_style else "rgba(255,255,255,0.05)"
-
+# 📰 글로벌 상단 헤더 (🚨 타이틀 변경)
 st.markdown(f"""
 <div style="padding-bottom: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; margin-top: -20px; border-bottom: 2px solid {h_border};">
     <div>
-        <h1 style="font-family: Georgia, serif; font-size: 2.8em; margin: 0; color: {h_color};">RIMBERIO FINANCIAL GAZETTE</h1>
+        <h1 style="font-family: Georgia, serif; font-size: 2.8em; margin: 0; color: {h_color}; text-shadow: {h_shadow};">AMLS V4.5 FINANCE STRATEGY</h1>
         <p style="font-size: 1.1em; letter-spacing: 1px; margin: 5px 0 0 0; font-weight: 700; color: {h_accent};">THE WALL STREET QUANTITATIVE JOURNAL</p>
     </div>
     <div style="text-align: right; font-weight: bold; color: {h_color};">
@@ -239,8 +237,8 @@ st.markdown(f"""
 # Plotly 차트 색상 스위칭
 b_color = '#EBE5DF' if is_neo_style else '#1C1F28'
 t_color = '#3A2E28' if is_neo_style else '#A0AEC0'
-line_c = '#3A2E28' if is_neo_style else '#8B5CF6' # Dark mode accent is Purple
-dash_c = '#B26A47' if is_neo_style else '#3B82F6' # Secondary line color
+line_c = '#3A2E28' if is_neo_style else '#8B5CF6' 
+dash_c = '#B26A47' if is_neo_style else '#3B82F6'
 chart_layout = dict(paper_bgcolor=b_color, plot_bgcolor=b_color, font=dict(family="Pretendard", color=t_color), margin=dict(l=0, r=0, t=40, b=0))
 radar_layout = dict(height=200, margin=dict(l=10, r=10, t=15, b=15), paper_bgcolor=b_color, plot_bgcolor=b_color, font=dict(family="Pretendard", color=t_color))
 regime_colors = {1: 'rgba(0,0,0,0.0)', 2: 'rgba(139,94,60,0.05)' if is_neo_style else 'rgba(139,92,246,0.05)', 3: 'rgba(178,106,71,0.1)' if is_neo_style else 'rgba(248,113,113,0.1)', 4: 'rgba(178,106,71,0.2)' if is_neo_style else 'rgba(248,113,113,0.2)'}
@@ -364,7 +362,6 @@ elif page == "🍫 8-Pack 레이더망":
     row1 = st.columns(4)
     row2 = st.columns(4)
     
-    # 1. 스마트 DCA
     with row1[0]:
         st.markdown("##### 1. 스마트 DCA (RSI)")
         qqq_rsi = last_row['QQQ_RSI'] 
@@ -379,7 +376,6 @@ elif page == "🍫 8-Pack 레이더망":
         fig1.update_layout(**radar_layout, yaxis=dict(range=[10, 90]), showlegend=False)
         st.plotly_chart(fig1, use_container_width=True)
 
-    # 2. 멘탈 방어
     with row1[1]:
         st.markdown("##### 2. 멘탈 방어 (Drawdown)")
         qqq_dd = last_row['QQQ_DD']
@@ -392,7 +388,6 @@ elif page == "🍫 8-Pack 레이더망":
         fig2.update_layout(**radar_layout, yaxis=dict(tickformat='.0%'), showlegend=False)
         st.plotly_chart(fig2, use_container_width=True)
 
-    # 3. 시장 심리
     with row1[2]:
         st.markdown("##### 3. 시장 심리 (F&G)")
         vix_score = max(0, min(100, 100 - (last_row['^VIX'] - 12) / 28 * 100))
@@ -416,7 +411,6 @@ elif page == "🍫 8-Pack 레이더망":
         fig3.update_layout(height=200, margin=dict(l=15, r=15, t=10, b=10), paper_bgcolor=b_color, font=dict(family="Pretendard", color=t_color))
         st.plotly_chart(fig3, use_container_width=True)
 
-    # 4. 섹터 순환
     with row1[3]:
         st.markdown("##### 4. 섹터 순환 (1M)")
         sec_names = {'XLK': '기술', 'XLV': '헬스', 'XLF': '금융', 'XLY': '소비', 'XLC': '통신', 'XLI': '산업', 'XLP': '필수', 'XLE': '에너지', 'XLU': '유틸', 'XLRE': '부동산', 'XLB': '소재'}
@@ -429,7 +423,6 @@ elif page == "🍫 8-Pack 레이더망":
         fig4.update_layout(**radar_layout, showlegend=False)
         st.plotly_chart(fig4, use_container_width=True)
 
-    # 5. 채권 스프레드
     with row2[0]:
         st.markdown("##### 5. 채권 스프레드")
         if last_row['HYG_IEF_Ratio'] < last_row['HYG_IEF_MA50']: st.error("🚨 국채 피신")
@@ -441,7 +434,6 @@ elif page == "🍫 8-Pack 레이더망":
         fig5.update_layout(**radar_layout, showlegend=False)
         st.plotly_chart(fig5, use_container_width=True)
 
-    # 6. 시장 폭
     with row2[1]:
         st.markdown("##### 6. 시장 폭 (Breadth)")
         if last_row['QQQ_20d_Ret'] > 0 and last_row['QQQE_20d_Ret'] < 0: st.warning("⚠️ 쏠림 심화")
@@ -453,7 +445,6 @@ elif page == "🍫 8-Pack 레이더망":
         fig6.update_layout(**radar_layout, showlegend=False, yaxis=dict(tickformat='.0%'))
         st.plotly_chart(fig6, use_container_width=True)
 
-    # 7. 안전 자산
     with row2[2]:
         st.markdown("##### 7. 안전 자산 (금/주식)")
         if last_row['GLD_SPY_Ratio'] > last_row['GLD_SPY_MA50']: st.warning("⚠️ 금 피신")
@@ -465,7 +456,6 @@ elif page == "🍫 8-Pack 레이더망":
         fig7.update_layout(**radar_layout, showlegend=False)
         st.plotly_chart(fig7, use_container_width=True)
 
-    # 8. 달러 유동성
     with row2[3]:
         st.markdown("##### 8. 달러 (UUP)")
         if last_row['UUP'] > last_row['UUP_MA50']: st.error("🚨 강달러 압박")
