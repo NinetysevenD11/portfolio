@@ -41,16 +41,12 @@ st.markdown("""
     
     /* 🚨 알림 박스 (AI 리포트 흰색 배경 & 검은 글씨 강제 적용) */
     div[data-testid="stAlert"] { 
-        background-color: #FFFFFF !important; /* 순백색 배경 */
+        background-color: #FFFFFF !important; 
         border: 2px solid #1A1A1A !important; border-radius: 4px; 
         box-shadow: 2px 2px 0px rgba(0,0,0,0.1); padding: 10px; min-height: 65px; 
         display: flex; align-items: center; justify-content: flex-start; font-size: 0.95em;
     }
-    div[data-testid="stAlert"] * {
-        color: #000000 !important; /* 내부 글씨 모두 검은색 강제 */
-    }
-    
-    /* 경고/에러 박스만 붉은색 유지 */
+    div[data-testid="stAlert"] * { color: #000000 !important; }
     div[data-testid="stAlert"]:has(.stIcon-error), div[data-testid="stAlert"]:has(.stIcon-warning) { 
         border: 2px solid #8B0000 !important; background-color: #FFECEC !important;
     }
@@ -172,7 +168,6 @@ def fetch_macro_news():
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         xml_data = urllib.request.urlopen(req).read()
         root = ET.fromstring(xml_data)
-        # 갤러리형 출력을 위해 12개 추출 (3열 x 4행 배열용)
         items = root.findall('.//item')[:12] 
         if items:
             for item in items:
@@ -259,41 +254,107 @@ regime_colors = {1: 'rgba(0, 0, 0, 0.02)', 2: 'rgba(0, 0, 0, 0.08)', 3: 'rgba(13
 # ==========================================
 
 # ------------------------------------------
-# PAGE 1: 시장 분석관 (Home)
+# PAGE 1: 시장 분석관 (Home) - 🛠️ 레이아웃 리마스터 🛠️
 # ------------------------------------------
 if page == "📊 시장 분석관 (Home)":
     st.subheader("I. 시장 분석관 (Market Intelligence)")
     
-    col_regime, col_soxl, col_weight = st.columns([1.2, 1.2, 1])
-    with col_regime:
-        st.markdown("#### 🏛️ 현재 시장 국면 (REGIME)")
-        st.info(f"### {regime_info[curr_regime][0]}\n**전략:** {regime_info[curr_regime][1]}")
-        st.markdown("##### 🔍 알고리즘 해부")
-        st.markdown(f"- **① VIX 패닉 임계점 (< 40):** {vix_close:.2f} {'✅' if vix_close <= 40 else '❌(R4)'}")
-        st.markdown(f"- **② 장기 대세 지지선 (QQQ > 200MA):** 종가 ${qqq_close:.0f} vs 200선 ${qqq_ma200:.0f} {'✅' if qqq_close >= qqq_ma200 else '❌(R3)'}")
-        st.markdown(f"- **③ 중단기 추세 (50MA ≥ 200MA):** 50선 ${qqq_ma50:.0f} vs 200선 ${qqq_ma200:.0f} {'✅' if qqq_ma50 >= qqq_ma200 else '❌'}")
-        st.markdown(f"- **④ VIX 노이즈 필터 (5일선 < 25):** {vix_ma5:.2f} {'✅' if vix_ma5 < 25 else '❌'}")
-        
-        if curr_regime != target_regime: st.warning(f"**💡 위원회:** 시장이 R{target_regime} 조건을 터치했으나, 5일 연속 충족 여부를 대기 중입니다.")
-        else: st.success("**💡 위원회:** 모든 조건이 현재 국면에 부합합니다.")
-            
-    with col_soxl:
-        st.markdown("#### 💻 반도체(SOXL) 판독관")
-        if smh_cond: st.success("### 🔥 승인: SOXL 편입\n**전략:** 3배수 반도체 공격적 진입")
-        else: st.warning("### 🛡️ 기각: USD 편입\n**전략:** 변동성 방어용 2배수 편입")
-            
-        st.markdown("##### 🔍 3중 필터 해부")
-        st.markdown(f"- **① 정배열 추세 (SMH > 50MA):** 종가 ${smh_close:.1f} vs 50선 ${smh_ma50:.1f} {'✅' if smh_c1 else '❌'}")
-        st.markdown(f"- **② 상승 모멘텀 (1M>10% or 3M>5%):** 1M {smh_1m*100:.1f}%, 3M {smh_3m*100:.1f}% {'✅' if smh_c2 else '❌'}")
-        st.markdown(f"- **③ 매수 심리 강도 (RSI > 50):** {smh_rsi:.1f} {'✅' if smh_c3 else '❌'}")
-        st.markdown("> *SOXL은 위 3가지 필터를 모두 통과해야만 편입을 허가합니다.*")
+    # HTML 카드 생성을 위한 헬퍼 변수
+    def check_row(label, val_str, is_pass):
+        color = "#006400" if is_pass else "#8B0000"
+        icon = "✅" if is_pass else "❌"
+        return f"""
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #CCC; padding: 10px 0; align-items: center; font-size: 0.95em;">
+            <span style="color: #333; font-weight: 500;">{label}</span>
+            <span style="font-family: 'Courier New', monospace; font-weight: bold; color: #1A1A1A;">
+                {val_str} <span style="color: {color}; margin-left: 5px;">{icon}</span>
+            </span>
+        </div>
+        """
 
-    with col_weight:
-        st.markdown("#### 🛒 V4.5 목표 포트폴리오")
-        w_df = pd.DataFrame(list(target_weights.items()), columns=['자산 (ASSET)', '비중 (WEIGHT)'])
-        w_df = w_df[w_df['비중 (WEIGHT)'] > 0].sort_values(by='비중 (WEIGHT)', ascending=False)
-        w_df['비중 (WEIGHT)'] = w_df['비중 (WEIGHT)'].apply(lambda x: f"{x*100:.0f}%")
-        st.dataframe(w_df, hide_index=True, use_container_width=True)
+    # 1. 국면 판독관 변수
+    r_bg = "#FFFDF7" if curr_regime in [1, 2] else "#FFECEC"
+    r_border = "#2C2C2C" if curr_regime in [1, 2] else "#8B0000"
+    r_text = "#1A1A1A" if curr_regime in [1, 2] else "#8B0000"
+    
+    c1_pass = vix_close <= 40
+    c2_pass = qqq_close >= qqq_ma200
+    c3_pass = qqq_ma50 >= qqq_ma200
+    c4_pass = vix_ma5 < 25
+    
+    msg_bg = "#FFF3CD" if curr_regime != target_regime else "#E8F5E9"
+    msg_text = f"💡 <b>위원회:</b> 시장이 R{target_regime} 조건을 터치했으나, 5일 연속 충족 여부를 대기 중입니다." if curr_regime != target_regime else "💡 <b>위원회:</b> 모든 조건이 현재 국면에 부합합니다."
+
+    regime_card_html = f"""
+    <div style="border: 2px solid {r_border}; background-color: #FFFDF7; padding: 20px; border-radius: 4px; min-height: 480px; box-shadow: 2px 2px 0px rgba(0,0,0,0.1);">
+        <h4 style="margin-top: 0; color: #1A1A1A; border-bottom: 2px solid #1A1A1A; padding-bottom: 10px;">🏛️ 현재 시장 국면 (REGIME)</h4>
+        <div style="background-color: {r_bg}; border: 1px solid {r_border}; border-radius: 4px; padding: 15px; text-align: center; margin-bottom: 20px;">
+            <h3 style="margin: 0; color: {r_text};">{regime_info[curr_regime][0]}</h3>
+            <p style="margin: 5px 0 0 0; font-size: 0.9em; font-weight: bold; color: #444;">전략: {regime_info[curr_regime][1]}</p>
+        </div>
+        <div style="margin-bottom: 15px;"><strong>🔍 알고리즘 해부</strong></div>
+        {check_row('① VIX 패닉 임계점 (< 40)', f"{vix_close:.2f}", c1_pass)}
+        {check_row('② 장기 지지선 (QQQ > 200MA)', f"${qqq_close:.0f} vs ${qqq_ma200:.0f}", c2_pass)}
+        {check_row('③ 추세 정배열 (50MA ≥ 200MA)', f"${qqq_ma50:.0f} vs ${qqq_ma200:.0f}", c3_pass)}
+        {check_row('④ 노이즈 필터 (5일선 < 25)', f"{vix_ma5:.2f}", c4_pass)}
+        <div style="margin-top: 20px; background-color: {msg_bg}; padding: 12px; border-radius: 4px; font-size: 0.9em; color: #1A1A1A;">
+            {msg_text}
+        </div>
+    </div>
+    """
+
+    # 2. 반도체 판독관 변수
+    s_bg = "#E8F5E9" if smh_cond else "#FFF3CD"
+    s_border = "#006400" if smh_cond else "#8B0000"
+    s_title = "🔥 승인: SOXL 편입" if smh_cond else "🛡️ 기각: USD 편입"
+    s_desc = "3배수 반도체 공격적 진입" if smh_cond else "변동성 방어용 2배수 편입"
+
+    soxl_card_html = f"""
+    <div style="border: 2px solid #2C2C2C; background-color: #FFFDF7; padding: 20px; border-radius: 4px; min-height: 480px; box-shadow: 2px 2px 0px rgba(0,0,0,0.1);">
+        <h4 style="margin-top: 0; color: #1A1A1A; border-bottom: 2px solid #1A1A1A; padding-bottom: 10px;">💻 반도체(SOXL) 판독관</h4>
+        <div style="background-color: {s_bg}; border: 1px solid {s_border}; border-radius: 4px; padding: 15px; text-align: center; margin-bottom: 20px;">
+            <h3 style="margin: 0; color: {s_border};">{s_title}</h3>
+            <p style="margin: 5px 0 0 0; font-size: 0.9em; font-weight: bold; color: #444;">전략: {s_desc}</p>
+        </div>
+        <div style="margin-bottom: 15px;"><strong>🔍 3중 필터 해부</strong></div>
+        {check_row('① 정배열 추세 (SMH > 50MA)', f"${smh_close:.1f} vs ${smh_ma50:.1f}", smh_c1)}
+        {check_row('② 모멘텀 (1M>10% or 3M>5%)', f"1M {smh_1m*100:.1f}%, 3M {smh_3m*100:.1f}%", smh_c2)}
+        {check_row('③ 매수 심리 강도 (RSI > 50)', f"{smh_rsi:.1f}", smh_c3)}
+        <div style="margin-top: 20px; padding: 12px; font-size: 0.85em; color: #555; border-left: 3px solid #ccc; font-style: italic;">
+            SOXL은 극단적 변동성을 수반하므로, 위 3가지(추세, 모멘텀, 심리) 필터를 모두 통과해야만 편입을 허가합니다.
+        </div>
+    </div>
+    """
+
+    # 3. 포트폴리오 테이블 변수
+    w_df = pd.DataFrame(list(target_weights.items()), columns=['자산 (ASSET)', '비중 (WEIGHT)'])
+    w_df = w_df[w_df['비중 (WEIGHT)'] > 0].sort_values(by='비중 (WEIGHT)', ascending=False)
+    
+    port_rows = ""
+    for _, row in w_df.iterrows():
+        port_rows += f"""
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #EBE4D3; padding: 12px 0;">
+            <strong style="color: #1A1A1A;">{row['자산 (ASSET)']}</strong>
+            <span style="font-family: 'Courier New', monospace; font-weight: bold; color: #8B0000; font-size: 1.1em;">{row['비중 (WEIGHT)']*100:.0f}%</span>
+        </div>
+        """
+        
+    port_card_html = f"""
+    <div style="border: 2px solid #2C2C2C; background-color: #FFFDF7; padding: 20px; border-radius: 4px; min-height: 480px; box-shadow: 2px 2px 0px rgba(0,0,0,0.1);">
+        <h4 style="margin-top: 0; color: #1A1A1A; border-bottom: 2px solid #1A1A1A; padding-bottom: 10px;">🛒 V4.5 목표 포트폴리오</h4>
+        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #1A1A1A; padding: 10px 0; font-size: 0.85em; color: #555; font-weight: bold;">
+            <span>자산 (TICKER)</span>
+            <span>비중 (TARGET)</span>
+        </div>
+        {port_rows}
+    </div>
+    """
+
+    # 3열 렌더링
+    c1, c2, c3 = st.columns([1.3, 1.3, 1])
+    with c1: st.markdown(regime_card_html, unsafe_allow_html=True)
+    with c2: st.markdown(soxl_card_html, unsafe_allow_html=True)
+    with c3: st.markdown(port_card_html, unsafe_allow_html=True)
 
     st.divider()
     m1, m2, m3, m4, m5 = st.columns(5)
@@ -502,7 +563,6 @@ elif page == "📰 매크로 뉴스룸":
     st.subheader("IV. 실시간 글로벌 매크로 뉴스 & AI 브리핑")
     st.warning("⚠️ **[멘탈 주의보]** 쏟아지는 뉴스는 단순 참고용입니다. 자극적인 헤드라인에 흔들리지 마시고, 오직 시스템의 숫자에만 의존하십시오.")
     
-    # ⏱️ 15분 단위로 갱신되는 캐시 함수 호출
     headlines_for_ai, news_items = fetch_macro_news()
 
     with st.expander("✨ System-2 심층 추론 애널리스트에게 시장 분석 지시 (클릭하여 열기)", expanded=True):
@@ -548,7 +608,6 @@ elif page == "📰 매크로 뉴스룸":
                                 "[뉴스 헤드라인]\n" + "\n".join(headlines_for_ai)
                             )
                             response = model.generate_content(prompt)
-                            # 🎨 리포트를 순백색 배경과 검은 글씨의 st.info(stAlert) 형태로 출력
                             st.success(f"✅ 심층 추론 분석이 완료되었습니다. (사용 모델: {clean_model_name})")
                             st.info(f"**🤖 System-2 애널리스트 심층 리포트:**\n\n{response.text}")
                             with st.expander("📋 리포트 텍스트 복사하기"): st.code(response.text, language="markdown")
@@ -559,8 +618,6 @@ elif page == "📰 매크로 뉴스룸":
 
     st.divider()
     st.markdown("#### 🖼️ 최신 경제 헤드라인 갤러리")
-    
-    # 🖼️ 갤러리형 3단 UI 레이아웃
     if news_items:
         cols = st.columns(3)
         for idx, item in enumerate(news_items):
