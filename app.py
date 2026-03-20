@@ -14,17 +14,17 @@ import google.generativeai as genai
 warnings.filterwarnings('ignore')
 
 # ==========================================
-# 1. 대시보드 기본 설정 및 빈티지 CSS 삽입
+# 1. 대시보드 기본 설정 및 CSS 삽입
 # ==========================================
 st.set_page_config(page_title="RIMBERIO FINANCIAL GAZETTE", layout="wide", page_icon="📰")
 
 st.markdown("""
 <style>
-    /* 전체 배경 및 기본 폰트 (타자기 느낌) */
+    /* 전체 배경 및 기본 폰트 (모던하고 깔끔한 산세리프 적용) */
     .stApp {
         background-color: #F5F0E8;
         color: #1A1A1A;
-        font-family: 'Courier New', Courier, monospace;
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
     }
     
     /* 레이아웃 폭 고정 (1100px 가운데 정렬) */
@@ -34,18 +34,19 @@ st.markdown("""
         padding-top: 2rem;
     }
 
-    /* 제목 (Georgia, 대문자, 자간 넓게) */
+    /* 제목 폰트 (신문 섹션 느낌은 유지하되 깔끔하게) */
     h1, h2, h3, h4, h5, h6 {
-        font-family: Georgia, serif !important;
+        font-family: 'Pretendard', sans-serif !important;
         color: #1A1A1A !important;
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
+        font-weight: 800 !important;
     }
 
     /* 알림 박스 (경보, 성공 등 - 플랫하고 얇은 테두리) */
     div[data-testid="stAlert"] {
         background-color: #FFFDF7;
         border: 1px solid #2C2C2C;
-        border-radius: 0px;
+        border-radius: 4px; /* 살짝 둥글게 모던함 추가 */
         color: #1A1A1A;
         box-shadow: none;
     }
@@ -56,20 +57,20 @@ st.markdown("""
         color: #8B0000;
     }
 
-    /* 지표(Metric) 숫자 폰트 (크고 굵은 Serif) */
+    /* 지표(Metric) 숫자 폰트 */
     div[data-testid="stMetricValue"] > div {
-        font-family: Georgia, serif;
-        font-weight: bolder;
+        font-family: 'Pretendard', sans-serif;
+        font-weight: 900;
         color: #1A1A1A;
     }
 
-    /* 버튼 (Sharp edges, Black & White) */
+    /* 버튼 */
     div[data-testid="stButton"] > button {
         background-color: #1A1A1A;
         color: #FFFDF7;
-        border-radius: 0px;
+        border-radius: 4px;
         border: 2px solid #1A1A1A;
-        font-family: Georgia, serif;
+        font-family: 'Pretendard', sans-serif;
         font-weight: bold;
         transition: all 0.3s;
     }
@@ -79,56 +80,61 @@ st.markdown("""
         color: #FFFDF7;
     }
 
-    /* 탭 디자인 (신문 섹션 스타일) */
+    /* 탭 디자인 (여백과 공간감 대폭 개선) */
     .stTabs [data-baseweb="tab-list"] {
-        border-bottom: 4px double #2C2C2C;
-        gap: 0px;
+        border-bottom: 3px solid #2C2C2C;
+        gap: 25px; /* 탭 사이 간격 확보 */
+        padding-bottom: 5px; /* 하단 선과의 간격 확보 */
     }
     .stTabs [data-baseweb="tab"] {
-        font-family: Georgia, serif;
+        font-family: 'Pretendard', sans-serif;
         color: #1A1A1A;
-        font-weight: bold;
-        border-radius: 0;
+        font-weight: 700;
+        font-size: 1.05rem; /* 글씨 크기 살짝 확대 */
+        border-radius: 4px 4px 0 0;
         border: 1px solid transparent;
+        padding: 10px 15px; /* 탭 내부 여백 넓게 */
     }
     .stTabs [aria-selected="true"] {
         background-color: #FFFDF7;
         border: 2px solid #2C2C2C;
-        border-bottom: 2px solid #FFFDF7;
-        margin-bottom: -2px;
+        border-bottom: 3px solid #FFFDF7; /* 하단 선을 덮어서 열린 느낌 */
+        margin-bottom: -3px;
+        color: #8B0000; /* 선택된 탭은 포인트 컬러 */
     }
 
-    /* 구분선 (신문 느낌의 점선) */
+    /* 구분선 */
     hr {
-        border-top: 2px dashed #2C2C2C;
+        border-top: 1px dashed #2C2C2C;
         background: transparent;
-        margin: 2em 0;
+        margin: 2.5em 0;
     }
 
     /* 데이터 프레임/테이블 */
     [data-testid="stDataFrame"] {
         border: 2px solid #2C2C2C;
         background-color: #FFFDF7;
+        border-radius: 4px;
     }
     
     /* 텍스트 인풋 등 */
     .stTextInput>div>div>input, .stNumberInput>div>div>input {
-        border-radius: 0;
+        border-radius: 4px;
         border: 1px solid #2C2C2C;
         background-color: #FFFDF7;
-        font-family: 'Courier New', monospace;
+        font-family: 'Pretendard', sans-serif;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# 📰 신문 헤더 (Masthead) 삽입 - 제목만 영어 유지
+# 📰 신문 헤더 (Masthead) 삽입 - 영문 타이틀 폰트(Georgia)만 유지하여 빈티지 감성 보존
 st.markdown("""
 <div style="text-align: center; border-top: 4px solid #1A1A1A; border-bottom: 4px double #1A1A1A; padding: 20px 0; margin-bottom: 30px; background-color: transparent;">
     <h1 style="font-family: Georgia, serif; font-size: 3em; font-weight: bold; letter-spacing: 4px; margin: 0; color: #1A1A1A;">RIMBERIO FINANCIAL GAZETTE</h1>
-    <p style="font-family: 'Courier New', monospace; font-size: 1em; letter-spacing: 2px; margin: 10px 0; color: #1A1A1A; font-weight: bold;">
+    <p style="font-family: 'Pretendard', sans-serif; font-size: 1.1em; letter-spacing: 2px; margin: 12px 0; color: #1A1A1A; font-weight: 700;">
         주식 & 채권 &nbsp;✦&nbsp; 퀀트 전략 &nbsp;✦&nbsp; 매크로 뉴스
     </p>
-    <div style="font-family: Georgia, serif; font-size: 0.9em; border-top: 1px solid #1A1A1A; padding-top: 5px; display: flex; justify-content: center; gap: 40px; color: #1A1A1A; font-weight: bold;">
+    <div style="font-family: 'Pretendard', sans-serif; font-size: 0.95em; border-top: 1px solid #1A1A1A; padding-top: 8px; display: flex; justify-content: center; gap: 40px; color: #1A1A1A; font-weight: 700;">
         <span>제 45호</span>
         <span>AMLS V4.5 엔진</span>
         <span>2026년 발행</span>
@@ -266,11 +272,11 @@ with tab1:
     
     chart_col1, chart_col2 = st.columns(2)
     
-    # 빈티지 톤 차트 속성
+    # 모던 빈티지 톤 차트 속성
     chart_layout = dict(
         paper_bgcolor='#FFFDF7',
         plot_bgcolor='#FFFDF7',
-        font=dict(family="Georgia, serif", color="#1A1A1A"),
+        font=dict(family="Pretendard, sans-serif", color="#1A1A1A"),
         height=350,
         margin=dict(l=0, r=0, t=40, b=0)
     )
@@ -283,7 +289,6 @@ with tab1:
     fig_tqqq.add_trace(go.Scatter(x=df.index, y=df['TQQQ'], name='TQQQ', line=dict(color='#1A1A1A', width=2)))
     fig_tqqq.add_trace(go.Scatter(x=df.index, y=df['TQQQ_MA200'], name='200일선', line=dict(color='#8B0000', width=2, dash='dash')))
     
-    # 흑백/빈티지 톤 레짐 컬러
     colors = {1: 'rgba(0, 0, 0, 0.03)', 2: 'rgba(0, 0, 0, 0.08)', 3: 'rgba(139, 0, 0, 0.1)', 4: 'rgba(139, 0, 0, 0.2)'}
     for i in range(1, len(df)):
         if df['Regime'].iloc[i-1] != df['Regime'].iloc[i] or i == 1:
@@ -372,7 +377,7 @@ with tab3:
         fig2 = go.Figure()
         fig2.add_trace(go.Scatter(x=df.index[-200:], y=df['HYG_IEF_Ratio'].iloc[-200:], name='HYG/IEF 비율', line=dict(color='#1A1A1A')))
         fig2.add_trace(go.Scatter(x=df.index[-200:], y=df['HYG_IEF_MA50'].iloc[-200:], name='50일선', line=dict(color='#8B0000', dash='dot')))
-        fig2.update_layout(height=250, margin=dict(l=0, r=0, t=10, b=0), paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7', font=dict(family="Georgia, serif", color="#1A1A1A"))
+        fig2.update_layout(height=250, margin=dict(l=0, r=0, t=10, b=0), paper_bgcolor='#FFFDF7', plot_bgcolor='#FFFDF7', font=dict(family="Pretendard, sans-serif", color="#1A1A1A"))
         st.plotly_chart(fig2, use_container_width=True)
 
     with r2:
@@ -424,7 +429,6 @@ with tab4:
             else:
                 try:
                     with st.spinner("최신 전보를 해독하여 분석 중입니다..."):
-                        # 안정성을 위해 gemini-pro 모델 적용
                         genai.configure(api_key=api_key)
                         model = genai.GenerativeModel('gemini-pro')
                         
@@ -449,6 +453,6 @@ with tab4:
             link = item.find('link').text
             pubDate = item.find('pubDate').text
             clean_date = pubDate[:-4] if pubDate else ""
-            st.markdown(f"- [{title}]({link}) <span style='color:#8B0000; font-family:Georgia; font-size:0.8em;'>({clean_date})</span>", unsafe_allow_html=True)
+            st.markdown(f"- [{title}]({link}) <span style='color:#8B0000; font-family:Pretendard, sans-serif; font-size:0.8em;'>({clean_date})</span>", unsafe_allow_html=True)
     else:
         st.write("수신된 뉴스가 없습니다.")
