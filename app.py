@@ -80,7 +80,7 @@ st.markdown("""
         color: #FFFDF7;
     }
 
-    /* 탭 디자인 (여백과 공간감 대폭 개선) */
+    /* 탭 디자인 */
     .stTabs [data-baseweb="tab-list"] {
         border-bottom: 3px solid #2C2C2C;
         gap: 25px; 
@@ -396,7 +396,7 @@ with tab3:
 # 탭 4: MACRO NEWS
 # ------------------------------------------
 with tab4:
-    st.subheader("실시간 글로벌 매크로 뉴스 및 AI 브리핑")
+    st.subheader("실시간 글로벌 매크로 뉴스 및 심층 추론(Deep-Thought) 브리핑")
     st.warning("⚠️ **[멘탈 주의보]** 쏟아지는 뉴스는 단순 참고용입니다. 자극적인 헤드라인에 흔들리지 마시고, 오직 시스템의 숫자에만 의존하십시오.")
     
     headlines_for_ai = []
@@ -416,43 +416,55 @@ with tab4:
     except Exception as e:
         st.error(f"통신망 연결에 실패했습니다: {e}")
 
-    with st.expander("✨ AI 애널리스트에게 현재 시장 요약 지시 (클릭하여 열기)", expanded=True):
-        st.markdown("발급받은 API Key를 입력하여 전보(Telegram)의 내용을 요약하십시오.")
+    with st.expander("✨ System-2 심층 추론 애널리스트에게 시장 분석 지시 (클릭하여 열기)", expanded=True):
+        st.markdown("발급받은 API Key를 입력하여 전보(Telegram)의 내용을 **초정밀 심층 분석(Ultra-deep thinking mode)** 하십시오. *(분석에 시간이 다소 소요될 수 있습니다)*")
         api_key = st.text_input("🔑 API KEY 입력:", type="password")
         
-        if st.button("🚀 헤드라인 요약 실행"):
+        if st.button("🚀 심층 추론 요약 실행"):
             if not api_key:
                 st.warning("API Key가 필요합니다.")
             elif not headlines_for_ai:
                 st.warning("분석할 전보 데이터가 없습니다.")
             else:
                 try:
-                    with st.spinner("최신 전보를 해독하여 구글 서버와 통신 중입니다..."):
+                    with st.spinner("최신 전보를 해독하며, 다각도 검증 및 심층 추론을 진행 중입니다. 잠시만 기다려주세요..."):
                         genai.configure(api_key=api_key)
                         
-                        # 💡 꿀팁: 하드코딩된 이름 대신 구글 서버에 현재 사용 가능한 텍스트 모델 목록을 직접 물어보고 가져옵니다!
                         available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
                         
                         if not available_models:
                             st.error("API Key에 접근 가능한 AI 모델이 없습니다. 설정을 확인해 주세요.")
                         else:
-                            # flash나 pro가 들어간 모델을 우선 선택하고, 없으면 첫 번째 모델 사용
                             target_model = next((m for m in available_models if 'flash' in m.lower() or 'pro' in m.lower()), available_models[0])
-                            
-                            # 모델 이름에서 'models/' 접두사 제거
                             clean_model_name = target_model.replace('models/', '')
                             model = genai.GenerativeModel(clean_model_name)
                             
+                            # 세윤님이 요청하신 Ultra-deep thinking mode 프롬프트 완벽 이식
                             prompt = (
-                                "너는 1920년대 월스트리트의 날카롭고 이성적인 퀀트 애널리스트야. 말투도 딱딱하고 고전적인 비즈니스 신문 칼럼니스트처럼 해줘. "
+                                "너는 1920년대 월스트리트의 날카롭고 이성적인 퀀트 애널리스트야. 고전적이고 단호한 비즈니스 신문 칼럼니스트의 말투를 사용해.\n\n"
+                                "[System Instructions]\n"
+                                "Ultra-deep thinking mode. Greater rigor, attention to detail, and multi-angle verification. "
+                                "Start by outlining the task and breaking down the problem into subtasks. "
+                                "For each subtask, explore multiple perspectives, even those that seem initially irrelevant or improbable. "
+                                "Purposefully attempt to disprove or challenge your own assumptions at every step. Triple-verify everything. "
+                                "Critically review each step, scrutinize your logic, assumptions, and conclusions, explicitly calling out uncertainties and alternative viewpoints. "
+                                "Independently verify your reasoning using alternative methodologies or tools, cross-checking every fact, inference, and conclusion against external data, calculation, or authoritative sources. "
+                                "Deliberately seek out and employ at least twice as many verification tools or methods as you typically would. "
+                                "Use mathematical validations, web searches, logic evaluation frameworks, and additional resources explicitly and liberally to cross-verify your claims. "
+                                "Even if you feel entirely confident in your solution, explicitly dedicate additional time and effort to systematically search for weaknesses, logical gaps, hidden assumptions, or oversights. "
+                                "Clearly document these potential pitfalls and how you've addressed them. "
+                                "Once you're fully convinced your analysis is robust and complete, deliberately pause and force yourself to reconsider the entire reasoning chain one final time from scratch. "
+                                "Explicitly detail this last reflective step.\n"
+                                "답변은 반드시 처음부터 끝까지 한국말로 작성해.\n\n"
+                                "[Task]\n"
                                 "다음은 방금 수집된 미국의 증시, 나스닥, 연준 관련 최신 뉴스 헤드라인 15개야. "
-                                "이걸 바탕으로 현재 주식 시장의 핵심 쟁점과 리스크를 3~4줄로 명확하게 요약해 줘.\n\n"
+                                "위의 지침에 따라 이 헤드라인들을 철저하게 분석하고, 숨겨진 논리적 허점을 찾아내 검증한 뒤, 현재 주식 시장의 핵심 쟁점과 잠재적 리스크를 도출해 줘.\n\n"
                                 "[뉴스 헤드라인]\n" + "\n".join(headlines_for_ai)
                             )
                             
                             response = model.generate_content(prompt)
-                            st.success(f"✅ AI 분석이 완료되었습니다. (사용 모델: {clean_model_name})")
-                            st.info(f"**🤖 애널리스트 요약 리포트:**\n\n{response.text}")
+                            st.success(f"✅ 심층 추론 분석이 완료되었습니다. (사용 모델: {clean_model_name})")
+                            st.info(f"**🤖 System-2 애널리스트 심층 리포트:**\n\n{response.text}")
                 except Exception as e:
                     st.error(f"분석 중 오류가 발생했습니다. 키 값을 확인하십시오. 상세 에러: {e}")
 
