@@ -39,13 +39,23 @@ st.markdown("""
 
     h1, h2, h3, h4, h5, h6 { font-family: 'Pretendard', sans-serif !important; color: #1A1A1A !important; font-weight: 800 !important; letter-spacing: 0.5px; }
     
+    /* 🚨 알림 박스 (AI 리포트 흰색 배경 & 검은 글씨 강제 적용) */
     div[data-testid="stAlert"] { 
-        background-color: #FFFDF7; border: 1px solid #2C2C2C; border-radius: 4px; 
-        color: #1A1A1A; box-shadow: 2px 2px 0px rgba(0,0,0,0.1); padding: 10px; min-height: 65px; 
-        display: flex; align-items: center; justify-content: flex-start; font-size: 0.9em;
+        background-color: #FFFFFF !important; /* 순백색 배경 */
+        border: 2px solid #1A1A1A !important; border-radius: 4px; 
+        box-shadow: 2px 2px 0px rgba(0,0,0,0.1); padding: 10px; min-height: 65px; 
+        display: flex; align-items: center; justify-content: flex-start; font-size: 0.95em;
     }
+    div[data-testid="stAlert"] * {
+        color: #000000 !important; /* 내부 글씨 모두 검은색 강제 */
+    }
+    
+    /* 경고/에러 박스만 붉은색 유지 */
     div[data-testid="stAlert"]:has(.stIcon-error), div[data-testid="stAlert"]:has(.stIcon-warning) { 
-        border: 2px solid #8B0000; background-color: #FFECEC; color: #8B0000; font-weight: bold;
+        border: 2px solid #8B0000 !important; background-color: #FFECEC !important;
+    }
+    div[data-testid="stAlert"]:has(.stIcon-error) *, div[data-testid="stAlert"]:has(.stIcon-warning) * { 
+        color: #8B0000 !important; font-weight: bold;
     }
     
     div[data-testid="stMetricValue"] > div { font-family: 'Pretendard', sans-serif; font-weight: 900; color: #1A1A1A; }
@@ -149,6 +159,33 @@ def load_data():
 with st.spinner('📰 증시 데이터베이스와 동기화 중입니다...'):
     df = load_data()
 
+# ------------------------------------------
+# ⏱️ 15분 단위 실시간 뉴스 갱신 함수 (ttl=900초)
+# ------------------------------------------
+@st.cache_data(ttl=900)
+def fetch_macro_news():
+    headlines_for_ai = []
+    news_items = []
+    try:
+        search_query = urllib.parse.quote("미국증시 OR 연준 OR 나스닥 OR 금리")
+        url = f"https://news.google.com/rss/search?q={search_query}&hl=ko&gl=KR&ceid=KR:ko"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        xml_data = urllib.request.urlopen(req).read()
+        root = ET.fromstring(xml_data)
+        # 갤러리형 출력을 위해 12개 추출 (3열 x 4행 배열용)
+        items = root.findall('.//item')[:12] 
+        if items:
+            for item in items:
+                title = item.find('title').text
+                link = item.find('link').text
+                pubDate = item.find('pubDate').text
+                clean_date = pubDate[:-4] if pubDate else ""
+                headlines_for_ai.append(title)
+                news_items.append({"title": title, "link": link, "date": clean_date})
+    except Exception:
+        pass
+    return headlines_for_ai, news_items
+
 # ==========================================
 # 4. AMLS v4.5 코어 엔진 계산
 # ==========================================
@@ -189,7 +226,6 @@ last_row = df.iloc[-1]
 curr_regime = int(last_row['Regime'])
 target_regime = int(last_row['Target'])
 
-# 데이터 변수
 vix_close = last_row['^VIX']
 vix_ma5 = last_row['VIX_MA5']
 qqq_close = last_row['QQQ']
@@ -201,7 +237,6 @@ smh_3m = last_row['SMH_3M_Ret']
 smh_1m = last_row['SMH_1M_Ret']
 smh_rsi = last_row['SMH_RSI']
 
-# 조건 판독
 smh_c1 = smh_close > smh_ma50
 smh_c2 = (smh_3m > 0.05) or (smh_1m > 0.10)
 smh_c3 = smh_rsi > 50
@@ -467,18 +502,8 @@ elif page == "📰 매크로 뉴스룸":
     st.subheader("IV. 실시간 글로벌 매크로 뉴스 & AI 브리핑")
     st.warning("⚠️ **[멘탈 주의보]** 쏟아지는 뉴스는 단순 참고용입니다. 자극적인 헤드라인에 흔들리지 마시고, 오직 시스템의 숫자에만 의존하십시오.")
     
-    headlines_for_ai = []
-    try:
-        search_query = urllib.parse.quote("미국증시 OR 연준 OR 나스닥 OR 금리")
-        url = f"https://news.google.com/rss/search?q={search_query}&hl=ko&gl=KR&ceid=KR:ko"
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        xml_data = urllib.request.urlopen(req).read()
-        root = ET.fromstring(xml_data)
-        items = root.findall('.//item')[:15]
-        if items:
-            for item in items: headlines_for_ai.append(item.find('title').text)
-    except Exception as e:
-        st.error(f"통신망 연결에 실패했습니다: {e}")
+    # ⏱️ 15분 단위로 갱신되는 캐시 함수 호출
+    headlines_for_ai, news_items = fetch_macro_news()
 
     with st.expander("✨ System-2 심층 추론 애널리스트에게 시장 분석 지시 (클릭하여 열기)", expanded=True):
         st.markdown("**(주의)** Streamlit Cloud의 `Secrets` 설정에 `GEMINI_API_KEY`를 먼저 등록해주십시오.")
@@ -523,6 +548,7 @@ elif page == "📰 매크로 뉴스룸":
                                 "[뉴스 헤드라인]\n" + "\n".join(headlines_for_ai)
                             )
                             response = model.generate_content(prompt)
+                            # 🎨 리포트를 순백색 배경과 검은 글씨의 st.info(stAlert) 형태로 출력
                             st.success(f"✅ 심층 추론 분석이 완료되었습니다. (사용 모델: {clean_model_name})")
                             st.info(f"**🤖 System-2 애널리스트 심층 리포트:**\n\n{response.text}")
                             with st.expander("📋 리포트 텍스트 복사하기"): st.code(response.text, language="markdown")
@@ -532,13 +558,22 @@ elif page == "📰 매크로 뉴스룸":
                 st.error(f"분석 중 오류가 발생했습니다. 상세 에러: {e}")
 
     st.divider()
-    st.markdown("#### 📝 최신 경제 헤드라인 원문")
-    if items:
-        for item in items:
-            title = item.find('title').text
-            link = item.find('link').text
-            pubDate = item.find('pubDate').text
-            clean_date = pubDate[:-4] if pubDate else ""
-            st.markdown(f"- [{title}]({link}) <span style='color:#8B0000; font-family:Pretendard, sans-serif; font-size:0.8em;'>({clean_date})</span>", unsafe_allow_html=True)
+    st.markdown("#### 🖼️ 최신 경제 헤드라인 갤러리")
+    
+    # 🖼️ 갤러리형 3단 UI 레이아웃
+    if news_items:
+        cols = st.columns(3)
+        for idx, item in enumerate(news_items):
+            with cols[idx % 3]:
+                st.markdown(f"""
+                <div style="background-color: #FFFFFF; border: 1px solid #1A1A1A; padding: 15px; margin-bottom: 15px; border-radius: 4px; height: 140px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 2px 2px 0px rgba(0,0,0,0.1);">
+                    <div style="font-weight: bold; font-size: 1.05em; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">
+                        <a href="{item['link']}" target="_blank" style="color: #1A1A1A; text-decoration: none;">{item['title']}</a>
+                    </div>
+                    <div style="color: #8B0000; font-size: 0.85em; margin-top: 10px; font-weight: bold;">
+                        {item['date']}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
     else:
-        st.write("수신된 뉴스가 없습니다.")
+        st.write("수신된 뉴스가 없습니다. (15분 후 다시 시도합니다)")
