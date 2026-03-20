@@ -16,7 +16,6 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 1. 대시보드 기본 설정 및 데이터 수집
 # ==========================================
-# 🚨 탭 타이틀 변경
 st.set_page_config(page_title="AMLS V4.5 FINANCE STRATEGY", layout="wide", page_icon="📰", initial_sidebar_state="expanded")
 
 SECTOR_TICKERS = ['XLK', 'XLV', 'XLF', 'XLY', 'XLC', 'XLI', 'XLP', 'XLE', 'XLU', 'XLRE', 'XLB']
@@ -116,7 +115,6 @@ target_weights = get_weights_v45(curr_regime, smh_cond)
 # ==========================================
 # 2. 사이드바 (구조 변경 - 변수 스위칭 선행)
 # ==========================================
-# 사이드바 상단을 Container로 먼저 확보합니다.
 sidebar_top = st.sidebar.container()
 
 page = st.sidebar.radio(
@@ -129,14 +127,13 @@ st.sidebar.markdown("<br><hr><br>", unsafe_allow_html=True)
 ui_style = st.sidebar.radio("🎨 UI 테마 선택", ["Light Mode (Neo-Tactile)", "Dark Mode (Elegant Theme)"])
 is_neo_style = ui_style == "Light Mode (Neo-Tactile)"
 
-# 🎨 테마 스위칭 변수 설정
 h_color = "#3A2E28" if is_neo_style else "#FFFFFF"
 h_accent = "#B26A47" if is_neo_style else "#8B5CF6"
 h_muted = "#8A7668" if is_neo_style else "#A0AEC0"
 h_border = "rgba(139,94,60,0.1)" if is_neo_style else "rgba(255,255,255,0.05)"
 h_shadow = "2px 2px 4px rgba(255,255,255,0.8)" if is_neo_style else "2px 2px 4px rgba(0,0,0,0.5)"
+h_sidebar_text = "#3A2E28" if is_neo_style else "#FFFFFF"
 
-# 확보해둔 사이드바 상단에 동적 스타일을 입힌 로고/타이틀 삽입
 sidebar_top.markdown(f"""
     <div style="text-align: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid {h_border};">
         <h2 style="font-family: Georgia, serif; margin: 0; font-size: 1.8rem; color: {h_color};">AMLS V4.5</h2>
@@ -146,7 +143,7 @@ sidebar_top.markdown(f"""
 
 st.sidebar.markdown(f"""
     <br><br><br>
-    <div style="position: absolute; bottom: 10px; text-align: center; width: 100%; font-size: 0.8em; color: {h_muted};">
+    <div style="position: absolute; bottom: 10px; text-align: center; width: 100%; font-size: 0.8em; color: {h_sidebar_text};">
         Powered by AMLS V4.5 Engine<br>&copy; 2026 SEYOON.
     </div>
 """, unsafe_allow_html=True)
@@ -165,9 +162,11 @@ neo_tactile_css = """
     }
     .stApp { background-color: var(--base-bg); color: var(--text-main); font-family: 'Pretendard', sans-serif; }
     [data-testid="stSidebar"] { background-color: var(--base-bg); box-shadow: 4px 0px 10px var(--shadow-dark); border: none; }
-    div.row-widget.stRadio > div > label { background-color: var(--base-bg); border-radius: 12px; box-shadow: var(--shadow-raised); transition: all 0.3s; color: var(--text-main); }
-    div.row-widget.stRadio > div > label:hover { color: var(--accent-primary); }
-    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) { box-shadow: var(--shadow-inset) !important; color: var(--accent-primary); }
+    [data-testid="stSidebar"] p { color: var(--text-main) !important; font-weight: bold; }
+    div.row-widget.stRadio > div > label { background-color: var(--base-bg); border-radius: 12px; box-shadow: var(--shadow-raised); transition: all 0.3s; }
+    div.row-widget.stRadio > div > label:hover p { color: var(--accent-primary) !important; }
+    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) { box-shadow: var(--shadow-inset) !important; }
+    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) p { color: var(--accent-primary) !important; }
     
     .neo-card { background-color: var(--base-bg); border-radius: 20px; padding: 25px; min-height: 520px; box-shadow: var(--shadow-raised); display: flex; flex-direction: column; margin-bottom: 20px; }
     .neo-inset-box { background-color: var(--base-bg); border-radius: 12px; padding: 15px; box-shadow: var(--shadow-inset); text-align: center; margin-bottom: 20px;}
@@ -191,10 +190,15 @@ elegant_dark_css = """
     .stApp { background-color: var(--base-bg); color: var(--text-main); font-family: 'Pretendard', sans-serif; }
     [data-testid="stSidebar"] { background-color: var(--base-bg); border-right: 1px solid var(--border-color); }
     
-    /* 🚨 다크모드 사이드바 글씨 순백색 강제 지정 */
-    div.row-widget.stRadio > div > label { background-color: transparent; border-radius: 12px; border: 1px solid transparent; transition: all 0.3s; color: #FFFFFF !important; }
-    div.row-widget.stRadio > div > label:hover { background-color: rgba(255,255,255,0.05); color: var(--text-main) !important; }
-    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) { background-color: rgba(139, 92, 246, 0.2) !important; border: 1px solid var(--accent-primary); color: var(--text-main) !important; box-shadow: 0 0 10px var(--accent-glow); }
+    /* 🚨 다크모드 사이드바 내부 글씨 강제 흰색 패치 */
+    [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label { color: #FFFFFF !important; font-weight: bold; }
+    
+    div.row-widget.stRadio > div > label { background-color: transparent; border-radius: 12px; border: 1px solid transparent; transition: all 0.3s; }
+    div.row-widget.stRadio > div > label:hover { background-color: rgba(255,255,255,0.05); }
+    
+    /* 🚨 선택된 메뉴는 보라색으로 하이라이트 */
+    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) { background-color: rgba(139, 92, 246, 0.2) !important; border: 1px solid var(--accent-primary); box-shadow: 0 0 10px var(--accent-glow); }
+    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) p { color: var(--accent-primary) !important; }
     
     .neo-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 25px; min-height: 520px; box-shadow: var(--shadow-raised); display: flex; flex-direction: column; margin-bottom: 20px; }
     .neo-inset-box { background: linear-gradient(145deg, rgba(139,92,246,0.1), rgba(0,0,0,0)); border: 1px solid var(--accent-primary); border-radius: 12px; padding: 15px; text-align: center; margin-bottom: 20px; box-shadow: 0 0 15px var(--accent-glow); }
@@ -202,7 +206,7 @@ elegant_dark_css = """
     .check-value { font-family: 'Courier New', monospace; font-weight: bold; color: var(--text-main); }
     
     [data-testid="stMetric"] { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: var(--shadow-raised); padding: 15px; }
-    div[data-testid="stMetricValue"] > div { color: var(--text-main); }
+    div[data-testid="stMetricValue"] > div { color: var(--text-main) !important; }
     div[data-testid="stMetricDelta"] > div { color: var(--accent-primary) !important; }
 </style>
 """
@@ -210,7 +214,6 @@ elegant_dark_css = """
 if is_neo_style: st.markdown(neo_tactile_css, unsafe_allow_html=True)
 else: st.markdown(elegant_dark_css, unsafe_allow_html=True)
 
-# 공통 헤더 숨김 처리
 st.markdown("""
 <style>
     [data-testid="stHeader"] { background-color: transparent !important; }
@@ -220,7 +223,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 📰 글로벌 상단 헤더 (🚨 타이틀 변경)
 st.markdown(f"""
 <div style="padding-bottom: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; margin-top: -20px; border-bottom: 2px solid {h_border};">
     <div>
@@ -234,7 +236,6 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# Plotly 차트 색상 스위칭
 b_color = '#EBE5DF' if is_neo_style else '#1C1F28'
 t_color = '#3A2E28' if is_neo_style else '#A0AEC0'
 line_c = '#3A2E28' if is_neo_style else '#8B5CF6' 
@@ -247,10 +248,6 @@ regime_info = {1: ("🟢 R1 (강세장)", "풀 가동"), 2: ("🟡 R2 (조정장
 # ==========================================
 # 5. 페이지 라우팅
 # ==========================================
-
-# ------------------------------------------
-# PAGE 1: 시장 분석관 (Home)
-# ------------------------------------------
 if page == "📊 시장 분석관 (Home)":
     
     def render_row(label, val, passed):
@@ -531,13 +528,19 @@ elif page == "📰 매크로 뉴스룸":
     st.markdown("#### 🖼️ 최신 경제 헤드라인 갤러리")
     if news_items:
         cols = st.columns(3)
+        c_bg = '#FFFFFF' if not is_neo_style else '#FFFDF7' 
+        c_brd = '1px solid var(--border-color)' if not is_neo_style else 'none'
+        c_shd = 'none' if not is_neo_style else 'var(--shadow-raised)'
+        
         for idx, item in enumerate(news_items):
             with cols[idx % 3]:
                 st.markdown(f"""
-                <div class="neo-card" style="min-height: 140px; padding: 15px; margin-bottom: 15px; justify-content: space-between;">
+                <div style="background-color: {c_bg}; border: {c_brd}; padding: 15px; margin-bottom: 15px; border-radius: 12px; height: 140px; box-shadow: {c_shd}; display: flex; flex-direction: column; justify-content: space-between;">
                     <div style="font-weight: bold; font-size: 1.05em; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
-                        <a href="{item['link']}" target="_blank" style="color: {h_color}; text-decoration: none;">{item['title']}</a>
+                        <a href="{item['link']}" target="_blank" style="color: {'#1A1A1A' if not is_neo_style else 'var(--text-main)'}; text-decoration: none;">{item['title']}</a>
                     </div>
-                    <div style="color: {h_accent}; font-size: 0.85em; margin-top: 10px; font-weight: bold;">{item['date']}</div>
+                    <div style="color: var(--accent-primary); font-size: 0.85em; margin-top: 10px; font-weight: bold;">{item['date']}</div>
                 </div>
                 """, unsafe_allow_html=True)
+    else:
+        st.write("수신된 뉴스가 없습니다. (15분 후 갱신)")
