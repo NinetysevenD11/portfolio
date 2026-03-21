@@ -10,6 +10,7 @@ import urllib.request
 import urllib.parse
 import xml.etree.ElementTree as ET
 import warnings
+import google.generativeai as genai
 import json
 import os
 
@@ -188,11 +189,20 @@ def get_weights_v45(reg, smh_ok):
     return w
 target_weights = get_weights_v45(curr_regime, smh_cond)
 
+# 🚨 제가 빼먹었던 5줄! 여기서 위원회 안내 메시지를 생성합니다.
+if curr_regime == live_regime:
+    regime_committee_msg = "모든 조건이 현재 국면에 부합합니다."
+elif live_regime > curr_regime:
+    regime_committee_msg = f"R{live_regime} 하향 즉시 반영 중입니다."
+else:
+    regime_committee_msg = f"R{live_regime} 신호 감지 — 5일 확인 대기 중 (현재 R{curr_regime} 배분 유지)"
+
+
 # ==========================================
-# 2. 사이드바 & CSS (Apple Lead UI Engineer Spec)
+# 2. 사이드바 및 공통 CSS (Apple Liquid Glass Style 고정)
 # ==========================================
 st.markdown("""<style>
-    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
     
     :root {
         --text-main: #1C1C1E;
@@ -201,7 +211,6 @@ st.markdown("""<style>
         --accent: #3B5BDB;
     }
 
-    /* [배경] */
     .stApp, [data-testid="stAppViewContainer"] {
         background: 
             repeating-linear-gradient(105deg, rgba(255,255,255,0.0) 0px, rgba(255,255,255,0.12) 1px, rgba(255,255,255,0.0) 2px, rgba(255,255,255,0.0) 18px),
@@ -213,7 +222,6 @@ st.markdown("""<style>
     #MainMenu { visibility: hidden; } footer { visibility: hidden; }
     .main .block-container { max-width: 1300px; padding-top: 1rem; padding-bottom: 2rem; }
 
-    /* [사이드바] */
     [data-testid="stSidebar"] {
         background: rgba(255,255,255,0.15) !important;
         backdrop-filter: blur(36px) saturate(160%) brightness(1.05) !important;
@@ -222,12 +230,10 @@ st.markdown("""<style>
         box-shadow: 4px 0 40px rgba(0,0,0,0.05) !important;
     }
     
-    /* 텍스트 강제 색상 지정 */
     h1, h2, h3, h4, h5, h6 { color: var(--text-main) !important; font-weight: 700 !important; }
     p, span, label, div { color: var(--text-body); font-weight: 500; }
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] span { color: var(--text-muted) !important; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
 
-    /* [카드 (모든 컨테이너)] */
     .neo-card, [data-testid="stMetric"], .ai-report-box, [data-testid="stExpander"] {
         position: relative;
         background: rgba(255, 255, 255, 0.25) !important;
@@ -245,7 +251,6 @@ st.markdown("""<style>
     .neo-card { padding: 25px !important; height: 570px !important; display: flex; flex-direction: column; margin-bottom: 20px; }
     [data-testid="stMetric"] { padding: 18px !important; text-align: center; }
     
-    /* 카드 ::before 광택 */
     .neo-card::before, [data-testid="stMetric"]::before, .ai-report-box::before, [data-testid="stExpander"]::before {
         content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%;
         background: linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
@@ -253,7 +258,6 @@ st.markdown("""<style>
     }
     .neo-card > *, [data-testid="stMetric"] > *, .ai-report-box > *, [data-testid="stExpander"] > * { position: relative; z-index: 1; }
 
-    /* [hover 효과] */
     .neo-card:hover, [data-testid="stMetric"]:hover, .ai-report-box:hover, [data-testid="stExpander"]:hover {
         transform: translateY(-2px);
         box-shadow: 
@@ -262,7 +266,6 @@ st.markdown("""<style>
             inset 0 -1px 0 rgba(200,210,230,0.20) !important;
     }
 
-    /* [카드 안의 inset 박스] */
     .neo-inset-box {
         position: relative;
         background: rgba(255, 255, 255, 0.15) !important;
@@ -281,14 +284,13 @@ st.markdown("""<style>
     }
     .neo-inset-box > * { position: relative; z-index: 1; }
 
-    /* [버튼] */
     .stButton > button, div.row-widget.stRadio > div > label {
         position: relative;
         background: rgba(255, 255, 255, 0.25) !important;
         backdrop-filter: blur(36px) saturate(160%) brightness(1.05) !important;
         -webkit-backdrop-filter: blur(36px) saturate(160%) brightness(1.05) !important;
         border: 1px solid rgba(255, 255, 255, 0.55) !important;
-        border-radius: 50px !important; /* 알약 모양 */
+        border-radius: 50px !important; 
         box-shadow: 0 4px 12px rgba(0,0,0,0.10), inset 0 1.5px 0 rgba(255,255,255,0.90) !important;
         overflow: hidden !important;
         color: var(--accent) !important;
@@ -314,11 +316,9 @@ st.markdown("""<style>
     }
     div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) p { color: var(--accent) !important; font-weight: 800 !important; }
 
-    /* 리스트 표 UI */
     .check-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.4); font-size: 0.95em; color: var(--text-body); }
     .check-value { font-family: 'DM Mono', monospace; font-weight: 800; color: var(--accent); }
     
-    /* 입력창 및 데이터에디터 투명화 */
     [data-testid="stNumberInput"] > div > div, [data-testid="stTextInput"] > div > div { background: rgba(255,255,255,0.25) !important; border: 1px solid rgba(255,255,255,0.55) !important; border-radius: 12px !important; color: var(--text-main) !important; }
     [data-testid="stFileUploader"] { background: rgba(255,255,255,0.15) !important; border: 1px dashed rgba(255,255,255,0.55) !important; border-radius: 16px !important; }
     
@@ -326,7 +326,6 @@ st.markdown("""<style>
     div[data-testid="stMetricDelta"]>div { color: var(--accent) !important; font-weight: 700; }
 </style>""", unsafe_allow_html=True)
 
-# CSS for HTML Components (iframe)
 LG_BG = """background: repeating-linear-gradient(105deg, rgba(255,255,255,0.0) 0px, rgba(255,255,255,0.12) 1px, rgba(255,255,255,0.0) 2px, rgba(255,255,255,0.0) 18px), linear-gradient(160deg, #E8E9EC 0%, #F4F5F7 8%, #C8CACD 18%, #EAECEE 28%, #F0F1F3 48%, #D0D2D5 56%, #FFFFFF 63%, #E6E8EA 80%, #DCDEE0 100%) !important;"""
 LG_CSS_BASE = f"""<style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
@@ -407,7 +406,6 @@ if page == "📊 시장 분석관 (Home)":
         color = "#10B981" if passed else "#EF4444"
         return f'<div class="crow"><span class="clabel">{label}</span><span class="cval" style="color:{color};">{val} {icon}</span></div>'
 
-    regime_msg  = regime_committee_msg
     soxl_title  = "🔥 승인: SOXL 편입" if smh_cond else "🛡️ 기각: USD 편입"
     soxl_strat  = "3배수 공격적 진입" if smh_cond else "변동성 방어용 2배수"
     soxl_color  = "#10B981" if smh_cond else "#3B5BDB"
@@ -433,7 +431,7 @@ if page == "📊 시장 분석관 (Home)":
         </div>
         <div style="font-weight:800; margin-bottom:8px;">🔍 알고리즘 해부</div>
         {ck_r}
-        <div class="footer-msg">💡 위원회: {regime_msg}</div>
+        <div class="footer-msg">💡 위원회: {regime_committee_msg}</div>
       </div>
       <div class="glass-card">
         <h2 style="border-bottom:2px solid rgba(255,255,255,0.4); padding-bottom:8px;">💻 반도체(SOXL) 판독관</h2>
