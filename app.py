@@ -244,15 +244,14 @@ liquid_glass_css = """<style>
         --text-muted: #4A5270;
         --accent-blue: #3B5BDB;
     }
-    /* ── 배경: 진한 그라데이션 (투명도 효과가 보이도록) ── */
+    /* ── 배경: 연하늘색 중성 그라데이션 (투명 효과가 잘 보이도록) ── */
     .stApp {
         background:
-            radial-gradient(ellipse at 15% 15%, rgba(139,92,246,0.55) 0%, transparent 42%),
-            radial-gradient(ellipse at 85% 20%, rgba(59,130,246,0.50) 0%, transparent 42%),
-            radial-gradient(ellipse at 50% 80%, rgba(236,72,153,0.45) 0%, transparent 45%),
-            radial-gradient(ellipse at 80% 70%, rgba(16,185,129,0.30) 0%, transparent 38%),
-            radial-gradient(ellipse at 20% 75%, rgba(245,158,11,0.25) 0%, transparent 38%),
-            #C8CCEE !important;
+            radial-gradient(ellipse at 20% 20%, rgba(180,210,255,0.55) 0%, transparent 48%),
+            radial-gradient(ellipse at 80% 15%, rgba(200,220,255,0.45) 0%, transparent 45%),
+            radial-gradient(ellipse at 55% 85%, rgba(210,225,255,0.40) 0%, transparent 48%),
+            radial-gradient(ellipse at 10% 75%, rgba(190,215,255,0.30) 0%, transparent 42%),
+            #D8E4F5 !important;
         color: var(--text-main);
         font-family: 'DM Sans', sans-serif;
     }
@@ -469,12 +468,12 @@ regime_info  = {1:("🟢 R1 (강세장)","풀 가동"),2:("🟡 R2 (조정장)",
 # ==========================================
 LG_BG = """
   background:
-    radial-gradient(ellipse at 15% 15%, rgba(139,92,246,0.55) 0%, transparent 42%),
-    radial-gradient(ellipse at 85% 20%, rgba(59,130,246,0.50) 0%, transparent 42%),
-    radial-gradient(ellipse at 50% 80%, rgba(236,72,153,0.45) 0%, transparent 45%),
-    radial-gradient(ellipse at 80% 70%, rgba(16,185,129,0.30) 0%, transparent 38%),
-    radial-gradient(ellipse at 20% 75%, rgba(245,158,11,0.25) 0%, transparent 38%),
-    #C8CCEE;"""
+    radial-gradient(ellipse at 20% 20%, rgba(180,210,255,0.55) 0%, transparent 48%),
+    radial-gradient(ellipse at 80% 15%, rgba(200,220,255,0.45) 0%, transparent 45%),
+    radial-gradient(ellipse at 55% 85%, rgba(210,225,255,0.40) 0%, transparent 48%),
+    radial-gradient(ellipse at 10% 75%, rgba(190,215,255,0.30) 0%, transparent 42%),
+    radial-gradient(ellipse at 90% 70%, rgba(220,230,255,0.25) 0%, transparent 40%),
+    #D8E4F5;"""
 
 LG_CSS_BASE = """
 <style>
@@ -1043,7 +1042,7 @@ elif page == "🍫 8-Pack 레이더망":
   <p>단순한 보조 지표가 아닙니다. <strong>'8-Pack 정밀 렌즈'</strong>를 통해 겉으로 평온해 보이는 시장을 3차원으로 해부합니다.</p>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">{cells}</div>
-</body></html>""", height=240, scrolling=False)
+</body></html>""", height=360, scrolling=False)
 
     elif is_transparent_style:
         def _tr_badge(label, color, icon):
@@ -1073,7 +1072,7 @@ elif page == "🍫 8-Pack 레이더망":
 </head><body>
 <div class="banner"><h4>"감정을 배제하고, 진실에 집중하십시오."</h4><p>단순한 보조 지표가 아닙니다. <strong>'8-Pack 정밀 렌즈'</strong>를 통해 겉으로 평온해 보이는 시장을 3차원으로 해부합니다.</p></div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">{cells_tr}</div>
-</body></html>""", height=240, scrolling=False)
+</body></html>""", height=360, scrolling=False)
 
     else:
         st.markdown(f"""<div class="neo-inset-box" style="text-align:left;padding:20px;">
