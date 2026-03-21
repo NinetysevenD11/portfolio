@@ -26,8 +26,21 @@ CORE_TICKERS   = ['QQQ','TQQQ','SOXL','USD','QLD','SSO','SPY','SMH','GLD','^VIX'
 TICKERS        = CORE_TICKERS + SECTOR_TICKERS
 ASSET_LIST     = ['TQQQ','SOXL','USD','QLD','SSO','SPY','QQQ','GLD','CASH']
 
-# 🚨 [업데이트] 포트폴리오 자동 로드 및 데이터 구조 고도화 (수량, 단가, 환율 포함)
 PORTFOLIO_FILE = 'portfolio_autosave.json'
+
+# 🚨 [오류 수정] 강력한 데이터 구조 정규화 함수
+def sanitize_portfolio():
+    for a in ASSET_LIST:
+        val = st.session_state.portfolio.get(a)
+        # 구버전(float/int) 데이터가 들어있으면 최신 딕셔너리 형태로 강제 변환
+        if isinstance(val, (int, float)) or val is None:
+            st.session_state.portfolio[a] = {'shares': float(val or 0.0), 'avg_price': 1.0 if a == 'CASH' else 0.0, 'fx': 1350.0}
+        elif isinstance(val, dict):
+            if 'shares' not in val: val['shares'] = 0.0
+            if 'avg_price' not in val: val['avg_price'] = 1.0 if a == 'CASH' else 0.0
+            if 'fx' not in val: val['fx'] = 1350.0
+        else:
+            st.session_state.portfolio[a] = {'shares': 0.0, 'avg_price': 0.0, 'fx': 1350.0}
 
 if 'portfolio' not in st.session_state:
     st.session_state.portfolio = {asset: {'shares':0.0, 'avg_price':0.0, 'fx':1350.0} for asset in ASSET_LIST}
@@ -36,12 +49,11 @@ if 'portfolio' not in st.session_state:
             with open(PORTFOLIO_FILE, 'r') as f:
                 loaded = json.load(f)
                 for k, v in loaded.items():
-                    # 구버전(단순 float) 백업 파일 호환성 유지
-                    if isinstance(v, (int, float)):
-                        st.session_state.portfolio[k] = {'shares': v, 'avg_price': 1.0 if k=='CASH' else 0.0, 'fx': 1350.0}
-                    else:
-                        st.session_state.portfolio[k] = v
+                    st.session_state.portfolio[k] = v
         except: pass
+
+# 매번 앱이 새로고침 될 때마다 구조 검사 수행 (에러 원천 차단)
+sanitize_portfolio()
 
 def save_portfolio_to_disk():
     try:
@@ -82,7 +94,6 @@ def load_data():
     for sec in SECTOR_TICKERS: df[f'{sec}_1M'] = df[sec].pct_change(21)
     return df.dropna()
 
-# 실시간 가격 티커 확충 (환율 포함)
 REALTIME_TICKERS = ['QQQ','TQQQ','SMH','^VIX','HYG','IEF','UUP','GLD','SPY','SOXL','USD','QLD','SSO','USDKRW=X']
 @st.cache_data(ttl=60)
 def fetch_realtime_prices():
@@ -157,7 +168,6 @@ def get_target_v45(row):
 df['Target'] = df.apply(get_target_v45, axis=1)
 df['Regime'] = apply_asymmetric_delay(df['Target'])
 
-# 실시간 재계산
 live_regime   = get_target_v45(last_row)            
 hist_regime   = int(df.iloc[-1]['Regime'])           
 curr_regime   = live_regime if live_regime > hist_regime else hist_regime
@@ -710,7 +720,7 @@ body{{font-family:'DM Sans',sans-serif;background:#E8E8ED;padding:12px 6px 4px 6
     with chart_col2: st.plotly_chart(fig_tqqq, use_container_width=True)
 
 # ------------------------------------------
-# PAGE 1.5: 💼 내 포트폴리오 (데이터 입력 & 리밸런싱)
+# PAGE 1.5: 💼 내 포트폴리오
 # ------------------------------------------
 elif page == "💼 내 포트폴리오":
     st.subheader("💼 내 포트폴리오 & 리밸런싱 지침")
@@ -723,6 +733,7 @@ elif page == "💼 내 포트폴리오":
             try:
                 data = json.load(uploaded_file)
                 st.session_state.portfolio.update(data)
+                sanitize_portfolio() # 🚨 파일 업로드 후에도 반드시 구조 검사
                 save_portfolio_to_disk()
                 st.success("포트폴리오가 성공적으로 복구되었습니다!")
             except:
@@ -736,22 +747,21 @@ elif page == "💼 내 포트폴리오":
 
     st.divider()
     
-    # --- 1. 입력부 (Data Editor) ---
     st.markdown(f"<h4 style='color:{h_color};'>📥 포트폴리오 자산 입력</h4>", unsafe_allow_html=True)
     st.markdown(f"<span style='color:{h_muted};'>아래 표를 클릭하여 직접 타이핑하거나 엑셀에서 복사/붙여넣기 하세요. (CASH는 달러 총액을 수량에 입력)</span>", unsafe_allow_html=True)
     
-    # 에디터에 넣을 데이터프레임 구성
     editor_data = []
     for asset in ASSET_LIST:
+        # 안전한 접근
+        val = st.session_state.portfolio.get(asset, {})
         editor_data.append({
             "자산": asset,
-            "수량": float(st.session_state.portfolio[asset].get('shares', 0.0)),
-            "매수단가($)": float(st.session_state.portfolio[asset].get('avg_price', 0.0)),
-            "매입환율(₩)": float(st.session_state.portfolio[asset].get('fx', 1350.0))
+            "수량": float(val.get('shares', 0.0)),
+            "매수단가($)": float(val.get('avg_price', 1.0 if asset == 'CASH' else 0.0)),
+            "매입환율(₩)": float(val.get('fx', 1350.0))
         })
     df_editor = pd.DataFrame(editor_data)
     
-    # 깔끔한 UI의 Data Editor 생성
     edited_df = st.data_editor(
         df_editor,
         disabled=["자산"],
@@ -764,7 +774,6 @@ elif page == "💼 내 포트폴리오":
         }
     )
     
-    # 에디터에서 변경된 내용을 session_state와 로컬 파일에 즉시 자동 저장
     for _, row in edited_df.iterrows():
         asset = row["자산"]
         st.session_state.portfolio[asset] = {
@@ -776,10 +785,8 @@ elif page == "💼 내 포트폴리오":
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # --- 2. 현황 및 리밸런싱 지침부 ---
     st.markdown(f"<h4 style='color:{h_color};'>⚖️ 포트폴리오 현황 및 리밸런싱 액션</h4>", unsafe_allow_html=True)
     
-    # 현재가 가져오기
     current_prices = {}
     for t in ASSET_LIST:
         if t == 'CASH': 
@@ -793,7 +800,6 @@ elif page == "💼 내 포트폴리오":
             
     cur_fx = rt_prices.get('USDKRW=X', 1350.0)
     
-    # 총 자산 가치 계산
     total_val_usd = sum([st.session_state.portfolio[t]['shares'] * current_prices[t] for t in ASSET_LIST])
     
     st.metric("총 자산 규모 (Total Portfolio Value)", f"${total_val_usd:,.2f}", f"현재 적용 환율: ₩{cur_fx:,.2f}")
@@ -835,7 +841,6 @@ elif page == "💼 내 포트폴리오":
             tgt_v  = total_val_usd * tgt_w
             diff   = tgt_v - curr_v
             
-            # 수익률 계산
             if asset == 'CASH':
                 avg_p_str = "-"
                 ret_usd = 0.0
@@ -845,7 +850,6 @@ elif page == "💼 내 포트폴리오":
                 ret_usd = (cur_p / avg_p - 1) * 100 if avg_p > 0 else 0.0
                 ret_krw = ((cur_p * cur_fx) / (avg_p * pur_fx) - 1) * 100 if (avg_p > 0 and pur_fx > 0) else 0.0
                 
-            # HTML 렌더링용 서식
             ret_usd_color = c_green if ret_usd >= 0 else c_red
             ret_krw_color = c_green if ret_krw >= 0 else c_red
             ret_usd_str = f"{ret_usd:+.2f}%" if asset != 'CASH' else "-"
@@ -1059,7 +1063,7 @@ elif page == "🍫 8-Pack 레이더망":
             fig8.update_layout(**radar_layout,showlegend=False); st.plotly_chart(fig8,use_container_width=True)
 
 # ------------------------------------------
-# PAGE 3: 📈 백테스트 랩 
+# PAGE 3: 📈 백테스트 랩
 # ------------------------------------------
 elif page == "📈 백테스트 랩":
     st.subheader("📈 AMLS V4.5 공식 백테스트 랩")
