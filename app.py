@@ -184,8 +184,8 @@ if is_neo_style:
     h_color="#3A2E28"; h_accent="#B26A47"; h_muted="#8A7668"
     h_border="rgba(139,94,60,0.1)"; h_shadow="2px 2px 4px rgba(255,255,255,0.8)"; h_sidebar_text="#3A2E28"
 elif is_glass_style:
-    h_color="#FFFFFF"; h_accent="#A8D4FF"; h_muted="rgba(255,255,255,0.65)"
-    h_border="rgba(255,255,255,0.25)"; h_shadow="0 1px 6px rgba(0,0,0,0.30)"; h_sidebar_text="#FFFFFF"
+    h_color="#1C1C1E"; h_accent="#3B5BDB"; h_muted="#5A5A5A"
+    h_border="rgba(0,0,0,0.12)"; h_shadow="0 1px 4px rgba(0,0,0,0.15)"; h_sidebar_text="#1C1C1E"
 elif is_transparent_style:
     h_color="#1C1C1E"; h_accent="#2563EB"; h_muted="#8E8E93"
     h_border="rgba(0,0,0,0.07)"; h_shadow="0 1px 2px rgba(0,0,0,0.08)"; h_sidebar_text="#1C1C1E"
@@ -248,21 +248,9 @@ elegant_dark_css = """<style>
 # ── Liquid Glass CSS ────────────────────────────────────────
 liquid_glass_css = """<style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
-    @keyframes shimmer {
-        0%   { background-position: -300% 0; }
-        100% { background-position:  300% 0; }
-    }
-    @keyframes prism-shift {
-        0%   { opacity: 0.6; filter: hue-rotate(0deg); }
-        50%  { opacity: 1.0; filter: hue-rotate(30deg); }
-        100% { opacity: 0.6; filter: hue-rotate(0deg); }
-    }
     :root {
-        --lg-bg1: #B8C8F8;
-        --lg-bg2: #F0C8E8;
-        --lg-bg3: #C8E8FF;
         --text-main: #1C1C1E;
-        --text-muted: #4A5270;
+        --text-muted: #3A3A3A;
         --accent-blue: #3B5BDB;
     }
     /* ── 배경: 실버 메탈릭 CSS 그라데이션 ── */
@@ -305,7 +293,7 @@ liquid_glass_css = """<style>
     }
     [data-testid="stSidebar"] p,
     [data-testid="stSidebar"] span,
-    [data-testid="stSidebar"] label { color: rgba(255,255,255,0.92) !important; font-weight: 600; text-shadow: 0 1px 4px rgba(0,0,0,0.25); }
+    [data-testid="stSidebar"] label { color: #1C1C1E !important; font-weight: 600; }
     /* ── 라디오 버튼: 액체 유리 pill ── */
     div.row-widget.stRadio > div > label {
         background: rgba(255,255,255,0.20);
@@ -377,8 +365,8 @@ liquid_glass_css = """<style>
         transform: translateY(-2px);
         box-shadow: 0 10px 36px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.90) !important;
     }
-    div[data-testid="stMetricValue"] > div { color: #FFFFFF !important; text-shadow: 0 1px 4px rgba(0,0,0,0.3); }
-    div[data-testid="stMetricDelta"] > div { color: #A8D4FF !important; }
+    div[data-testid="stMetricValue"] > div { color: #1C1C1E !important; }
+    div[data-testid="stMetricDelta"] > div { color: #3B5BDB !important; }
     /* ── 버튼 ── */
     .stButton > button {
         background: rgba(91,111,232,0.15) !important;
@@ -418,8 +406,8 @@ liquid_glass_css = """<style>
         border-radius: 12px !important;
     }
     /* ── header text ── */
-    h1,h2,h3,h4,h5 { color: #1C1C2E !important; }
-    p, span, label { color: #2A2A3E; }
+    h1,h2,h3,h4,h5 { color: #1C1C1E !important; }
+    p, span, label { color: #2A2A2A; }
 </style>"""
 
 transparent_acrylic_css = """<style>
@@ -543,14 +531,6 @@ LG_BG = """
 LG_CSS_BASE = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
-@keyframes shimmer {
-  0%   { background-position: -300% 50%; }
-  100% { background-position:  300% 50%; }
-}
-@keyframes prism {
-  0%,100% { opacity:0.7; }
-  50%      { opacity:1.0; }
-}
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
   font-family: 'DM Sans', sans-serif;
@@ -561,18 +541,18 @@ body {
 /* ── Liquid Glass 카드 공통 ── */
 .lg-card {
   position: relative;
-  background: rgba(255,255,255,0.07);
-  backdrop-filter: blur(36px) saturate(180%) brightness(1.12);
-  -webkit-backdrop-filter: blur(36px) saturate(180%) brightness(1.12);
+  background: rgba(255,255,255,0.30);
+  backdrop-filter: blur(36px) saturate(160%) brightness(1.04);
+  -webkit-backdrop-filter: blur(36px) saturate(160%) brightness(1.04);
   border-radius: 28px;
-  border: 1px solid rgba(255,255,255,0.42);
+  border: 1px solid rgba(255,255,255,0.72);
   box-shadow:
-    0 8px 40px rgba(0,0,0,0.14),
-    0 2px 8px  rgba(0,0,0,0.08),
-    inset 0 1.5px 0 rgba(255,255,255,0.82),
-    inset 0 -1px 0 rgba(255,255,255,0.08),
-    inset 1px 0 0 rgba(255,255,255,0.30),
-    inset -1px 0 0 rgba(255,255,255,0.15);
+    0 8px 40px rgba(0,0,0,0.08),
+    0 2px 8px  rgba(0,0,0,0.05),
+    inset 0 1.5px 0 rgba(255,255,255,0.95),
+    inset 0 -1px 0 rgba(255,255,255,0.20),
+    inset 1px 0 0 rgba(255,255,255,0.60),
+    inset -1px 0 0 rgba(255,255,255,0.40);
   overflow: hidden;
   transition: transform 0.3s, box-shadow 0.3s;
 }
@@ -598,21 +578,18 @@ body {
   pointer-events: none;
   z-index: 1;
 }
-/* 프리즘 엣지 shimmer */
+/* 프리즘 엣지 (정적 — 반짝임 없음) */
 .lg-card::after {
   content: '';
   position: absolute;
   top: -1px; left: -1px; right: -1px; bottom: -1px;
   border-radius: 29px;
   background: linear-gradient(135deg,
-    rgba(180,200,255,0.55) 0%,
-    rgba(255,180,220,0.35) 20%,
-    rgba(180,255,220,0.30) 40%,
-    rgba(255,220,120,0.20) 60%,
-    rgba(180,180,255,0.40) 80%,
-    rgba(255,255,255,0.55) 100%);
-  background-size: 300% 300%;
-  animation: shimmer 5s linear infinite, prism 4s ease-in-out infinite;
+    rgba(255,255,255,0.60) 0%,
+    rgba(220,225,235,0.20) 25%,
+    rgba(255,255,255,0.05) 50%,
+    rgba(200,205,215,0.15) 75%,
+    rgba(255,255,255,0.50) 100%);
   z-index: -1;
   pointer-events: none;
 }
@@ -628,11 +605,10 @@ body {
 .lg-title {
   font-size: 1.12em;
   font-weight: 700;
-  color: rgba(255,255,255,0.95);
-  border-bottom: 1px solid rgba(255,255,255,0.22);
+  color: #1C1C1E;
+  border-bottom: 1px solid rgba(0,0,0,0.10);
   padding-bottom: 11px;
   margin-bottom: 14px;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.25);
 }
 /* ── 인셋 박스 (내부 glass) ── */
 .lg-inset {
@@ -661,58 +637,47 @@ body {
 .lg-inset h2 {
   font-size: 1.4em; font-weight: 700; margin-bottom: 4px;
   position: relative; z-index: 1;
-  text-shadow: 0 1px 6px rgba(0,0,0,0.30);
 }
 .lg-inset p {
-  font-size: 0.87em; color: rgba(255,255,255,0.78); font-weight: 500;
+  font-size: 0.87em; color: #5A5A5A; font-weight: 500;
   position: relative; z-index: 1;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.20);
 }
 /* ── 체크 행 ── */
 .crow {
   display: flex; justify-content: space-between; align-items: center;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.18);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
   font-size: 0.875em;
 }
-.clabel { color: rgba(255,255,255,0.85); font-weight: 500; text-shadow: 0 1px 3px rgba(0,0,0,0.20); }
+.clabel { color: #2A2A2A; font-weight: 500; }
 .cval   { font-family: 'DM Mono', monospace; font-weight: 600; font-size: 0.95em; }
-/* ── 하단 메시지 ── */
 .footer-msg {
-  margin-top: auto;
-  padding: 11px 14px;
-  font-size: 0.81em; color: rgba(255,255,255,0.80);
+  margin-top: auto; padding: 11px 14px;
+  font-size: 0.81em; color: #3A3A3A;
   text-align: center;
-  background: rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.04);
   border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.22);
+  border: 1px solid rgba(0,0,0,0.08);
   font-weight: 500;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.20);
 }
 .footer-dashed {
-  margin-top: auto;
-  padding: 11px 14px;
-  font-size: 0.81em; color: rgba(255,255,255,0.70);
+  margin-top: auto; padding: 11px 14px;
+  font-size: 0.81em; color: #5A5A5A;
   text-align: center;
-  border-top: 1px dashed rgba(255,255,255,0.30);
+  border-top: 1px dashed rgba(0,0,0,0.12);
   font-weight: 500;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.20);
 }
-/* ── 비중 헤더 ── */
 .weight-header {
   display: flex; justify-content: space-between;
-  font-size: 0.77em; font-weight: 700; color: rgba(255,255,255,0.55);
-  border-bottom: 1.5px solid rgba(255,255,255,0.22);
+  font-size: 0.77em; font-weight: 700; color: #8A8A8A;
+  border-bottom: 1.5px solid rgba(0,0,0,0.10);
   padding-bottom: 7px; margin-bottom: 2px; letter-spacing: 0.4px;
 }
-/* ── 뱃지 (8-Pack용) ── */
 .badge {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 7px 13px; border-radius: 12px;
   font-size: 0.88em; font-weight: 600;
   width: 100%; justify-content: center;
-  backdrop-filter: blur(8px);
-  text-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 /* ── 8-Pack 셀 ── */
 .pack-cell {
@@ -737,18 +702,18 @@ body {
   border-radius: 20px 20px 50% 50%;
   pointer-events: none;
 }
-.pack-title { font-size: 0.81em; font-weight: 700; color: rgba(255,255,255,0.90); margin-bottom: 8px; position: relative; z-index: 1; text-shadow: 0 1px 4px rgba(0,0,0,0.25); }
+.pack-title { font-size: 0.81em; font-weight: 700; color: #1C1C1E; margin-bottom: 8px; position: relative; z-index: 1; }
 /* ── 배너 (8-Pack / 뉴스) ── */
 .lg-banner {
   position: relative;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.50);
   backdrop-filter: blur(32px) saturate(180%);
   -webkit-backdrop-filter: blur(32px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.42);
+  border: 1px solid rgba(255,255,255,0.70);
   border-radius: 22px;
   padding: 16px 22px;
   margin-bottom: 14px;
-  box-shadow: 0 6px 28px rgba(0,0,0,0.10), inset 0 1.5px 0 rgba(255,255,255,0.78);
+  box-shadow: 0 6px 28px rgba(0,0,0,0.08), inset 0 1.5px 0 rgba(255,255,255,0.90);
   overflow: hidden;
 }
 .lg-banner::before {
@@ -758,24 +723,24 @@ body {
   border-radius: 22px 22px 50% 50%;
   pointer-events: none;
 }
-.lg-banner h4 { color: rgba(255,255,255,0.95); font-size: 1.03em; margin-bottom: 5px; font-weight: 700; position: relative; z-index:1; text-shadow: 0 1px 6px rgba(0,0,0,0.30); }
-.lg-banner p  { color: rgba(255,255,255,0.80); font-size: 0.91em; line-height: 1.6; position: relative; z-index:1; text-shadow: 0 1px 3px rgba(0,0,0,0.20); }
+.lg-banner h4 { color: #1C1C1E; font-size: 1.03em; margin-bottom: 5px; font-weight: 700; position: relative; z-index:1; }
+.lg-banner p  { color: #3A3A3A; font-size: 0.91em; line-height: 1.6; position: relative; z-index:1; }
 /* ── 뉴스 카드 ── */
 .ncard {
   position: relative;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.45);
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.42);
+  border: 1px solid rgba(255,255,255,0.70);
   border-radius: 20px;
   padding: 15px 15px 13px 15px;
   height: 140px;
   display: flex; flex-direction: column; justify-content: space-between;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.12), inset 0 1.5px 0 rgba(255,255,255,0.70);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08), inset 0 1.5px 0 rgba(255,255,255,0.90);
   overflow: hidden;
   transition: transform 0.22s, box-shadow 0.22s;
 }
-.ncard:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(0,0,0,0.20), inset 0 1.5px 0 rgba(255,255,255,0.85); }
+.ncard:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(0,0,0,0.14), inset 0 1.5px 0 rgba(255,255,255,0.95); }
 .ncard::before {
   content: '';
   position: absolute; top:0; left:0; right:0; height: 40%;
@@ -783,21 +748,19 @@ body {
   border-radius: 20px 20px 50% 50%;
   pointer-events: none;
 }
-.ntitle { font-size:0.89em; font-weight:600; line-height:1.44; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; color:rgba(255,255,255,0.92); position:relative; z-index:1; text-shadow:0 1px 4px rgba(0,0,0,0.25); }
-.ntitle a { color:rgba(255,255,255,0.92); text-decoration:none; }
-.ntitle a:hover { color:#A8D4FF; }
-.ndate { font-size:0.77em; font-weight:600; color:#A8D4FF; margin-top:8px; flex-shrink:0; position:relative; z-index:1; }
-.section-title { font-size:1.03em; font-weight:700; color:rgba(255,255,255,0.95); margin-bottom:12px; padding-left:2px; text-shadow:0 1px 4px rgba(0,0,0,0.20); }
+.ntitle { font-size:0.89em; font-weight:600; line-height:1.44; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; color:#1C1C1E; position:relative; z-index:1; }
+.ntitle a { color:#1C1C1E; text-decoration:none; }
+.ntitle a:hover { color:#3B5BDB; }
+.ndate { font-size:0.77em; font-weight:600; color:#3B5BDB; margin-top:8px; flex-shrink:0; position:relative; z-index:1; }
+.section-title { font-size:1.03em; font-weight:700; color:#1C1C1E; margin-bottom:12px; padding-left:2px; }
 .badge-rt {
   margin-left:auto;
-  background: rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.90);
-  border: 1px solid rgba(255,255,255,0.40);
+  background: rgba(0,0,0,0.06);
+  color: #1C1C1E;
+  border: 1px solid rgba(0,0,0,0.12);
   border-radius: 10px;
   padding: 4px 12px;
   font-size: 0.8em; font-weight:600; white-space:nowrap;
-  backdrop-filter: blur(8px);
-  text-shadow: 0 1px 3px rgba(0,0,0,0.20);
 }
 </style>
 """
