@@ -875,142 +875,274 @@ if page == "📊 시장 분석관 (Home)":
 # PAGE 2: 8-PACK 레이더망
 # ------------------------------------------
 elif page == "🍫 8-Pack 레이더망":
-    
-    st.markdown(f"""
-    <div class="neo-inset-box" style="text-align: left; padding: 20px;">
-        <h4 style="margin-top: 0; color: {h_accent};">"감정을 배제하고, 진실에 집중하십시오."</h4>
-        <p style="font-size: 1.05em; color: {h_color}; line-height: 1.6; margin-bottom: 0;">
-            단순한 보조 지표가 아닙니다. <strong>'8-Pack 정밀 렌즈'</strong>를 통해 겉으로 평온해 보이는 시장을 3차원으로 해부합니다. 
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    df_view = df.iloc[-120:]
+
+    # ── 공통 데이터 계산 ────────────────────────────────────
+    df_view  = df.iloc[-120:]
+    qqq_rsi  = last_row['QQQ_RSI']
+    qqq_dd   = last_row['QQQ_DD']
+    vix_score = max(0, min(100, 100 - (last_row['^VIX'] - 12) / 28 * 100))
+    dd_score  = max(0, min(100, (qqq_dd + 0.20) / 0.20 * 100))
+    rsi_score = max(0, min(100, qqq_rsi))
+    fg_score  = (vix_score + dd_score + rsi_score) / 3
+    sec_names = {'XLK':'기술','XLV':'헬스','XLF':'금융','XLY':'소비','XLC':'통신',
+                 'XLI':'산업','XLP':'필수','XLE':'에너지','XLU':'유틸','XLRE':'부동산','XLB':'소재'}
+    sec_data = [{'섹터': sec_names[s], '수익률': last_row[f'{s}_1M']*100} for s in SECTOR_TICKERS]
+    sec_df   = pd.DataFrame(sec_data).sort_values(by='수익률', ascending=True)
+    top_sec, bot_sec = sec_df.iloc[-1]['섹터'], sec_df.iloc[0]['섹터']
+
+    # ── 뱃지 라벨 8개 ────────────────────────────────────────
+    def badge(label, color, icon):
+        """color: 'green'|'orange'|'red'|'blue'"""
+        palettes = {
+            'green':  ('rgba(16,185,129,0.15)',  '#059669', 'rgba(16,185,129,0.35)'),
+            'orange': ('rgba(249,115,22,0.15)',   '#D97706', 'rgba(249,115,22,0.35)'),
+            'red':    ('rgba(239,68,68,0.15)',    '#DC2626', 'rgba(239,68,68,0.35)'),
+            'blue':   ('rgba(37,99,235,0.12)',    '#2563EB', 'rgba(37,99,235,0.30)'),
+        }
+        bg, fg, bdr = palettes[color]
+        return f"""<div class="badge" style="background:{bg};color:{fg};border:1px solid {bdr};">{icon} {label}</div>"""
+
+    if qqq_rsi < 40:    b1 = badge("매수",    "green",  "🔥")
+    elif qqq_rsi > 70:  b1 = badge("과열",    "red",    "⚠️")
+    else:               b1 = badge("적립",    "blue",   "🟢")
+
+    if qqq_dd < -0.20:  b2 = badge("약세(-20%)", "red",    "🚨")
+    elif qqq_dd < -0.10: b2 = badge("조정(-10%)", "orange", "⚠️")
+    else:               b2 = badge("고점 순항",  "green",  "✅")
+
+    if fg_score < 30:   b3 = badge("극단 공포", "green",  "🔥")
+    elif fg_score > 70: b3 = badge("극단 탐욕", "red",    "⚠️")
+    else:               b3 = badge("중립",      "blue",   "🟢")
+
+    b4 = f'<div class="badge" style="background:rgba(37,99,235,0.12);color:#2563EB;border:1px solid rgba(37,99,235,0.3);">🏆 {top_sec} &nbsp;/&nbsp; 📉 {bot_sec}</div>'
+
+    if last_row['HYG_IEF_Ratio'] < last_row['HYG_IEF_MA50']:
+        b5 = badge("국채 피신",  "red",   "🚨")
+    else:
+        b5 = badge("회사채 선호","green", "✅")
+
+    if last_row['QQQ_20d_Ret'] > 0 and last_row['QQQE_20d_Ret'] < 0:
+        b6 = badge("쏠림 심화",  "orange","⚠️")
+    else:
+        b6 = badge("고른 상승",  "green", "✅")
+
+    if last_row['GLD_SPY_Ratio'] > last_row['GLD_SPY_MA50']:
+        b7 = badge("금 피신",   "orange","⚠️")
+    else:
+        b7 = badge("주식 선호", "green", "✅")
+
+    if last_row['UUP'] > last_row['UUP_MA50']:
+        b8 = badge("강달러 압박","red",   "🚨")
+    else:
+        b8 = badge("달러 진정", "green", "✅")
+
+    # ── Gauge steps ──────────────────────────────────────────
+    if is_glass_style:
+        gauge_steps = [
+            {'range':[0,25],  'color':"rgba(239,68,68,0.55)"},
+            {'range':[25,45], 'color':"rgba(249,115,22,0.30)"},
+            {'range':[45,55], 'color':"rgba(200,210,255,0.15)"},
+            {'range':[55,75], 'color':"rgba(16,185,129,0.30)"},
+            {'range':[75,100],'color':"rgba(16,185,129,0.55)"},
+        ]
+    elif is_neo_style:
+        gauge_steps = [
+            {'range':[0,25],  'color':"rgba(178,106,71,0.7)"},
+            {'range':[25,45], 'color':"rgba(178,106,71,0.3)"},
+            {'range':[45,55], 'color':"rgba(139,94,60,0.1)"},
+            {'range':[55,75], 'color':"rgba(107,142,35,0.3)"},
+            {'range':[75,100],'color':"rgba(107,142,35,0.7)"},
+        ]
+    else:
+        gauge_steps = [
+            {'range':[0,25],  'color':"rgba(248,113,113,0.7)"},
+            {'range':[25,45], 'color':"rgba(248,113,113,0.3)"},
+            {'range':[45,55], 'color':"rgba(255,255,255,0.05)"},
+            {'range':[55,75], 'color':"rgba(52,211,153,0.3)"},
+            {'range':[75,100],'color':"rgba(52,211,153,0.7)"},
+        ]
+
+    # ── Glass: 배너 + 8개 타이틀/뱃지를 components.html로 ───
+    if is_glass_style:
+        pack_html = f"""
+<!DOCTYPE html><html><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* {{ margin:0; padding:0; box-sizing:border-box; }}
+body {{
+  font-family: 'DM Sans', sans-serif;
+  background:
+    radial-gradient(ellipse at 15% 10%, rgba(147,197,253,0.55) 0%, transparent 45%),
+    radial-gradient(ellipse at 85% 85%, rgba(253,186,116,0.45) 0%, transparent 45%),
+    radial-gradient(ellipse at 80% 10%, rgba(196,181,253,0.30) 0%, transparent 35%),
+    #D1D5E8;
+  padding: 10px 8px 6px 8px;
+}}
+.banner {{
+  background: rgba(255,255,255,0.50);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.82);
+  border-radius: 20px;
+  padding: 18px 22px;
+  margin-bottom: 16px;
+  box-shadow: 0 6px 24px rgba(31,38,135,0.09), inset 0 1px 0 rgba(255,255,255,0.95);
+}}
+.banner h4 {{ color:#2563EB; font-size:1.05em; margin-bottom:6px; font-weight:700; }}
+.banner p  {{ color:#374151; font-size:0.93em; line-height:1.6; }}
+.grid {{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}}
+.cell {{
+  background: rgba(255,255,255,0.48);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.80);
+  border-radius: 18px;
+  padding: 14px 14px 10px 14px;
+  box-shadow: 0 4px 20px rgba(31,38,135,0.08), inset 0 1px 0 rgba(255,255,255,0.95);
+}}
+.cell-title {{
+  font-size: 0.82em;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 8px;
+  letter-spacing: 0.1px;
+}}
+.badge {{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 0.88em;
+  font-weight: 600;
+  width: 100%;
+  justify-content: center;
+}}
+</style>
+</head>
+<body>
+<div class="banner">
+  <h4>"감정을 배제하고, 진실에 집중하십시오."</h4>
+  <p>단순한 보조 지표가 아닙니다. <strong>'8-Pack 정밀 렌즈'</strong>를 통해 겉으로 평온해 보이는 시장을 3차원으로 해부합니다.</p>
+</div>
+<div class="grid">
+  <div class="cell"><div class="cell-title">1. 스마트 DCA (RSI)</div>{b1}</div>
+  <div class="cell"><div class="cell-title">2. 멘탈 방어 (Drawdown)</div>{b2}</div>
+  <div class="cell"><div class="cell-title">3. 시장 심리 (F&amp;G)</div>{b3}</div>
+  <div class="cell"><div class="cell-title">4. 섹터 순환 (1M)</div>{b4}</div>
+  <div class="cell"><div class="cell-title">5. 채권 스프레드</div>{b5}</div>
+  <div class="cell"><div class="cell-title">6. 시장 폭 (Breadth)</div>{b6}</div>
+  <div class="cell"><div class="cell-title">7. 안전 자산 (금/주식)</div>{b7}</div>
+  <div class="cell"><div class="cell-title">8. 달러 (UUP)</div>{b8}</div>
+</div>
+</body></html>"""
+        components.html(pack_html, height=260, scrolling=False)
+
+    else:
+        # Neo / Dark: 기존 방식
+        st.markdown(f"""
+        <div class="neo-inset-box" style="text-align: left; padding: 20px;">
+            <h4 style="margin-top: 0; color: {h_accent};">"감정을 배제하고, 진실에 집중하십시오."</h4>
+            <p style="font-size: 1.05em; color: {h_color}; line-height: 1.6; margin-bottom: 0;">
+                단순한 보조 지표가 아닙니다. <strong>'8-Pack 정밀 렌즈'</strong>를 통해 겉으로 평온해 보이는 시장을 3차원으로 해부합니다.
+            </p>
+        </div>""", unsafe_allow_html=True)
+
+    # ── 8개 차트 (모든 테마 공통 — Plotly) ──────────────────
     row1 = st.columns(4)
     row2 = st.columns(4)
-    
+
     with row1[0]:
-        st.markdown("##### 1. 스마트 DCA (RSI)")
-        qqq_rsi = last_row['QQQ_RSI'] 
-        if qqq_rsi < 40: st.success("🔥 매수")
-        elif qqq_rsi > 70: st.error("⚠️ 과열")
-        else: st.info("🟢 적립")
-            
+        if not is_glass_style:
+            st.markdown("##### 1. 스마트 DCA (RSI)")
+            if qqq_rsi < 40: st.success("🔥 매수")
+            elif qqq_rsi > 70: st.error("⚠️ 과열")
+            else: st.info("🟢 적립")
         fig1 = go.Figure()
         fig1.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQ_RSI'], line=dict(color=line_c, width=2)))
         fig1.add_hline(y=70, line_dash='dash', line_color=dash_c)
         fig1.add_hline(y=30, line_dash='dash', line_color=rsi_low_c)
-        fig1.update_layout(**radar_layout, yaxis=dict(range=[10, 90]), showlegend=False)
+        fig1.update_layout(**radar_layout, yaxis=dict(range=[10,90]), showlegend=False)
         st.plotly_chart(fig1, use_container_width=True)
 
     with row1[1]:
-        st.markdown("##### 2. 멘탈 방어 (Drawdown)")
-        qqq_dd = last_row['QQQ_DD']
-        if qqq_dd < -0.20: st.error("🚨 약세 (-20%)")
-        elif qqq_dd < -0.10: st.warning("⚠️ 조정 (-10%)")
-        else: st.success("✅ 고점 순항")
-            
+        if not is_glass_style:
+            st.markdown("##### 2. 멘탈 방어 (Drawdown)")
+            if qqq_dd < -0.20: st.error("🚨 약세 (-20%)")
+            elif qqq_dd < -0.10: st.warning("⚠️ 조정 (-10%)")
+            else: st.success("✅ 고점 순항")
         fig2 = go.Figure()
         fig2.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQ_DD'], fill='tozeroy', line=dict(color=dash_c, width=2)))
         fig2.update_layout(**radar_layout, yaxis=dict(tickformat='.0%'), showlegend=False)
         st.plotly_chart(fig2, use_container_width=True)
 
     with row1[2]:
-        st.markdown("##### 3. 시장 심리 (F&G)")
-        vix_score = max(0, min(100, 100 - (last_row['^VIX'] - 12) / 28 * 100))
-        dd_score  = max(0, min(100, (qqq_dd + 0.20) / 0.20 * 100))
-        rsi_score = max(0, min(100, qqq_rsi))
-        fg_score  = (vix_score + dd_score + rsi_score) / 3
-        
-        if fg_score < 30: st.success("🔥 극단 공포")
-        elif fg_score > 70: st.error("⚠️ 극단 탐욕")
-        else: st.info("🟢 중립")
-        
-        if is_glass_style:
-            gauge_steps = [
-                {'range': [0,  25], 'color': "rgba(239,68,68,0.55)"},
-                {'range': [25, 45], 'color': "rgba(249,115,22,0.30)"},
-                {'range': [45, 55], 'color': "rgba(200,210,255,0.15)"},
-                {'range': [55, 75], 'color': "rgba(16,185,129,0.30)"},
-                {'range': [75,100], 'color': "rgba(16,185,129,0.55)"},
-            ]
-        elif is_neo_style:
-            gauge_steps = [
-                {'range': [0,  25], 'color': "rgba(178,106,71,0.7)"},
-                {'range': [25, 45], 'color': "rgba(178,106,71,0.3)"},
-                {'range': [45, 55], 'color': "rgba(139,94,60,0.1)"},
-                {'range': [55, 75], 'color': "rgba(107,142,35,0.3)"},
-                {'range': [75,100], 'color': "rgba(107,142,35,0.7)"},
-            ]
-        else:
-            gauge_steps = [
-                {'range': [0,  25], 'color': "rgba(248,113,113,0.7)"},
-                {'range': [25, 45], 'color': "rgba(248,113,113,0.3)"},
-                {'range': [45, 55], 'color': "rgba(255,255,255,0.05)"},
-                {'range': [55, 75], 'color': "rgba(52,211,153,0.3)"},
-                {'range': [75,100], 'color': "rgba(52,211,153,0.7)"},
-            ]
-            
+        if not is_glass_style:
+            st.markdown("##### 3. 시장 심리 (F&G)")
+            if fg_score < 30: st.success("🔥 극단 공포")
+            elif fg_score > 70: st.error("⚠️ 극단 탐욕")
+            else: st.info("🟢 중립")
         fig3 = go.Figure(go.Indicator(
-            mode="gauge+number", value=fg_score, domain={'x': [0, 1], 'y': [0, 1]},
-            gauge={'axis': {'range': [0, 100]}, 'bar': {'color': line_c}, 'steps': gauge_steps}
+            mode="gauge+number", value=fg_score, domain={'x':[0,1],'y':[0,1]},
+            gauge={'axis':{'range':[0,100]}, 'bar':{'color':line_c}, 'steps':gauge_steps}
         ))
-        fig3.update_layout(height=200, margin=dict(l=15, r=15, t=10, b=10), paper_bgcolor=b_color, font=dict(family="Pretendard", color=t_color))
+        fig3.update_layout(height=200, margin=dict(l=15,r=15,t=10,b=10), paper_bgcolor=b_color, font=dict(family="Pretendard",color=t_color))
         st.plotly_chart(fig3, use_container_width=True)
 
     with row1[3]:
-        st.markdown("##### 4. 섹터 순환 (1M)")
-        sec_names = {'XLK': '기술', 'XLV': '헬스', 'XLF': '금융', 'XLY': '소비', 'XLC': '통신', 'XLI': '산업', 'XLP': '필수', 'XLE': '에너지', 'XLU': '유틸', 'XLRE': '부동산', 'XLB': '소재'}
-        sec_data  = [{'섹터': sec_names[s], '수익률': last_row[f'{s}_1M'] * 100} for s in SECTOR_TICKERS]
-        sec_df    = pd.DataFrame(sec_data).sort_values(by='수익률', ascending=True)
-        top_sec, bot_sec = sec_df.iloc[-1]['섹터'], sec_df.iloc[0]['섹터']
-        st.info(f"🏆 {top_sec} / 📉 {bot_sec}")
-        
-        fig4 = go.Figure(go.Bar(x=sec_df['수익률'], y=sec_df['섹터'], orientation='h', marker_color=[dash_c if val < 0 else line_c for val in sec_df['수익률']]))
+        if not is_glass_style:
+            st.markdown("##### 4. 섹터 순환 (1M)")
+            st.info(f"🏆 {top_sec} / 📉 {bot_sec}")
+        fig4 = go.Figure(go.Bar(x=sec_df['수익률'], y=sec_df['섹터'], orientation='h',
+                                marker_color=[dash_c if v < 0 else line_c for v in sec_df['수익률']]))
         fig4.update_layout(**radar_layout, showlegend=False)
         st.plotly_chart(fig4, use_container_width=True)
 
     with row2[0]:
-        st.markdown("##### 5. 채권 스프레드")
-        if last_row['HYG_IEF_Ratio'] < last_row['HYG_IEF_MA50']: st.error("🚨 국채 피신")
-        else: st.success("✅ 회사채 선호")
-            
+        if not is_glass_style:
+            st.markdown("##### 5. 채권 스프레드")
+            if last_row['HYG_IEF_Ratio'] < last_row['HYG_IEF_MA50']: st.error("🚨 국채 피신")
+            else: st.success("✅ 회사채 선호")
         fig5 = go.Figure()
         fig5.add_trace(go.Scatter(x=df_view.index, y=df_view['HYG_IEF_Ratio'], line=dict(color=line_c, width=2)))
-        fig5.add_trace(go.Scatter(x=df_view.index, y=df_view['HYG_IEF_MA50'], line=dict(color=dash_c, dash='dot')))
+        fig5.add_trace(go.Scatter(x=df_view.index, y=df_view['HYG_IEF_MA50'],  line=dict(color=dash_c, dash='dot')))
         fig5.update_layout(**radar_layout, showlegend=False)
         st.plotly_chart(fig5, use_container_width=True)
 
     with row2[1]:
-        st.markdown("##### 6. 시장 폭 (Breadth)")
-        if last_row['QQQ_20d_Ret'] > 0 and last_row['QQQE_20d_Ret'] < 0: st.warning("⚠️ 쏠림 심화")
-        else: st.success("✅ 고른 상승")
-            
+        if not is_glass_style:
+            st.markdown("##### 6. 시장 폭 (Breadth)")
+            if last_row['QQQ_20d_Ret'] > 0 and last_row['QQQE_20d_Ret'] < 0: st.warning("⚠️ 쏠림 심화")
+            else: st.success("✅ 고른 상승")
         fig6 = go.Figure()
-        fig6.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQ_20d_Ret'], name='QQQ', line=dict(color=line_c, width=2)))
+        fig6.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQ_20d_Ret'],  name='QQQ',  line=dict(color=line_c, width=2)))
         fig6.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQE_20d_Ret'], name='QQQE', line=dict(color=dash_c, dash='dot')))
         fig6.update_layout(**radar_layout, showlegend=False, yaxis=dict(tickformat='.0%'))
         st.plotly_chart(fig6, use_container_width=True)
 
     with row2[2]:
-        st.markdown("##### 7. 안전 자산 (금/주식)")
-        if last_row['GLD_SPY_Ratio'] > last_row['GLD_SPY_MA50']: st.warning("⚠️ 금 피신")
-        else: st.success("✅ 주식 선호")
-            
+        if not is_glass_style:
+            st.markdown("##### 7. 안전 자산 (금/주식)")
+            if last_row['GLD_SPY_Ratio'] > last_row['GLD_SPY_MA50']: st.warning("⚠️ 금 피신")
+            else: st.success("✅ 주식 선호")
         fig7 = go.Figure()
         fig7.add_trace(go.Scatter(x=df_view.index, y=df_view['GLD_SPY_Ratio'], line=dict(color=line_c, width=2)))
-        fig7.add_trace(go.Scatter(x=df_view.index, y=df_view['GLD_SPY_MA50'], line=dict(color=dash_c, dash='dot')))
+        fig7.add_trace(go.Scatter(x=df_view.index, y=df_view['GLD_SPY_MA50'],  line=dict(color=dash_c, dash='dot')))
         fig7.update_layout(**radar_layout, showlegend=False)
         st.plotly_chart(fig7, use_container_width=True)
 
     with row2[3]:
-        st.markdown("##### 8. 달러 (UUP)")
-        if last_row['UUP'] > last_row['UUP_MA50']: st.error("🚨 강달러 압박")
-        else: st.success("✅ 달러 진정")
-            
+        if not is_glass_style:
+            st.markdown("##### 8. 달러 (UUP)")
+            if last_row['UUP'] > last_row['UUP_MA50']: st.error("🚨 강달러 압박")
+            else: st.success("✅ 달러 진정")
         fig8 = go.Figure()
-        fig8.add_trace(go.Scatter(x=df_view.index, y=df_view['UUP'], line=dict(color=line_c, width=2)))
-        fig8.add_trace(go.Scatter(x=df_view.index, y=df_view['UUP_MA50'], line=dict(color=dash_c, dash='dot')))
+        fig8.add_trace(go.Scatter(x=df_view.index, y=df_view['UUP'],     line=dict(color=line_c, width=2)))
+        fig8.add_trace(go.Scatter(x=df_view.index, y=df_view['UUP_MA50'],line=dict(color=dash_c, dash='dot')))
         fig8.update_layout(**radar_layout, showlegend=False)
         st.plotly_chart(fig8, use_container_width=True)
 
@@ -1048,15 +1180,63 @@ elif page == "📉 폭락장 아카이브":
 # PAGE 4: MACRO NEWS & AI
 # ------------------------------------------
 elif page == "📰 매크로 뉴스룸":
-    st.subheader("IV. 실시간 글로벌 매크로 뉴스 & AI 브리핑")
-    
+
     headlines_for_ai, news_items = fetch_macro_news()
 
+    # ── Glass: 페이지 헤더를 components.html로 ───────────────
+    if is_glass_style:
+        components.html(f"""
+<!DOCTYPE html><html><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+* {{ margin:0; padding:0; box-sizing:border-box; }}
+body {{
+  font-family: 'DM Sans', sans-serif;
+  background:
+    radial-gradient(ellipse at 15% 10%, rgba(147,197,253,0.55) 0%, transparent 45%),
+    radial-gradient(ellipse at 85% 85%, rgba(253,186,116,0.45) 0%, transparent 45%),
+    #D1D5E8;
+  padding: 10px 8px 6px 8px;
+}}
+.banner {{
+  background: rgba(255,255,255,0.50);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.82);
+  border-radius: 20px;
+  padding: 18px 24px;
+  box-shadow: 0 6px 24px rgba(31,38,135,0.09), inset 0 1px 0 rgba(255,255,255,0.95);
+  display: flex; align-items: center; gap: 12px;
+}}
+.banner h2 {{ font-size:1.3em; font-weight:700; color:#1C1C1E; }}
+.badge-rt {{
+  margin-left: auto;
+  background: rgba(16,185,129,0.15);
+  color: #059669;
+  border: 1px solid rgba(16,185,129,0.35);
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 0.8em;
+  font-weight: 600;
+  white-space: nowrap;
+}}
+</style></head><body>
+<div class="banner">
+  <div>📰</div>
+  <h2>실시간 글로벌 매크로 뉴스 &amp; AI 브리핑</h2>
+  <div class="badge-rt">{rt_label}</div>
+</div>
+</body></html>""", height=90, scrolling=False)
+    else:
+        st.subheader("IV. 실시간 글로벌 매크로 뉴스 & AI 브리핑")
+
+    # ── AI 분석 섹션 (모든 테마 공통) ────────────────────────
     with st.expander("✨ System-2 심층 추론 애널리스트 분석", expanded=True):
         if st.button("🚀 심층 추론 요약 실행"):
             try:
                 api_key = st.secrets["GEMINI_API_KEY"]
-                if not headlines_for_ai: st.warning("분석할 뉴스가 없습니다.")
+                if not headlines_for_ai:
+                    st.warning("분석할 뉴스가 없습니다.")
                 else:
                     with st.spinner("심층 추론 진행 중..."):
                         genai.configure(api_key=api_key)
@@ -1064,46 +1244,122 @@ elif page == "📰 매크로 뉴스룸":
                         model = genai.GenerativeModel(models[0].replace('models/', ''))
                         prompt = "너는 1920년대 퀀트 애널리스트야. 1. 주요 뉴스 분류\n2. 잠재 리스크\n3. 최종 고찰 목차로 요약해.\n" + "\n".join(headlines_for_ai)
                         response = model.generate_content(prompt)
-                        
                         st.markdown(f"""
-                        <div style="background-color: #FFFFFF; border-radius: 12px; padding: 20px; box-shadow: inset 4px 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px;">
-                            <h3 style="color: #1A1A1A; border-bottom: 2px solid #1A1A1A; padding-bottom: 10px; margin-top: 0;">✅ 분석 완료</h3>
-                            <div style="font-size: 1.05em; color: #000000;">{response.text.replace(chr(10), '<br>')}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        with st.expander("📋 텍스트 복사하기"): st.code(response.text, language="markdown")
-            except KeyError: st.error("🚨 Secrets에 'GEMINI_API_KEY'를 설정해주세요.")
+                        <div style="background-color:#FFFFFF;border-radius:12px;padding:20px;box-shadow:inset 4px 4px 8px rgba(0,0,0,0.1);margin-bottom:20px;">
+                            <h3 style="color:#1A1A1A;border-bottom:2px solid #1A1A1A;padding-bottom:10px;margin-top:0;">✅ 분석 완료</h3>
+                            <div style="font-size:1.05em;color:#000000;">{response.text.replace(chr(10),'<br>')}</div>
+                        </div>""", unsafe_allow_html=True)
+                        with st.expander("📋 텍스트 복사하기"):
+                            st.code(response.text, language="markdown")
+            except KeyError:
+                st.error("🚨 Secrets에 'GEMINI_API_KEY'를 설정해주세요.")
 
     st.divider()
-    st.markdown("#### 🖼️ 최신 경제 헤드라인 갤러리")
+
+    # ── 뉴스 카드 그리드 ──────────────────────────────────────
     if news_items:
-        cols = st.columns(3)
-        # 뉴스 카드 배경색 테마별 분기
-        if is_neo_style:
-            c_bg  = '#FFFDF7'
-            c_brd = 'none'
-            c_shd = 'var(--shadow-raised)'
-            c_txt = 'var(--text-main)'
-        elif is_glass_style:
-            c_bg  = 'rgba(255,255,255,0.60)'
-            c_brd = '1px solid rgba(255,255,255,0.75)'
-            c_shd = '0 8px 24px rgba(31,38,135,0.08), inset 0 1px 0 rgba(255,255,255,0.9)'
-            c_txt = '#1C1C1E'
+        if is_glass_style:
+            # components.html로 glass 뉴스 카드 그리드
+            cards_html = ""
+            for item in news_items:
+                title = item['title'].replace("'", "&#39;").replace('"', '&quot;')
+                cards_html += f"""
+                <div class="ncard">
+                  <div class="ntitle">
+                    <a href="{item['link']}" target="_blank">{title}</a>
+                  </div>
+                  <div class="ndate">{item['date']}</div>
+                </div>"""
+
+            news_html = f"""
+<!DOCTYPE html><html><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* {{ margin:0; padding:0; box-sizing:border-box; }}
+body {{
+  font-family: 'DM Sans', sans-serif;
+  background:
+    radial-gradient(ellipse at 15% 10%, rgba(147,197,253,0.55) 0%, transparent 45%),
+    radial-gradient(ellipse at 85% 85%, rgba(253,186,116,0.45) 0%, transparent 45%),
+    radial-gradient(ellipse at 80% 10%, rgba(196,181,253,0.30) 0%, transparent 35%),
+    #D1D5E8;
+  padding: 10px 8px 10px 8px;
+}}
+.section-title {{
+  font-size: 1.05em;
+  font-weight: 700;
+  color: #1C1C1E;
+  margin-bottom: 12px;
+  padding-left: 2px;
+}}
+.grid {{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}}
+.ncard {{
+  background: rgba(255,255,255,0.50);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.82);
+  border-radius: 18px;
+  padding: 16px 16px 14px 16px;
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 4px 20px rgba(31,38,135,0.08), inset 0 1px 0 rgba(255,255,255,0.95);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}}
+.ncard:hover {{
+  box-shadow: 0 10px 32px rgba(31,38,135,0.14), inset 0 1px 0 rgba(255,255,255,1);
+  transform: translateY(-2px);
+}}
+.ntitle {{
+  font-size: 0.90em;
+  font-weight: 600;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: #1C1C1E;
+}}
+.ntitle a {{
+  color: #1C1C1E;
+  text-decoration: none;
+}}
+.ntitle a:hover {{ color: #2563EB; }}
+.ndate {{
+  font-size: 0.78em;
+  font-weight: 600;
+  color: #2563EB;
+  margin-top: 8px;
+  flex-shrink: 0;
+}}
+</style></head><body>
+<div class="section-title">🖼️ 최신 경제 헤드라인 갤러리</div>
+<div class="grid">{cards_html}</div>
+</body></html>"""
+            card_height = 160 + (len(news_items) // 3) * 158
+            components.html(news_html, height=card_height, scrolling=False)
+
         else:
-            c_bg  = '#1C1F28'
-            c_brd = '1px solid rgba(255,255,255,0.05)'
-            c_shd = 'none'
-            c_txt = '#A0AEC0'
-        
-        for idx, item in enumerate(news_items):
-            with cols[idx % 3]:
-                st.markdown(f"""
-                <div style="background: {c_bg}; border: {c_brd}; padding: 15px; margin-bottom: 15px; border-radius: 16px; height: 140px; box-shadow: {c_shd}; display: flex; flex-direction: column; justify-content: space-between; backdrop-filter: blur(12px);">
-                    <div style="font-weight: bold; font-size: 1.05em; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
-                        <a href="{item['link']}" target="_blank" style="color: {c_txt}; text-decoration: none;">{item['title']}</a>
-                    </div>
-                    <div style="color: {h_accent}; font-size: 0.85em; margin-top: 10px; font-weight: bold;">{item['date']}</div>
-                </div>
-                """, unsafe_allow_html=True)
+            # Neo / Dark: 기존 방식
+            st.markdown("#### 🖼️ 최신 경제 헤드라인 갤러리")
+            cols = st.columns(3)
+            if is_neo_style:
+                c_bg, c_brd, c_shd, c_txt = '#FFFDF7', 'none', 'var(--shadow-raised)', 'var(--text-main)'
+            else:
+                c_bg, c_brd, c_shd, c_txt = '#1C1F28', '1px solid rgba(255,255,255,0.05)', 'none', '#A0AEC0'
+            for idx, item in enumerate(news_items):
+                with cols[idx % 3]:
+                    st.markdown(f"""
+                    <div style="background:{c_bg};border:{c_brd};padding:15px;margin-bottom:15px;border-radius:16px;height:140px;box-shadow:{c_shd};display:flex;flex-direction:column;justify-content:space-between;">
+                        <div style="font-weight:bold;font-size:1.05em;line-height:1.4;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">
+                            <a href="{item['link']}" target="_blank" style="color:{c_txt};text-decoration:none;">{item['title']}</a>
+                        </div>
+                        <div style="color:{h_accent};font-size:0.85em;margin-top:10px;font-weight:bold;">{item['date']}</div>
+                    </div>""", unsafe_allow_html=True)
     else:
         st.write("수신된 뉴스가 없습니다. (15분 후 갱신)")
