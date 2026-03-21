@@ -839,6 +839,9 @@ if page == "📊 시장 분석관 (Home)":
     if is_glass_style:
         # ── Liquid Glass: components.html ──────────────────
         regime_msg  = regime_committee_msg
+        soxl_title  = "🔥 승인: SOXL 편입" if smh_cond else "🛡️ 기각: USD 편입"
+        soxl_strat  = "3배수 공격적 진입" if smh_cond else "변동성 방어용 2배수"
+        soxl_color  = "#16A34A" if smh_cond else "#3B4FC8"
         weight_rows = "".join([f'<div class="crow"><span class="clabel">{k}</span><span class="cval" style="color:#3B4FC8;">{v*100:.0f}%</span></div>'
                                 for k,v in target_weights.items() if v > 0])
         ck_r = (_lg_ck('① VIX 패닉 임계점 (&lt; 40)',       f'{vix_close:.2f}',                      vix_close<=40) +
@@ -860,6 +863,9 @@ if page == "📊 시장 분석관 (Home)":
             return f'<div class="crow"><span class="clabel">{label}</span><span class="cval" style="color:{color};">{val} {icon}</span></div>'
 
         regime_msg  = regime_committee_msg
+        soxl_title  = "🔥 승인: SOXL 편입" if smh_cond else "🛡️ 기각: USD 편입"
+        soxl_strat  = "3배수 공격적 진입" if smh_cond else "변동성 방어용 2배수"
+        soxl_color  = "#16A34A" if smh_cond else "#2563EB"
 
         regime_glow = {1:"0 0 0 2px rgba(37,99,235,0.50),0 0 28px rgba(37,99,235,0.25)",
                        2:"0 0 0 2px rgba(249,115,22,0.50),0 0 28px rgba(249,115,22,0.25)",
