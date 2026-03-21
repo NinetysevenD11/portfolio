@@ -104,7 +104,6 @@ qqq_close, qqq_ma50, qqq_ma200 = last_row['QQQ'], last_row['QQQ_MA50'], last_row
 smh_close, smh_ma50, smh_3m, smh_1m, smh_rsi = (last_row['SMH'], last_row['SMH_MA50'],
     last_row['SMH_3M_Ret'], last_row['SMH_1M_Ret'], last_row['SMH_RSI'])
 
-# 🚨 에러 원인이었던 함수! 전역으로 빼서 백테스트 랩에서도 쓸 수 있게 고정
 def apply_asymmetric_delay(targets):
     res = []; hist_curr = 3; pend = None; cnt = 0
     for t in targets:
@@ -176,15 +175,19 @@ is_transparent_style = ui_style == "Transparent Mode (Acrylic)"
 if is_neo_style:
     h_color="#3A2E28"; h_accent="#B26A47"; h_muted="#8A7668"
     h_border="rgba(139,94,60,0.1)"; h_shadow="2px 2px 4px rgba(255,255,255,0.8)"; h_sidebar_text="#3A2E28"
+    is_dark = False
 elif is_glass_style:
     h_color="#1C1C1E"; h_accent="#3B5BDB"; h_muted="#5A5A5A"
     h_border="rgba(0,0,0,0.12)"; h_shadow="0 1px 4px rgba(0,0,0,0.15)"; h_sidebar_text="#1C1C1E"
+    is_dark = False
 elif is_transparent_style:
     h_color="#1C1C1E"; h_accent="#2563EB"; h_muted="#8E8E93"
     h_border="rgba(0,0,0,0.07)"; h_shadow="0 1px 2px rgba(0,0,0,0.08)"; h_sidebar_text="#1C1C1E"
+    is_dark = False
 else:
     h_color="#FFFFFF"; h_accent="#8B5CF6"; h_muted="#A0AEC0"
     h_border="rgba(255,255,255,0.05)"; h_shadow="2px 2px 4px rgba(0,0,0,0.5)"; h_sidebar_text="#FFFFFF"
+    is_dark = True
 
 sidebar_top.markdown(f"""
     <div style="text-align:center;margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid {h_border};">
@@ -240,156 +243,53 @@ elegant_dark_css = """<style>
 
 liquid_glass_css = """<style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
-    :root {
-        --text-main: #1C1C1E;
-        --text-muted: #3A3A3A;
-        --accent-blue: #3B5BDB;
-    }
+    :root {--text-main: #1C1C1E; --text-muted: #3A3A3A; --accent-blue: #3B5BDB;}
     .stApp {
-        background:
-            repeating-linear-gradient(
-                105deg,
-                rgba(255,255,255,0.0)  0px,
-                rgba(255,255,255,0.12) 1px,
-                rgba(255,255,255,0.0)  2px,
-                rgba(255,255,255,0.0)  18px
-            ),
-            linear-gradient(
-                160deg,
-                #E8E9EC  0%,
-                #F4F5F7  8%,
-                #C8CACD 18%,
-                #EAECEE 28%,
-                #B8BBBE 38%,
-                #F0F1F3 48%,
-                #D0D2D5 56%,
-                #FFFFFF 63%,
-                #C0C2C6 72%,
-                #E6E8EA 80%,
-                #B0B2B6 88%,
-                #DCDEE0 100%
-            ) !important;
-        color: var(--text-main);
-        font-family: 'DM Sans', sans-serif;
+        background: repeating-linear-gradient(105deg, rgba(255,255,255,0.0) 0px, rgba(255,255,255,0.12) 1px, rgba(255,255,255,0.0) 2px, rgba(255,255,255,0.0) 18px),
+                    linear-gradient(160deg, #E8E9EC 0%, #F4F5F7 8%, #C8CACD 18%, #EAECEE 28%, #B8BBBE 38%, #F0F1F3 48%, #D0D2D5 56%, #FFFFFF 63%, #C0C2C6 72%, #E6E8EA 80%, #B0B2B6 88%, #DCDEE0 100%) !important;
+        color: var(--text-main); font-family: 'DM Sans', sans-serif;
     }
     [data-testid="stSidebar"] {
-        background: rgba(255,255,255,0.08) !important;
-        backdrop-filter: blur(40px) saturate(180%) brightness(1.10) !important;
-        -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.10) !important;
-        border-right: 1px solid rgba(255,255,255,0.40) !important;
-        box-shadow:
-            4px 0 32px rgba(0,0,0,0.08),
-            inset -1px 0 0 rgba(255,255,255,0.70) !important;
+        background: rgba(255,255,255,0.08) !important; backdrop-filter: blur(40px) saturate(180%) brightness(1.10) !important;
+        -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.10) !important; border-right: 1px solid rgba(255,255,255,0.40) !important;
+        box-shadow: 4px 0 32px rgba(0,0,0,0.08), inset -1px 0 0 rgba(255,255,255,0.70) !important;
     }
-    [data-testid="stSidebar"] p,
-    [data-testid="stSidebar"] span,
-    [data-testid="stSidebar"] label { color: #1C1C1E !important; font-weight: 600; }
+    [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label { color: #1C1C1E !important; font-weight: 600; }
     div.row-widget.stRadio > div > label {
-        background: rgba(255,255,255,0.20);
-        backdrop-filter: blur(16px) saturate(180%);
-        -webkit-backdrop-filter: blur(16px) saturate(180%);
-        border-radius: 14px;
-        border: 1px solid rgba(255,255,255,0.65);
-        box-shadow:
-            0 4px 16px rgba(80,80,200,0.10),
-            inset 0 1px 0 rgba(255,255,255,0.85),
-            inset 0 -1px 0 rgba(180,190,255,0.20);
-        transition: all 0.3s ease;
-        margin-bottom: 5px !important;
-        position: relative;
-        overflow: hidden;
+        background: rgba(255,255,255,0.20); backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%);
+        border-radius: 14px; border: 1px solid rgba(255,255,255,0.65); box-shadow: 0 4px 16px rgba(80,80,200,0.10), inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(180,190,255,0.20);
+        transition: all 0.3s ease; margin-bottom: 5px !important; position: relative; overflow: hidden;
     }
     div.row-widget.stRadio > div > label::before {
-        content: '';
-        position: absolute;
-        top: 0; left: -100%; right: -100%; height: 40%;
-        background: linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 100%);
-        border-radius: 14px 14px 0 0;
-        pointer-events: none;
+        content: ''; position: absolute; top: 0; left: -100%; right: -100%; height: 40%;
+        background: linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 100%); border-radius: 14px 14px 0 0; pointer-events: none;
     }
-    div.row-widget.stRadio > div > label:hover {
-        background: rgba(255,255,255,0.35);
-        box-shadow: 0 8px 28px rgba(80,80,200,0.18), inset 0 1px 0 rgba(255,255,255,0.95);
-        transform: translateY(-1px);
-    }
-    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) {
-        background: rgba(91,111,232,0.18) !important;
-        border: 1.5px solid rgba(120,140,255,0.70) !important;
-        box-shadow: 0 0 0 2px rgba(91,111,232,0.25), 0 0 20px rgba(91,111,232,0.30) !important;
-    }
-    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) p {
-        color: #3B4FC8 !important;
-    }
+    div.row-widget.stRadio > div > label:hover { background: rgba(255,255,255,0.35); box-shadow: 0 8px 28px rgba(80,80,200,0.18), inset 0 1px 0 rgba(255,255,255,0.95); transform: translateY(-1px); }
+    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) { background: rgba(91,111,232,0.18) !important; border: 1.5px solid rgba(120,140,255,0.70) !important; box-shadow: 0 0 0 2px rgba(91,111,232,0.25), 0 0 20px rgba(91,111,232,0.30) !important; }
+    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) p { color: #3B4FC8 !important; }
     .neo-card {
-        position: relative;
-        background: rgba(255,255,255,0.08) !important;
-        backdrop-filter: blur(36px) saturate(180%) brightness(1.12) !important;
-        -webkit-backdrop-filter: blur(36px) saturate(180%) brightness(1.12) !important;
-        border-radius: 28px !important;
-        padding: 24px !important;
-        height: 560px; overflow-y: auto;
-        border: 1px solid rgba(255,255,255,0.45) !important;
-        box-shadow:
-            0 8px 40px rgba(0,0,0,0.12),
-            0 2px 8px rgba(0,0,0,0.08),
-            inset 0 1.5px 0 rgba(255,255,255,0.85),
-            inset 0 -1px 0 rgba(255,255,255,0.10) !important;
+        position: relative; background: rgba(255,255,255,0.08) !important; backdrop-filter: blur(36px) saturate(180%) brightness(1.12) !important;
+        -webkit-backdrop-filter: blur(36px) saturate(180%) brightness(1.12) !important; border-radius: 28px !important; padding: 24px !important;
+        height: 560px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.45) !important;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08), inset 0 1.5px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.10) !important;
         display: flex; flex-direction: column; margin-bottom: 20px;
     }
     [data-testid="stMetric"] {
-        background: rgba(255,255,255,0.08) !important;
-        backdrop-filter: blur(30px) saturate(180%) brightness(1.10) !important;
-        -webkit-backdrop-filter: blur(30px) saturate(180%) brightness(1.10) !important;
-        border: 1px solid rgba(255,255,255,0.40) !important;
-        border-radius: 20px !important;
-        box-shadow:
-            0 4px 20px rgba(0,0,0,0.10),
-            inset 0 1px 0 rgba(255,255,255,0.80) !important;
-        padding: 16px !important;
-        transition: transform 0.25s, box-shadow 0.25s;
+        background: rgba(255,255,255,0.08) !important; backdrop-filter: blur(30px) saturate(180%) brightness(1.10) !important;
+        -webkit-backdrop-filter: blur(30px) saturate(180%) brightness(1.10) !important; border: 1px solid rgba(255,255,255,0.40) !important;
+        border-radius: 20px !important; box-shadow: 0 4px 20px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.80) !important; padding: 16px !important; transition: transform 0.25s, box-shadow 0.25s;
     }
-    [data-testid="stMetric"]:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 36px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.90) !important;
-    }
+    [data-testid="stMetric"]:hover { transform: translateY(-2px); box-shadow: 0 10px 36px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.90) !important; }
     div[data-testid="stMetricValue"] > div { color: #1C1C1E !important; }
     div[data-testid="stMetricDelta"] > div { color: #3B5BDB !important; }
     .stButton > button {
-        background: rgba(91,111,232,0.15) !important;
-        backdrop-filter: blur(12px) !important;
-        border: 1.5px solid rgba(120,140,255,0.55) !important;
-        border-radius: 14px !important;
-        color: #3B4FC8 !important;
-        font-weight: 600 !important;
-        box-shadow: 0 0 18px rgba(91,111,232,0.25) !important;
-        transition: all 0.25s !important;
+        background: rgba(91,111,232,0.15) !important; backdrop-filter: blur(12px) !important; border: 1.5px solid rgba(120,140,255,0.55) !important;
+        border-radius: 14px !important; color: #3B4FC8 !important; font-weight: 600 !important; box-shadow: 0 0 18px rgba(91,111,232,0.25) !important; transition: all 0.25s !important;
     }
-    .stButton > button:hover {
-        background: rgba(91,111,232,0.28) !important;
-        box-shadow: 0 0 32px rgba(91,111,232,0.45) !important;
-        transform: translateY(-1px) !important;
-    }
-    [data-testid="stExpander"] {
-        background: rgba(255,255,255,0.14) !important;
-        backdrop-filter: blur(20px) !important;
-        border: 1px solid rgba(255,255,255,0.55) !important;
-        border-radius: 18px !important;
-        box-shadow: 0 4px 20px rgba(60,70,180,0.10), inset 0 1px 0 rgba(255,255,255,0.85) !important;
-    }
-    [data-testid="stAlert"] {
-        backdrop-filter: blur(16px) !important;
-        border-radius: 14px !important;
-        border-left-width: 3px !important;
-        background: rgba(255,255,255,0.22) !important;
-    }
-    [data-testid="stSelectbox"] > div > div {
-        background: rgba(255,255,255,0.30) !important;
-        backdrop-filter: blur(12px) !important;
-        border: 1px solid rgba(255,255,255,0.60) !important;
-        border-radius: 12px !important;
-    }
-    h1,h2,h3,h4,h5 { color: #1C1C1E !important; }
-    p, span, label { color: #2A2A2A; }
+    .stButton > button:hover { background: rgba(91,111,232,0.28) !important; box-shadow: 0 0 32px rgba(91,111,232,0.45) !important; transform: translateY(-1px) !important; }
+    [data-testid="stExpander"] { background: rgba(255,255,255,0.14) !important; backdrop-filter: blur(20px) !important; border: 1px solid rgba(255,255,255,0.55) !important; border-radius: 18px !important; box-shadow: 0 4px 20px rgba(60,70,180,0.10), inset 0 1px 0 rgba(255,255,255,0.85) !important; }
+    [data-testid="stSelectbox"] > div > div { background: rgba(255,255,255,0.30) !important; backdrop-filter: blur(12px) !important; border: 1px solid rgba(255,255,255,0.60) !important; border-radius: 12px !important; }
+    [data-testid="stAlert"] { backdrop-filter: blur(16px) !important; border-radius: 14px !important; border-left-width: 3px !important; background: rgba(255,255,255,0.22) !important; }
 </style>"""
 
 transparent_acrylic_css = """<style>
@@ -472,6 +372,7 @@ radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15),
 regime_info  = {1:("🟢 R1 (강세장)","풀 가동"),2:("🟡 R2 (조정장)","TQQQ 15% 방어"),
                 3:("🟠 R3 (하락장)","현금/금 대피"),4:("🔴 R4 (패닉장)","최대 방어")}
 
+# 레짐 전환 안내 메시지 생성
 if curr_regime == live_regime:
     regime_committee_msg = "모든 조건이 현재 국면에 부합합니다."
 elif live_regime > curr_regime:
@@ -845,7 +746,7 @@ if page == "📊 시장 분석관 (Home)":
                 ck_tr('④ 노이즈 필터 (20일선 &lt; 22)',     f'{vix_ma20:.2f}',                       vix_ma20<22))
         ck_s = (ck_tr('① 정배열 추세 (SMH &gt; 50MA)',     f'${smh_close:.1f} vs ${smh_ma50:.1f}', smh_c1) +
                 ck_tr('② 모멘텀 (1M&gt;10% or 3M&gt;5%)', f'3M {smh_3m*100:.1f}%',                smh_c2) +
-                ck_tr('③ 매수 심 강도 (RSI &gt; 50)',    f'{smh_rsi:.1f}',                        smh_c3))
+                ck_tr('③ 매수 심리 강도 (RSI &gt; 50)',    f'{smh_rsi:.1f}',                        smh_c3))
 
         tr_html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1154,140 +1055,98 @@ elif page == "🍫 8-Pack 레이더망":
             fig8.update_layout(**radar_layout,showlegend=False); st.plotly_chart(fig8,use_container_width=True)
 
 # ------------------------------------------
-# PAGE 3: 📈 백테스트 랩 (Sandbox)
+# PAGE 3: 📈 백테스트 랩 (AMLS V4.5 공식 리포트)
 # ------------------------------------------
 elif page == "📈 백테스트 랩":
-    st.subheader("🛠️ 퀀트 샌드박스 (Level 2.5 AI 하이브리드 백테스터)")
-    st.markdown("자유롭게 레짐 판단 로직(Python)을 뜯어고치고 즉시 백테스트 해보세요. 코딩이 막힌다면 AI에게 자연어로 부탁할 수도 있습니다.")
+    st.subheader("📈 AMLS V4.5 백테스트 성과 리포트")
+    st.markdown("현재 로드된 데이터 기간 동안의 AMLS V4.5 공식 엔진 성과를 나스닥(QQQ) 단순 보유 전략과 비교 검증합니다.")
 
-    # 세션 스테이트 초기화 (에디터에 들어갈 기본 코드)
-    if "custom_code" not in st.session_state:
-        st.session_state.custom_code = """def custom_regime(row):
-    # 사용 가능 지표: row['^VIX'], row['QQQ'], row['QQQ_MA200'], row['VIX_MA20'], row['HYG_IEF_Ratio'] 등
-    v = row['^VIX']
-    q = row['QQQ']
-    m2 = row['QQQ_MA200']
-    
-    if v > 40: 
-        return 4 # R4: 패닉
-    if q < m2: 
-        return 3 # R3: 하락
-    if q >= m2 and row['VIX_MA20'] < 22: 
-        return 1 # R1: 강세
+    with st.spinner("과거 데이터 기반 시뮬레이션 가동 중..."):
+        # 수익률 계산을 위한 데이터 준비
+        daily_ret = df[['QQQ','TQQQ','SOXL','USD','QLD','SSO','SPY','SMH','GLD']].pct_change().fillna(0)
         
-    return 2 # R2: 조정"""
-
-    c_left, c_right = st.columns([1, 1.5])
-
-    with c_left:
-        st.markdown("##### 🤖 Level 3: AI 퀀트 어시스턴트")
-        ai_prompt = st.text_input("테스트하고 싶은 전략을 자연어로 입력하세요:", placeholder="예: VIX 20일선이 25 이하일 때만 강세장으로 판단해줘")
+        # 시작 비중
+        w_orig = get_weights_v45(df['Regime'].iloc[0], False)
         
-        if st.button("✨ AI에게 코드 작성 맡기기", use_container_width=True):
-            if not ai_prompt:
-                st.warning("프롬프트를 입력해주세요.")
-            else:
-                try:
-                    api_key = st.secrets["GEMINI_API_KEY"]
-                    genai.configure(api_key=api_key)
-                    models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-                    model = genai.GenerativeModel(models[0].replace('models/',''))
-                    system_prompt = f"""너는 월스트리트 퀀트 엔지니어야. 다음 요청에 맞는 파이썬 함수를 작성해.
-                    함수명: def custom_regime(row):
-                    반환값: 1(강세장), 2(조정장), 3(하락장), 4(패닉장) 중 하나를 integer로 반환.
-                    입력 row 데이터: row['^VIX'], row['QQQ'], row['QQQ_MA200'], row['QQQ_MA50'], row['SMH_RSI'], row['QQQ_RSI'], row['QQQ_DD'], row['HYG_IEF_Ratio'] 등 사용 가능.
-                    오직 파이썬 코드만 출력해. 마크다운 기호(```python) 쓰지 마. 들여쓰기 4칸 지켜.
-                    사용자 요청: {ai_prompt}"""
-                    
-                    with st.spinner("AI가 로직을 코딩 중입니다..."):
-                        response = model.generate_content(system_prompt)
-                        clean_code = response.text.replace('```python','').replace('```','').strip()
-                        st.session_state.custom_code = clean_code
-                        st.rerun()
-                except Exception as e:
-                    st.error(f"API 호출 오류 (Secrets에 GEMINI_API_KEY를 확인하세요): {e}")
-
-        st.markdown("<br>##### 💻 Level 2: 파이썬 로직 에디터", unsafe_allow_html=True)
-        # 텍스트 에디터가 st.session_state.custom_code 와 연동됨
-        user_code = st.text_area("이곳의 코드를 자유롭게 수정하세요.", key="custom_code", height=320)
-        run_btn = st.button("🚀 백테스트 실행 (Run)", use_container_width=True)
-
-    with c_right:
-        st.markdown("##### 📊 백테스트 결과")
-        if run_btn:
-            with st.spinner("과거 데이터로 시뮬레이션을 돌리고 있습니다..."):
-                try:
-                    # 1. 사용자 작성 코드 컴파일
-                    exec_env = {}
-                    exec(user_code, globals(), exec_env)
-                    custom_func = exec_env['custom_regime']
-
-                    # 2. 커스텀 레짐 계산 및 비대칭 딜레이 적용
-                    df['Custom_Target'] = df.apply(custom_func, axis=1)
-                    df['Custom_Regime'] = apply_asymmetric_delay(df['Custom_Target'])
-
-                    # 3. 수익률 계산 엔진
-                    daily_ret = df[['QQQ','TQQQ','SOXL','USD','QLD','SSO','SPY','SMH','GLD']].pct_change().fillna(0)
-                    
-                    # 시작일 비중 초기화
-                    w_orig = get_weights_v45(df['Regime'].iloc[0], False)
-                    w_cust = get_weights_v45(df['Custom_Regime'].iloc[0], False)
-
-                    val_o, val_c, val_q = 10000, 10000, 10000
-                    hist_o, hist_c, hist_q = [val_o], [val_c], [val_q]
-
-                    # 시뮬레이션 루프
-                    for i in range(1, len(df)):
-                        # 당일 수익률 계산 (어제 결정된 비중 기준)
-                        ret_o = sum(w_orig.get(t,0) * daily_ret[t].iloc[i] for t in w_orig if t in daily_ret.columns)
-                        ret_c = sum(w_cust.get(t,0) * daily_ret[t].iloc[i] for t in w_cust if t in daily_ret.columns)
-                        
-                        val_o *= (1 + ret_o)
-                        val_c *= (1 + ret_c)
-                        val_q *= (1 + daily_ret['QQQ'].iloc[i])
-                        
-                        hist_o.append(val_o)
-                        hist_c.append(val_c)
-                        hist_q.append(val_q)
-                        
-                        # 종가 기준으로 리밸런싱
-                        smh_cond_i = (df['SMH'].iloc[i] > df['SMH_MA50'].iloc[i]) and (df['SMH_3M_Ret'].iloc[i] > 0.05) and (df['SMH_RSI'].iloc[i] > 50)
-                        w_orig = get_weights_v45(df['Regime'].iloc[i], smh_cond_i)
-                        w_cust = get_weights_v45(df['Custom_Regime'].iloc[i], smh_cond_i)
-
-                    # 4. 차트 출력
-                    res_df = pd.DataFrame(index=df.index)
-                    res_df['Original'] = hist_o
-                    res_df['Custom'] = hist_c
-                    res_df['QQQ'] = hist_q
-
-                    fig = go.Figure()
-                    fig.add_trace(go.Scatter(x=res_df.index, y=res_df['QQQ'], name='QQQ (B&H)', line=dict(color='#8A8A8A', dash='dot')))
-                    fig.add_trace(go.Scatter(x=res_df.index, y=res_df['Original'], name='기존 V4.5', line=dict(color='#3B82F6')))
-                    fig.add_trace(go.Scatter(x=res_df.index, y=res_df['Custom'], name='✨ 커스텀 전략', line=dict(color='#8B5CF6', width=3)))
-
-                    fig.update_layout(title="전략 자산 성장 곡선 비교 (Log Scale)", height=450,
-                                      paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                                      font=dict(color=t_color), yaxis_type='log')
-                    st.plotly_chart(fig, use_container_width=True)
-
-                    # 5. 성과 수치 요약
-                    def calc_metrics(series):
-                        ret = (series[-1]/series[0]) - 1
-                        mdd = ((series / series.cummax()) - 1).min()
-                        return ret, mdd
-
-                    ret_o, mdd_o = calc_metrics(res_df['Original'])
-                    ret_c, mdd_c = calc_metrics(res_df['Custom'])
-
-                    mc1, mc2 = st.columns(2)
-                    mc1.metric("기존 V4.5 누적수익 / MDD", f"{ret_o*100:.1f}%", f"MDD: {mdd_o*100:.1f}%", delta_color="off")
-                    mc2.metric("✨ 커스텀 누적수익 / MDD", f"{ret_c*100:.1f}%", f"MDD: {mdd_c*100:.1f}%", delta_color="off")
-
-                except Exception as e:
-                    st.error(f"코드 실행 오류. 파이썬 문법이나 변수명을 확인하세요.\n\n{e}")
-        else:
-            st.info("👈 왼쪽 샌드박스에서 로직을 수정한 뒤 [🚀 백테스트 실행] 버튼을 눌러주세요.")
+        val_o, val_q = 10000, 10000
+        hist_o, hist_q = [val_o], [val_q]
+        
+        # 시뮬레이션 루프
+        for i in range(1, len(df)):
+            ret_o = sum(w_orig.get(t,0) * daily_ret[t].iloc[i] for t in w_orig if t in daily_ret.columns)
+            val_o *= (1 + ret_o)
+            val_q *= (1 + daily_ret['QQQ'].iloc[i])
+            
+            hist_o.append(val_o)
+            hist_q.append(val_q)
+            
+            # 종가 기준으로 다음 날 비중 리밸런싱
+            smh_cond_i = (df['SMH'].iloc[i] > df['SMH_MA50'].iloc[i]) and (df['SMH_3M_Ret'].iloc[i] > 0.05) and (df['SMH_RSI'].iloc[i] > 50)
+            w_orig = get_weights_v45(df['Regime'].iloc[i], smh_cond_i)
+            
+        res_df = pd.DataFrame(index=df.index)
+        res_df['V4.5'] = hist_o
+        res_df['QQQ'] = hist_q
+        
+        days = (res_df.index[-1] - res_df.index[0]).days
+        
+        # 성과 지표 계산 함수
+        def calc_metrics(series):
+            ret = (series[-1]/series[0]) - 1
+            cagr = (series[-1]/series[0]) ** (365.25 / days) - 1 if days > 0 else 0
+            mdd = ((series / series.cummax()) - 1).min()
+            return ret, cagr, mdd
+            
+        ret_o, cagr_o, mdd_o = calc_metrics(res_df['V4.5'])
+        ret_q, cagr_q, mdd_q = calc_metrics(res_df['QQQ'])
+        
+        # 1. 성과 메트릭 UI
+        st.markdown(f"#### 📊 핵심 성과 지표 (최근 {days}일)")
+        mc1, mc2, mc3 = st.columns(3)
+        mc1.metric("V4.5 누적 수익률", f"{ret_o*100:.1f}%", f"QQQ: {ret_q*100:.1f}%", delta_color="off")
+        mc2.metric("V4.5 연평균 수익률(CAGR)", f"{cagr_o*100:.1f}%", f"QQQ: {cagr_q*100:.1f}%", delta_color="off")
+        mc3.metric("V4.5 최대 낙폭(MDD)", f"{mdd_o*100:.1f}%", f"QQQ: {mdd_q*100:.1f}%", delta_color="inverse")
+        
+        # 2. 성장 곡선 차트
+        st.markdown("<br>", unsafe_allow_html=True)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=res_df.index, y=res_df['QQQ'], name='QQQ (B&H)', line=dict(color='#8A8A8A', dash='dot')))
+        fig.add_trace(go.Scatter(x=res_df.index, y=res_df['V4.5'], name='AMLS V4.5', line=dict(color=h_accent, width=3)))
+        
+        fig.update_layout(title="자산 성장 곡선 (Equity Curve - Log Scale)", height=450,
+                          paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                          font=dict(color=t_color), yaxis_type='log')
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # 3. AI 자동 브리핑
+        st.divider()
+        st.markdown("#### 🤖 AI 백테스트 성과 브리핑 리포트")
+        st.markdown("제미나이(Gemini) 모델이 기간 내 발생한 데이터를 바탕으로 퀀트 애널리스트 관점에서 시스템의 퍼포먼스를 분석합니다.")
+        
+        if st.button("✨ 백테스트 결과 AI 분석 실행", use_container_width=True):
+            try:
+                api_key = st.secrets["GEMINI_API_KEY"]
+                genai.configure(api_key=api_key)
+                models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+                model = genai.GenerativeModel(models[0].replace('models/',''))
+                
+                prompt = f"""너는 월스트리트의 최고 퀀트 애널리스트야. 다음은 지난 {days}일 간의 AMLS V4.5 전략과 나스닥(QQQ)의 백테스트 결과야.
+                [AMLS V4.5] 누적수익률: {ret_o*100:.1f}%, 연평균수익률(CAGR): {cagr_o*100:.1f}%, 최대낙폭(MDD): {mdd_o*100:.1f}%
+                [나스닥 QQQ] 누적수익률: {ret_q*100:.1f}%, 연평균수익률(CAGR): {cagr_q*100:.1f}%, 최대낙폭(MDD): {mdd_q*100:.1f}%
+                
+                이 데이터를 바탕으로 AMLS V4.5 전략의 '수익 방어력(MDD 방어)'과 '상승장 포착력(수익 창출)'을 중심으로 아주 냉철하고 전문적인 3단락 브리핑 리포트를 작성해. 
+                숫자를 직접 인용하면서 설명하고, 단순 시장(QQQ) 보유 대비 어떤 장단점이 있었는지 명확히 짚어줘. 마크다운으로 예쁘게 서식을 넣어줘."""
+                
+                with st.spinner("AI가 성과를 분석 중입니다..."):
+                    response = model.generate_content(prompt)
+                    st.markdown(f"""
+                    <div style="background-color: {'rgba(255,255,255,0.05)' if is_dark else 'rgba(0,0,0,0.02)'}; 
+                                border: 1px solid {h_border}; border-radius: 12px; padding: 20px; margin-top: 10px;">
+                        {response.text}
+                    </div>
+                    """, unsafe_allow_html=True)
+            except Exception as e:
+                st.error(f"API 호출 오류 (Secrets에 GEMINI_API_KEY가 등록되어 있는지 확인하세요): {e}")
 
 # ------------------------------------------
 # PAGE 4: 매크로 뉴스룸
@@ -1307,7 +1166,7 @@ elif page == "📰 매크로 뉴스룸":
 </body></html>""", height=85, scrolling=False)
     elif is_transparent_style:
         components.html(f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
-<link href="[https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap](https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap)" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>*{{margin:0;padding:0;box-sizing:border-box;}}body{{font-family:'DM Sans',sans-serif;background:#E8E8ED;padding:10px 6px 6px 6px;}}
 .banner{{background:rgba(255,255,255,0.93);border:1px solid rgba(0,0,0,0.065);border-radius:20px;padding:16px 24px;box-shadow:0 2px 16px rgba(0,0,0,0.07);display:flex;align-items:center;gap:12px;}}
 .banner h2{{font-size:1.25em;font-weight:700;color:#1C1C1E;}}
@@ -1355,7 +1214,7 @@ elif page == "📰 매크로 뉴스룸":
   <div style="font-size:0.77em;font-weight:600;color:#2563EB;margin-top:8px;">{i['date']}</div>
 </div>""" for i in news_items])
             components.html(f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
-<link href="[https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&display=swap](https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&display=swap)" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
 <style>*{{margin:0;padding:0;box-sizing:border-box;}}body{{font-family:'DM Sans',sans-serif;background:#E8E8ED;padding:10px 6px 10px 6px;}}
 .title{{font-size:1.03em;font-weight:700;color:#1C1C1E;margin-bottom:12px;padding-left:2px;}}</style>
 </head><body>
