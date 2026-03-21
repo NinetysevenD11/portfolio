@@ -104,6 +104,20 @@ qqq_close, qqq_ma50, qqq_ma200 = last_row['QQQ'], last_row['QQQ_MA50'], last_row
 smh_close, smh_ma50, smh_3m, smh_1m, smh_rsi = (last_row['SMH'], last_row['SMH_MA50'],
     last_row['SMH_3M_Ret'], last_row['SMH_1M_Ret'], last_row['SMH_RSI'])
 
+# 🚨 에러 원인이었던 함수! 전역으로 빼서 백테스트 랩에서도 쓸 수 있게 고정
+def apply_asymmetric_delay(targets):
+    res = []; hist_curr = 3; pend = None; cnt = 0
+    for t in targets:
+        if t > hist_curr: hist_curr = t; pend = None; cnt = 0
+        elif t < hist_curr:
+            if t == pend:
+                cnt += 1
+                if cnt >= 5: hist_curr = t; pend = None; cnt = 0
+            else: pend = t; cnt = 1
+        else: pend = None; cnt = 0
+        res.append(hist_curr)
+    return pd.Series(res, index=targets.index).shift(1).bfill()
+
 def get_target_v45(row):
     if row['^VIX'] > 40: return 4
     credit_stress = row['HYG_IEF_Ratio'] < row['HYG_IEF_MA20']
@@ -116,17 +130,7 @@ def get_target_v45(row):
     return 2
 
 df['Target'] = df.apply(get_target_v45, axis=1)
-res = []; hist_curr = 3; pend = None; cnt = 0
-for t in df['Target']:
-    if t > hist_curr: hist_curr = t; pend = None; cnt = 0
-    elif t < hist_curr:
-        if t == pend:
-            cnt += 1
-            if cnt >= 5: hist_curr = t; pend = None; cnt = 0
-        else: pend = t; cnt = 1
-    else: pend = None; cnt = 0
-    res.append(hist_curr)
-df['Regime'] = pd.Series(res, index=df.index).shift(1).bfill()
+df['Regime'] = apply_asymmetric_delay(df['Target'])
 
 # 실시간 재계산
 live_regime   = get_target_v45(last_row)            
@@ -234,7 +238,6 @@ elegant_dark_css = """<style>
     div[data-testid="stMetricDelta"]>div{color:var(--accent-primary)!important;}
 </style>"""
 
-# ── Liquid Glass CSS ────────────────────────────────────────
 liquid_glass_css = """<style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
     :root {
@@ -742,6 +745,7 @@ def lg_cards_html(regime_title, regime_strat, regime_msg, soxl_title, soxl_strat
     return f"""<!DOCTYPE html><html><head><meta charset="UTF-8">{LG_CSS_BASE}</head>
 <body>
 <div style="display:grid;grid-template-columns:1.2fr 1.2fr 1fr;gap:14px;align-items:start;">
+
   <div class="lg-card" style="height:570px;">
     <div class="lg-card-inner">
       <div class="lg-title">🏛️ 현재 시장 국면</div>
@@ -754,6 +758,7 @@ def lg_cards_html(regime_title, regime_strat, regime_msg, soxl_title, soxl_strat
       <div class="footer-msg">💡 위원회: {regime_msg}</div>
     </div>
   </div>
+
   <div class="lg-card" style="height:570px;">
     <div class="lg-card-inner">
       <div class="lg-title">💻 반도체(SOXL) 판독관</div>
@@ -766,6 +771,7 @@ def lg_cards_html(regime_title, regime_strat, regime_msg, soxl_title, soxl_strat
       <div class="footer-dashed">※ SOXL은 극단적 변동성을 수반하므로 필터 모두 통과 필수.</div>
     </div>
   </div>
+
   <div class="lg-card" style="height:570px;">
     <div class="lg-card-inner">
       <div class="lg-title">🛒 V4.5 목표 비중</div>
@@ -773,6 +779,7 @@ def lg_cards_html(regime_title, regime_strat, regime_msg, soxl_title, soxl_strat
       {weight_rows}
     </div>
   </div>
+
 </div>
 </body></html>"""
 
@@ -793,7 +800,7 @@ if page == "📊 시장 분석관 (Home)":
     c1, c2, c3 = st.columns([1.2, 1.2, 1])
 
     if is_glass_style:
-        # ── Liquid Glass ──────────────────
+        # ── Liquid Glass: components.html ──────────────────
         regime_msg  = regime_committee_msg
         soxl_title  = "🔥 승인: SOXL 편입" if smh_cond else "🛡️ 기각: USD 편입"
         soxl_strat  = "3배수 공격적 진입" if smh_cond else "변동성 방어용 2배수"
@@ -812,7 +819,7 @@ if page == "📊 시장 분석관 (Home)":
                                       weight_rows, ck_r, ck_s), height=620, scrolling=False)
 
     elif is_transparent_style:
-        # ── Transparent ───────────────────
+        # ── Transparent: components.html ───────────────────
         def ck_tr(label, val, passed):
             icon  = "✔" if passed else "✕"
             color = "#16A34A" if passed else "#DC2626"
@@ -838,7 +845,7 @@ if page == "📊 시장 분석관 (Home)":
                 ck_tr('④ 노이즈 필터 (20일선 &lt; 22)',     f'{vix_ma20:.2f}',                       vix_ma20<22))
         ck_s = (ck_tr('① 정배열 추세 (SMH &gt; 50MA)',     f'${smh_close:.1f} vs ${smh_ma50:.1f}', smh_c1) +
                 ck_tr('② 모멘텀 (1M&gt;10% or 3M&gt;5%)', f'3M {smh_3m*100:.1f}%',                smh_c2) +
-                ck_tr('③ 매수 심리 강도 (RSI &gt; 50)',    f'{smh_rsi:.1f}',                        smh_c3))
+                ck_tr('③ 매수 심 강도 (RSI &gt; 50)',    f'{smh_rsi:.1f}',                        smh_c3))
 
         tr_html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1156,17 +1163,16 @@ elif page == "📈 백테스트 랩":
     # 세션 스테이트 초기화 (에디터에 들어갈 기본 코드)
     if "custom_code" not in st.session_state:
         st.session_state.custom_code = """def custom_regime(row):
-    # 입력가능 데이터: row['^VIX'], row['QQQ'], row['QQQ_MA200'], row['QQQ_MA50'] 등
+    # 사용 가능 지표: row['^VIX'], row['QQQ'], row['QQQ_MA200'], row['VIX_MA20'], row['HYG_IEF_Ratio'] 등
     v = row['^VIX']
     q = row['QQQ']
     m2 = row['QQQ_MA200']
-    m5 = row['QQQ_MA50']
     
     if v > 40: 
         return 4 # R4: 패닉
     if q < m2: 
         return 3 # R3: 하락
-    if q >= m2 and m5 >= m2 and v < 25: 
+    if q >= m2 and row['VIX_MA20'] < 22: 
         return 1 # R1: 강세
         
     return 2 # R2: 조정"""
@@ -1175,7 +1181,7 @@ elif page == "📈 백테스트 랩":
 
     with c_left:
         st.markdown("##### 🤖 Level 3: AI 퀀트 어시스턴트")
-        ai_prompt = st.text_input("테스트하고 싶은 전략을 자연어로 입력하세요:", placeholder="예: RSI가 30 이하일 때 무조건 강세장(1)으로 판단하는 로직 추가해줘")
+        ai_prompt = st.text_input("테스트하고 싶은 전략을 자연어로 입력하세요:", placeholder="예: VIX 20일선이 25 이하일 때만 강세장으로 판단해줘")
         
         if st.button("✨ AI에게 코드 작성 맡기기", use_container_width=True):
             if not ai_prompt:
@@ -1230,7 +1236,7 @@ elif page == "📈 백테스트 랩":
                     val_o, val_c, val_q = 10000, 10000, 10000
                     hist_o, hist_c, hist_q = [val_o], [val_c], [val_q]
 
-                    # 시뮬레이션 루프 (약 900일 - 매우 빠름)
+                    # 시뮬레이션 루프
                     for i in range(1, len(df)):
                         # 당일 수익률 계산 (어제 결정된 비중 기준)
                         ret_o = sum(w_orig.get(t,0) * daily_ret[t].iloc[i] for t in w_orig if t in daily_ret.columns)
