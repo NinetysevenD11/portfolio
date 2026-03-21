@@ -372,7 +372,6 @@ radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15),
 regime_info  = {1:("🟢 R1 (강세장)","풀 가동"),2:("🟡 R2 (조정장)","TQQQ 15% 방어"),
                 3:("🟠 R3 (하락장)","현금/금 대피"),4:("🔴 R4 (패닉장)","최대 방어")}
 
-# 레짐 전환 안내 메시지 생성
 if curr_regime == live_regime:
     regime_committee_msg = "모든 조건이 현재 국면에 부합합니다."
 elif live_regime > curr_regime:
@@ -380,9 +379,6 @@ elif live_regime > curr_regime:
 else:
     regime_committee_msg = f"R{live_regime} 신호 감지 — 5일 확인 대기 중 (현재 R{curr_regime} 배분 유지)"
 
-# ==========================================
-# Liquid Glass HTML 생성 헬퍼
-# ==========================================
 LG_BG = """
   background:
     repeating-linear-gradient(
@@ -412,227 +408,41 @@ LG_CSS_BASE = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 * { margin:0; padding:0; box-sizing:border-box; }
-body {
-  font-family: 'DM Sans', sans-serif;
-  """ + LG_BG + """
-  padding: 12px 6px 4px 6px;
-  min-height: 100vh;
-}
-.lg-card {
-  position: relative;
-  background: rgba(255,255,255,0.30);
-  backdrop-filter: blur(36px) saturate(160%) brightness(1.04);
-  -webkit-backdrop-filter: blur(36px) saturate(160%) brightness(1.04);
-  border-radius: 28px;
-  border: 1px solid rgba(255,255,255,0.72);
-  box-shadow:
-    0 8px 40px rgba(0,0,0,0.08),
-    0 2px 8px  rgba(0,0,0,0.05),
-    inset 0 1.5px 0 rgba(255,255,255,0.95),
-    inset 0 -1px 0 rgba(255,255,255,0.20),
-    inset 1px 0 0 rgba(255,255,255,0.60),
-    inset -1px 0 0 rgba(255,255,255,0.40);
-  overflow: hidden;
-  transition: transform 0.3s, box-shadow 0.3s;
-}
-.lg-card:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 16px 56px rgba(60,70,200,0.22),
-    0 4px 16px rgba(0,0,0,0.12),
-    inset 0 1.5px 0 rgba(255,255,255,0.98),
-    inset 0 -1px 0 rgba(160,170,255,0.22);
-}
-.lg-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 42%;
-  background: linear-gradient(180deg,
-    rgba(255,255,255,0.38) 0%,
-    rgba(255,255,255,0.10) 60%,
-    rgba(255,255,255,0.00) 100%);
-  border-radius: 28px 28px 60% 60%;
-  pointer-events: none;
-  z-index: 1;
-}
-.lg-card::after {
-  content: '';
-  position: absolute;
-  top: -1px; left: -1px; right: -1px; bottom: -1px;
-  border-radius: 29px;
-  background: linear-gradient(135deg,
-    rgba(255,255,255,0.60) 0%,
-    rgba(220,225,235,0.20) 25%,
-    rgba(255,255,255,0.05) 50%,
-    rgba(200,205,215,0.15) 75%,
-    rgba(255,255,255,0.50) 100%);
-  z-index: -1;
-  pointer-events: none;
-}
-.lg-card-inner {
-  position: relative;
-  z-index: 2;
-  padding: 22px 20px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-.lg-title {
-  font-size: 1.12em;
-  font-weight: 700;
-  color: #1C1C1E;
-  border-bottom: 1px solid rgba(0,0,0,0.10);
-  padding-bottom: 11px;
-  margin-bottom: 14px;
-}
-.lg-inset {
-  position: relative;
-  background: rgba(255,255,255,0.16);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(255,255,255,0.55);
-  border-radius: 20px;
-  padding: 16px 14px;
-  text-align: center;
-  margin-bottom: 16px;
-  box-shadow:
-    inset 0 1.5px 0 rgba(255,255,255,0.80),
-    0 4px 20px rgba(0,0,0,0.08);
-  overflow: hidden;
-}
-.lg-inset::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; height: 45%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, transparent 100%);
-  border-radius: 20px 20px 50% 50%;
-  pointer-events: none;
-}
-.lg-inset h2 {
-  font-size: 1.4em; font-weight: 700; margin-bottom: 4px;
-  position: relative; z-index: 1;
-}
-.lg-inset p {
-  font-size: 0.87em; color: #5A5A5A; font-weight: 500;
-  position: relative; z-index: 1;
-}
-.crow {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(0,0,0,0.08);
-  font-size: 0.875em;
-}
+body { font-family: 'DM Sans', sans-serif; """ + LG_BG + """ padding: 12px 6px 4px 6px; min-height: 100vh; }
+.lg-card { position: relative; background: rgba(255,255,255,0.30); backdrop-filter: blur(36px) saturate(160%) brightness(1.04); -webkit-backdrop-filter: blur(36px) saturate(160%) brightness(1.04); border-radius: 28px; border: 1px solid rgba(255,255,255,0.72); box-shadow: 0 8px 40px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.05), inset 0 1.5px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(255,255,255,0.20), inset 1px 0 0 rgba(255,255,255,0.60), inset -1px 0 0 rgba(255,255,255,0.40); overflow: hidden; transition: transform 0.3s, box-shadow 0.3s; }
+.lg-card:hover { transform: translateY(-2px); box-shadow: 0 16px 56px rgba(60,70,200,0.22), 0 4px 16px rgba(0,0,0,0.12), inset 0 1.5px 0 rgba(255,255,255,0.98), inset 0 -1px 0 rgba(160,170,255,0.22); }
+.lg-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 42%; background: linear-gradient(180deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.10) 60%, rgba(255,255,255,0.00) 100%); border-radius: 28px 28px 60% 60%; pointer-events: none; z-index: 1; }
+.lg-card::after { content: ''; position: absolute; top: -1px; left: -1px; right: -1px; bottom: -1px; border-radius: 29px; background: linear-gradient(135deg, rgba(255,255,255,0.60) 0%, rgba(220,225,235,0.20) 25%, rgba(255,255,255,0.05) 50%, rgba(200,205,215,0.15) 75%, rgba(255,255,255,0.50) 100%); z-index: -1; pointer-events: none; }
+.lg-card-inner { position: relative; z-index: 2; padding: 22px 20px; height: 100%; display: flex; flex-direction: column; }
+.lg-title { font-size: 1.12em; font-weight: 700; color: #1C1C1E; border-bottom: 1px solid rgba(0,0,0,0.10); padding-bottom: 11px; margin-bottom: 14px; }
+.lg-inset { position: relative; background: rgba(255,255,255,0.16); backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%); border: 1px solid rgba(255,255,255,0.55); border-radius: 20px; padding: 16px 14px; text-align: center; margin-bottom: 16px; box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.80), 0 4px 20px rgba(0,0,0,0.08); overflow: hidden; }
+.lg-inset::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 45%; background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, transparent 100%); border-radius: 20px 20px 50% 50%; pointer-events: none; }
+.lg-inset h2 { font-size: 1.4em; font-weight: 700; margin-bottom: 4px; position: relative; z-index: 1; }
+.lg-inset p { font-size: 0.87em; color: #5A5A5A; font-weight: 500; position: relative; z-index: 1; }
+.crow { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.08); font-size: 0.875em; }
 .clabel { color: #2A2A2A; font-weight: 500; }
 .cval   { font-family: 'DM Mono', monospace; font-weight: 600; font-size: 0.95em; }
-.footer-msg {
-  margin-top: auto; padding: 11px 14px;
-  font-size: 0.81em; color: #3A3A3A;
-  text-align: center;
-  background: rgba(0,0,0,0.04);
-  border-radius: 14px;
-  border: 1px solid rgba(0,0,0,0.08);
-  font-weight: 500;
-}
-.footer-dashed {
-  margin-top: auto; padding: 11px 14px;
-  font-size: 0.81em; color: #5A5A5A;
-  text-align: center;
-  border-top: 1px dashed rgba(0,0,0,0.12);
-  font-weight: 500;
-}
-.weight-header {
-  display: flex; justify-content: space-between;
-  font-size: 0.77em; font-weight: 700; color: #8A8A8A;
-  border-bottom: 1.5px solid rgba(0,0,0,0.10);
-  padding-bottom: 7px; margin-bottom: 2px; letter-spacing: 0.4px;
-}
-.badge {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 7px 13px; border-radius: 12px;
-  font-size: 0.88em; font-weight: 600;
-  width: 100%; justify-content: center;
-}
-.pack-cell {
-  position: relative;
-  background: rgba(255,255,255,0.08);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.42);
-  border-radius: 20px;
-  padding: 13px 13px 11px 13px;
-  box-shadow:
-    0 4px 20px rgba(0,0,0,0.10),
-    inset 0 1.5px 0 rgba(255,255,255,0.75);
-  overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
+.footer-msg { margin-top: auto; padding: 11px 14px; font-size: 0.81em; color: #3A3A3A; text-align: center; background: rgba(0,0,0,0.04); border-radius: 14px; border: 1px solid rgba(0,0,0,0.08); font-weight: 500; }
+.footer-dashed { margin-top: auto; padding: 11px 14px; font-size: 0.81em; color: #5A5A5A; text-align: center; border-top: 1px dashed rgba(0,0,0,0.12); font-weight: 500; }
+.weight-header { display: flex; justify-content: space-between; font-size: 0.77em; font-weight: 700; color: #8A8A8A; border-bottom: 1.5px solid rgba(0,0,0,0.10); padding-bottom: 7px; margin-bottom: 2px; letter-spacing: 0.4px; }
+.badge { display: inline-flex; align-items: center; gap: 5px; padding: 7px 13px; border-radius: 12px; font-size: 0.88em; font-weight: 600; width: 100%; justify-content: center; }
+.pack-cell { position: relative; background: rgba(255,255,255,0.08); backdrop-filter: blur(28px) saturate(180%); -webkit-backdrop-filter: blur(28px) saturate(180%); border: 1px solid rgba(255,255,255,0.42); border-radius: 20px; padding: 13px 13px 11px 13px; box-shadow: 0 4px 20px rgba(0,0,0,0.10), inset 0 1.5px 0 rgba(255,255,255,0.75); overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; }
 .pack-cell:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(0,0,0,0.16), inset 0 1.5px 0 rgba(255,255,255,0.88); }
-.pack-cell::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 40%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.28) 0%, transparent 100%);
-  border-radius: 20px 20px 50% 50%;
-  pointer-events: none;
-}
+.pack-cell::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%; background: linear-gradient(180deg, rgba(255,255,255,0.28) 0%, transparent 100%); border-radius: 20px 20px 50% 50%; pointer-events: none; }
 .pack-title { font-size: 0.81em; font-weight: 700; color: #1C1C1E; margin-bottom: 8px; position: relative; z-index: 1; }
-.lg-banner {
-  position: relative;
-  background: rgba(255,255,255,0.50);
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.70);
-  border-radius: 22px;
-  padding: 16px 22px;
-  margin-bottom: 14px;
-  box-shadow: 0 6px 28px rgba(0,0,0,0.08), inset 0 1.5px 0 rgba(255,255,255,0.90);
-  overflow: hidden;
-}
-.lg-banner::before {
-  content: '';
-  position: absolute; top:0; left:0; right:0; height:45%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.28) 0%, transparent 100%);
-  border-radius: 22px 22px 50% 50%;
-  pointer-events: none;
-}
+.lg-banner { position: relative; background: rgba(255,255,255,0.50); backdrop-filter: blur(32px) saturate(180%); -webkit-backdrop-filter: blur(32px) saturate(180%); border: 1px solid rgba(255,255,255,0.70); border-radius: 22px; padding: 16px 22px; margin-bottom: 14px; box-shadow: 0 6px 28px rgba(0,0,0,0.08), inset 0 1.5px 0 rgba(255,255,255,0.90); overflow: hidden; }
+.lg-banner::before { content: ''; position: absolute; top:0; left:0; right:0; height:45%; background: linear-gradient(180deg, rgba(255,255,255,0.28) 0%, transparent 100%); border-radius: 22px 22px 50% 50%; pointer-events: none; }
 .lg-banner h4 { color: #1C1C1E; font-size: 1.03em; margin-bottom: 5px; font-weight: 700; position: relative; z-index:1; }
 .lg-banner p  { color: #3A3A3A; font-size: 0.91em; line-height: 1.6; position: relative; z-index:1; }
-.ncard {
-  position: relative;
-  background: rgba(255,255,255,0.45);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.70);
-  border-radius: 20px;
-  padding: 15px 15px 13px 15px;
-  height: 140px;
-  display: flex; flex-direction: column; justify-content: space-between;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08), inset 0 1.5px 0 rgba(255,255,255,0.90);
-  overflow: hidden;
-  transition: transform 0.22s, box-shadow 0.22s;
-}
+.ncard { position: relative; background: rgba(255,255,255,0.45); backdrop-filter: blur(28px) saturate(180%); -webkit-backdrop-filter: blur(28px) saturate(180%); border: 1px solid rgba(255,255,255,0.70); border-radius: 20px; padding: 15px 15px 13px 15px; height: 140px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 20px rgba(0,0,0,0.08), inset 0 1.5px 0 rgba(255,255,255,0.90); overflow: hidden; transition: transform 0.22s, box-shadow 0.22s; }
 .ncard:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(0,0,0,0.14), inset 0 1.5px 0 rgba(255,255,255,0.95); }
-.ncard::before {
-  content: '';
-  position: absolute; top:0; left:0; right:0; height: 40%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 100%);
-  border-radius: 20px 20px 50% 50%;
-  pointer-events: none;
-}
+.ncard::before { content: ''; position: absolute; top:0; left:0; right:0; height: 40%; background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 100%); border-radius: 20px 20px 50% 50%; pointer-events: none; }
 .ntitle { font-size:0.89em; font-weight:600; line-height:1.44; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; color:#1C1C1E; position:relative; z-index:1; }
 .ntitle a { color:#1C1C1E; text-decoration:none; }
 .ntitle a:hover { color:#3B5BDB; }
 .ndate { font-size:0.77em; font-weight:600; color:#3B5BDB; margin-top:8px; flex-shrink:0; position:relative; z-index:1; }
 .section-title { font-size:1.03em; font-weight:700; color:#1C1C1E; margin-bottom:12px; padding-left:2px; }
-.badge-rt {
-  margin-left:auto;
-  background: rgba(0,0,0,0.06);
-  color: #1C1C1E;
-  border: 1px solid rgba(0,0,0,0.12);
-  border-radius: 10px;
-  padding: 4px 12px;
-  font-size: 0.8em; font-weight:600; white-space:nowrap;
-}
+.badge-rt { margin-left:auto; background: rgba(0,0,0,0.06); color: #1C1C1E; border: 1px solid rgba(0,0,0,0.12); border-radius: 10px; padding: 4px 12px; font-size: 0.8em; font-weight:600; white-space:nowrap; }
 </style>
 """
 
@@ -646,7 +456,6 @@ def lg_cards_html(regime_title, regime_strat, regime_msg, soxl_title, soxl_strat
     return f"""<!DOCTYPE html><html><head><meta charset="UTF-8">{LG_CSS_BASE}</head>
 <body>
 <div style="display:grid;grid-template-columns:1.2fr 1.2fr 1fr;gap:14px;align-items:start;">
-
   <div class="lg-card" style="height:570px;">
     <div class="lg-card-inner">
       <div class="lg-title">🏛️ 현재 시장 국면</div>
@@ -659,7 +468,6 @@ def lg_cards_html(regime_title, regime_strat, regime_msg, soxl_title, soxl_strat
       <div class="footer-msg">💡 위원회: {regime_msg}</div>
     </div>
   </div>
-
   <div class="lg-card" style="height:570px;">
     <div class="lg-card-inner">
       <div class="lg-title">💻 반도체(SOXL) 판독관</div>
@@ -672,7 +480,6 @@ def lg_cards_html(regime_title, regime_strat, regime_msg, soxl_title, soxl_strat
       <div class="footer-dashed">※ SOXL은 극단적 변동성을 수반하므로 필터 모두 통과 필수.</div>
     </div>
   </div>
-
   <div class="lg-card" style="height:570px;">
     <div class="lg-card-inner">
       <div class="lg-title">🛒 V4.5 목표 비중</div>
@@ -680,7 +487,6 @@ def lg_cards_html(regime_title, regime_strat, regime_msg, soxl_title, soxl_strat
       {weight_rows}
     </div>
   </div>
-
 </div>
 </body></html>"""
 
@@ -701,7 +507,6 @@ if page == "📊 시장 분석관 (Home)":
     c1, c2, c3 = st.columns([1.2, 1.2, 1])
 
     if is_glass_style:
-        # ── Liquid Glass: components.html ──────────────────
         regime_msg  = regime_committee_msg
         soxl_title  = "🔥 승인: SOXL 편입" if smh_cond else "🛡️ 기각: USD 편입"
         soxl_strat  = "3배수 공격적 진입" if smh_cond else "변동성 방어용 2배수"
@@ -720,7 +525,6 @@ if page == "📊 시장 분석관 (Home)":
                                       weight_rows, ck_r, ck_s), height=620, scrolling=False)
 
     elif is_transparent_style:
-        # ── Transparent: components.html ───────────────────
         def ck_tr(label, val, passed):
             icon  = "✔" if passed else "✕"
             color = "#16A34A" if passed else "#DC2626"
@@ -794,7 +598,6 @@ body{{font-family:'DM Sans',sans-serif;background:#E8E8ED;padding:12px 6px 4px 6
         components.html(tr_html, height=620, scrolling=False)
 
     else:
-        # ── Neo / Dark ──────────────────────────────────────
         with c1:
             msg_bg = 'transparent' if is_neo_style else 'rgba(139,92,246,0.1)'
             st.markdown(f"""
@@ -1058,27 +861,33 @@ elif page == "🍫 8-Pack 레이더망":
 # PAGE 3: 📈 백테스트 랩 (AMLS V4.5 공식 리포트)
 # ------------------------------------------
 elif page == "📈 백테스트 랩":
-    st.subheader("📈 AMLS V4.5 백테스트 성과 리포트")
-    st.markdown("현재 로드된 데이터 기간 동안의 AMLS V4.5 공식 엔진 성과를 나스닥(QQQ) 단순 보유 전략과 비교 검증합니다.")
+    st.subheader("📈 AMLS V4.5 공식 백테스트 랩")
+    st.markdown("현재 로드된 데이터 기간 동안의 AMLS V4.5 성과를 **나스닥(QQQ) 및 2배/3배 레버리지 장기투자** 성과와 비교 검증합니다.")
 
-    with st.spinner("과거 데이터 기반 시뮬레이션 가동 중..."):
+    with st.spinner("과거 데이터 기반 정밀 시뮬레이션 가동 중..."):
         # 수익률 계산을 위한 데이터 준비
         daily_ret = df[['QQQ','TQQQ','SOXL','USD','QLD','SSO','SPY','SMH','GLD']].pct_change().fillna(0)
         
-        # 시작 비중
+        # 시작 비중 세팅
         w_orig = get_weights_v45(df['Regime'].iloc[0], False)
         
-        val_o, val_q = 10000, 10000
-        hist_o, hist_q = [val_o], [val_q]
+        # 1. 초기 자본 세팅 (1만 달러)
+        val_o, val_q, val_qld, val_tqqq = 10000, 10000, 10000, 10000
+        hist_o, hist_q, hist_qld, hist_tqqq = [val_o], [val_q], [val_qld], [val_tqqq]
         
-        # 시뮬레이션 루프
+        # 2. 시뮬레이션 루프
         for i in range(1, len(df)):
             ret_o = sum(w_orig.get(t,0) * daily_ret[t].iloc[i] for t in w_orig if t in daily_ret.columns)
-            val_o *= (1 + ret_o)
-            val_q *= (1 + daily_ret['QQQ'].iloc[i])
+            
+            val_o    *= (1 + ret_o)
+            val_q    *= (1 + daily_ret['QQQ'].iloc[i])
+            val_qld  *= (1 + daily_ret['QLD'].iloc[i])
+            val_tqqq *= (1 + daily_ret['TQQQ'].iloc[i])
             
             hist_o.append(val_o)
             hist_q.append(val_q)
+            hist_qld.append(val_qld)
+            hist_tqqq.append(val_tqqq)
             
             # 종가 기준으로 다음 날 비중 리밸런싱
             smh_cond_i = (df['SMH'].iloc[i] > df['SMH_MA50'].iloc[i]) and (df['SMH_3M_Ret'].iloc[i] > 0.05) and (df['SMH_RSI'].iloc[i] > 50)
@@ -1086,42 +895,86 @@ elif page == "📈 백테스트 랩":
             
         res_df = pd.DataFrame(index=df.index)
         res_df['V4.5'] = hist_o
-        res_df['QQQ'] = hist_q
+        res_df['QQQ']  = hist_q
+        res_df['QLD']  = hist_qld
+        res_df['TQQQ'] = hist_tqqq
         
         days = (res_df.index[-1] - res_df.index[0]).days
         
-        # 성과 지표 계산 함수
+        # 3. 성과 지표 계산 함수
         def calc_metrics(series):
             ret = (series[-1]/series[0]) - 1
             cagr = (series[-1]/series[0]) ** (365.25 / days) - 1 if days > 0 else 0
             mdd = ((series / series.cummax()) - 1).min()
             return ret, cagr, mdd
             
-        ret_o, cagr_o, mdd_o = calc_metrics(res_df['V4.5'])
-        ret_q, cagr_q, mdd_q = calc_metrics(res_df['QQQ'])
+        ret_o, cagr_o, mdd_o       = calc_metrics(res_df['V4.5'])
+        ret_q, cagr_q, mdd_q       = calc_metrics(res_df['QQQ'])
+        ret_qld, cagr_qld, mdd_qld = calc_metrics(res_df['QLD'])
+        ret_t, cagr_t, mdd_t       = calc_metrics(res_df['TQQQ'])
         
-        # 1. 성과 메트릭 UI
+        # ── 시각화 1: 4개 전략 성과 카드 UI ──
         st.markdown(f"#### 📊 핵심 성과 지표 (최근 {days}일)")
-        mc1, mc2, mc3 = st.columns(3)
-        mc1.metric("V4.5 누적 수익률", f"{ret_o*100:.1f}%", f"QQQ: {ret_q*100:.1f}%", delta_color="off")
-        mc2.metric("V4.5 연평균 수익률(CAGR)", f"{cagr_o*100:.1f}%", f"QQQ: {cagr_q*100:.1f}%", delta_color="off")
-        mc3.metric("V4.5 최대 낙폭(MDD)", f"{mdd_o*100:.1f}%", f"QQQ: {mdd_q*100:.1f}%", delta_color="inverse")
+        mc1, mc2, mc3, mc4 = st.columns(4)
         
-        # 2. 성장 곡선 차트
+        # 메트릭 카드 렌더링 헬퍼 (테마 호환)
+        def render_metric_card(title, ret, cagr, mdd, is_main=False):
+            is_dark_theme = (ui_style != "Light Mode (Neo-Tactile)")
+            bg_color = f"rgba(139,92,246,0.15)" if is_dark_theme else "rgba(178,106,71,0.08)"
+            bg = f"background: {bg_color};" if is_main else ""
+            bdr = f"border: 2px solid {h_accent};" if is_main else f"border: 1px solid {h_border};"
+            mdd_col = '#DC2626' if not is_dark_theme else '#F87171'
+            ret_col = '#16A34A' if not is_dark_theme else '#34D399'
+            
+            return f"""
+            <div style="{bg} {bdr} border-radius: 16px; padding: 18px; text-align: center; height: 100%; box-shadow: {h_shadow};">
+                <div style="font-size: 0.95em; font-weight: 700; color: {h_muted}; margin-bottom: 8px;">{title}</div>
+                <div style="font-size: 1.6em; font-weight: 800; color: {h_color}; margin-bottom: 8px;">CAGR {cagr*100:.1f}%</div>
+                <div style="font-size: 0.9em; color: {h_color}; font-weight: 600;">누적수익: <span style="color: {ret_col};">{ret*100:.1f}%</span></div>
+                <div style="font-size: 0.9em; color: {h_color}; font-weight: 600;">최대낙폭: <span style="color: {mdd_col};">{mdd*100:.1f}%</span></div>
+            </div>
+            """
+            
+        mc1.markdown(render_metric_card("✨ AMLS V4.5", ret_o, cagr_o, mdd_o, is_main=True), unsafe_allow_html=True)
+        mc2.markdown(render_metric_card("QQQ (1배수)", ret_q, cagr_q, mdd_q), unsafe_allow_html=True)
+        mc3.markdown(render_metric_card("QLD (2배수)", ret_qld, cagr_qld, mdd_qld), unsafe_allow_html=True)
+        mc4.markdown(render_metric_card("TQQQ (3배수)", ret_t, cagr_t, mdd_t), unsafe_allow_html=True)
+        
         st.markdown("<br>", unsafe_allow_html=True)
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=res_df.index, y=res_df['QQQ'], name='QQQ (B&H)', line=dict(color='#8A8A8A', dash='dot')))
-        fig.add_trace(go.Scatter(x=res_df.index, y=res_df['V4.5'], name='AMLS V4.5', line=dict(color=h_accent, width=3)))
+        chart_col1, chart_col2 = st.columns([1, 1])
+
+        # ── 시각화 2: 자산 성장 곡선 차트 ──
+        st.markdown("#### 📈 자산 성장 곡선 (Equity Curve)", unsafe_allow_html=True)
+        fig_eq = go.Figure()
+        fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['QQQ'], name='QQQ (1x)', line=dict(color='#A0AEC0', width=1.5, dash='dot')))
+        fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['QLD'], name='QLD (2x)', line=dict(color='#3B82F6', width=1.5, dash='dash')))
+        fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['TQQQ'], name='TQQQ (3x)', line=dict(color='#EF4444', width=1.5, dash='dash')))
+        fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['V4.5'], name='AMLS V4.5', line=dict(color=h_accent, width=3)))
         
-        fig.update_layout(title="자산 성장 곡선 (Equity Curve - Log Scale)", height=450,
-                          paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                          font=dict(color=t_color), yaxis_type='log')
-        st.plotly_chart(fig, use_container_width=True)
+        fig_eq.update_layout(height=450, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                             font=dict(color=t_color), yaxis_type='log', margin=dict(l=0,r=0,t=10,b=0),
+                             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+        st.plotly_chart(fig_eq, use_container_width=True)
         
-        # 3. AI 자동 브리핑
+        # ── 시각화 3: 최대 낙폭(Drawdown) 수중 차트 ──
+        st.markdown("#### 📉 수중 차트 (Drawdown - 멘탈 스트레스 지수)", unsafe_allow_html=True)
+        def get_dd_series(series): return (series / series.cummax()) - 1
+        
+        fig_dd = go.Figure()
+        fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['QQQ']), name='QQQ (1x)', line=dict(color='#A0AEC0', width=1)))
+        fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['QLD']), name='QLD (2x)', line=dict(color='#3B82F6', width=1)))
+        fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['TQQQ']), name='TQQQ (3x)', line=dict(color='#EF4444', width=1)))
+        fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['V4.5']), name='AMLS V4.5', fill='tozeroy', line=dict(color=h_accent, width=2)))
+        
+        fig_dd.update_layout(height=300, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                             font=dict(color=t_color), yaxis=dict(tickformat='.0%'), margin=dict(l=0,r=0,t=10,b=0),
+                             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+        st.plotly_chart(fig_dd, use_container_width=True)
+        
+        # ── AI 자동 브리핑 ──
         st.divider()
-        st.markdown("#### 🤖 AI 백테스트 성과 브리핑 리포트")
-        st.markdown("제미나이(Gemini) 모델이 기간 내 발생한 데이터를 바탕으로 퀀트 애널리스트 관점에서 시스템의 퍼포먼스를 분석합니다.")
+        st.markdown("#### 🤖 AI 전략 성과 브리핑 리포트")
+        st.markdown("제미나이(Gemini) 모델이 위 백테스트의 수익률(Return)과 낙폭(Drawdown)을 비교 분석하여 전략의 우위성을 해설합니다.")
         
         if st.button("✨ 백테스트 결과 AI 분석 실행", use_container_width=True):
             try:
@@ -1130,18 +983,20 @@ elif page == "📈 백테스트 랩":
                 models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
                 model = genai.GenerativeModel(models[0].replace('models/',''))
                 
-                prompt = f"""너는 월스트리트의 최고 퀀트 애널리스트야. 다음은 지난 {days}일 간의 AMLS V4.5 전략과 나스닥(QQQ)의 백테스트 결과야.
-                [AMLS V4.5] 누적수익률: {ret_o*100:.1f}%, 연평균수익률(CAGR): {cagr_o*100:.1f}%, 최대낙폭(MDD): {mdd_o*100:.1f}%
-                [나스닥 QQQ] 누적수익률: {ret_q*100:.1f}%, 연평균수익률(CAGR): {cagr_q*100:.1f}%, 최대낙폭(MDD): {mdd_q*100:.1f}%
+                prompt = f"""너는 월스트리트의 최고 퀀트 애널리스트야. 다음은 지난 {days}일 간의 AMLS V4.5 전략과 주요 나스닥 추종 ETF들의 백테스트 결과야.
+                [AMLS V4.5 (동적 자산배분)] 누적수익률: {ret_o*100:.1f}%, 연평균수익률(CAGR): {cagr_o*100:.1f}%, 최대낙폭(MDD): {mdd_o*100:.1f}%
+                [QQQ (나스닥 1배수)] 누적수익률: {ret_q*100:.1f}%, 연평균수익률(CAGR): {cagr_q*100:.1f}%, 최대낙폭(MDD): {mdd_q*100:.1f}%
+                [QLD (나스닥 2배수)] 누적수익률: {ret_qld*100:.1f}%, 연평균수익률(CAGR): {cagr_qld*100:.1f}%, 최대낙폭(MDD): {mdd_qld*100:.1f}%
+                [TQQQ (나스닥 3배수)] 누적수익률: {ret_t*100:.1f}%, 연평균수익률(CAGR): {cagr_t*100:.1f}%, 최대낙폭(MDD): {mdd_t*100:.1f}%
                 
-                이 데이터를 바탕으로 AMLS V4.5 전략의 '수익 방어력(MDD 방어)'과 '상승장 포착력(수익 창출)'을 중심으로 아주 냉철하고 전문적인 3단락 브리핑 리포트를 작성해. 
-                숫자를 직접 인용하면서 설명하고, 단순 시장(QQQ) 보유 대비 어떤 장단점이 있었는지 명확히 짚어줘. 마크다운으로 예쁘게 서식을 넣어줘."""
+                이 데이터를 바탕으로 AMLS V4.5 전략이 '단순 레버리지 존버(QLD, TQQQ)'의 파멸적 MDD 위험을 어떻게 회피하면서도 '1배수(QQQ)' 이상의 수익을 창출해 냈는지 아주 냉철하고 전문적인 3단락 브리핑 리포트를 작성해. 
+                숫자를 직접 인용하면서 설명하고, 변동성 끌림(Volatility Decay)을 극복한 이 전략의 가치를 명확히 짚어줘. 마크다운으로 예쁘게 서식을 넣어줘."""
                 
                 with st.spinner("AI가 성과를 분석 중입니다..."):
                     response = model.generate_content(prompt)
                     st.markdown(f"""
-                    <div style="background-color: {'rgba(255,255,255,0.05)' if is_dark else 'rgba(0,0,0,0.02)'}; 
-                                border: 1px solid {h_border}; border-radius: 12px; padding: 20px; margin-top: 10px;">
+                    <div style="background-color: {'rgba(255,255,255,0.05)' if (ui_style != "Light Mode (Neo-Tactile)") else 'rgba(0,0,0,0.02)'}; 
+                                border: 1px solid {h_border}; border-radius: 16px; padding: 20px; margin-top: 10px; box-shadow: {h_shadow};">
                         {response.text}
                     </div>
                     """, unsafe_allow_html=True)
