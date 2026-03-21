@@ -163,8 +163,8 @@ if is_neo_style:
     h_color="#3A2E28"; h_accent="#B26A47"; h_muted="#8A7668"
     h_border="rgba(139,94,60,0.1)"; h_shadow="2px 2px 4px rgba(255,255,255,0.8)"; h_sidebar_text="#3A2E28"
 elif is_glass_style:
-    h_color="#1C1C1E"; h_accent="#5B6FE8"; h_muted="#5A6080"
-    h_border="rgba(255,255,255,0.55)"; h_shadow="0 1px 3px rgba(0,0,0,0.10)"; h_sidebar_text="#1C1C1E"
+    h_color="#FFFFFF"; h_accent="#A8D4FF"; h_muted="rgba(255,255,255,0.65)"
+    h_border="rgba(255,255,255,0.25)"; h_shadow="0 1px 6px rgba(0,0,0,0.30)"; h_sidebar_text="#FFFFFF"
 elif is_transparent_style:
     h_color="#1C1C1E"; h_accent="#2563EB"; h_muted="#8E8E93"
     h_border="rgba(0,0,0,0.07)"; h_shadow="0 1px 2px rgba(0,0,0,0.08)"; h_sidebar_text="#1C1C1E"
@@ -244,30 +244,32 @@ liquid_glass_css = """<style>
         --text-muted: #4A5270;
         --accent-blue: #3B5BDB;
     }
-    /* ── 배경: 연하늘색 중성 그라데이션 (투명 효과가 잘 보이도록) ── */
+    /* ── 배경: 실제 이미지 → backdrop-filter blur가 진짜 유리처럼 작동 ── */
     .stApp {
         background:
-            radial-gradient(ellipse at 20% 20%, rgba(180,210,255,0.55) 0%, transparent 48%),
-            radial-gradient(ellipse at 80% 15%, rgba(200,220,255,0.45) 0%, transparent 45%),
-            radial-gradient(ellipse at 55% 85%, rgba(210,225,255,0.40) 0%, transparent 48%),
-            radial-gradient(ellipse at 10% 75%, rgba(190,215,255,0.30) 0%, transparent 42%),
-            #D8E4F5 !important;
+            linear-gradient(135deg,
+                rgba(120,160,255,0.18) 0%,
+                rgba(180,120,255,0.12) 40%,
+                rgba(80,200,200,0.14) 70%,
+                rgba(255,160,120,0.10) 100%),
+            url("https://images.unsplash.com/photo-1557683316-973673baf926?w=1920&q=80")
+            center/cover no-repeat fixed !important;
         color: var(--text-main);
         font-family: 'DM Sans', sans-serif;
     }
-    /* ── 사이드바: 두꺼운 유리 패널 ── */
+    /* ── 사이드바: 진짜 유리 패널 ── */
     [data-testid="stSidebar"] {
-        background: rgba(220,228,255,0.18) !important;
-        backdrop-filter: blur(32px) saturate(220%) brightness(1.08) !important;
-        -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(1.08) !important;
-        border-right: 1px solid rgba(255,255,255,0.55) !important;
+        background: rgba(255,255,255,0.08) !important;
+        backdrop-filter: blur(40px) saturate(180%) brightness(1.10) !important;
+        -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.10) !important;
+        border-right: 1px solid rgba(255,255,255,0.40) !important;
         box-shadow:
-            4px 0 32px rgba(80,80,200,0.12),
-            inset -1px 0 0 rgba(255,255,255,0.8) !important;
+            4px 0 32px rgba(0,0,0,0.08),
+            inset -1px 0 0 rgba(255,255,255,0.70) !important;
     }
     [data-testid="stSidebar"] p,
     [data-testid="stSidebar"] span,
-    [data-testid="stSidebar"] label { color: #1C1C2E !important; font-weight: 600; }
+    [data-testid="stSidebar"] label { color: rgba(255,255,255,0.92) !important; font-weight: 600; text-shadow: 0 1px 4px rgba(0,0,0,0.25); }
     /* ── 라디오 버튼: 액체 유리 pill ── */
     div.row-widget.stRadio > div > label {
         background: rgba(255,255,255,0.20);
@@ -305,41 +307,42 @@ liquid_glass_css = """<style>
     div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) p {
         color: #3B4FC8 !important;
     }
-    /* ── neo-card (Neo/Dark 테마용, Glass는 components.html로 대체) ── */
+    /* ── neo-card: 진짜 유리 투명 ── */
     .neo-card {
-        background: rgba(255,255,255,0.14) !important;
-        backdrop-filter: blur(28px) saturate(200%) brightness(1.05) !important;
-        -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(1.05) !important;
+        position: relative;
+        background: rgba(255,255,255,0.08) !important;
+        backdrop-filter: blur(36px) saturate(180%) brightness(1.12) !important;
+        -webkit-backdrop-filter: blur(36px) saturate(180%) brightness(1.12) !important;
         border-radius: 28px !important;
         padding: 24px !important;
         height: 560px; overflow-y: auto;
-        border: 1px solid rgba(255,255,255,0.55) !important;
+        border: 1px solid rgba(255,255,255,0.45) !important;
         box-shadow:
-            0 8px 40px rgba(60,70,180,0.14),
+            0 8px 40px rgba(0,0,0,0.12),
             0 2px 8px rgba(0,0,0,0.08),
-            inset 0 1.5px 0 rgba(255,255,255,0.90),
-            inset 0 -1px 0 rgba(180,190,255,0.15) !important;
+            inset 0 1.5px 0 rgba(255,255,255,0.85),
+            inset 0 -1px 0 rgba(255,255,255,0.10) !important;
         display: flex; flex-direction: column; margin-bottom: 20px;
     }
     /* ── Metric 카드 ── */
     [data-testid="stMetric"] {
-        background: rgba(255,255,255,0.16) !important;
-        backdrop-filter: blur(24px) saturate(200%) !important;
-        -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
-        border: 1px solid rgba(255,255,255,0.58) !important;
+        background: rgba(255,255,255,0.08) !important;
+        backdrop-filter: blur(30px) saturate(180%) brightness(1.10) !important;
+        -webkit-backdrop-filter: blur(30px) saturate(180%) brightness(1.10) !important;
+        border: 1px solid rgba(255,255,255,0.40) !important;
         border-radius: 20px !important;
         box-shadow:
-            0 4px 20px rgba(60,70,180,0.10),
-            inset 0 1px 0 rgba(255,255,255,0.88) !important;
+            0 4px 20px rgba(0,0,0,0.10),
+            inset 0 1px 0 rgba(255,255,255,0.80) !important;
         padding: 16px !important;
         transition: transform 0.25s, box-shadow 0.25s;
     }
     [data-testid="stMetric"]:hover {
         transform: translateY(-2px);
-        box-shadow: 0 10px 36px rgba(60,70,180,0.18), inset 0 1px 0 rgba(255,255,255,0.95) !important;
+        box-shadow: 0 10px 36px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.90) !important;
     }
-    div[data-testid="stMetricValue"] > div { color: #1C1C2E !important; }
-    div[data-testid="stMetricDelta"] > div { color: #3B4FC8 !important; }
+    div[data-testid="stMetricValue"] > div { color: #FFFFFF !important; text-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+    div[data-testid="stMetricDelta"] > div { color: #A8D4FF !important; }
     /* ── 버튼 ── */
     .stButton > button {
         background: rgba(91,111,232,0.15) !important;
@@ -468,12 +471,13 @@ regime_info  = {1:("🟢 R1 (강세장)","풀 가동"),2:("🟡 R2 (조정장)",
 # ==========================================
 LG_BG = """
   background:
-    radial-gradient(ellipse at 20% 20%, rgba(180,210,255,0.55) 0%, transparent 48%),
-    radial-gradient(ellipse at 80% 15%, rgba(200,220,255,0.45) 0%, transparent 45%),
-    radial-gradient(ellipse at 55% 85%, rgba(210,225,255,0.40) 0%, transparent 48%),
-    radial-gradient(ellipse at 10% 75%, rgba(190,215,255,0.30) 0%, transparent 42%),
-    radial-gradient(ellipse at 90% 70%, rgba(220,230,255,0.25) 0%, transparent 40%),
-    #D8E4F5;"""
+    linear-gradient(135deg,
+        rgba(120,160,255,0.18) 0%,
+        rgba(180,120,255,0.12) 40%,
+        rgba(80,200,200,0.14) 70%,
+        rgba(255,160,120,0.10) 100%),
+    url("https://images.unsplash.com/photo-1557683316-973673baf926?w=1920&q=80")
+    center/cover no-repeat;"""
 
 LG_CSS_BASE = """
 <style>
@@ -496,18 +500,18 @@ body {
 /* ── Liquid Glass 카드 공통 ── */
 .lg-card {
   position: relative;
-  background: rgba(255,255,255,0.12);
-  backdrop-filter: blur(30px) saturate(220%) brightness(1.08);
-  -webkit-backdrop-filter: blur(30px) saturate(220%) brightness(1.08);
+  background: rgba(255,255,255,0.07);
+  backdrop-filter: blur(36px) saturate(180%) brightness(1.12);
+  -webkit-backdrop-filter: blur(36px) saturate(180%) brightness(1.12);
   border-radius: 28px;
-  border: 1px solid rgba(255,255,255,0.60);
+  border: 1px solid rgba(255,255,255,0.42);
   box-shadow:
-    0 8px 40px rgba(60,70,200,0.16),
-    0 2px 8px  rgba(0,0,0,0.10),
-    inset 0 1.5px 0 rgba(255,255,255,0.92),
-    inset 0 -1px 0 rgba(160,170,255,0.18),
-    inset 1px 0 0 rgba(255,255,255,0.40),
-    inset -1px 0 0 rgba(255,255,255,0.20);
+    0 8px 40px rgba(0,0,0,0.14),
+    0 2px 8px  rgba(0,0,0,0.08),
+    inset 0 1.5px 0 rgba(255,255,255,0.82),
+    inset 0 -1px 0 rgba(255,255,255,0.08),
+    inset 1px 0 0 rgba(255,255,255,0.30),
+    inset -1px 0 0 rgba(255,255,255,0.15);
   overflow: hidden;
   transition: transform 0.3s, box-shadow 0.3s;
 }
@@ -563,26 +567,26 @@ body {
 .lg-title {
   font-size: 1.12em;
   font-weight: 700;
-  color: #1C1C2E;
-  border-bottom: 1px solid rgba(255,255,255,0.55);
+  color: rgba(255,255,255,0.95);
+  border-bottom: 1px solid rgba(255,255,255,0.22);
   padding-bottom: 11px;
   margin-bottom: 14px;
-  text-shadow: 0 1px 2px rgba(255,255,255,0.6);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.25);
 }
 /* ── 인셋 박스 (내부 glass) ── */
 .lg-inset {
   position: relative;
-  background: rgba(255,255,255,0.28);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.72);
+  background: rgba(255,255,255,0.16);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255,255,255,0.55);
   border-radius: 20px;
   padding: 16px 14px;
   text-align: center;
   margin-bottom: 16px;
   box-shadow:
-    inset 0 1.5px 0 rgba(255,255,255,0.90),
-    0 4px 20px rgba(60,70,200,0.08);
+    inset 0 1.5px 0 rgba(255,255,255,0.80),
+    0 4px 20px rgba(0,0,0,0.08);
   overflow: hidden;
 }
 .lg-inset::before {
@@ -596,45 +600,48 @@ body {
 .lg-inset h2 {
   font-size: 1.4em; font-weight: 700; margin-bottom: 4px;
   position: relative; z-index: 1;
-  text-shadow: 0 1px 4px rgba(255,255,255,0.5);
+  text-shadow: 0 1px 6px rgba(0,0,0,0.30);
 }
 .lg-inset p {
-  font-size: 0.87em; color: #4A5270; font-weight: 500;
+  font-size: 0.87em; color: rgba(255,255,255,0.78); font-weight: 500;
   position: relative; z-index: 1;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.20);
 }
 /* ── 체크 행 ── */
 .crow {
   display: flex; justify-content: space-between; align-items: center;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.35);
+  border-bottom: 1px solid rgba(255,255,255,0.18);
   font-size: 0.875em;
 }
-.clabel { color: #2A2A4A; font-weight: 500; }
+.clabel { color: rgba(255,255,255,0.85); font-weight: 500; text-shadow: 0 1px 3px rgba(0,0,0,0.20); }
 .cval   { font-family: 'DM Mono', monospace; font-weight: 600; font-size: 0.95em; }
 /* ── 하단 메시지 ── */
 .footer-msg {
   margin-top: auto;
   padding: 11px 14px;
-  font-size: 0.81em; color: #3A3A5A;
+  font-size: 0.81em; color: rgba(255,255,255,0.80);
   text-align: center;
-  background: rgba(91,111,232,0.10);
+  background: rgba(255,255,255,0.10);
   border-radius: 14px;
-  border: 1px solid rgba(120,140,255,0.25);
+  border: 1px solid rgba(255,255,255,0.22);
   font-weight: 500;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.20);
 }
 .footer-dashed {
   margin-top: auto;
   padding: 11px 14px;
-  font-size: 0.81em; color: #3A3A5A;
+  font-size: 0.81em; color: rgba(255,255,255,0.70);
   text-align: center;
-  border-top: 1px dashed rgba(255,255,255,0.45);
+  border-top: 1px dashed rgba(255,255,255,0.30);
   font-weight: 500;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.20);
 }
 /* ── 비중 헤더 ── */
 .weight-header {
   display: flex; justify-content: space-between;
-  font-size: 0.77em; font-weight: 700; color: #6A6A8A;
-  border-bottom: 1.5px solid rgba(255,255,255,0.45);
+  font-size: 0.77em; font-weight: 700; color: rgba(255,255,255,0.55);
+  border-bottom: 1.5px solid rgba(255,255,255,0.22);
   padding-bottom: 7px; margin-bottom: 2px; letter-spacing: 0.4px;
 }
 /* ── 뱃지 (8-Pack용) ── */
@@ -644,90 +651,92 @@ body {
   font-size: 0.88em; font-weight: 600;
   width: 100%; justify-content: center;
   backdrop-filter: blur(8px);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 /* ── 8-Pack 셀 ── */
 .pack-cell {
   position: relative;
-  background: rgba(255,255,255,0.14);
-  backdrop-filter: blur(24px) saturate(200%);
-  -webkit-backdrop-filter: blur(24px) saturate(200%);
-  border: 1px solid rgba(255,255,255,0.60);
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.42);
   border-radius: 20px;
   padding: 13px 13px 11px 13px;
   box-shadow:
-    0 4px 20px rgba(60,70,200,0.10),
-    inset 0 1.5px 0 rgba(255,255,255,0.88);
+    0 4px 20px rgba(0,0,0,0.10),
+    inset 0 1.5px 0 rgba(255,255,255,0.75);
   overflow: hidden;
   transition: transform 0.2s, box-shadow 0.2s;
 }
-.pack-cell:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(60,70,200,0.18), inset 0 1.5px 0 rgba(255,255,255,0.95); }
+.pack-cell:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(0,0,0,0.16), inset 0 1.5px 0 rgba(255,255,255,0.88); }
 .pack-cell::before {
   content: '';
   position: absolute; top: 0; left: 0; right: 0; height: 40%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.35) 0%, transparent 100%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.28) 0%, transparent 100%);
   border-radius: 20px 20px 50% 50%;
   pointer-events: none;
 }
-.pack-title { font-size: 0.81em; font-weight: 700; color: #2A2A4A; margin-bottom: 8px; position: relative; z-index: 1; }
+.pack-title { font-size: 0.81em; font-weight: 700; color: rgba(255,255,255,0.90); margin-bottom: 8px; position: relative; z-index: 1; text-shadow: 0 1px 4px rgba(0,0,0,0.25); }
 /* ── 배너 (8-Pack / 뉴스) ── */
 .lg-banner {
   position: relative;
-  background: rgba(255,255,255,0.16);
-  backdrop-filter: blur(28px) saturate(200%);
-  -webkit-backdrop-filter: blur(28px) saturate(200%);
-  border: 1px solid rgba(255,255,255,0.62);
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.42);
   border-radius: 22px;
   padding: 16px 22px;
   margin-bottom: 14px;
-  box-shadow: 0 6px 28px rgba(60,70,200,0.12), inset 0 1.5px 0 rgba(255,255,255,0.90);
+  box-shadow: 0 6px 28px rgba(0,0,0,0.10), inset 0 1.5px 0 rgba(255,255,255,0.78);
   overflow: hidden;
 }
 .lg-banner::before {
   content: '';
   position: absolute; top:0; left:0; right:0; height:45%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.38) 0%, transparent 100%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.28) 0%, transparent 100%);
   border-radius: 22px 22px 50% 50%;
   pointer-events: none;
 }
-.lg-banner h4 { color: #3B4FC8; font-size: 1.03em; margin-bottom: 5px; font-weight: 700; position: relative; z-index:1; text-shadow: 0 1px 3px rgba(255,255,255,0.6); }
-.lg-banner p  { color: #2A2A4A; font-size: 0.91em; line-height: 1.6; position: relative; z-index:1; }
+.lg-banner h4 { color: rgba(255,255,255,0.95); font-size: 1.03em; margin-bottom: 5px; font-weight: 700; position: relative; z-index:1; text-shadow: 0 1px 6px rgba(0,0,0,0.30); }
+.lg-banner p  { color: rgba(255,255,255,0.80); font-size: 0.91em; line-height: 1.6; position: relative; z-index:1; text-shadow: 0 1px 3px rgba(0,0,0,0.20); }
 /* ── 뉴스 카드 ── */
 .ncard {
   position: relative;
-  background: rgba(255,255,255,0.14);
-  backdrop-filter: blur(26px) saturate(200%);
-  -webkit-backdrop-filter: blur(26px) saturate(200%);
-  border: 1px solid rgba(255,255,255,0.60);
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.42);
   border-radius: 20px;
   padding: 15px 15px 13px 15px;
   height: 140px;
   display: flex; flex-direction: column; justify-content: space-between;
-  box-shadow: 0 4px 20px rgba(60,70,200,0.10), inset 0 1.5px 0 rgba(255,255,255,0.88);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12), inset 0 1.5px 0 rgba(255,255,255,0.70);
   overflow: hidden;
   transition: transform 0.22s, box-shadow 0.22s;
 }
-.ncard:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(60,70,200,0.20), inset 0 1.5px 0 rgba(255,255,255,0.96); }
+.ncard:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(0,0,0,0.20), inset 0 1.5px 0 rgba(255,255,255,0.85); }
 .ncard::before {
   content: '';
   position: absolute; top:0; left:0; right:0; height: 40%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.32) 0%, transparent 100%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 100%);
   border-radius: 20px 20px 50% 50%;
   pointer-events: none;
 }
-.ntitle { font-size:0.89em; font-weight:600; line-height:1.44; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; color:#1C1C2E; position:relative; z-index:1; }
-.ntitle a { color:#1C1C2E; text-decoration:none; }
-.ntitle a:hover { color:#3B4FC8; }
-.ndate { font-size:0.77em; font-weight:600; color:#3B4FC8; margin-top:8px; flex-shrink:0; position:relative; z-index:1; }
-.section-title { font-size:1.03em; font-weight:700; color:#1C1C2E; margin-bottom:12px; padding-left:2px; text-shadow:0 1px 2px rgba(255,255,255,0.5); }
+.ntitle { font-size:0.89em; font-weight:600; line-height:1.44; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; color:rgba(255,255,255,0.92); position:relative; z-index:1; text-shadow:0 1px 4px rgba(0,0,0,0.25); }
+.ntitle a { color:rgba(255,255,255,0.92); text-decoration:none; }
+.ntitle a:hover { color:#A8D4FF; }
+.ndate { font-size:0.77em; font-weight:600; color:#A8D4FF; margin-top:8px; flex-shrink:0; position:relative; z-index:1; }
+.section-title { font-size:1.03em; font-weight:700; color:rgba(255,255,255,0.95); margin-bottom:12px; padding-left:2px; text-shadow:0 1px 4px rgba(0,0,0,0.20); }
 .badge-rt {
   margin-left:auto;
-  background: rgba(59,91,219,0.18);
-  color: #3B4FC8;
-  border: 1px solid rgba(91,111,232,0.45);
+  background: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.90);
+  border: 1px solid rgba(255,255,255,0.40);
   border-radius: 10px;
   padding: 4px 12px;
   font-size: 0.8em; font-weight:600; white-space:nowrap;
   backdrop-filter: blur(8px);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.20);
 }
 </style>
 """
