@@ -189,7 +189,6 @@ def get_weights_v45(reg, smh_ok):
     return w
 target_weights = get_weights_v45(curr_regime, smh_cond)
 
-# 🚨 제가 빼먹었던 5줄! 여기서 위원회 안내 메시지를 생성합니다.
 if curr_regime == live_regime:
     regime_committee_msg = "모든 조건이 현재 국면에 부합합니다."
 elif live_regime > curr_regime:
@@ -211,6 +210,7 @@ st.markdown("""<style>
         --accent: #3B5BDB;
     }
 
+    /* [배경] 단색 그라데이션 위에 미세한 그라데이션과 대각선 줄무늬 코팅 */
     .stApp, [data-testid="stAppViewContainer"] {
         background: 
             repeating-linear-gradient(105deg, rgba(255,255,255,0.0) 0px, rgba(255,255,255,0.12) 1px, rgba(255,255,255,0.0) 2px, rgba(255,255,255,0.0) 18px),
@@ -222,6 +222,7 @@ st.markdown("""<style>
     #MainMenu { visibility: hidden; } footer { visibility: hidden; }
     .main .block-container { max-width: 1300px; padding-top: 1rem; padding-bottom: 2rem; }
 
+    /* [사이드바] 고투명 & 블러 & 다크 텍스트 */
     [data-testid="stSidebar"] {
         background: rgba(255,255,255,0.15) !important;
         backdrop-filter: blur(36px) saturate(160%) brightness(1.05) !important;
@@ -230,42 +231,48 @@ st.markdown("""<style>
         box-shadow: 4px 0 40px rgba(0,0,0,0.05) !important;
     }
     
+    /* 텍스트 색상 강제 지정 (절대 흰색 아님) */
     h1, h2, h3, h4, h5, h6 { color: var(--text-main) !important; font-weight: 700 !important; }
     p, span, label, div { color: var(--text-body); font-weight: 500; }
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] span { color: var(--text-muted) !important; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
 
+    /* [카드 (모든 컨테이너)] 고투명 & 고굴절 & 빛 반사 사뮬레이션 */
     .neo-card, [data-testid="stMetric"], .ai-report-box, [data-testid="stExpander"] {
         position: relative;
-        background: rgba(255, 255, 255, 0.25) !important;
-        backdrop-filter: blur(36px) saturate(160%) brightness(1.05) !important;
+        background: rgba(255, 255, 255, 0.25) !important; /* 고투명 */
+        backdrop-filter: blur(36px) saturate(160%) brightness(1.05) !important; /* 고굴절 */
         -webkit-backdrop-filter: blur(36px) saturate(160%) brightness(1.05) !important;
-        border: 1px solid rgba(255, 255, 255, 0.55) !important;
-        border-radius: 24px !important;
+        border: 1px solid rgba(255, 255, 255, 0.55) !important; /* 흰색 반투명 테두리 */
+        border-radius: 24px !important; /* 부드러운 라운딩 */
         box-shadow: 
-            0 8px 40px rgba(0,0,0,0.10),
-            inset 0 1.5px 0 rgba(255,255,255,0.90),
-            inset 0 -1px 0 rgba(200,210,230,0.20) !important;
-        overflow: hidden !important;
+            0 8px 40px rgba(0,0,0,0.10), /* 바닥 그림자 */
+            inset 0 1.5px 0 rgba(255,255,255,0.90), /* 상단 빛 반사선 */
+            inset 0 -1px 0 rgba(200,210,230,0.20) !important; /* 하단 푸른 반사 */
+        overflow: hidden !important; /* ::before contain */
         transition: transform 0.3s ease, box-shadow 0.3s ease !important;
     }
     .neo-card { padding: 25px !important; height: 570px !important; display: flex; flex-direction: column; margin-bottom: 20px; }
     [data-testid="stMetric"] { padding: 18px !important; text-align: center; }
     
+    /* 카드 ::before 광택 코팅 */
     .neo-card::before, [data-testid="stMetric"]::before, .ai-report-box::before, [data-testid="stExpander"]::before {
         content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%;
         background: linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
-        border-radius: 24px 24px 50% 50%; pointer-events: none; z-index: 0;
+        border-radius: 24px 24px 50% 50%; /* 상단 곡면 빛 반사 */
+        pointer-events: none; z-index: 0;
     }
     .neo-card > *, [data-testid="stMetric"] > *, .ai-report-box > *, [data-testid="stExpander"] > * { position: relative; z-index: 1; }
 
+    /* [hover 효과] 살짝 떠오르고 네온 글로우 깊어짐 */
     .neo-card:hover, [data-testid="stMetric"]:hover, .ai-report-box:hover, [data-testid="stExpander"]:hover {
         transform: translateY(-2px);
         box-shadow: 
-            0 16px 56px rgba(60,70,200,0.18),
-            inset 0 1.5px 0 rgba(255,255,255,0.90),
+            0 16px 56px rgba(60,70,200,0.18), /* 더 퍼지는 푸른/퍼플 네온 그림자 */
+            inset 0 1.5px 0 rgba(255,255,255,0.90), /* 상단 빛 반사선 유지 */
             inset 0 -1px 0 rgba(200,210,230,0.20) !important;
     }
 
+    /* [카드 안의 inset 박스] 한 겹 더 겹친 유리 */
     .neo-inset-box {
         position: relative;
         background: rgba(255, 255, 255, 0.15) !important;
@@ -280,17 +287,19 @@ st.markdown("""<style>
     .neo-inset-box::before {
         content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%;
         background: linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
-        border-radius: 20px 20px 50% 50%; pointer-events: none; z-index: 0;
+        border-radius: 20px 20px 50% 50%;
+        pointer-events: none; z-index: 0;
     }
     .neo-inset-box > * { position: relative; z-index: 1; }
 
+    /* [버튼] 일반/강조 모두 알약 모양 (Pill Shape) */
     .stButton > button, div.row-widget.stRadio > div > label {
         position: relative;
         background: rgba(255, 255, 255, 0.25) !important;
         backdrop-filter: blur(36px) saturate(160%) brightness(1.05) !important;
         -webkit-backdrop-filter: blur(36px) saturate(160%) brightness(1.05) !important;
         border: 1px solid rgba(255, 255, 255, 0.55) !important;
-        border-radius: 50px !important; 
+        border-radius: 50px !important; /* 알약 모양 */
         box-shadow: 0 4px 12px rgba(0,0,0,0.10), inset 0 1.5px 0 rgba(255,255,255,0.90) !important;
         overflow: hidden !important;
         color: var(--accent) !important;
@@ -301,7 +310,8 @@ st.markdown("""<style>
     .stButton > button::before, div.row-widget.stRadio > div > label::before {
         content: ''; position: absolute; top: 0; left: 0; right: 0; height: 45%;
         background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, transparent 100%);
-        border-radius: 50px 50px 0 0; pointer-events: none; z-index: 0;
+        border-radius: 50px 50px 0 0;
+        pointer-events: none; z-index: 0;
     }
     .stButton > button > *, div.row-widget.stRadio > div > label > * { position: relative; z-index: 1; }
     
@@ -310,15 +320,18 @@ st.markdown("""<style>
         box-shadow: 0 8px 24px rgba(59,91,219,0.25), inset 0 1.5px 0 rgba(255,255,255,0.95) !important;
     }
     div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) {
+        /* 강조 라디오: 그라데이션 + 네온 글로우 */
         background: linear-gradient(135deg, rgba(59,91,219,0.15), rgba(59,91,219,0.05)) !important;
         border-color: var(--accent) !important;
         box-shadow: 0 0 0 2px rgba(59,91,219,0.3), 0 8px 24px rgba(59,91,219,0.25), inset 0 1.5px 0 rgba(255,255,255,0.9) !important;
     }
     div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) p { color: var(--accent) !important; font-weight: 800 !important; }
 
+    /* 리스트 표 UI */
     .check-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.4); font-size: 0.95em; color: var(--text-body); }
     .check-value { font-family: 'DM Mono', monospace; font-weight: 800; color: var(--accent); }
     
+    /* 입력창 및 데이터에디터 투명화 */
     [data-testid="stNumberInput"] > div > div, [data-testid="stTextInput"] > div > div { background: rgba(255,255,255,0.25) !important; border: 1px solid rgba(255,255,255,0.55) !important; border-radius: 12px !important; color: var(--text-main) !important; }
     [data-testid="stFileUploader"] { background: rgba(255,255,255,0.15) !important; border: 1px dashed rgba(255,255,255,0.55) !important; border-radius: 16px !important; }
     
@@ -326,6 +339,7 @@ st.markdown("""<style>
     div[data-testid="stMetricDelta"]>div { color: var(--accent) !important; font-weight: 700; }
 </style>""", unsafe_allow_html=True)
 
+# CSS for HTML Components (iframe)
 LG_BG = """background: repeating-linear-gradient(105deg, rgba(255,255,255,0.0) 0px, rgba(255,255,255,0.12) 1px, rgba(255,255,255,0.0) 2px, rgba(255,255,255,0.0) 18px), linear-gradient(160deg, #E8E9EC 0%, #F4F5F7 8%, #C8CACD 18%, #EAECEE 28%, #F0F1F3 48%, #D0D2D5 56%, #FFFFFF 63%, #E6E8EA 80%, #DCDEE0 100%) !important;"""
 LG_CSS_BASE = f"""<style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
@@ -385,7 +399,7 @@ st.markdown(f"""
     </div>
 </div>""", unsafe_allow_html=True)
 
-# 차트용 변수
+# 차트용 변수 (배경 투명화 필수)
 b_color = 'rgba(0,0,0,0)'
 t_color = '#3A3A3A'
 line_c = '#3B5BDB'
