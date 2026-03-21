@@ -94,6 +94,8 @@ for ticker, price in rt_prices.items():
         last_row[ticker] = price; rt_injected.append(ticker)
 if 'QQQ' in rt_injected:
     last_row['QQQ_DD'] = (last_row['QQQ'] / last_row['QQQ_High52']) - 1
+if 'HYG' in rt_injected and 'IEF' in rt_injected:
+    last_row['HYG_IEF_Ratio'] = last_row['HYG'] / last_row['IEF']
 rt_ok    = len(rt_injected) >= 3
 rt_label = f"🟢 실시간 ({len(rt_injected)}개 종목)" if rt_ok else "🟡 지연 데이터 (장외/캐시)"
 
@@ -114,32 +116,51 @@ def get_target_v45(row):
     return 2
 
 df['Target'] = df.apply(get_target_v45, axis=1)
-res = []; curr = 3; pend = None; cnt = 0
+res = []; hist_curr = 3; pend = None; cnt = 0
 for t in df['Target']:
-    if t > curr: curr = t; pend = None; cnt = 0
-    elif t < curr:
+    if t > hist_curr: hist_curr = t; pend = None; cnt = 0
+    elif t < hist_curr:
         if t == pend:
             cnt += 1
-            if cnt >= 5: curr = t; pend = None; cnt = 0
+            if cnt >= 5: hist_curr = t; pend = None; cnt = 0
         else: pend = t; cnt = 1
     else: pend = None; cnt = 0
-    res.append(curr)
+    res.append(hist_curr)
 df['Regime'] = pd.Series(res, index=df.index).shift(1).bfill()
 
-curr_regime   = int(df.iloc[-1]['Regime'])
-target_regime = int(df.iloc[-1]['Target'])
+# ── 핵심 수정: 실시간 가격 주입 후 레짐을 다시 계산 ──────────────
+# curr_regime: 5일 확인 필터를 거친 '확정 레짐' (실제 매매 기준)
+# live_regime: 실시간 가격 기준 '즉시 읽기' (하향은 즉시 반영)
+live_regime   = get_target_v45(last_row)            # 실시간 재계산
+hist_regime   = int(df.iloc[-1]['Regime'])           # 히스토리 확정값
+# 하향(악화)은 즉시 반영, 상향(개선)은 히스토리 확정값 유지
+curr_regime   = live_regime if live_regime > hist_regime else hist_regime
+target_regime = live_regime
+
 smh_c1 = smh_close > smh_ma50
 smh_c2 = (smh_3m > 0.05 or smh_1m > 0.10)
 smh_c3 = smh_rsi > 50
 smh_cond = smh_c1 and smh_c2 and smh_c3
 
+# ── v4.4 배분표 (Zero-Cash Optimization) ─────────────────────────
+# R1: 현금 5% → SPY 5% 대체
+# R2: 현금 10% → SPY 5% + GLD 5% 대체  (현금 5% 유지)
+# R3/R4: 현금 유지 (약세장에서 현금은 실탄)
 def get_weights_v45(reg, smh_ok):
     w = {t: 0.0 for t in ASSET_LIST}
     semi = 'SOXL' if smh_ok else 'USD'
-    if reg == 1:   w['TQQQ'],w[semi],w['QLD'],w['SSO'],w['GLD'],w['SPY'] = 0.30,0.20,0.20,0.15,0.10,0.05
-    elif reg == 2: w['TQQQ'],w['QLD'],w['SSO'],w['GLD'],w['USD'],w['SPY'] = 0.15,0.35,0.20,0.20,0.10,0.00
-    elif reg == 3: w['GLD'],w['CASH'],w['QQQ'] = 0.50,0.35,0.15
-    elif reg == 4: w['GLD'],w['CASH'],w['QQQ'] = 0.50,0.40,0.10
+    if reg == 1:
+        # TQQQ 30, SOXL/USD 20, QLD 20, SSO 15, GLD 10, SPY 5 (현금 0)
+        w['TQQQ'], w[semi], w['QLD'], w['SSO'], w['GLD'], w['SPY'] = 0.30, 0.20, 0.20, 0.15, 0.10, 0.05
+    elif reg == 2:
+        # TQQQ 15, QLD 30, SSO 25, USD 10, GLD 15, SPY 5 (현금 0)
+        w['TQQQ'], w['QLD'], w['SSO'], w['USD'], w['GLD'], w['SPY'] = 0.15, 0.30, 0.25, 0.10, 0.15, 0.05
+    elif reg == 3:
+        # GLD 50, CASH 35, QQQ 15 — 현금 유지 (약세장 실탄)
+        w['GLD'], w['CASH'], w['QQQ'] = 0.50, 0.35, 0.15
+    elif reg == 4:
+        # GLD 50, CASH 40, QQQ 10 — 최대 방어
+        w['GLD'], w['CASH'], w['QQQ'] = 0.50, 0.40, 0.10
     return w
 target_weights = get_weights_v45(curr_regime, smh_cond)
 
@@ -465,6 +486,16 @@ radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15),
                     paper_bgcolor=b_color, plot_bgcolor=b_color, font=dict(family="Pretendard", color=t_color))
 regime_info  = {1:("🟢 R1 (강세장)","풀 가동"),2:("🟡 R2 (조정장)","TQQQ 15% 방어"),
                 3:("🟠 R3 (하락장)","현금/금 대피"),4:("🔴 R4 (패닉장)","최대 방어")}
+
+# 레짐 전환 안내 메시지 생성
+if curr_regime == live_regime:
+    regime_committee_msg = "모든 조건이 현재 국면에 부합합니다."
+elif live_regime > curr_regime:
+    # 하향 즉시 반영됨 — 이 경우는 curr_regime == live_regime이므로 도달 불가
+    regime_committee_msg = f"R{live_regime} 하향 즉시 반영 중입니다."
+else:
+    # 상향(개선): 5일 확인 대기 중
+    regime_committee_msg = f"R{live_regime} 신호 감지 — 5일 확인 대기 중 (현재 R{curr_regime} 배분 유지)"
 
 # ==========================================
 # Liquid Glass HTML 생성 헬퍼
@@ -807,10 +838,7 @@ if page == "📊 시장 분석관 (Home)":
 
     if is_glass_style:
         # ── Liquid Glass: components.html ──────────────────
-        regime_msg  = "모든 조건이 현재 국면에 부합합니다." if curr_regime == target_regime else f"R{target_regime} 전환 대기 중입니다."
-        soxl_title  = "🔥 승인: SOXL 편입" if smh_cond else "🛡️ 기각: USD 편입"
-        soxl_strat  = "3배수 공격적 진입" if smh_cond else "변동성 방어용 2배수"
-        soxl_color  = "#16A34A" if smh_cond else "#3B4FC8"
+        regime_msg  = regime_committee_msg
         weight_rows = "".join([f'<div class="crow"><span class="clabel">{k}</span><span class="cval" style="color:#3B4FC8;">{v*100:.0f}%</span></div>'
                                 for k,v in target_weights.items() if v > 0])
         ck_r = (_lg_ck('① VIX 패닉 임계점 (&lt; 40)',       f'{vix_close:.2f}',                      vix_close<=40) +
@@ -831,10 +859,7 @@ if page == "📊 시장 분석관 (Home)":
             color = "#16A34A" if passed else "#DC2626"
             return f'<div class="crow"><span class="clabel">{label}</span><span class="cval" style="color:{color};">{val} {icon}</span></div>'
 
-        regime_msg  = "모든 조건이 현재 국면에 부합합니다." if curr_regime == target_regime else f"R{target_regime} 전환 대기 중입니다."
-        soxl_title  = "🔥 승인: SOXL 편입" if smh_cond else "🛡️ 기각: USD 편입"
-        soxl_strat  = "3배수 공격적 진입" if smh_cond else "변동성 방어용 2배수"
-        soxl_color  = "#16A34A" if smh_cond else "#2563EB"
+        regime_msg  = regime_committee_msg
 
         regime_glow = {1:"0 0 0 2px rgba(37,99,235,0.50),0 0 28px rgba(37,99,235,0.25)",
                        2:"0 0 0 2px rgba(249,115,22,0.50),0 0 28px rgba(249,115,22,0.25)",
@@ -915,7 +940,7 @@ body{{font-family:'DM Sans',sans-serif;background:#E8E8ED;padding:12px 6px 4px 6
                 {render_row_std('③ 추세 정배열 (50MA ≥ 200MA)',   f"${qqq_ma50:.0f} vs ${qqq_ma200:.0f}",  qqq_ma50>=qqq_ma200)}
                 {render_row_std('④ 노이즈 필터 (20일선 < 22)',     f"{vix_ma20:.2f}",                       vix_ma20<22)}
                 <div style="margin-top:auto;padding:15px;font-size:0.85em;color:{h_muted};text-align:center;background-color:{msg_bg};border-radius:8px;">
-                    💡 위원회: {"모든 조건이 현재 국면에 부합합니다." if curr_regime==target_regime else f"R{target_regime} 전환 대기 중입니다."}
+                    💡 위원회: {regime_committee_msg}
                 </div>
             </div>""", unsafe_allow_html=True)
         with c2:
