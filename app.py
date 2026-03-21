@@ -11,7 +11,8 @@ import urllib.parse
 import xml.etree.ElementTree as ET
 import warnings
 import google.generativeai as genai
-import json  # 🚨 백업/복구를 위한 JSON 라이브러리 추가
+import json
+import os  # 파일 자동 저장을 위한 os 라이브러리 추가
 
 warnings.filterwarnings('ignore')
 
@@ -25,9 +26,26 @@ CORE_TICKERS   = ['QQQ','TQQQ','SOXL','USD','QLD','SSO','SPY','SMH','GLD','^VIX'
 TICKERS        = CORE_TICKERS + SECTOR_TICKERS
 ASSET_LIST     = ['TQQQ','SOXL','USD','QLD','SSO','SPY','QQQ','GLD','CASH']
 
-# 🚨 포트폴리오 데이터를 기억하기 위한 세션 스테이트 초기화
+# 🚨 [핵심 업데이트] 포트폴리오 자동 로드 (Auto-Load)
+PORTFOLIO_FILE = 'portfolio_autosave.json'
+
 if 'portfolio' not in st.session_state:
-    st.session_state.portfolio = {asset: 0.0 for asset in ASSET_LIST}
+    if os.path.exists(PORTFOLIO_FILE):
+        try:
+            with open(PORTFOLIO_FILE, 'r') as f:
+                st.session_state.portfolio = json.load(f)
+        except:
+            st.session_state.portfolio = {asset: 0.0 for asset in ASSET_LIST}
+    else:
+        st.session_state.portfolio = {asset: 0.0 for asset in ASSET_LIST}
+
+# 🚨 포트폴리오 자동 저장 함수 (Auto-Save)
+def save_portfolio_to_disk():
+    try:
+        with open(PORTFOLIO_FILE, 'w') as f:
+            json.dump(st.session_state.portfolio, f)
+    except:
+        pass
 
 @st.cache_data(ttl=3600)
 def load_data():
@@ -205,7 +223,7 @@ st.sidebar.markdown(f"""
         Powered by AMLS V4.5 Engine<br>&copy; 2026 SEYOON.</div>""", unsafe_allow_html=True)
 
 # ==========================================
-# 3. CSS (기존 디자인 유지)
+# 3. CSS
 # ==========================================
 neo_tactile_css = """<style>
     :root{--base-bg:#EBE5DF;--text-main:#3A2E28;--accent-primary:#B26A47;
@@ -413,227 +431,41 @@ LG_CSS_BASE = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 * { margin:0; padding:0; box-sizing:border-box; }
-body {
-  font-family: 'DM Sans', sans-serif;
-  """ + LG_BG + """
-  padding: 12px 6px 4px 6px;
-  min-height: 100vh;
-}
-.lg-card {
-  position: relative;
-  background: rgba(255,255,255,0.30);
-  backdrop-filter: blur(36px) saturate(160%) brightness(1.04);
-  -webkit-backdrop-filter: blur(36px) saturate(160%) brightness(1.04);
-  border-radius: 28px;
-  border: 1px solid rgba(255,255,255,0.72);
-  box-shadow:
-    0 8px 40px rgba(0,0,0,0.08),
-    0 2px 8px  rgba(0,0,0,0.05),
-    inset 0 1.5px 0 rgba(255,255,255,0.95),
-    inset 0 -1px 0 rgba(255,255,255,0.20),
-    inset 1px 0 0 rgba(255,255,255,0.60),
-    inset -1px 0 0 rgba(255,255,255,0.40);
-  overflow: hidden;
-  transition: transform 0.3s, box-shadow 0.3s;
-}
-.lg-card:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 16px 56px rgba(60,70,200,0.22),
-    0 4px 16px rgba(0,0,0,0.12),
-    inset 0 1.5px 0 rgba(255,255,255,0.98),
-    inset 0 -1px 0 rgba(160,170,255,0.22);
-}
-.lg-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 42%;
-  background: linear-gradient(180deg,
-    rgba(255,255,255,0.38) 0%,
-    rgba(255,255,255,0.10) 60%,
-    rgba(255,255,255,0.00) 100%);
-  border-radius: 28px 28px 60% 60%;
-  pointer-events: none;
-  z-index: 1;
-}
-.lg-card::after {
-  content: '';
-  position: absolute;
-  top: -1px; left: -1px; right: -1px; bottom: -1px;
-  border-radius: 29px;
-  background: linear-gradient(135deg,
-    rgba(255,255,255,0.60) 0%,
-    rgba(220,225,235,0.20) 25%,
-    rgba(255,255,255,0.05) 50%,
-    rgba(200,205,215,0.15) 75%,
-    rgba(255,255,255,0.50) 100%);
-  z-index: -1;
-  pointer-events: none;
-}
-.lg-card-inner {
-  position: relative;
-  z-index: 2;
-  padding: 22px 20px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-.lg-title {
-  font-size: 1.12em;
-  font-weight: 700;
-  color: #1C1C1E;
-  border-bottom: 1px solid rgba(0,0,0,0.10);
-  padding-bottom: 11px;
-  margin-bottom: 14px;
-}
-.lg-inset {
-  position: relative;
-  background: rgba(255,255,255,0.16);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(255,255,255,0.55);
-  border-radius: 20px;
-  padding: 16px 14px;
-  text-align: center;
-  margin-bottom: 16px;
-  box-shadow:
-    inset 0 1.5px 0 rgba(255,255,255,0.80),
-    0 4px 20px rgba(0,0,0,0.08);
-  overflow: hidden;
-}
-.lg-inset::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; height: 45%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, transparent 100%);
-  border-radius: 20px 20px 50% 50%;
-  pointer-events: none;
-}
-.lg-inset h2 {
-  font-size: 1.4em; font-weight: 700; margin-bottom: 4px;
-  position: relative; z-index: 1;
-}
-.lg-inset p {
-  font-size: 0.87em; color: #5A5A5A; font-weight: 500;
-  position: relative; z-index: 1;
-}
-.crow {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(0,0,0,0.08);
-  font-size: 0.875em;
-}
+body { font-family: 'DM Sans', sans-serif; """ + LG_BG + """ padding: 12px 6px 4px 6px; min-height: 100vh; }
+.lg-card { position: relative; background: rgba(255,255,255,0.30); backdrop-filter: blur(36px) saturate(160%) brightness(1.04); -webkit-backdrop-filter: blur(36px) saturate(160%) brightness(1.04); border-radius: 28px; border: 1px solid rgba(255,255,255,0.72); box-shadow: 0 8px 40px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.05), inset 0 1.5px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(255,255,255,0.20), inset 1px 0 0 rgba(255,255,255,0.60), inset -1px 0 0 rgba(255,255,255,0.40); overflow: hidden; transition: transform 0.3s, box-shadow 0.3s; }
+.lg-card:hover { transform: translateY(-2px); box-shadow: 0 16px 56px rgba(60,70,200,0.22), 0 4px 16px rgba(0,0,0,0.12), inset 0 1.5px 0 rgba(255,255,255,0.98), inset 0 -1px 0 rgba(160,170,255,0.22); }
+.lg-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 42%; background: linear-gradient(180deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.10) 60%, rgba(255,255,255,0.00) 100%); border-radius: 28px 28px 60% 60%; pointer-events: none; z-index: 1; }
+.lg-card::after { content: ''; position: absolute; top: -1px; left: -1px; right: -1px; bottom: -1px; border-radius: 29px; background: linear-gradient(135deg, rgba(255,255,255,0.60) 0%, rgba(220,225,235,0.20) 25%, rgba(255,255,255,0.05) 50%, rgba(200,205,215,0.15) 75%, rgba(255,255,255,0.50) 100%); z-index: -1; pointer-events: none; }
+.lg-card-inner { position: relative; z-index: 2; padding: 22px 20px; height: 100%; display: flex; flex-direction: column; }
+.lg-title { font-size: 1.12em; font-weight: 700; color: #1C1C1E; border-bottom: 1px solid rgba(0,0,0,0.10); padding-bottom: 11px; margin-bottom: 14px; }
+.lg-inset { position: relative; background: rgba(255,255,255,0.16); backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%); border: 1px solid rgba(255,255,255,0.55); border-radius: 20px; padding: 16px 14px; text-align: center; margin-bottom: 16px; box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.80), 0 4px 20px rgba(0,0,0,0.08); overflow: hidden; }
+.lg-inset::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 45%; background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, transparent 100%); border-radius: 20px 20px 50% 50%; pointer-events: none; }
+.lg-inset h2 { font-size: 1.4em; font-weight: 700; margin-bottom: 4px; position: relative; z-index: 1; }
+.lg-inset p { font-size: 0.87em; color: #5A5A5A; font-weight: 500; position: relative; z-index: 1; }
+.crow { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.08); font-size: 0.875em; }
 .clabel { color: #2A2A2A; font-weight: 500; }
 .cval   { font-family: 'DM Mono', monospace; font-weight: 600; font-size: 0.95em; }
-.footer-msg {
-  margin-top: auto; padding: 11px 14px;
-  font-size: 0.81em; color: #3A3A3A;
-  text-align: center;
-  background: rgba(0,0,0,0.04);
-  border-radius: 14px;
-  border: 1px solid rgba(0,0,0,0.08);
-  font-weight: 500;
-}
-.footer-dashed {
-  margin-top: auto; padding: 11px 14px;
-  font-size: 0.81em; color: #5A5A5A;
-  text-align: center;
-  border-top: 1px dashed rgba(0,0,0,0.12);
-  font-weight: 500;
-}
-.weight-header {
-  display: flex; justify-content: space-between;
-  font-size: 0.77em; font-weight: 700; color: #8A8A8A;
-  border-bottom: 1.5px solid rgba(0,0,0,0.10);
-  padding-bottom: 7px; margin-bottom: 2px; letter-spacing: 0.4px;
-}
-.badge {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 7px 13px; border-radius: 12px;
-  font-size: 0.88em; font-weight: 600;
-  width: 100%; justify-content: center;
-}
-.pack-cell {
-  position: relative;
-  background: rgba(255,255,255,0.08);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.42);
-  border-radius: 20px;
-  padding: 13px 13px 11px 13px;
-  box-shadow:
-    0 4px 20px rgba(0,0,0,0.10),
-    inset 0 1.5px 0 rgba(255,255,255,0.75);
-  overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
+.footer-msg { margin-top: auto; padding: 11px 14px; font-size: 0.81em; color: #3A3A3A; text-align: center; background: rgba(0,0,0,0.04); border-radius: 14px; border: 1px solid rgba(0,0,0,0.08); font-weight: 500; }
+.footer-dashed { margin-top: auto; padding: 11px 14px; font-size: 0.81em; color: #5A5A5A; text-align: center; border-top: 1px dashed rgba(0,0,0,0.12); font-weight: 500; }
+.weight-header { display: flex; justify-content: space-between; font-size: 0.77em; font-weight: 700; color: #8A8A8A; border-bottom: 1.5px solid rgba(0,0,0,0.10); padding-bottom: 7px; margin-bottom: 2px; letter-spacing: 0.4px; }
+.badge { display: inline-flex; align-items: center; gap: 5px; padding: 7px 13px; border-radius: 12px; font-size: 0.88em; font-weight: 600; width: 100%; justify-content: center; }
+.pack-cell { position: relative; background: rgba(255,255,255,0.08); backdrop-filter: blur(28px) saturate(180%); -webkit-backdrop-filter: blur(28px) saturate(180%); border: 1px solid rgba(255,255,255,0.42); border-radius: 20px; padding: 13px 13px 11px 13px; box-shadow: 0 4px 20px rgba(0,0,0,0.10), inset 0 1.5px 0 rgba(255,255,255,0.75); overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; }
 .pack-cell:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(0,0,0,0.16), inset 0 1.5px 0 rgba(255,255,255,0.88); }
-.pack-cell::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 40%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.28) 0%, transparent 100%);
-  border-radius: 20px 20px 50% 50%;
-  pointer-events: none;
-}
+.pack-cell::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%; background: linear-gradient(180deg, rgba(255,255,255,0.28) 0%, transparent 100%); border-radius: 20px 20px 50% 50%; pointer-events: none; }
 .pack-title { font-size: 0.81em; font-weight: 700; color: #1C1C1E; margin-bottom: 8px; position: relative; z-index: 1; }
-.lg-banner {
-  position: relative;
-  background: rgba(255,255,255,0.50);
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.70);
-  border-radius: 22px;
-  padding: 16px 22px;
-  margin-bottom: 14px;
-  box-shadow: 0 6px 28px rgba(0,0,0,0.08), inset 0 1.5px 0 rgba(255,255,255,0.90);
-  overflow: hidden;
-}
-.lg-banner::before {
-  content: '';
-  position: absolute; top:0; left:0; right:0; height:45%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.28) 0%, transparent 100%);
-  border-radius: 22px 22px 50% 50%;
-  pointer-events: none;
-}
+.lg-banner { position: relative; background: rgba(255,255,255,0.50); backdrop-filter: blur(32px) saturate(180%); -webkit-backdrop-filter: blur(32px) saturate(180%); border: 1px solid rgba(255,255,255,0.70); border-radius: 22px; padding: 16px 22px; margin-bottom: 14px; box-shadow: 0 6px 28px rgba(0,0,0,0.08), inset 0 1.5px 0 rgba(255,255,255,0.90); overflow: hidden; }
+.lg-banner::before { content: ''; position: absolute; top:0; left:0; right:0; height:45%; background: linear-gradient(180deg, rgba(255,255,255,0.28) 0%, transparent 100%); border-radius: 22px 22px 50% 50%; pointer-events: none; }
 .lg-banner h4 { color: #1C1C1E; font-size: 1.03em; margin-bottom: 5px; font-weight: 700; position: relative; z-index:1; }
 .lg-banner p  { color: #3A3A3A; font-size: 0.91em; line-height: 1.6; position: relative; z-index:1; }
-.ncard {
-  position: relative;
-  background: rgba(255,255,255,0.45);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.70);
-  border-radius: 20px;
-  padding: 15px 15px 13px 15px;
-  height: 140px;
-  display: flex; flex-direction: column; justify-content: space-between;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08), inset 0 1.5px 0 rgba(255,255,255,0.90);
-  overflow: hidden;
-  transition: transform 0.22s, box-shadow 0.22s;
-}
+.ncard { position: relative; background: rgba(255,255,255,0.45); backdrop-filter: blur(28px) saturate(180%); -webkit-backdrop-filter: blur(28px) saturate(180%); border: 1px solid rgba(255,255,255,0.70); border-radius: 20px; padding: 15px 15px 13px 15px; height: 140px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 20px rgba(0,0,0,0.08), inset 0 1.5px 0 rgba(255,255,255,0.90); overflow: hidden; transition: transform 0.22s, box-shadow 0.22s; }
 .ncard:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(0,0,0,0.14), inset 0 1.5px 0 rgba(255,255,255,0.95); }
-.ncard::before {
-  content: '';
-  position: absolute; top:0; left:0; right:0; height: 40%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 100%);
-  border-radius: 20px 20px 50% 50%;
-  pointer-events: none;
-}
+.ncard::before { content: ''; position: absolute; top:0; left:0; right:0; height: 40%; background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 100%); border-radius: 20px 20px 50% 50%; pointer-events: none; }
 .ntitle { font-size:0.89em; font-weight:600; line-height:1.44; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; color:#1C1C1E; position:relative; z-index:1; }
 .ntitle a { color:#1C1C1E; text-decoration:none; }
 .ntitle a:hover { color:#3B5BDB; }
 .ndate { font-size:0.77em; font-weight:600; color:#3B5BDB; margin-top:8px; flex-shrink:0; position:relative; z-index:1; }
 .section-title { font-size:1.03em; font-weight:700; color:#1C1C1E; margin-bottom:12px; padding-left:2px; }
-.badge-rt {
-  margin-left:auto;
-  background: rgba(0,0,0,0.06);
-  color: #1C1C1E;
-  border: 1px solid rgba(0,0,0,0.12);
-  border-radius: 10px;
-  padding: 4px 12px;
-  font-size: 0.8em; font-weight:600; white-space:nowrap;
-}
+.badge-rt { margin-left:auto; background: rgba(0,0,0,0.06); color: #1C1C1E; border: 1px solid rgba(0,0,0,0.12); border-radius: 10px; padding: 4px 12px; font-size: 0.8em; font-weight:600; white-space:nowrap; }
 </style>
 """
 
@@ -793,6 +625,7 @@ body{{font-family:'DM Sans',sans-serif;background:#E8E8ED;padding:12px 6px 4px 6
         components.html(tr_html, height=620, scrolling=False)
 
     else:
+        # ── Neo / Dark ──────────────────────────────────────
         with c1:
             msg_bg = 'transparent' if is_neo_style else 'rgba(139,92,246,0.1)'
             st.markdown(f"""
@@ -879,22 +712,23 @@ body{{font-family:'DM Sans',sans-serif;background:#E8E8ED;padding:12px 6px 4px 6
 # ------------------------------------------
 elif page == "💼 내 포트폴리오":
     st.subheader("💼 내 포트폴리오 & 리밸런싱 지침")
-    st.markdown("현재 보유 중인 자산 금액을 입력하면, 현재 국면(Regime)의 목표 비중에 맞춘 **정확한 리밸런싱(매수/매도) 가이드**를 계산해 드립니다.")
+    st.markdown("현재 보유 중인 자산 금액을 입력하면, **입력과 동시에 즉시 자동 저장**되며 목표 비중에 맞춘 **정확한 리밸런싱(매수/매도) 가이드**를 제시합니다.")
     
     col_up, col_down = st.columns(2)
     with col_up:
-        uploaded_file = st.file_uploader("📂 포트폴리오 복구 (JSON 백업 파일 업로드)", type="json")
+        uploaded_file = st.file_uploader("📂 포트폴리오 수동 복구 (기기 변경 시 JSON 업로드)", type="json")
         if uploaded_file is not None:
             try:
                 data = json.load(uploaded_file)
                 st.session_state.portfolio.update(data)
+                save_portfolio_to_disk()
                 st.success("포트폴리오가 성공적으로 복구되었습니다!")
             except:
                 st.error("파일 형식이 올바르지 않습니다.")
     with col_down:
         st.markdown("<br>", unsafe_allow_html=True)
         json_str = json.dumps(st.session_state.portfolio)
-        st.download_button(label="💾 현재 포트폴리오 백업 (JSON 다운로드)", 
+        st.download_button(label="💾 현재 포트폴리오 수동 백업 (JSON 다운로드)", 
                            data=json_str, 
                            file_name="portfolio_backup.json", 
                            mime="application/json",
@@ -905,9 +739,13 @@ elif page == "💼 내 포트폴리오":
     c1, c2 = st.columns([1, 2])
     
     with c1:
-        st.markdown("#### 📥 현재 자산 입력 (달러/원 자유)")
+        st.markdown("#### 📥 현재 자산 입력 (자동 저장)")
         for asset in ASSET_LIST:
+            # 입력값이 변경될 때마다 session_state가 갱신되고, 이후 즉시 로컬 파일로 저장됩니다.
             st.session_state.portfolio[asset] = st.number_input(f"{asset} 보유 금액", value=float(st.session_state.portfolio[asset]), step=100.0)
+        
+        # 반복문이 끝난 후, 갱신된 포트폴리오를 파일에 자동 저장
+        save_portfolio_to_disk()
             
     with c2:
         st.markdown("#### ⚖️ 리밸런싱 액션 지침")
@@ -967,7 +805,7 @@ elif page == "💼 내 포트폴리오":
             rebal_html += "</tbody></table></div>"
             st.markdown(rebal_html, unsafe_allow_html=True)
         else:
-            st.info("👈 왼쪽에 현재 보유 중인 자산 금액을 입력해주세요.")
+            st.info("👈 왼쪽에 현재 보유 중인 자산 금액을 입력해주세요. (입력 시 자동 저장됩니다)")
 
 # ------------------------------------------
 # PAGE 2: 8-PACK
