@@ -197,11 +197,11 @@ st.sidebar.markdown("<br><hr><br>", unsafe_allow_html=True)
 # ▼ 3개 테마로 확장
 ui_style = st.sidebar.radio(
     "🎨 UI 테마 선택",
-    ["Light Mode (Neo-Tactile)", "Dark Mode (Elegant Theme)", "Glass Mode (Frosted Glass)"]
+    ["Light Mode (Neo-Tactile)", "Dark Mode (Elegant Theme)", "Glass Mode (Frosted Glass)", "Transparent Mode (Acrylic)"]
 )
-is_neo_style   = ui_style == "Light Mode (Neo-Tactile)"
-is_glass_style = ui_style == "Glass Mode (Frosted Glass)"
-# is_dark_style  = not is_neo_style and not is_glass_style  (implied)
+is_neo_style         = ui_style == "Light Mode (Neo-Tactile)"
+is_glass_style       = ui_style == "Glass Mode (Frosted Glass)"
+is_transparent_style = ui_style == "Transparent Mode (Acrylic)"
 
 # ── 테마별 공통 색상 변수 ──────────────────────────────────
 if is_neo_style:
@@ -217,6 +217,13 @@ elif is_glass_style:
     h_muted        = "#6B7280"
     h_border       = "rgba(255,255,255,0.65)"
     h_shadow       = "0 1px 3px rgba(0,0,0,0.12)"
+    h_sidebar_text = "#1C1C1E"
+elif is_transparent_style:
+    h_color        = "#1C1C1E"
+    h_accent       = "#2563EB"
+    h_muted        = "#8E8E93"
+    h_border       = "rgba(0,0,0,0.07)"
+    h_shadow       = "0 1px 2px rgba(0,0,0,0.08)"
     h_sidebar_text = "#1C1C1E"
 else:  # dark
     h_color        = "#FFFFFF"
@@ -472,11 +479,184 @@ glass_frost_css = """
 </style>
 """
 
+# ▼ 새 테마: Transparent Mode (Acrylic)
+transparent_acrylic_css = """
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+    :root {
+        --base-bg: #E8E8ED;
+        --card-bg: rgba(255,255,255,0.92);
+        --card-bg-solid: #FFFFFF;
+        --inset-bg: #FFFFFF;
+        --text-main: #1C1C1E;
+        --text-muted: #8E8E93;
+        --accent-blue: #2563EB;
+        --accent-orange: #F97316;
+        --accent-green: #16A34A;
+        --accent-red: #DC2626;
+        --border-card: rgba(0,0,0,0.065);
+        --border-subtle: rgba(0,0,0,0.055);
+        --shadow-card: 0 2px 16px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04);
+        --shadow-hover: 0 8px 28px rgba(0,0,0,0.11), 0 2px 8px rgba(0,0,0,0.06);
+        --shadow-inset: inset 0 1px 3px rgba(0,0,0,0.06), inset 0 0 0 1px rgba(0,0,0,0.04);
+        --glow-blue:   0 0 0 2px rgba(37,99,235,0.45), 0 0 22px rgba(37,99,235,0.22);
+        --glow-orange: 0 0 0 2px rgba(249,115,22,0.50), 0 0 22px rgba(249,115,22,0.22);
+        --glow-red:    0 0 0 2px rgba(220,38,38,0.45),  0 0 22px rgba(220,38,38,0.20);
+        --glow-green:  0 0 0 2px rgba(22,163,74,0.40),  0 0 18px rgba(22,163,74,0.18);
+    }
+
+    /* ── 전체 앱 배경 ── */
+    .stApp {
+        background-color: var(--base-bg) !important;
+        color: var(--text-main);
+        font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* ── 사이드바 ── */
+    [data-testid="stSidebar"] {
+        background-color: rgba(240,240,245,0.97) !important;
+        border-right: 1px solid var(--border-card) !important;
+        box-shadow: 2px 0 12px rgba(0,0,0,0.05) !important;
+    }
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] label {
+        color: var(--text-main) !important;
+        font-weight: 600;
+    }
+
+    /* ── 사이드바 라디오 — 이미지의 pill 버튼 스타일 ── */
+    div.row-widget.stRadio > div > label {
+        background: rgba(255,255,255,0.95);
+        border-radius: 14px;
+        border: 1px solid var(--border-card);
+        box-shadow: var(--shadow-card);
+        transition: all 0.2s ease;
+        margin-bottom: 5px !important;
+    }
+    div.row-widget.stRadio > div > label:hover {
+        box-shadow: var(--glow-blue);
+        transform: translateY(-1px);
+    }
+    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) {
+        background: rgba(255,255,255,0.98) !important;
+        border: 1.5px solid rgba(37,99,235,0.5) !important;
+        box-shadow: var(--glow-blue) !important;
+    }
+    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) p {
+        color: var(--accent-blue) !important;
+    }
+
+    /* ── 카드 ── */
+    .neo-card {
+        background: var(--card-bg) !important;
+        border: 1px solid var(--border-card) !important;
+        border-radius: 22px !important;
+        padding: 24px !important;
+        height: 560px;
+        overflow-y: auto;
+        box-shadow: var(--shadow-card) !important;
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 20px;
+        transition: box-shadow 0.25s ease, transform 0.25s ease;
+    }
+    .neo-card:hover {
+        box-shadow: var(--shadow-hover) !important;
+        transform: translateY(-1px);
+    }
+
+    /* ── 인셋 박스 ── */
+    .neo-inset-box {
+        background: var(--inset-bg) !important;
+        border: 1px solid var(--border-card) !important;
+        border-radius: 16px !important;
+        padding: 18px !important;
+        text-align: center;
+        margin-bottom: 18px;
+        box-shadow: var(--shadow-inset) !important;
+    }
+
+    /* ── 체크 행 ── */
+    .check-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 11px 0;
+        border-bottom: 1px solid var(--border-subtle);
+        font-size: 0.92em;
+        color: var(--text-main);
+    }
+    .check-value {
+        font-family: 'DM Mono', 'Courier New', monospace;
+        font-weight: 700;
+        color: var(--accent-blue);
+    }
+
+    /* ── Metric 카드 ── */
+    [data-testid="stMetric"] {
+        background: var(--card-bg) !important;
+        border: 1px solid var(--border-card) !important;
+        border-radius: 18px !important;
+        box-shadow: var(--shadow-card) !important;
+        padding: 16px !important;
+        transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+    [data-testid="stMetric"]:hover {
+        box-shadow: var(--glow-blue) !important;
+        transform: translateY(-2px);
+    }
+    div[data-testid="stMetricValue"] > div { color: var(--text-main) !important; }
+    div[data-testid="stMetricDelta"] > div { color: var(--accent-blue) !important; }
+
+    /* ── 버튼 — 이미지의 파랑 글로우 pill 버튼 ── */
+    .stButton > button {
+        background: #FFFFFF !important;
+        border: 1.5px solid rgba(37,99,235,0.45) !important;
+        border-radius: 14px !important;
+        color: var(--accent-blue) !important;
+        font-weight: 600 !important;
+        box-shadow: var(--glow-blue) !important;
+        transition: all 0.2s ease !important;
+    }
+    .stButton > button:hover {
+        box-shadow: 0 0 0 2.5px rgba(37,99,235,0.65), 0 0 32px rgba(37,99,235,0.32) !important;
+        transform: translateY(-1px) !important;
+    }
+
+    /* ── Expander ── */
+    [data-testid="stExpander"] {
+        background: var(--card-bg) !important;
+        border: 1px solid var(--border-card) !important;
+        border-radius: 18px !important;
+        box-shadow: var(--shadow-card) !important;
+    }
+
+    /* ── Selectbox ── */
+    [data-testid="stSelectbox"] > div > div {
+        background: #FFFFFF !important;
+        border: 1px solid var(--border-card) !important;
+        border-radius: 12px !important;
+        box-shadow: var(--shadow-card) !important;
+    }
+
+    /* ── Alert ── */
+    [data-testid="stAlert"] {
+        background: rgba(255,255,255,0.95) !important;
+        border-radius: 14px !important;
+        border-left-width: 3px !important;
+        box-shadow: var(--shadow-card) !important;
+    }
+</style>
+"""
+
 # ── CSS 적용 ────────────────────────────────────────────────
 if is_neo_style:
     st.markdown(neo_tactile_css, unsafe_allow_html=True)
 elif is_glass_style:
     st.markdown(glass_frost_css, unsafe_allow_html=True)
+elif is_transparent_style:
+    st.markdown(transparent_acrylic_css, unsafe_allow_html=True)
 else:
     st.markdown(elegant_dark_css, unsafe_allow_html=True)
 
@@ -494,6 +674,8 @@ if is_neo_style:
     edition_label = "Neo-Tactile"
 elif is_glass_style:
     edition_label = "Frosted Glass"
+elif is_transparent_style:
+    edition_label = "Acrylic"
 else:
     edition_label = "Elegant Dark"
 
@@ -525,7 +707,7 @@ if is_neo_style:
         4: 'rgba(178,106,71,0.20)',
     }
 elif is_glass_style:
-    b_color     = 'rgba(255,255,255,0.0)'   # plotly 배경 투명 → glass card 배경 보임
+    b_color     = 'rgba(255,255,255,0.0)'
     t_color     = '#1C1C1E'
     line_c      = '#2563EB'
     dash_c      = '#F97316'
@@ -535,6 +717,18 @@ elif is_glass_style:
         2: 'rgba(37,99,235,0.05)',
         3: 'rgba(249,115,22,0.08)',
         4: 'rgba(239,68,68,0.12)',
+    }
+elif is_transparent_style:
+    b_color     = 'rgba(255,255,255,0.0)'  # 투명 → 카드 흰색 배경 비침
+    t_color     = '#1C1C1E'
+    line_c      = '#2563EB'
+    dash_c      = '#F97316'
+    rsi_low_c   = '#16A34A'
+    regime_colors = {
+        1: 'rgba(0,0,0,0.0)',
+        2: 'rgba(37,99,235,0.04)',
+        3: 'rgba(249,115,22,0.07)',
+        4: 'rgba(220,38,38,0.10)',
     }
 else:  # dark
     b_color     = '#1C1F28'
@@ -569,12 +763,12 @@ if page == "📊 시장 분석관 (Home)":
 
     c1, c2, c3 = st.columns([1.2, 1.2, 1])
 
-    # ── Glass 모드: st.components.v1.html로 완전 재구현 ──────
-    if is_glass_style:
+    # ── Glass / Transparent: components.html로 완전 재구현 ──
+    if is_glass_style or is_transparent_style:
 
         def ck(label, val, passed):
             icon  = "✔" if passed else "✕"
-            color = "#10B981" if passed else "#EF4444"
+            color = "#16A34A" if (passed and is_transparent_style) else "#10B981" if passed else "#EF4444" if not is_transparent_style else "#DC2626"
             return f"""
             <div class="crow">
               <span class="clabel">{label}</span>
@@ -590,151 +784,196 @@ if page == "📊 시장 분석관 (Home)":
         regime_msg    = "모든 조건이 현재 국면에 부합합니다." if curr_regime == target_regime else f"R{target_regime} 전환 대기 중입니다."
         soxl_title    = "🔥 승인: SOXL 편입" if smh_cond else "🛡️ 기각: USD 편입"
         soxl_strat    = "3배수 공격적 진입" if smh_cond else "변동성 방어용 2배수"
-        soxl_color    = "#10B981" if smh_cond else "#2563EB"
+        soxl_color    = "#16A34A" if (smh_cond and is_transparent_style) else "#10B981" if smh_cond else "#2563EB"
 
-        glass_html = f"""
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
+        # 투명 모드: 레짐별 글로우 색상 (이미지의 파랑/오렌지 글로우 버튼 재현)
+        if is_transparent_style:
+            regime_glow = {
+                1: "0 0 0 2px rgba(37,99,235,0.50), 0 0 28px rgba(37,99,235,0.25)",   # 강세: 파랑
+                2: "0 0 0 2px rgba(249,115,22,0.50), 0 0 28px rgba(249,115,22,0.25)", # 조정: 오렌지
+                3: "0 0 0 2px rgba(220,38,38,0.45),  0 0 28px rgba(220,38,38,0.22)",  # 하락: 빨강
+                4: "0 0 0 2px rgba(220,38,38,0.65),  0 0 36px rgba(220,38,38,0.35)",  # 패닉: 강한빨강
+            }[curr_regime]
+            soxl_glow = ("0 0 0 2px rgba(22,163,74,0.48), 0 0 24px rgba(22,163,74,0.22)"
+                         if smh_cond else
+                         "0 0 0 2px rgba(249,115,22,0.48), 0 0 24px rgba(249,115,22,0.22)")
+
+            body_bg   = "#E8E8ED"
+            card_bg   = "rgba(255,255,255,0.93)"
+            inset_bg  = "#FFFFFF"
+            card_bdr  = "1px solid rgba(0,0,0,0.065)"
+            card_shd  = "0 2px 16px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04)"
+            card_r    = "22px"
+            inset_shd = "inset 0 1px 4px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,1)"
+            inset_bdr = "1px solid rgba(0,0,0,0.06)"
+            inset_r   = "16px"
+            row_bdr   = "rgba(0,0,0,0.055)"
+            font_fam  = "'DM Sans', -apple-system, sans-serif"
+        else:  # glass
+            regime_glow = "none"
+            soxl_glow   = "none"
+            body_bg   = "#D1D5E8"
+            card_bg   = "rgba(255,255,255,0.45)"
+            inset_bg  = "rgba(255,255,255,0.80)"
+            card_bdr  = "1px solid rgba(255,255,255,0.82)"
+            card_shd  = "0 8px 32px rgba(31,38,135,0.10), 0 2px 8px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.95)"
+            card_r    = "24px"
+            inset_shd = "inset 0 2px 8px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,1)"
+            inset_bdr = "1px solid rgba(255,255,255,0.95)"
+            inset_r   = "18px"
+            row_bdr   = "rgba(0,0,0,0.055)"
+            font_fam  = "'DM Sans', sans-serif"
+
+        extra_body_style = (
+            """
+  background:
+    radial-gradient(ellipse at 15% 10%, rgba(147,197,253,0.55) 0%, transparent 45%),
+    radial-gradient(ellipse at 85% 85%, rgba(253,186,116,0.45) 0%, transparent 45%),
+    radial-gradient(ellipse at 80% 10%, rgba(196,181,253,0.30) 0%, transparent 35%),
+    #D1D5E8;"""
+            if is_glass_style else f"background:{body_bg};"
+        )
+        backdrop_style = "backdrop-filter: blur(28px) saturate(200%); -webkit-backdrop-filter: blur(28px) saturate(200%);" if is_glass_style else ""
+
+        cards_html = f"""
+<!DOCTYPE html><html><head><meta charset="UTF-8">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  * {{ margin:0; padding:0; box-sizing:border-box; }}
-
-  body {{
-    font-family: 'DM Sans', sans-serif;
-    min-height: 600px;
-    background:
-      radial-gradient(ellipse at 15% 10%,  rgba(147,197,253,0.55) 0%, transparent 45%),
-      radial-gradient(ellipse at 85% 85%,  rgba(253,186,116,0.45) 0%, transparent 45%),
-      radial-gradient(ellipse at 80% 10%,  rgba(196,181,253,0.30) 0%, transparent 35%),
-      radial-gradient(ellipse at 20% 90%,  rgba(110,231,183,0.20) 0%, transparent 35%),
-      #D1D5E8;
-    padding: 16px 8px 0 8px;
-  }}
-
-  .grid {{
-    display: grid;
-    grid-template-columns: 1.2fr 1.2fr 1fr;
-    gap: 14px;
-    align-items: start;
-  }}
-
-  /* ── Glassmorphism 카드 ── */
-  .card {{
-    background: rgba(255,255,255,0.45);
-    backdrop-filter: blur(28px) saturate(200%);
-    -webkit-backdrop-filter: blur(28px) saturate(200%);
-    border: 1px solid rgba(255,255,255,0.82);
-    border-radius: 24px;
-    padding: 22px 20px;
-    height: 560px;
-    display: flex;
-    flex-direction: column;
-    box-shadow:
-      0 8px 32px rgba(31,38,135,0.10),
-      0 2px 8px  rgba(0,0,0,0.05),
-      inset 0 1px 0 rgba(255,255,255,0.95);
-    overflow: hidden;
-  }}
-
-  .card-title {{
-    font-size: 1.15em;
-    font-weight: 700;
-    color: #1C1C1E;
-    border-bottom: 1.5px solid rgba(0,0,0,0.07);
-    padding-bottom: 11px;
-    margin-bottom: 14px;
-  }}
-
-  /* ── Inset 박스 ── */
-  .inset {{
-    background: rgba(255,255,255,0.80);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.95);
-    border-radius: 18px;
-    padding: 18px 14px;
-    text-align: center;
-    margin-bottom: 16px;
-    box-shadow:
-      inset 0 2px 8px rgba(0,0,0,0.05),
-      inset 0 1px 0 rgba(255,255,255,1),
-      0 4px 16px rgba(37,99,235,0.06);
-  }}
-  .inset h2 {{
-    font-size: 1.45em;
-    font-weight: 700;
-    margin-bottom: 4px;
-  }}
-  .inset p {{
-    font-size: 0.88em;
-    color: #6B7280;
-    font-weight: 500;
-  }}
-
-  .section-label {{
-    font-size: 0.85em;
-    font-weight: 700;
-    color: #1C1C1E;
-    margin-bottom: 4px;
-    letter-spacing: 0.2px;
-  }}
-
-  /* ── 체크 행 ── */
-  .crow {{
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(0,0,0,0.055);
-    font-size: 0.875em;
-  }}
-  .clabel {{ color: #374151; font-weight: 500; }}
-  .cval   {{ font-family: 'DM Mono','Courier New',monospace; font-weight: 700; font-size:0.95em; }}
-
-  /* ── 하단 메시지 ── */
-  .footer-msg {{
-    margin-top: auto;
-    padding: 12px 14px;
-    font-size: 0.82em;
-    color: #6B7280;
-    text-align: center;
-    background: rgba(37,99,235,0.06);
-    border-radius: 12px;
-    font-weight: 500;
-  }}
-  .footer-dashed {{
-    margin-top: auto;
-    padding: 12px 14px;
-    font-size: 0.82em;
-    color: #6B7280;
-    text-align: center;
-    border-top: 1.5px dashed rgba(0,0,0,0.12);
-    font-weight: 500;
-  }}
-
-  /* ── 비중 테이블 헤더 ── */
-  .weight-header {{
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.78em;
-    font-weight: 700;
-    color: #9CA3AF;
-    border-bottom: 1.5px solid rgba(0,0,0,0.09);
-    padding-bottom: 7px;
-    margin-bottom: 2px;
-    letter-spacing: 0.4px;
-  }}
-</style>
-</head>
-<body>
+* {{ margin:0; padding:0; box-sizing:border-box; }}
+body {{
+  font-family: {font_fam};
+  min-height: 600px;
+  {extra_body_style}
+  padding: 16px 8px 0 8px;
+}}
+.grid {{
+  display: grid;
+  grid-template-columns: 1.2fr 1.2fr 1fr;
+  gap: 14px;
+  align-items: start;
+}}
+.card {{
+  background: {card_bg};
+  {backdrop_style}
+  border: {card_bdr};
+  border-radius: {card_r};
+  padding: 22px 20px;
+  height: 560px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: {card_shd};
+  overflow: hidden;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}}
+.card:hover {{
+  transform: translateY(-1px);
+}}
+.card-title {{
+  font-size: 1.12em;
+  font-weight: 700;
+  color: #1C1C1E;
+  border-bottom: 1.5px solid rgba(0,0,0,0.06);
+  padding-bottom: 11px;
+  margin-bottom: 14px;
+}}
+/* 레짐 인셋 — 투명모드는 글로우, Glass는 기존 */
+.inset {{
+  background: {inset_bg};
+  border: {inset_bdr};
+  border-radius: {inset_r};
+  padding: 18px 14px;
+  text-align: center;
+  margin-bottom: 16px;
+  box-shadow: {inset_shd};
+}}
+.inset-regime {{
+  background: {inset_bg};
+  border: {inset_bdr};
+  border-radius: {inset_r};
+  padding: 18px 14px;
+  text-align: center;
+  margin-bottom: 16px;
+  box-shadow: {regime_glow if is_transparent_style else inset_shd};
+}}
+.inset-soxl {{
+  background: {inset_bg};
+  border: {inset_bdr};
+  border-radius: {inset_r};
+  padding: 18px 14px;
+  text-align: center;
+  margin-bottom: 16px;
+  box-shadow: {soxl_glow if is_transparent_style else inset_shd};
+}}
+.inset h2 {{
+  font-size: 1.45em;
+  font-weight: 700;
+  margin-bottom: 4px;
+}}
+.inset p, .inset-regime p, .inset-soxl p {{
+  font-size: 0.88em;
+  color: #6B7280;
+  font-weight: 500;
+}}
+.inset-regime h2, .inset-soxl h2 {{
+  font-size: 1.45em;
+  font-weight: 700;
+  margin-bottom: 4px;
+}}
+.section-label {{
+  font-size: 0.83em;
+  font-weight: 700;
+  color: #1C1C1E;
+  margin-bottom: 4px;
+  letter-spacing: 0.2px;
+}}
+.crow {{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid {row_bdr};
+  font-size: 0.875em;
+}}
+.clabel {{ color: #374151; font-weight: 500; }}
+.cval   {{ font-family: 'DM Mono','Courier New',monospace; font-weight: 700; font-size:0.95em; }}
+.footer-msg {{
+  margin-top: auto;
+  padding: 12px 14px;
+  font-size: 0.82em;
+  color: #6B7280;
+  text-align: center;
+  background: rgba(37,99,235,0.05);
+  border-radius: 12px;
+  font-weight: 500;
+  border: 1px solid rgba(37,99,235,0.10);
+}}
+.footer-dashed {{
+  margin-top: auto;
+  padding: 12px 14px;
+  font-size: 0.82em;
+  color: #6B7280;
+  text-align: center;
+  border-top: 1.5px dashed rgba(0,0,0,0.10);
+  font-weight: 500;
+}}
+.weight-header {{
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78em;
+  font-weight: 700;
+  color: #9CA3AF;
+  border-bottom: 1.5px solid rgba(0,0,0,0.08);
+  padding-bottom: 7px;
+  margin-bottom: 2px;
+  letter-spacing: 0.4px;
+}}
+</style></head><body>
 <div class="grid">
 
   <!-- 카드 1: 현재 시장 국면 -->
   <div class="card">
     <div class="card-title">🏛️ 현재 시장 국면</div>
-    <div class="inset">
+    <div class="inset-regime">
       <h2 style="color:#2563EB;">{regime_title}</h2>
       <p>전략: {regime_strat}</p>
     </div>
@@ -749,7 +988,7 @@ if page == "📊 시장 분석관 (Home)":
   <!-- 카드 2: 반도체 판독관 -->
   <div class="card">
     <div class="card-title">💻 반도체(SOXL) 판독관</div>
-    <div class="inset">
+    <div class="inset-soxl">
       <h2 style="color:{soxl_color};">{soxl_title}</h2>
       <p>전략: {soxl_strat}</p>
     </div>
@@ -769,12 +1008,8 @@ if page == "📊 시장 분석관 (Home)":
     {weight_rows}
   </div>
 
-</div>
-</body>
-</html>
-"""
-        # 컬럼 레이아웃 무시하고 full-width로 렌더링
-        components.html(glass_html, height=610, scrolling=False)
+</div></body></html>"""
+        components.html(cards_html, height=610, scrolling=False)
 
     # ── Neo-Tactile / Dark 모드: 기존 방식 유지 ──────────────
     else:
@@ -784,7 +1019,6 @@ if page == "📊 시장 분석관 (Home)":
             else:
                 icon = "<span style='color:#34D399;'>✔</span>" if passed else "<span style='color:#F87171;'>✕</span>"
             return f"<div class='check-row'><span>{label}</span><span class='check-value'>{val} {icon}</span></div>"
-
         with c1:
             msg_bg = 'transparent' if is_neo_style else 'rgba(139,92,246,0.1)'
             st.markdown(f"""
@@ -962,8 +1196,38 @@ elif page == "🍫 8-Pack 레이더망":
             {'range':[75,100],'color':"rgba(52,211,153,0.7)"},
         ]
 
-    # ── Glass: 배너 + 8개 타이틀/뱃지를 components.html로 ───
-    if is_glass_style:
+    # ── Glass / Transparent: 배너 + 8개 타이틀/뱃지를 components.html로 ───
+    if is_glass_style or is_transparent_style:
+
+        # 투명 모드: 이미지처럼 흰색 pill 카드 + 글로우 뱃지
+        if is_transparent_style:
+            pack_body_bg = "#E8E8ED"
+            pack_banner_bg = "rgba(255,255,255,0.95)"
+            pack_banner_bdr = "1px solid rgba(0,0,0,0.065)"
+            pack_banner_shd = "0 2px 16px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04)"
+            pack_cell_bg  = "rgba(255,255,255,0.95)"
+            pack_cell_bdr = "1px solid rgba(0,0,0,0.065)"
+            pack_cell_shd = "0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)"
+            pack_backdrop = ""
+            pack_banner_r = "20px"
+            pack_cell_r   = "18px"
+        else:  # glass
+            pack_body_bg = ""   # 그라데이션으로 대체
+            pack_banner_bg = "rgba(255,255,255,0.50)"
+            pack_banner_bdr = "1px solid rgba(255,255,255,0.82)"
+            pack_banner_shd = "0 6px 24px rgba(31,38,135,0.09), inset 0 1px 0 rgba(255,255,255,0.95)"
+            pack_cell_bg  = "rgba(255,255,255,0.48)"
+            pack_cell_bdr = "1px solid rgba(255,255,255,0.80)"
+            pack_cell_shd = "0 4px 20px rgba(31,38,135,0.08), inset 0 1px 0 rgba(255,255,255,0.95)"
+            pack_backdrop = "backdrop-filter: blur(22px) saturate(180%); -webkit-backdrop-filter: blur(22px) saturate(180%);"
+            pack_banner_r = "20px"
+            pack_cell_r   = "18px"
+
+        body_bg_style = (
+            "background: radial-gradient(ellipse at 15% 10%, rgba(147,197,253,0.55) 0%, transparent 45%), radial-gradient(ellipse at 85% 85%, rgba(253,186,116,0.45) 0%, transparent 45%), radial-gradient(ellipse at 80% 10%, rgba(196,181,253,0.30) 0%, transparent 35%), #D1D5E8;"
+            if is_glass_style else f"background:{pack_body_bg};"
+        )
+
         pack_html = f"""
 <!DOCTYPE html><html><head><meta charset="UTF-8">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -971,22 +1235,17 @@ elif page == "🍫 8-Pack 레이더망":
 * {{ margin:0; padding:0; box-sizing:border-box; }}
 body {{
   font-family: 'DM Sans', sans-serif;
-  background:
-    radial-gradient(ellipse at 15% 10%, rgba(147,197,253,0.55) 0%, transparent 45%),
-    radial-gradient(ellipse at 85% 85%, rgba(253,186,116,0.45) 0%, transparent 45%),
-    radial-gradient(ellipse at 80% 10%, rgba(196,181,253,0.30) 0%, transparent 35%),
-    #D1D5E8;
+  {body_bg_style}
   padding: 10px 8px 6px 8px;
 }}
 .banner {{
-  background: rgba(255,255,255,0.50);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.82);
-  border-radius: 20px;
+  background: {pack_banner_bg};
+  {pack_backdrop}
+  border: {pack_banner_bdr};
+  border-radius: {pack_banner_r};
   padding: 18px 22px;
   margin-bottom: 16px;
-  box-shadow: 0 6px 24px rgba(31,38,135,0.09), inset 0 1px 0 rgba(255,255,255,0.95);
+  box-shadow: {pack_banner_shd};
 }}
 .banner h4 {{ color:#2563EB; font-size:1.05em; margin-bottom:6px; font-weight:700; }}
 .banner p  {{ color:#374151; font-size:0.93em; line-height:1.6; }}
@@ -996,13 +1255,16 @@ body {{
   gap: 10px;
 }}
 .cell {{
-  background: rgba(255,255,255,0.48);
-  backdrop-filter: blur(22px) saturate(180%);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.80);
-  border-radius: 18px;
+  background: {pack_cell_bg};
+  {pack_backdrop}
+  border: {pack_cell_bdr};
+  border-radius: {pack_cell_r};
   padding: 14px 14px 10px 14px;
-  box-shadow: 0 4px 20px rgba(31,38,135,0.08), inset 0 1px 0 rgba(255,255,255,0.95);
+  box-shadow: {pack_cell_shd};
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}}
+.cell:hover {{
+  transform: translateY(-1px);
 }}
 .cell-title {{
   font-size: 0.82em;
@@ -1022,9 +1284,7 @@ body {{
   width: 100%;
   justify-content: center;
 }}
-</style>
-</head>
-<body>
+</style></head><body>
 <div class="banner">
   <h4>"감정을 배제하고, 진실에 집중하십시오."</h4>
   <p>단순한 보조 지표가 아닙니다. <strong>'8-Pack 정밀 렌즈'</strong>를 통해 겉으로 평온해 보이는 시장을 3차원으로 해부합니다.</p>
@@ -1184,7 +1444,26 @@ elif page == "📰 매크로 뉴스룸":
     headlines_for_ai, news_items = fetch_macro_news()
 
     # ── Glass: 페이지 헤더를 components.html로 ───────────────
-    if is_glass_style:
+    if is_glass_style or is_transparent_style:
+        if is_transparent_style:
+            news_banner_bg  = "rgba(255,255,255,0.95)"
+            news_banner_bdr = "1px solid rgba(0,0,0,0.065)"
+            news_banner_shd = "0 2px 16px rgba(0,0,0,0.07)"
+            news_backdrop   = ""
+            news_body_bg    = "background:#E8E8ED;"
+            news_badge_bg   = "rgba(37,99,235,0.08)"
+            news_badge_c    = "#2563EB"
+            news_badge_bdr  = "rgba(37,99,235,0.25)"
+        else:
+            news_banner_bg  = "rgba(255,255,255,0.50)"
+            news_banner_bdr = "1px solid rgba(255,255,255,0.82)"
+            news_banner_shd = "0 6px 24px rgba(31,38,135,0.09), inset 0 1px 0 rgba(255,255,255,0.95)"
+            news_backdrop   = "backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);"
+            news_body_bg    = "background: radial-gradient(ellipse at 15% 10%, rgba(147,197,253,0.55) 0%, transparent 45%), radial-gradient(ellipse at 85% 85%, rgba(253,186,116,0.45) 0%, transparent 45%), #D1D5E8;"
+            news_badge_bg   = "rgba(16,185,129,0.15)"
+            news_badge_c    = "#059669"
+            news_badge_bdr  = "rgba(16,185,129,0.35)"
+
         components.html(f"""
 <!DOCTYPE html><html><head><meta charset="UTF-8">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
@@ -1192,28 +1471,24 @@ elif page == "📰 매크로 뉴스룸":
 * {{ margin:0; padding:0; box-sizing:border-box; }}
 body {{
   font-family: 'DM Sans', sans-serif;
-  background:
-    radial-gradient(ellipse at 15% 10%, rgba(147,197,253,0.55) 0%, transparent 45%),
-    radial-gradient(ellipse at 85% 85%, rgba(253,186,116,0.45) 0%, transparent 45%),
-    #D1D5E8;
+  {news_body_bg}
   padding: 10px 8px 6px 8px;
 }}
 .banner {{
-  background: rgba(255,255,255,0.50);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.82);
+  background: {news_banner_bg};
+  {news_backdrop}
+  border: {news_banner_bdr};
   border-radius: 20px;
   padding: 18px 24px;
-  box-shadow: 0 6px 24px rgba(31,38,135,0.09), inset 0 1px 0 rgba(255,255,255,0.95);
+  box-shadow: {news_banner_shd};
   display: flex; align-items: center; gap: 12px;
 }}
 .banner h2 {{ font-size:1.3em; font-weight:700; color:#1C1C1E; }}
 .badge-rt {{
   margin-left: auto;
-  background: rgba(16,185,129,0.15);
-  color: #059669;
-  border: 1px solid rgba(16,185,129,0.35);
+  background: {news_badge_bg};
+  color: {news_badge_c};
+  border: 1px solid {news_badge_bdr};
   border-radius: 8px;
   padding: 4px 12px;
   font-size: 0.8em;
@@ -1258,8 +1533,7 @@ body {{
 
     # ── 뉴스 카드 그리드 ──────────────────────────────────────
     if news_items:
-        if is_glass_style:
-            # components.html로 glass 뉴스 카드 그리드
+        if is_glass_style or is_transparent_style:
             cards_html = ""
             for item in news_items:
                 title = item['title'].replace("'", "&#39;").replace('"', '&quot;')
@@ -1271,6 +1545,29 @@ body {{
                   <div class="ndate">{item['date']}</div>
                 </div>"""
 
+            if is_transparent_style:
+                nc_bg      = "rgba(255,255,255,0.95)"
+                nc_bdr     = "1px solid rgba(0,0,0,0.065)"
+                nc_shd     = "0 2px 16px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04)"
+                nc_hover   = "0 6px 24px rgba(0,0,0,0.10), 0 0 0 1.5px rgba(37,99,235,0.30)"
+                nc_a_color = "#1C1C1E"
+                nc_a_hover = "#2563EB"
+                nc_date_c  = "#2563EB"
+                nc_backdrop= ""
+                nc_body_bg = "background:#E8E8ED;"
+                nc_r       = "18px"
+            else:
+                nc_bg      = "rgba(255,255,255,0.50)"
+                nc_bdr     = "1px solid rgba(255,255,255,0.82)"
+                nc_shd     = "0 4px 20px rgba(31,38,135,0.08), inset 0 1px 0 rgba(255,255,255,0.95)"
+                nc_hover   = "0 10px 32px rgba(31,38,135,0.14), inset 0 1px 0 rgba(255,255,255,1)"
+                nc_a_color = "#1C1C1E"
+                nc_a_hover = "#2563EB"
+                nc_date_c  = "#2563EB"
+                nc_backdrop= "backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);"
+                nc_body_bg = "background: radial-gradient(ellipse at 15% 10%, rgba(147,197,253,0.55) 0%, transparent 45%), radial-gradient(ellipse at 85% 85%, rgba(253,186,116,0.45) 0%, transparent 45%), radial-gradient(ellipse at 80% 10%, rgba(196,181,253,0.30) 0%, transparent 35%), #D1D5E8;"
+                nc_r       = "18px"
+
             news_html = f"""
 <!DOCTYPE html><html><head><meta charset="UTF-8">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1278,65 +1575,34 @@ body {{
 * {{ margin:0; padding:0; box-sizing:border-box; }}
 body {{
   font-family: 'DM Sans', sans-serif;
-  background:
-    radial-gradient(ellipse at 15% 10%, rgba(147,197,253,0.55) 0%, transparent 45%),
-    radial-gradient(ellipse at 85% 85%, rgba(253,186,116,0.45) 0%, transparent 45%),
-    radial-gradient(ellipse at 80% 10%, rgba(196,181,253,0.30) 0%, transparent 35%),
-    #D1D5E8;
+  {nc_body_bg}
   padding: 10px 8px 10px 8px;
 }}
 .section-title {{
-  font-size: 1.05em;
-  font-weight: 700;
-  color: #1C1C1E;
-  margin-bottom: 12px;
-  padding-left: 2px;
+  font-size: 1.05em; font-weight: 700; color: #1C1C1E;
+  margin-bottom: 12px; padding-left: 2px;
 }}
-.grid {{
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}}
+.grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }}
 .ncard {{
-  background: rgba(255,255,255,0.50);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.82);
-  border-radius: 18px;
+  background: {nc_bg};
+  {nc_backdrop}
+  border: {nc_bdr};
+  border-radius: {nc_r};
   padding: 16px 16px 14px 16px;
   height: 140px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  box-shadow: 0 4px 20px rgba(31,38,135,0.08), inset 0 1px 0 rgba(255,255,255,0.95);
+  display: flex; flex-direction: column; justify-content: space-between;
+  box-shadow: {nc_shd};
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 }}
-.ncard:hover {{
-  box-shadow: 0 10px 32px rgba(31,38,135,0.14), inset 0 1px 0 rgba(255,255,255,1);
-  transform: translateY(-2px);
-}}
+.ncard:hover {{ box-shadow: {nc_hover}; transform: translateY(-2px); }}
 .ntitle {{
-  font-size: 0.90em;
-  font-weight: 600;
-  line-height: 1.45;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  color: #1C1C1E;
+  font-size: 0.90em; font-weight: 600; line-height: 1.45;
+  display: -webkit-box; -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical; overflow: hidden; color: {nc_a_color};
 }}
-.ntitle a {{
-  color: #1C1C1E;
-  text-decoration: none;
-}}
-.ntitle a:hover {{ color: #2563EB; }}
-.ndate {{
-  font-size: 0.78em;
-  font-weight: 600;
-  color: #2563EB;
-  margin-top: 8px;
-  flex-shrink: 0;
-}}
+.ntitle a {{ color: {nc_a_color}; text-decoration: none; }}
+.ntitle a:hover {{ color: {nc_a_hover}; }}
+.ndate {{ font-size: 0.78em; font-weight: 600; color: {nc_date_c}; margin-top: 8px; flex-shrink: 0; }}
 </style></head><body>
 <div class="section-title">🖼️ 최신 경제 헤드라인 갤러리</div>
 <div class="grid">{cards_html}</div>
