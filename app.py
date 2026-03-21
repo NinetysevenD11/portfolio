@@ -265,15 +265,15 @@ liquid_glass_css = """<style>
         --text-muted: #4A5270;
         --accent-blue: #3B5BDB;
     }
-    /* ── 배경: 실제 이미지 → backdrop-filter blur가 진짜 유리처럼 작동 ── */
+    /* ── 배경: 실버/크롬 톤 ── */
     .stApp {
         background:
             linear-gradient(135deg,
-                rgba(120,160,255,0.18) 0%,
-                rgba(180,120,255,0.12) 40%,
-                rgba(80,200,200,0.14) 70%,
-                rgba(255,160,120,0.10) 100%),
-            url("https://images.unsplash.com/photo-1557683316-973673baf926?w=1920&q=80")
+                rgba(255,255,255,0.30) 0%,
+                rgba(200,210,220,0.20) 30%,
+                rgba(180,190,205,0.25) 60%,
+                rgba(210,215,225,0.20) 100%),
+            url("https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1920&q=80")
             center/cover no-repeat fixed !important;
         color: var(--text-main);
         font-family: 'DM Sans', sans-serif;
@@ -503,11 +503,11 @@ else:
 LG_BG = """
   background:
     linear-gradient(135deg,
-        rgba(120,160,255,0.18) 0%,
-        rgba(180,120,255,0.12) 40%,
-        rgba(80,200,200,0.14) 70%,
-        rgba(255,160,120,0.10) 100%),
-    url("https://images.unsplash.com/photo-1557683316-973673baf926?w=1920&q=80")
+        rgba(255,255,255,0.30) 0%,
+        rgba(200,210,220,0.20) 30%,
+        rgba(180,190,205,0.25) 60%,
+        rgba(210,215,225,0.20) 100%),
+    url("https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1920&q=80")
     center/cover no-repeat;"""
 
 LG_CSS_BASE = """
