@@ -28,11 +28,9 @@ ASSET_LIST     = ['TQQQ','SOXL','USD','QLD','SSO','SPY','QQQ','GLD','CASH']
 
 PORTFOLIO_FILE = 'portfolio_autosave.json'
 
-# 🚨 [오류 수정] 강력한 데이터 구조 정규화 함수
 def sanitize_portfolio():
     for a in ASSET_LIST:
         val = st.session_state.portfolio.get(a)
-        # 구버전(float/int) 데이터가 들어있으면 최신 딕셔너리 형태로 강제 변환
         if isinstance(val, (int, float)) or val is None:
             st.session_state.portfolio[a] = {'shares': float(val or 0.0), 'avg_price': 1.0 if a == 'CASH' else 0.0, 'fx': 1350.0}
         elif isinstance(val, dict):
@@ -52,7 +50,6 @@ if 'portfolio' not in st.session_state:
                     st.session_state.portfolio[k] = v
         except: pass
 
-# 매번 앱이 새로고침 될 때마다 구조 검사 수행 (에러 원천 차단)
 sanitize_portfolio()
 
 def save_portfolio_to_disk():
@@ -724,7 +721,7 @@ body{{font-family:'DM Sans',sans-serif;background:#E8E8ED;padding:12px 6px 4px 6
 # ------------------------------------------
 elif page == "💼 내 포트폴리오":
     st.subheader("💼 내 포트폴리오 & 리밸런싱 지침")
-    st.markdown("자산별 **보유 수량, 매수 단가, 매입 환율**을 표에 입력하면 현재가 기준으로 평가 금액과 수익률을 계산하여 **최적의 리밸런싱 액션**을 제시합니다.")
+    st.markdown("자산별 **보유 수량, 매수 단가, 매입 환율**을 표에 입력하면 시스템이 **목표 비중 차트와 리밸런싱 필요 금액**을 시각화하여 제시합니다.")
     
     col_up, col_down = st.columns(2)
     with col_up:
@@ -733,7 +730,7 @@ elif page == "💼 내 포트폴리오":
             try:
                 data = json.load(uploaded_file)
                 st.session_state.portfolio.update(data)
-                sanitize_portfolio() # 🚨 파일 업로드 후에도 반드시 구조 검사
+                sanitize_portfolio() 
                 save_portfolio_to_disk()
                 st.success("포트폴리오가 성공적으로 복구되었습니다!")
             except:
@@ -752,7 +749,6 @@ elif page == "💼 내 포트폴리오":
     
     editor_data = []
     for asset in ASSET_LIST:
-        # 안전한 접근
         val = st.session_state.portfolio.get(asset, {})
         editor_data.append({
             "자산": asset,
@@ -784,33 +780,59 @@ elif page == "💼 내 포트폴리오":
     save_portfolio_to_disk()
     
     st.markdown("<br>", unsafe_allow_html=True)
-    
     st.markdown(f"<h4 style='color:{h_color};'>⚖️ 포트폴리오 현황 및 리밸런싱 액션</h4>", unsafe_allow_html=True)
     
     current_prices = {}
     for t in ASSET_LIST:
-        if t == 'CASH': 
-            current_prices[t] = 1.0
-        elif t in rt_prices: 
-            current_prices[t] = rt_prices[t]
-        elif t in df.columns: 
-            current_prices[t] = df[t].iloc[-1]
-        else: 
-            current_prices[t] = 0.0
+        if t == 'CASH': current_prices[t] = 1.0
+        elif t in rt_prices: current_prices[t] = rt_prices[t]
+        elif t in df.columns: current_prices[t] = df[t].iloc[-1]
+        else: current_prices[t] = 0.0
             
     cur_fx = rt_prices.get('USDKRW=X', 1350.0)
     
-    total_val_usd = sum([st.session_state.portfolio[t]['shares'] * current_prices[t] for t in ASSET_LIST])
+    curr_vals = {a: st.session_state.portfolio[a]['shares'] * current_prices[a] for a in ASSET_LIST}
+    total_val_usd = sum(curr_vals.values())
     
     st.metric("총 자산 규모 (Total Portfolio Value)", f"${total_val_usd:,.2f}", f"현재 적용 환율: ₩{cur_fx:,.2f}")
     
     if total_val_usd > 0:
+        c_green = "#34D399" if is_dark else "#16A34A"
+        c_red = "#F87171" if is_dark else "#DC2626"
+        pie_layout = dict(margin=dict(l=20, r=20, t=40, b=20), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color=t_color))
+        
+        # ── 시각화 차트 영역 ──
+        st.markdown("##### 📊 비중 현황 및 리밸런싱 필요 금액")
+        chart_c1, chart_c2, chart_c3 = st.columns([1, 1, 1.5])
+        
+        diff_vals = {a: (total_val_usd * target_weights.get(a, 0.0)) - curr_vals[a] for a in ASSET_LIST}
+        
+        # 1. 현재 비중 파이 차트
+        labels_cur = [a for a in ASSET_LIST if curr_vals[a] > 0]
+        vals_cur = [curr_vals[a] for a in labels_cur]
+        fig_cur = go.Figure(data=[go.Pie(labels=labels_cur, values=vals_cur, hole=.4)])
+        fig_cur.update_layout(title_text="현재 포트폴리오 비중", **pie_layout)
+        chart_c1.plotly_chart(fig_cur, use_container_width=True)
+        
+        # 2. 목표 비중 파이 차트
+        labels_tgt = [a for a in ASSET_LIST if target_weights.get(a, 0) > 0]
+        vals_tgt = [target_weights.get(a, 0) for a in labels_tgt]
+        fig_tgt = go.Figure(data=[go.Pie(labels=labels_tgt, values=vals_tgt, hole=.4)])
+        fig_tgt.update_layout(title_text=f"목표 포트폴리오 비중 (R{curr_regime})", **pie_layout)
+        chart_c2.plotly_chart(fig_tgt, use_container_width=True)
+        
+        # 3. 리밸런싱 차액 바 차트
+        diff_labels = [a for a in ASSET_LIST if abs(diff_vals[a]) >= 1.0]
+        diff_values = [diff_vals[a] for a in diff_labels]
+        diff_colors = [c_green if v > 0 else c_red for v in diff_values]
+        fig_bar = go.Figure(data=[go.Bar(x=diff_labels, y=diff_values, marker_color=diff_colors, text=[f"${v:,.0f}" for v in diff_values], textposition='auto')])
+        fig_bar.update_layout(title_text="리밸런싱 필요 금액 ($)", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color=t_color), margin=dict(t=40, b=10, l=10, r=10))
+        chart_c3.plotly_chart(fig_bar, use_container_width=True)
+
+        # ── 상세 테이블 ──
         bg_card = 'rgba(255,255,255,0.05)' if is_dark else 'rgba(255,255,255,0.9)'
         txt_col = '#ECF0F1' if is_dark else '#2C3E50'
         muted_col = '#A0AEC0' if is_dark else '#7F8C8D'
-        
-        c_green = "#34D399" if is_dark else "#16A34A"
-        c_red = "#F87171" if is_dark else "#DC2626"
 
         rebal_html = f"""
         <div style="background: {bg_card}; border: 1px solid {h_border}; border-radius: 16px; padding: 20px; box-shadow: {h_shadow}; overflow-x: auto;">
@@ -836,10 +858,10 @@ elif page == "💼 내 포트폴리오":
             pur_fx = st.session_state.portfolio[asset]['fx']
             cur_p  = current_prices[asset]
             
-            curr_v = shares * cur_p
+            curr_v = curr_vals[asset]
             tgt_w  = target_weights.get(asset, 0.0)
             tgt_v  = total_val_usd * tgt_w
-            diff   = tgt_v - curr_v
+            diff   = diff_vals[asset]
             
             if asset == 'CASH':
                 avg_p_str = "-"
@@ -871,7 +893,7 @@ elif page == "💼 내 포트폴리오":
                     <td style="text-align:left; padding: 15px 10px; font-weight:bold; color:{h_accent};">{asset}</td>
                     <td style="padding: 15px 10px;">{avg_p_str}</td>
                     <td style="padding: 15px 10px; line-height:1.4;">
-                        <span style="color: {ret_usd_color};">{ret_usd_str}</span><br>
+                        <span style="color: {ret_usd_color}; font-weight:bold;">{ret_usd_str}</span><br>
                         <span style="font-size: 0.85em; color: {ret_krw_color};">{ret_krw_str}</span>
                     </td>
                     <td style="padding: 15px 10px; font-weight:600;">{curr_v:,.2f}</td>
@@ -883,6 +905,8 @@ elif page == "💼 내 포트폴리오":
                 """
         rebal_html += "</tbody></table></div>"
         st.markdown(rebal_html, unsafe_allow_html=True)
+    else:
+        st.info("👈 위 표에 보유 중인 자산의 수량과 단가를 1개 이상 입력하시면, 시각화 차트와 상세 리밸런싱 지침이 이 자리에 나타납니다.")
 
 # ------------------------------------------
 # PAGE 2: 8-PACK
