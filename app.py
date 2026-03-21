@@ -189,60 +189,56 @@ def get_weights_v45(reg, smh_ok):
 target_weights = get_weights_v45(curr_regime, smh_cond)
 
 # ==========================================
-# 2. 사이드바 및 공통 CSS
+# 2. 사이드바 및 공통 CSS (Apex Dark Theme 고정)
 # ==========================================
+is_neo_style         = False
+is_glass_style       = False
+is_transparent_style = False
+is_dark              = True
+
+h_color="#FFFFFF"
+h_accent="#8B5CF6"
+h_muted="#A0AEC0"
+h_border="rgba(255,255,255,0.05)"
+h_shadow="0 10px 25px rgba(0,0,0,0.5)"
+h_sidebar_text="#FFFFFF"
+
 st.markdown("""<style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
     
     :root {
-        --base-bg: #121418;       /* Very dark background for the app */
-        --sidebar-bg: #121418;   /* Sidebar background flush with app */
-        --card-bg: #1C1F28;      /* Distinct dark background for main cards */
+        --base-bg: #121418;
+        --sidebar-bg: #121418;
+        --card-bg: #1C1F28;
         --text-main: #FFFFFF;
         --text-muted: #A0AEC0;
-        --accent-primary: #8B5CF6; /* Purple for titles and accents */
-        --accent-glow: rgba(139, 92, 246, 0.35); /* Soft, glowing purple shadow */
-        --border-color: rgba(255, 255, 255, 0.05); /* Content card border */
-        --btn-border-glow: #8B5CF6; /* Button border itself glows */
-        --btn-shadow: 0 8px 16px rgba(0, 0, 0, 0.25); /* Button standard shadow */
-        --rsi-low: #10B981;       /* Custom green for low RSI */
-        --mdd-red: #EF4444;       /* Custom red for MDD */
+        --accent-primary: #8B5CF6;
+        --accent-glow: rgba(139, 92, 246, 0.35);
+        --border-color: rgba(255, 255, 255, 0.05);
+        --btn-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
     }
 
-    /* Override Streamlit UI components */
     .stApp { background-color: var(--base-bg); color: var(--text-main); font-family: 'DM Sans', 'Pretendard', sans-serif; }
     .main .block-container { max-width: 1300px; padding-top: 1rem; padding-bottom: 2rem; }
-    [data-testid="stHeader"] { background-color: transparent !important; }
-    #MainMenu { visibility: hidden; } footer { visibility: hidden; }
-    
-    /* Global Card Style */
-    .neo-card {
-        background-color: var(--card-bg) !important;
-        border: 1px solid var(--border-color) !important;
-        border-radius: 28px !important;
-        padding: 30px !important;
-        height: 570px !important;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
-        display: flex; flex-direction: column; margin-bottom: 20px; transition: transform 0.25s, box-shadow 0.25s;
-    }
+    [data-testid="stHeader"]{background-color:transparent!important;}
+    #MainMenu{visibility:hidden;}footer{visibility:hidden;}
+
+    .neo-card { background-color: var(--card-bg) !important; border: 1px solid var(--border-color) !important; border-radius: 28px !important; padding: 30px !important; height: 570px !important; box-shadow: var(--btn-shadow) !important; display: flex; flex-direction: column; margin-bottom: 20px; transition: transform 0.25s, box-shadow 0.25s; }
     .neo-card:hover { transform: translateY(-2px); box-shadow: 0 16px 56px rgba(139,92,246,0.15), 0 10px 25px rgba(0,0,0,0.5) !important; }
     .neo-inset-box { background: linear-gradient(145deg, rgba(139,92,246,0.1), rgba(0,0,0,0)); border: 1px solid var(--accent-primary); border-radius: 12px; padding: 15px; text-align: center; margin-bottom: 20px; box-shadow: 0 0 15px var(--accent-glow); }
     .check-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-color); font-size: 0.95em; color: var(--text-muted); }
     .check-value { font-family: 'DM Mono', monospace; font-weight: bold; color: var(--text-main); }
     
-    /* Metrics & Inputs */
     [data-testid="stMetric"] { background-color: var(--card-bg) !important; border: 1px solid var(--border-color) !important; border-radius: 12px !important; box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important; padding: 15px !important; }
     div[data-testid="stMetricValue"]>div { color: var(--text-main) !important; }
     div[data-testid="stMetricDelta"]>div { color: var(--accent-primary) !important; }
+    
     .stButton > button { background: rgba(139,92,246,0.15) !important; border: 1.5px solid var(--accent-primary) !important; border-radius: 12px !important; color: var(--accent-primary) !important; font-weight: 600 !important; box-shadow: 0 0 10px var(--accent-glow) !important; transition: all 0.25s !important; }
     .stButton > button:hover { background: rgba(139,92,246,0.28) !important; box-shadow: 0 0 20px var(--accent-glow) !important; transform: translateY(-1px) !important; }
-    [data-testid="stExpander"] { background: var(--card-bg) !important; border: 1px solid var(--border-color) !important; border-radius: 18px !important; box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important; }
-    [data-testid="stSelectbox"] > div > div { background: #FFFFFF !important; border: 1px solid var(--border-color) !important; border-radius: 12px !important; }
-    [data-testid="stAlert"] { background: rgba(255,255,255,0.95) !important; border-radius: 14px !important; border-left-width: 3px !important; box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important; }
 
-    /* Sidebar Customization */
     [data-testid="stSidebar"] { background-color: var(--sidebar-bg) !important; border-right: none !important; padding-top: 10px !important; padding-bottom: 10px !important; }
     .apex-sidebar-card { position: relative; background-color: #1C1F28 !important; border: 1px solid rgba(255,255,255,0.05) !important; border-radius: 20px !important; padding: 20px !important; margin-bottom: 20px !important; box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important; }
+    
     div.row-widget.stRadio > div > label { background-color: transparent !important; border-radius: 16px !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; margin-top: 8px !important; margin-bottom: 8px !important; padding: 10px 15px !important; display: flex; align-items: center; gap: 10px; transition: all 0.3s ease; box-shadow: inset 0 0 12px rgba(139, 92, 246, 0.15) !important; }
     div.row-widget.stRadio > div > label:hover { border-color: rgba(139, 92, 246, 0.3) !important; transform: translateY(-1px); box-shadow: 0 10px 20px rgba(0,0,0,0.3), inset 0 0 12px rgba(139, 92, 246, 0.45) !important; }
     div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) { border: 1.5px solid var(--accent-primary) !important; box-shadow: 0 0 0 2px rgba(139,92,246,0.25), 0 0 15px rgba(139,92,246,0.6) !important; }
@@ -280,18 +276,12 @@ st.markdown(f"""
     </div>
     <div style="text-align:right;font-weight:bold;color:#FFFFFF;">
         <div style="font-size:1.2em;">AMLS V4.5 ENGINE</div>
-        <div style="font-size:0.9em;color:#A0AEC0;">Elegant Dark Edition</div>
+        <div style="font-size:0.9em;color:#A0AEC0;">Apex Edition</div>
         <div style="font-size:0.8em;margin-top:4px;color:#A0AEC0;">{rt_label}</div>
     </div>
 </div>""", unsafe_allow_html=True)
 
 # 차트 색상 및 테마 변수 통일화
-h_color = "#FFFFFF"
-h_accent = "#8B5CF6"
-h_muted = "#A0AEC0"
-h_border = "rgba(255,255,255,0.05)"
-h_shadow = "0 10px 25px rgba(0,0,0,0.5)"
-is_dark = True
 b_color = '#1C1F28'
 t_color = '#A0AEC0'
 line_c = '#8B5CF6'
@@ -666,145 +656,78 @@ elif page == "🍫 8-Pack 레이더망":
     b7 = _badge("금 피신","orange","⚠️") if last_row['GLD_SPY_Ratio']>last_row['GLD_SPY_MA50'] else _badge("주식 선호","green","✅")
     b8 = _badge("강달러 압박","red","🚨") if last_row['UUP']>last_row['UUP_MA50'] else _badge("달러 진정","green","✅")
 
-    gauge_steps = ([{'range':[0,25],'color':"rgba(239,68,68,0.55)"},
-                    {'range':[25,45],'color':"rgba(249,115,22,0.30)"},
-                    {'range':[45,55],'color':"rgba(200,210,255,0.15)"},
-                    {'range':[55,75],'color':"rgba(16,185,129,0.30)"},
-                    {'range':[75,100],'color':"rgba(16,185,129,0.55)"}]
-                   if (is_glass_style or is_transparent_style) else
-                   ([{'range':[0,25],'color':"rgba(178,106,71,0.7)"},
-                     {'range':[25,45],'color':"rgba(178,106,71,0.3)"},
-                     {'range':[45,55],'color':"rgba(139,94,60,0.1)"},
-                     {'range':[55,75],'color':"rgba(107,142,35,0.3)"},
-                     {'range':[75,100],'color':"rgba(107,142,35,0.7)"}]
-                    if is_neo_style else
-                    [{'range':[0,25],'color':"rgba(248,113,113,0.7)"},
-                     {'range':[25,45],'color':"rgba(248,113,113,0.3)"},
-                     {'range':[45,55],'color':"rgba(255,255,255,0.05)"},
-                     {'range':[55,75],'color':"rgba(52,211,153,0.3)"},
-                     {'range':[75,100],'color':"rgba(52,211,153,0.7)"}]))
+    gauge_steps = ([{'range':[0,25],'color':"rgba(248,113,113,0.7)"},
+                    {'range':[25,45],'color':"rgba(248,113,113,0.3)"},
+                    {'range':[45,55],'color':"rgba(255,255,255,0.05)"},
+                    {'range':[55,75],'color':"rgba(52,211,153,0.3)"},
+                    {'range':[75,100],'color':"rgba(52,211,153,0.7)"}])
 
-    if is_glass_style:
-        cells = "".join([f'<div class="pack-cell"><div class="pack-title">{t}</div><div style="position:relative;z-index:1;">{b}</div></div>'
-                         for t,b in [("1. 스마트 DCA (RSI)",b1),("2. 멘탈 방어 (Drawdown)",b2),
-                                     ("3. 시장 심리 (F&amp;G)",b3),("4. 섹터 순환 (1M)",b4),
-                                     ("5. 채권 스프레드",b5),("6. 시장 폭 (Breadth)",b6),
-                                     ("7. 안전 자산 (금/주식)",b7),("8. 달러 (UUP)",b8)]])
-        components.html(f"""<!DOCTYPE html><html><head><meta charset="UTF-8">{LG_CSS_BASE}</head>
-<body>
-<div class="lg-banner">
-  <h4>"감정을 배제하고, 진실에 집중하십시오."</h4>
-  <p>단순한 보조 지표가 아닙니다. <strong>'8-Pack 정밀 렌즈'</strong>를 통해 겉으로 평온해 보이는 시장을 3차원으로 해부합니다.</p>
-</div>
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">{cells}</div>
-</body></html>""", height=360, scrolling=False)
+    st.markdown(f"""<div class="neo-inset-box" style="text-align:left;padding:20px;">
+        <h4 style="margin-top:0;color:{h_accent};">"감정을 배제하고, 진실에 집중하십시오."</h4>
+        <p style="font-size:1.05em;color:{h_color};line-height:1.6;margin-bottom:0;">
+            단순한 보조 지표가 아닙니다. <strong>'8-Pack 정밀 렌즈'</strong>를 통해 겉으로 평온해 보이는 시장을 3차원으로 해부합니다.</p>
+    </div>""", unsafe_allow_html=True)
 
-    elif is_transparent_style:
-        def _tr_badge(label, color, icon):
-            p = {'green':('rgba(16,185,129,0.12)','#16A34A','rgba(22,163,74,0.30)'),
-                 'orange':('rgba(249,115,22,0.12)','#D97706','rgba(249,115,22,0.32)'),
-                 'red':('rgba(239,68,68,0.12)','#DC2626','rgba(220,38,38,0.30)'),
-                 'blue':('rgba(37,99,235,0.10)','#2563EB','rgba(37,99,235,0.28)')}
-            bg,fg,bdr = p[color]
-            return f'<div style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:10px;font-size:0.88em;font-weight:600;width:100%;justify-content:center;background:{bg};color:{fg};border:1px solid {bdr};">{icon} {label}</div>'
+    row1 = st.columns(4); row2 = st.columns(4)
 
-        tb1 = _tr_badge("매수","green","🔥") if qqq_rsi<40 else (_tr_badge("과열","red","⚠️") if qqq_rsi>70 else _tr_badge("적립","blue","🟢"))
-        tb2 = (_tr_badge("약세(-20%)","red","🚨") if qqq_dd<-0.20 else (_tr_badge("조정(-10%)","orange","⚠️") if qqq_dd<-0.10 else _tr_badge("고점 순항","green","✅")))
-        tb3 = (_tr_badge("극단 공포","green","🔥") if fg_score<30 else (_tr_badge("극단 탐욕","red","⚠️") if fg_score>70 else _tr_badge("중립","blue","🟢")))
-        tb4 = f'<div style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:10px;font-size:0.88em;font-weight:600;width:100%;justify-content:center;background:rgba(37,99,235,0.10);color:#2563EB;border:1px solid rgba(37,99,235,0.28);">🏆 {top_sec} / 📉 {bot_sec}</div>'
-        tb5 = _tr_badge("국채 피신","red","🚨") if last_row['HYG_IEF_Ratio']<last_row['HYG_IEF_MA50'] else _tr_badge("회사채 선호","green","✅")
-        tb6 = (_tr_badge("쏠림 심화","orange","⚠️") if (last_row['QQQ_20d_Ret']>0 and last_row['QQQE_20d_Ret']<0) else _tr_badge("고른 상승","green","✅"))
-        tb7 = _tr_badge("금 피신","orange","⚠️") if last_row['GLD_SPY_Ratio']>last_row['GLD_SPY_MA50'] else _tr_badge("주식 선호","green","✅")
-        tb8 = _tr_badge("강달러 압박","red","🚨") if last_row['UUP']>last_row['UUP_MA50'] else _tr_badge("달러 진정","green","✅")
-        cells_tr = "".join([f'<div style="background:rgba(255,255,255,0.93);border:1px solid rgba(0,0,0,0.065);border-radius:18px;padding:13px;box-shadow:0 2px 12px rgba(0,0,0,0.06);"><div style="font-size:0.81em;font-weight:700;color:#374151;margin-bottom:8px;">{t}</div>{b}</div>'
-                            for t,b in [("1. 스마트 DCA (RSI)",tb1),("2. 멘탈 방어 (Drawdown)",tb2),
-                                        ("3. 시장 심리 (F&amp;G)",tb3),("4. 섹터 순환 (1M)",tb4),
-                                        ("5. 채권 스프레드",tb5),("6. 시장 폭 (Breadth)",tb6),
-                                        ("7. 안전 자산 (금/주식)",tb7),("8. 달러 (UUP)",tb8)]])
-        components.html(f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-<style>*{{margin:0;padding:0;box-sizing:border-box;}}body{{font-family:'DM Sans',sans-serif;background:#E8E8ED;padding:10px 6px 6px 6px;}}.banner{{background:rgba(255,255,255,0.93);border:1px solid rgba(0,0,0,0.065);border-radius:20px;padding:16px 22px;margin-bottom:14px;box-shadow:0 2px 16px rgba(0,0,0,0.07);}}.banner h4{{color:#2563EB;font-size:1.03em;margin-bottom:5px;font-weight:700;}}.banner p{{color:#374151;font-size:0.91em;line-height:1.6;}}</style>
-</head><body>
-<div class="banner"><h4>"감정을 배제하고, 진실에 집중하십시오."</h4><p>단순한 보조 지표가 아닙니다. <strong>'8-Pack 정밀 렌즈'</strong>를 통해 겉으로 평온해 보이는 시장을 3차원으로 해부합니다.</p></div>
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">{cells_tr}</div>
-</body></html>""", height=360, scrolling=False)
-
-    else:
-        st.markdown(f"""<div class="neo-inset-box" style="text-align:left;padding:20px;">
-            <h4 style="margin-top:0;color:{h_accent};">"감정을 배제하고, 진실에 집중하십시오."</h4>
-            <p style="font-size:1.05em;color:{h_color};line-height:1.6;margin-bottom:0;">
-                단순한 보조 지표가 아닙니다. <strong>'8-Pack 정밀 렌즈'</strong>를 통해 겉으로 평온해 보이는 시장을 3차원으로 해부합니다.</p>
-        </div>""", unsafe_allow_html=True)
-
-        show_st_labels = not is_glass_style and not is_transparent_style
-        row1 = st.columns(4); row2 = st.columns(4)
-
-        with row1[0]:
-            if show_st_labels:
-                st.markdown("##### 1. 스마트 DCA (RSI)")
-                if qqq_rsi<40: st.success("🔥 매수")
-                elif qqq_rsi>70: st.error("⚠️ 과열")
-                else: st.info("🟢 적립")
-            fig1=go.Figure(); fig1.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_RSI'],line=dict(color=line_c,width=2)))
-            fig1.add_hline(y=70,line_dash='dash',line_color=dash_c); fig1.add_hline(y=30,line_dash='dash',line_color=rsi_low_c)
-            fig1.update_layout(**radar_layout,yaxis=dict(range=[10,90]),showlegend=False)
-            st.plotly_chart(fig1,use_container_width=True)
-        with row1[1]:
-            if show_st_labels:
-                st.markdown("##### 2. 멘탈 방어 (Drawdown)")
-                if qqq_dd<-0.20: st.error("🚨 약세 (-20%)")
-                elif qqq_dd<-0.10: st.warning("⚠️ 조정 (-10%)")
-                else: st.success("✅ 고점 순항")
-            fig2=go.Figure(); fig2.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_DD'],fill='tozeroy',line=dict(color=dash_c,width=2)))
-            fig2.update_layout(**radar_layout,yaxis=dict(tickformat='.0%'),showlegend=False); st.plotly_chart(fig2,use_container_width=True)
-        with row1[2]:
-            if show_st_labels:
-                st.markdown("##### 3. 시장 심리 (F&G)")
-                if fg_score<30: st.success("🔥 극단 공포")
-                elif fg_score>70: st.error("⚠️ 극단 탐욕")
-                else: st.info("🟢 중립")
-            fig3=go.Figure(go.Indicator(mode="gauge+number",value=fg_score,domain={'x':[0,1],'y':[0,1]},
-                gauge={'axis':{'range':[0,100]},'bar':{'color':line_c},'steps':gauge_steps}))
-            fig3.update_layout(height=200,margin=dict(l=15,r=15,t=10,b=10),paper_bgcolor=b_color,font=dict(family="Pretendard",color=t_color))
-            st.plotly_chart(fig3,use_container_width=True)
-        with row1[3]:
-            if show_st_labels:
-                st.markdown("##### 4. 섹터 순환 (1M)"); st.info(f"🏆 {top_sec} / 📉 {bot_sec}")
-            fig4=go.Figure(go.Bar(x=sec_df['수익률'],y=sec_df['섹터'],orientation='h',
-                marker_color=[dash_c if v<0 else line_c for v in sec_df['수익률']]))
-            fig4.update_layout(**radar_layout,showlegend=False); st.plotly_chart(fig4,use_container_width=True)
-        with row2[0]:
-            if show_st_labels:
-                st.markdown("##### 5. 채권 스프레드")
-                if last_row['HYG_IEF_Ratio']<last_row['HYG_IEF_MA50']: st.error("🚨 국채 피신")
-                else: st.success("✅ 회사채 선호")
-            fig5=go.Figure(); fig5.add_trace(go.Scatter(x=df_view.index,y=df_view['HYG_IEF_Ratio'],line=dict(color=line_c,width=2)))
-            fig5.add_trace(go.Scatter(x=df_view.index,y=df_view['HYG_IEF_MA50'],line=dict(color=dash_c,dash='dot')))
-            fig5.update_layout(**radar_layout,showlegend=False); st.plotly_chart(fig5,use_container_width=True)
-        with row2[1]:
-            if show_st_labels:
-                st.markdown("##### 6. 시장 폭 (Breadth)")
-                if last_row['QQQ_20d_Ret']>0 and last_row['QQQE_20d_Ret']<0: st.warning("⚠️ 쏠림 심화")
-                else: st.success("✅ 고른 상승")
-            fig6=go.Figure(); fig6.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_20d_Ret'],name='QQQ',line=dict(color=line_c,width=2)))
-            fig6.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQE_20d_Ret'],name='QQQE',line=dict(color=dash_c,dash='dot')))
-            fig6.update_layout(**radar_layout,showlegend=False,yaxis=dict(tickformat='.0%')); st.plotly_chart(fig6,use_container_width=True)
-        with row2[2]:
-            if show_st_labels:
-                st.markdown("##### 7. 안전 자산 (금/주식)")
-                if last_row['GLD_SPY_Ratio']>last_row['GLD_SPY_MA50']: st.warning("⚠️ 금 피신")
-                else: st.success("✅ 주식 선호")
-            fig7=go.Figure(); fig7.add_trace(go.Scatter(x=df_view.index,y=df_view['GLD_SPY_Ratio'],line=dict(color=line_c,width=2)))
-            fig7.add_trace(go.Scatter(x=df_view.index,y=df_view['GLD_SPY_MA50'],line=dict(color=dash_c,dash='dot')))
-            fig7.update_layout(**radar_layout,showlegend=False); st.plotly_chart(fig7,use_container_width=True)
-        with row2[3]:
-            if show_st_labels:
-                st.markdown("##### 8. 달러 (UUP)")
-                if last_row['UUP']>last_row['UUP_MA50']: st.error("🚨 강달러 압박")
-                else: st.success("✅ 달러 진정")
-            fig8=go.Figure(); fig8.add_trace(go.Scatter(x=df_view.index,y=df_view['UUP'],line=dict(color=line_c,width=2)))
-            fig8.add_trace(go.Scatter(x=df_view.index,y=df_view['UUP_MA50'],line=dict(color=dash_c,dash='dot')))
-            fig8.update_layout(**radar_layout,showlegend=False); st.plotly_chart(fig8,use_container_width=True)
+    with row1[0]:
+        st.markdown("##### 1. 스마트 DCA (RSI)")
+        if qqq_rsi<40: st.success("🔥 매수")
+        elif qqq_rsi>70: st.error("⚠️ 과열")
+        else: st.info("🟢 적립")
+        fig1=go.Figure(); fig1.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_RSI'],line=dict(color=line_c,width=2)))
+        fig1.add_hline(y=70,line_dash='dash',line_color=dash_c); fig1.add_hline(y=30,line_dash='dash',line_color=rsi_low_c)
+        fig1.update_layout(**radar_layout,yaxis=dict(range=[10,90]),showlegend=False)
+        st.plotly_chart(fig1,use_container_width=True)
+    with row1[1]:
+        st.markdown("##### 2. 멘탈 방어 (Drawdown)")
+        if qqq_dd<-0.20: st.error("🚨 약세 (-20%)")
+        elif qqq_dd<-0.10: st.warning("⚠️ 조정 (-10%)")
+        else: st.success("✅ 고점 순항")
+        fig2=go.Figure(); fig2.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_DD'],fill='tozeroy',line=dict(color=dash_c,width=2)))
+        fig2.update_layout(**radar_layout,yaxis=dict(tickformat='.0%'),showlegend=False); st.plotly_chart(fig2,use_container_width=True)
+    with row1[2]:
+        st.markdown("##### 3. 시장 심리 (F&G)")
+        if fg_score<30: st.success("🔥 극단 공포")
+        elif fg_score>70: st.error("⚠️ 극단 탐욕")
+        else: st.info("🟢 중립")
+        fig3=go.Figure(go.Indicator(mode="gauge+number",value=fg_score,domain={'x':[0,1],'y':[0,1]},
+            gauge={'axis':{'range':[0,100]},'bar':{'color':line_c},'steps':gauge_steps}))
+        fig3.update_layout(height=200,margin=dict(l=15,r=15,t=10,b=10),paper_bgcolor=b_color,font=dict(family="Pretendard",color=t_color))
+        st.plotly_chart(fig3,use_container_width=True)
+    with row1[3]:
+        st.markdown("##### 4. 섹터 순환 (1M)"); st.info(f"🏆 {top_sec} / 📉 {bot_sec}")
+        fig4=go.Figure(go.Bar(x=sec_df['수익률'],y=sec_df['섹터'],orientation='h',
+            marker_color=[dash_c if v<0 else line_c for v in sec_df['수익률']]))
+        fig4.update_layout(**radar_layout,showlegend=False); st.plotly_chart(fig4,use_container_width=True)
+    with row2[0]:
+        st.markdown("##### 5. 채권 스프레드")
+        if last_row['HYG_IEF_Ratio']<last_row['HYG_IEF_MA50']: st.error("🚨 국채 피신")
+        else: st.success("✅ 회사채 선호")
+        fig5=go.Figure(); fig5.add_trace(go.Scatter(x=df_view.index,y=df_view['HYG_IEF_Ratio'],line=dict(color=line_c,width=2)))
+        fig5.add_trace(go.Scatter(x=df_view.index,y=df_view['HYG_IEF_MA50'],line=dict(color=dash_c,dash='dot')))
+        fig5.update_layout(**radar_layout,showlegend=False); st.plotly_chart(fig5,use_container_width=True)
+    with row2[1]:
+        st.markdown("##### 6. 시장 폭 (Breadth)")
+        if last_row['QQQ_20d_Ret']>0 and last_row['QQQE_20d_Ret']<0: st.warning("⚠️ 쏠림 심화")
+        else: st.success("✅ 고른 상승")
+        fig6=go.Figure(); fig6.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_20d_Ret'],name='QQQ',line=dict(color=line_c,width=2)))
+        fig6.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQE_20d_Ret'],name='QQQE',line=dict(color=dash_c,dash='dot')))
+        fig6.update_layout(**radar_layout,showlegend=False,yaxis=dict(tickformat='.0%')); st.plotly_chart(fig6,use_container_width=True)
+    with row2[2]:
+        st.markdown("##### 7. 안전 자산 (금/주식)")
+        if last_row['GLD_SPY_Ratio']>last_row['GLD_SPY_MA50']: st.warning("⚠️ 금 피신")
+        else: st.success("✅ 주식 선호")
+        fig7=go.Figure(); fig7.add_trace(go.Scatter(x=df_view.index,y=df_view['GLD_SPY_Ratio'],line=dict(color=line_c,width=2)))
+        fig7.add_trace(go.Scatter(x=df_view.index,y=df_view['GLD_SPY_MA50'],line=dict(color=dash_c,dash='dot')))
+        fig7.update_layout(**radar_layout,showlegend=False); st.plotly_chart(fig7,use_container_width=True)
+    with row2[3]:
+        st.markdown("##### 8. 달러 (UUP)")
+        if last_row['UUP']>last_row['UUP_MA50']: st.error("🚨 강달러 압박")
+        else: st.success("✅ 달러 진정")
+        fig8=go.Figure(); fig8.add_trace(go.Scatter(x=df_view.index,y=df_view['UUP'],line=dict(color=line_c,width=2)))
+        fig8.add_trace(go.Scatter(x=df_view.index,y=df_view['UUP_MA50'],line=dict(color=dash_c,dash='dot')))
+        fig8.update_layout(**radar_layout,showlegend=False); st.plotly_chart(fig8,use_container_width=True)
 
 # ------------------------------------------
 # PAGE 3: 📈 백테스트 랩
@@ -859,12 +782,10 @@ elif page == "📈 백테스트 랩":
         mc1, mc2, mc3, mc4 = st.columns(4)
         
         def render_metric_card(title, ret, cagr, mdd, is_main=False):
-            is_dark_theme = (ui_style != "Light Mode (Neo-Tactile)")
-            bg_color = f"rgba(139,92,246,0.15)" if is_dark_theme else "rgba(178,106,71,0.08)"
-            bg = f"background: {bg_color};" if is_main else ""
+            bg = f"background: rgba(139,92,246,0.15);" if is_main else ""
             bdr = f"border: 2px solid {h_accent};" if is_main else f"border: 1px solid {h_border};"
-            mdd_col = '#DC2626' if not is_dark_theme else '#F87171'
-            ret_col = '#16A34A' if not is_dark_theme else '#34D399'
+            mdd_col = '#F87171'
+            ret_col = '#34D399'
             
             return f"""<div style="{bg} {bdr} border-radius: 16px; padding: 18px; text-align: center; height: 100%; box-shadow: {h_shadow};">
 <div style="font-size: 0.95em; font-weight: 700; color: {h_muted}; margin-bottom: 8px;">{title}</div>
@@ -879,7 +800,6 @@ elif page == "📈 백테스트 랩":
         mc4.markdown(render_metric_card("TQQQ (3배수)", ret_t, cagr_t, mdd_t), unsafe_allow_html=True)
         
         st.markdown("<br>", unsafe_allow_html=True)
-        chart_col1, chart_col2 = st.columns([1, 1])
 
         st.markdown("#### 📈 자산 성장 곡선 (Equity Curve)", unsafe_allow_html=True)
         fig_eq = go.Figure()
@@ -929,7 +849,7 @@ elif page == "📈 백테스트 랩":
                 
                 with st.spinner("AI가 성과를 분석 중입니다..."):
                     response = model.generate_content(prompt)
-                    st.markdown(f"""<div style="background-color: {'rgba(255,255,255,0.05)' if (ui_style != "Light Mode (Neo-Tactile)") else 'rgba(0,0,0,0.02)'}; border: 1px solid {h_border}; border-radius: 16px; padding: 20px; margin-top: 10px; box-shadow: {h_shadow};">
+                    st.markdown(f"""<div style="background-color: rgba(255,255,255,0.05); border: 1px solid {h_border}; border-radius: 16px; padding: 20px; margin-top: 10px; box-shadow: {h_shadow};">
 {response.text}
 </div>""", unsafe_allow_html=True)
             except Exception as e:
@@ -941,27 +861,7 @@ elif page == "📈 백테스트 랩":
 elif page == "📰 매크로 뉴스룸":
     headlines_for_ai, news_items = fetch_macro_news()
 
-    if is_glass_style:
-        components.html(f"""<!DOCTYPE html><html><head><meta charset="UTF-8">{LG_CSS_BASE}</head>
-<body>
-<div class="lg-banner" style="display:flex;align-items:center;gap:12px;">
-  <div style="font-size:1.5em;">📰</div>
-  <h4 style="font-size:1.35em;margin-bottom:0;letter-spacing:-0.5px;">실시간 글로벌 매크로 뉴스 &amp; AI 브리핑</h4>
-  <div class="badge-rt" style="margin-left:auto;">{rt_label}</div>
-</div>
-</body></html>""", height=85, scrolling=False)
-    elif is_transparent_style:
-        components.html(f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-<style>*{{margin:0;padding:0;box-sizing:border-box;}}body{{font-family:'DM Sans',sans-serif;background:#E8E8ED;padding:10px 6px 6px 6px;}}
-.banner{{background:rgba(255,255,255,0.93);border:1px solid rgba(0,0,0,0.065);border-radius:20px;padding:16px 24px;box-shadow:0 2px 16px rgba(0,0,0,0.07);display:flex;align-items:center;gap:12px;}}
-.banner h2{{font-size:1.35em;font-weight:700;color:#1C1C1E;letter-spacing:-0.5px;margin:0;}}
-.badge-rt{{margin-left:auto;background:rgba(37,99,235,0.08);color:#2563EB;border:1px solid rgba(37,99,235,0.25);border-radius:8px;padding:4px 12px;font-size:0.85em;font-weight:600;white-space:nowrap;}}
-</style></head><body>
-<div class="banner"><div style="font-size:1.5em;">📰</div><h2>실시간 글로벌 매크로 뉴스 &amp; AI 브리핑</h2><div class="badge-rt">{rt_label}</div></div>
-</body></html>""", height=85, scrolling=False)
-    else:
-        st.markdown(f"### 📰 실시간 글로벌 매크로 뉴스 & AI 브리핑")
+    st.markdown(f"### 📰 실시간 글로벌 매크로 뉴스 & AI 브리핑")
 
     with st.expander("✨ System-2 심층 추론 애널리스트 분석", expanded=True):
         if st.button("🚀 심층 추론 요약 실행", use_container_width=True):
@@ -989,15 +889,15 @@ elif page == "📰 매크로 뉴스룸":
                         
                         response = model.generate_content(prompt)
                         
-                        ai_bg = 'rgba(255,255,255,0.05)' if is_dark else 'rgba(0,0,0,0.02)'
-                        text_col = '#ECF0F1' if is_dark else '#2C3E50'
+                        ai_bg = 'rgba(255,255,255,0.05)'
+                        text_col = '#ECF0F1'
                         
                         st.markdown(f"""<style>
 .ai-report-box {{ background-color: {ai_bg}; border: 1px solid {h_border}; border-radius: 16px; padding: 30px; margin-top: 15px; margin-bottom: 25px; box-shadow: {h_shadow}; }}
 .ai-report-box h2 {{ color: {h_accent}; font-size: 1.5em !important; font-weight: 800; border-bottom: 2px solid {h_border}; padding-bottom: 8px; margin-top: 25px; margin-bottom: 15px; }}
 .ai-report-box h2:first-child {{ margin-top: 0; }}
 .ai-report-box p, .ai-report-box li {{ color: {text_col}; font-size: 1.1em; line-height: 1.7; font-family: 'Pretendard', 'DM Sans', sans-serif; font-weight: 500; }}
-.ai-report-box strong {{ color: {h_color}; font-weight: 700; background-color: {'rgba(255,255,255,0.1)' if is_dark else 'rgba(0,0,0,0.05)'}; padding: 2px 6px; border-radius: 4px; }}
+.ai-report-box strong {{ color: {h_color}; font-weight: 700; background-color: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; }}
 </style>
 <div class="ai-report-box">""", unsafe_allow_html=True)
                         st.markdown(response.text)
@@ -1011,42 +911,18 @@ elif page == "📰 매크로 뉴스룸":
     st.divider()
 
     if news_items:
-        if is_glass_style:
-            cards = "".join([f'<div class="ncard"><div class="ntitle"><a href="{i["link"]}" target="_blank">{i["title"].replace("&","&amp;")}</a></div><div class="ndate">{i["date"]}</div></div>'
-                             for i in news_items])
-            components.html(f"""<!DOCTYPE html><html><head><meta charset="UTF-8">{LG_CSS_BASE}</head>
-<body>
-<div class="section-title" style="font-size: 1.2em; margin-bottom: 15px;">🖼️ 최신 경제 헤드라인 갤러리</div>
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:15px;">{cards}</div>
-</body></html>""", height=180+(len(news_items)//3)*160, scrolling=False)
-
-        elif is_transparent_style:
-            cards_tr = "".join([f"""<div style="background:rgba(255,255,255,0.93);border:1px solid rgba(0,0,0,0.065);border-radius:18px;padding:18px;height:140px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 2px 12px rgba(0,0,0,0.06);transition:transform 0.2s,box-shadow 0.2s;">
-  <div style="font-size:0.95em;font-weight:600;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;"><a href="{i['link']}" target="_blank" style="color:#1C1C1E;text-decoration:none;">{i['title'].replace('&','&amp;')}</a></div>
-  <div style="font-size:0.8em;font-weight:600;color:#2563EB;margin-top:8px;">{i['date']}</div>
-</div>""" for i in news_items])
-            components.html(f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
-<style>*{{margin:0;padding:0;box-sizing:border-box;}}body{{font-family:'DM Sans',sans-serif;background:#E8E8ED;padding:10px 6px 10px 6px;}}
-.title{{font-size:1.2em;font-weight:700;color:#1C1C1E;margin-bottom:15px;padding-left:4px;}}</style>
-</head><body>
-<div class="title">🖼️ 최신 경제 헤드라인 갤러리</div>
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:15px;">{cards_tr}</div>
-</body></html>""", height=180+(len(news_items)//3)*160, scrolling=False)
-
-        else:
-            st.markdown("<div style='font-size: 1.2em; font-weight: 700; margin-bottom: 15px;'>🖼️ 최신 경제 헤드라인 갤러리</div>", unsafe_allow_html=True)
-            cols = st.columns(3)
-            c_bg  = '#FFFDF7' if is_neo_style else '#1C1F28'
-            c_brd = '1px solid rgba(0,0,0,0.05)' if is_neo_style else '1px solid rgba(255,255,255,0.05)'
-            c_shd = 'var(--shadow-raised)' if is_neo_style else '0 4px 15px rgba(0,0,0,0.3)'
-            c_txt = 'var(--text-main)' if is_neo_style else '#ECF0F1'
-            for idx,item in enumerate(news_items):
-                with cols[idx%3]:
-                    st.markdown(f"""<div style="background:{c_bg};border:{c_brd};padding:20px;margin-bottom:15px;border-radius:18px;height:150px;box-shadow:{c_shd};display:flex;flex-direction:column;justify-content:space-between; transition: transform 0.2s;">
-                        <div style="font-weight:600;font-size:1.05em;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">
-                            <a href="{item['link']}" target="_blank" style="color:{c_txt};text-decoration:none;">{item['title']}</a></div>
-                        <div style="color:{h_accent};font-size:0.85em;margin-top:10px;font-weight:700;">{item['date']}</div>
-                    </div>""", unsafe_allow_html=True)
+        st.markdown("<div style='font-size: 1.2em; font-weight: 700; margin-bottom: 15px;'>🖼️ 최신 경제 헤드라인 갤러리</div>", unsafe_allow_html=True)
+        cols = st.columns(3)
+        c_bg  = '#1C1F28'
+        c_brd = '1px solid rgba(255,255,255,0.05)'
+        c_shd = '0 10px 25px rgba(0,0,0,0.5)'
+        c_txt = '#ECF0F1'
+        for idx,item in enumerate(news_items):
+            with cols[idx%3]:
+                st.markdown(f"""<div style="background:{c_bg};border:{c_brd};padding:20px;margin-bottom:15px;border-radius:18px;height:150px;box-shadow:{c_shd};display:flex;flex-direction:column;justify-content:space-between; transition: transform 0.2s;">
+                    <div style="font-weight:600;font-size:1.05em;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">
+                        <a href="{item['link']}" target="_blank" style="color:{c_txt};text-decoration:none;">{item['title']}</a></div>
+                    <div style="color:{h_accent};font-size:0.85em;margin-top:10px;font-weight:700;">{item['date']}</div>
+                </div>""", unsafe_allow_html=True)
     else:
         st.write("수신된 뉴스가 없습니다. (15분 후 갱신)")
