@@ -1314,7 +1314,245 @@ elif page == "📰 매크로 뉴스룸":
 </div>""" for i in news_items])
             components.html(f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
-<style>*{{margin:0;padding:0;box-sizing:border-box;}}body{{font-family:'DM Sans',sans-serif;background:#E8E8ED;padding:10px 6px 10px 6px;}}
+<style>*{{margin:0;padding:0;box-sizing:border-box;}}body{{font-family:'DM Sans',sans-serif;background:#E8E# ------------------------------------------
+# PAGE 1.5: 💼 내 포트폴리오
+# ------------------------------------------
+elif page == "💼 내 포트폴리오":
+    st.subheader("💼 내 포트폴리오 & 리밸런싱 지침")
+    st.markdown("자산별 **보유 수량, 매수 단가, 매입 환율**을 표에 입력하면 현재가 기준으로 평가 금액과 수익률을 계산하여 **최적의 리밸런싱 액션**을 제시합니다.")
+    
+    col_up, col_down = st.columns(2)
+    with col_up:
+        uploaded_file = st.file_uploader("📂 포트폴리오 수동 복구 (기기 변경 시 JSON 업로드)", type="json")
+        if uploaded_file is not None:
+            try:
+                data = json.load(uploaded_file)
+                st.session_state.portfolio.update(data)
+                sanitize_portfolio() 
+                save_portfolio_to_disk()
+                st.success("포트폴리오가 성공적으로 복구되었습니다!")
+            except:
+                st.error("파일 형식이 올바르지 않습니다.")
+    with col_down:
+        st.markdown("<br>", unsafe_allow_html=True)
+        json_str = json.dumps(st.session_state.portfolio)
+        st.download_button(label="💾 현재 포트폴리오 수동 백업 (JSON 다운로드)", 
+                           data=json_str, file_name="portfolio_backup.json", 
+                           mime="application/json", use_container_width=True)
+
+    st.divider()
+    
+    st.markdown(f"<h4 style='color:{h_color};'>📥 포트폴리오 자산 입력</h4>", unsafe_allow_html=True)
+    st.markdown(f"<span style='color:{h_muted};'>아래 표를 클릭하여 직접 타이핑하거나 엑셀에서 복사/붙여넣기 하세요. (CASH는 달러 총액을 수량에 입력)</span>", unsafe_allow_html=True)
+    
+    editor_data = []
+    for asset in ASSET_LIST:
+        val = st.session_state.portfolio.get(asset, {})
+        editor_data.append({
+            "자산": asset,
+            "수량": float(val.get('shares', 0.0)),
+            "매수단가($)": float(val.get('avg_price', 1.0 if asset == 'CASH' else 0.0)),
+            "매입환율(₩)": float(val.get('fx', 1350.0))
+        })
+    df_editor = pd.DataFrame(editor_data)
+    
+    edited_df = st.data_editor(
+        df_editor,
+        disabled=["자산"],
+        hide_index=True,
+        use_container_width=True,
+        column_config={
+            "수량": st.column_config.NumberColumn("보유 수량", min_value=0.0, format="%.4f"),
+            "매수단가($)": st.column_config.NumberColumn("매수단가 ($)", min_value=0.0, format="%.2f"),
+            "매입환율(₩)": st.column_config.NumberColumn("매입환율 (₩)", min_value=0.0, format="%.2f")
+        }
+    )
+    
+    for _, row in edited_df.iterrows():
+        asset = row["자산"]
+        st.session_state.portfolio[asset] = {
+            'shares': float(row["수량"]),
+            'avg_price': float(row["매수단가($)"]),
+            'fx': float(row["매입환율(₩)"])
+        }
+    save_portfolio_to_disk()
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown(f"<h4 style='color:{h_color};'>⚖️ 포트폴리오 현황 및 리밸런싱 액션</h4>", unsafe_allow_html=True)
+    
+    current_prices = {}
+    for t in ASSET_LIST:
+        if t == 'CASH': current_prices[t] = 1.0
+        elif t in rt_prices: current_prices[t] = rt_prices[t]
+        elif t in df.columns: current_prices[t] = df[t].iloc[-1]
+        else: current_prices[t] = 0.0
+            
+    cur_fx = rt_prices.get('USDKRW=X', 1350.0)
+    
+    curr_vals = {a: st.session_state.portfolio[a]['shares'] * current_prices[a] for a in ASSET_LIST}
+    total_val_usd = sum(curr_vals.values())
+    
+    st.metric("총 자산 규모 (Total Portfolio Value)", f"${total_val_usd:,.2f}", f"현재 적용 환율: ₩{cur_fx:,.2f}")
+    
+    if total_val_usd > 0:
+        c_green = "#34D399" if is_dark else "#16A34A"
+        c_red = "#F87171" if is_dark else "#DC2626"
+        pie_layout = dict(margin=dict(l=20, r=20, t=40, b=20), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color=t_color))
+        
+        diff_vals = {a: (total_val_usd * target_weights.get(a, 0.0)) - curr_vals[a] for a in ASSET_LIST}
+        
+        # ── 시각화 차트 영역 ──
+        st.markdown("##### 📊 비중 현황 및 리밸런싱 필요 금액")
+        chart_c1, chart_c2, chart_c3 = st.columns([1, 1, 1.5])
+        
+        # 1. 현재 비중 파이 차트
+        labels_cur = [a for a in ASSET_LIST if curr_vals[a] > 0]
+        vals_cur = [curr_vals[a] for a in labels_cur]
+        if sum(vals_cur) > 0:
+            fig_cur = go.Figure(data=[go.Pie(labels=labels_cur, values=vals_cur, hole=.4, textinfo='label+percent')])
+            fig_cur.update_layout(title_text="현재 포트폴리오 비중", **pie_layout)
+            chart_c1.plotly_chart(fig_cur, use_container_width=True)
+        
+        # 2. 목표 비중 파이 차트
+        labels_tgt = [a for a in ASSET_LIST if target_weights.get(a, 0) > 0]
+        vals_tgt = [target_weights.get(a, 0) for a in labels_tgt]
+        fig_tgt = go.Figure(data=[go.Pie(labels=labels_tgt, values=vals_tgt, hole=.4, textinfo='label+percent')])
+        fig_tgt.update_layout(title_text=f"목표 포트폴리오 비중 (R{curr_regime})", **pie_layout)
+        chart_c2.plotly_chart(fig_tgt, use_container_width=True)
+        
+        # 3. 리밸런싱 차액 바 차트
+        diff_labels = [a for a in ASSET_LIST if abs(diff_vals[a]) >= 1.0]
+        diff_values = [diff_vals[a] for a in diff_labels]
+        diff_colors = [c_green if v > 0 else c_red for v in diff_values]
+        if diff_labels:
+            fig_bar = go.Figure(data=[go.Bar(x=diff_labels, y=diff_values, marker_color=diff_colors, text=[f"${v:,.0f}" for v in diff_values], textposition='auto')])
+            fig_bar.update_layout(title_text="리밸런싱 필요 금액 ($)", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color=t_color), margin=dict(t=40, b=10, l=10, r=10))
+            chart_c3.plotly_chart(fig_bar, use_container_width=True)
+
+        bg_card = 'rgba(255,255,255,0.05)' if is_dark else 'rgba(255,255,255,0.9)'
+        txt_col = '#ECF0F1' if is_dark else '#2C3E50'
+        muted_col = '#A0AEC0' if is_dark else '#7F8C8D'
+
+        # ── 한눈에 보는 요약 주문서 ──
+        st.markdown(f"<h5 style='color:{h_color}; margin-top: 10px;'>📝 요약 주문서 (증권사 앱 입력용)</h5>", unsafe_allow_html=True)
+        summary_html = f"<div style='background: {bg_card}; border: 1px solid {h_border}; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: {h_shadow}; display: flex; gap: 20px; color: {txt_col};'>"
+        
+        sell_text = "<div style='flex: 1;'><strong>🔴 매도(SELL) 주문</strong><br><br>"
+        buy_text = "<div style='flex: 1;'><strong>🟢 매수(BUY) 주문</strong><br><br>"
+        
+        has_sell, has_buy = False, False
+        
+        for asset in ASSET_LIST:
+            cur_p = current_prices[asset] if current_prices[asset] > 0 else 1.0
+            diff = diff_vals[asset]
+            if asset != 'CASH' and diff < -cur_p * 0.05:
+                sell_text += f"<div style='margin-bottom: 8px; font-size: 1.1em;'><span style='display:inline-block; width: 60px; font-weight:bold; color:{h_accent};'>{asset}</span> : <span style='color:{c_red}; font-weight:bold;'>{abs(diff)/cur_p:,.2f}주</span> 매도 (약 ${abs(diff):,.0f})</div>"
+                has_sell = True
+            elif asset == 'CASH' and diff < -1.0:
+                sell_text += f"<div style='margin-bottom: 8px; font-size: 1.1em;'><span style='display:inline-block; width: 60px; font-weight:bold; color:{h_accent};'>현금</span> : <span style='color:{c_red}; font-weight:bold;'>${abs(diff):,.0f}</span> 투자에 사용</div>"
+                has_sell = True
+        
+        for asset in ASSET_LIST:
+            cur_p = current_prices[asset] if current_prices[asset] > 0 else 1.0
+            diff = diff_vals[asset]
+            if asset != 'CASH' and diff > cur_p * 0.05:
+                buy_text += f"<div style='margin-bottom: 8px; font-size: 1.1em;'><span style='display:inline-block; width: 60px; font-weight:bold; color:{h_accent};'>{asset}</span> : <span style='color:{c_green}; font-weight:bold;'>{diff/cur_p:,.2f}주</span> 매수 (약 ${diff:,.0f})</div>"
+                has_buy = True
+            elif asset == 'CASH' and diff > 1.0:
+                buy_text += f"<div style='margin-bottom: 8px; font-size: 1.1em;'><span style='display:inline-block; width: 60px; font-weight:bold; color:{h_accent};'>현금</span> : <span style='color:{c_green}; font-weight:bold;'>${diff:,.0f}</span> 현금 확보</div>"
+                has_buy = True
+                
+        if not has_sell: sell_text += f"<span style='color:{muted_col};'>필요한 매도 주문이 없습니다.</span>"
+        if not has_buy: buy_text += f"<span style='color:{muted_col};'>필요한 매수 주문이 없습니다.</span>"
+        
+        sell_text += "</div>"
+        buy_text += "</div>"
+        summary_html += sell_text + buy_text + "</div>"
+        st.markdown(summary_html, unsafe_allow_html=True)
+
+        # ── 상세 테이블 ──
+        rebal_html = f"""
+        <div style="background: {bg_card}; border: 1px solid {h_border}; border-radius: 16px; padding: 20px; box-shadow: {h_shadow}; overflow-x: auto;">
+        <table style="width:100%; border-collapse: collapse; text-align:right; color: {txt_col}; font-family: 'DM Sans', 'Pretendard', sans-serif; white-space: nowrap;">
+            <thead>
+                <tr style="border-bottom: 2px solid {h_border};">
+                    <th style="text-align:left; padding: 12px 10px; color: {muted_col};">자산</th>
+                    <th style="padding: 12px 10px; color: {muted_col};">매수단가 → 현재가</th>
+                    <th style="padding: 12px 10px; color: {muted_col};">수익률 (KRW)</th>
+                    <th style="padding: 12px 10px; color: {muted_col};">평가금액 ($)</th>
+                    <th style="padding: 12px 10px; color: {muted_col};">목표비중</th>
+                    <th style="padding: 12px 10px; color: {muted_col};">목표금액 ($)</th>
+                    <th style="padding: 12px 10px; color: {muted_col};">리밸런싱 ($)</th>
+                    <th style="text-align:center; padding: 12px 10px; color: {muted_col};">액션 지침</th>
+                </tr>
+            </thead>
+            <tbody>
+        """
+        
+        for asset in ASSET_LIST:
+            shares = st.session_state.portfolio[asset]['shares']
+            avg_p  = st.session_state.portfolio[asset]['avg_price']
+            pur_fx = st.session_state.portfolio[asset]['fx']
+            cur_p  = current_prices[asset] if current_prices[asset] > 0 else 1.0
+            
+            curr_v = curr_vals[asset]
+            tgt_w  = target_weights.get(asset, 0.0)
+            tgt_v  = total_val_usd * tgt_w
+            diff   = diff_vals[asset]
+            
+            if asset == 'CASH':
+                avg_p_str = "-"
+                ret_usd = 0.0
+                ret_krw = ((cur_fx / pur_fx) - 1) * 100 if pur_fx > 0 else 0.0
+            else:
+                avg_p_str = f"${avg_p:,.2f} &rarr; ${cur_p:,.2f}"
+                ret_usd = (cur_p / avg_p - 1) * 100 if avg_p > 0 else 0.0
+                ret_krw = ((cur_p * cur_fx) / (avg_p * pur_fx) - 1) * 100 if (avg_p > 0 and pur_fx > 0) else 0.0
+                
+            ret_usd_color = c_green if ret_usd >= 0 else c_red
+            ret_krw_color = c_green if ret_krw >= 0 else c_red
+            ret_usd_str = f"{ret_usd:+.2f}%" if asset != 'CASH' else "-"
+            ret_krw_str = f"₩ {ret_krw:+.2f}%"
+            
+            if abs(diff) < cur_p * 0.05 and asset != 'CASH': 
+                action = f"<span style='color: {muted_col}; font-weight:bold;'>HOLD</span>"
+                diff_str = "-"
+            elif abs(diff) < 1.0 and asset == 'CASH':
+                action = f"<span style='color: {muted_col}; font-weight:bold;'>HOLD</span>"
+                diff_str = "-"
+            elif diff > 0: 
+                if asset == 'CASH':
+                    action = f"<span style='background: rgba(22,163,74,0.15); color: {c_green}; padding: 4px 10px; border-radius: 8px; font-weight:bold;'>현금 +${diff:,.0f} 확보</span>"
+                else:
+                    action = f"<span style='background: rgba(22,163,74,0.15); color: {c_green}; padding: 4px 10px; border-radius: 8px; font-weight:bold;'>{diff/cur_p:,.2f}주 매수</span>"
+                diff_str = f"<span style='color: {c_green};'>+${diff:,.2f}</span>"
+            else: 
+                if asset == 'CASH':
+                    action = f"<span style='background: rgba(220,38,38,0.15); color: {c_red}; padding: 4px 10px; border-radius: 8px; font-weight:bold;'>현금 -${abs(diff):,.0f} 사용</span>"
+                else:
+                    action = f"<span style='background: rgba(220,38,38,0.15); color: {c_red}; padding: 4px 10px; border-radius: 8px; font-weight:bold;'>{abs(diff)/cur_p:,.2f}주 매도</span>"
+                diff_str = f"<span style='color: {c_red};'>-${abs(diff):,.2f}</span>"
+                
+            if tgt_w > 0 or curr_v > 0 or shares > 0:
+                rebal_html += f"""
+                <tr style="border-bottom: 1px solid {h_border};">
+                    <td style="text-align:left; padding: 15px 10px; font-weight:bold; color:{h_accent};">{asset}</td>
+                    <td style="padding: 15px 10px;">{avg_p_str}</td>
+                    <td style="padding: 15px 10px; line-height:1.4;">
+                        <span style="color: {ret_usd_color}; font-weight:bold;">{ret_usd_str}</span><br>
+                        <span style="font-size: 0.85em; color: {ret_krw_color};">{ret_krw_str}</span>
+                    </td>
+                    <td style="padding: 15px 10px; font-weight:600;">{curr_v:,.2f}</td>
+                    <td style="padding: 15px 10px; font-weight:bold;">{tgt_w*100:.0f}%</td>
+                    <td style="padding: 15px 10px;">{tgt_v:,.2f}</td>
+                    <td style="padding: 15px 10px; font-weight:bold;">{diff_str}</td>
+                    <td style="text-align:center; padding: 15px 10px;">{action}</td>
+                </tr>
+                """
+        rebal_html += "</tbody></table></div>"
+        st.markdown(rebal_html, unsafe_allow_html=True)
+    else:
+        st.info("👈 위 표에 보유 중인 자산의 수량과 단가를 1개 이상 입력하시면, 시각화 차트와 상세 리밸런싱 지침이 이 자리에 나타납니다.")8ED;padding:10px 6px 10px 6px;}}
 .title{{font-size:1.2em;font-weight:700;color:#1C1C1E;margin-bottom:15px;padding-left:4px;}}</style>
 </head><body>
 <div class="title">🖼️ 최신 경제 헤드라인 갤러리</div>
