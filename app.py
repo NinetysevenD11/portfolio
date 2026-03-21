@@ -265,16 +265,31 @@ liquid_glass_css = """<style>
         --text-muted: #4A5270;
         --accent-blue: #3B5BDB;
     }
-    /* ── 배경: 실버/크롬 톤 ── */
+    /* ── 배경: 실버 메탈릭 CSS 그라데이션 ── */
     .stApp {
         background:
-            linear-gradient(135deg,
-                rgba(255,255,255,0.30) 0%,
-                rgba(200,210,220,0.20) 30%,
-                rgba(180,190,205,0.25) 60%,
-                rgba(210,215,225,0.20) 100%),
-            url("https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1920&q=80")
-            center/cover no-repeat fixed !important;
+            repeating-linear-gradient(
+                105deg,
+                rgba(255,255,255,0.0)  0px,
+                rgba(255,255,255,0.12) 1px,
+                rgba(255,255,255,0.0)  2px,
+                rgba(255,255,255,0.0)  18px
+            ),
+            linear-gradient(
+                160deg,
+                #E8E9EC  0%,
+                #F4F5F7  8%,
+                #C8CACD 18%,
+                #EAECEE 28%,
+                #B8BBBE 38%,
+                #F0F1F3 48%,
+                #D0D2D5 56%,
+                #FFFFFF 63%,
+                #C0C2C6 72%,
+                #E6E8EA 80%,
+                #B0B2B6 88%,
+                #DCDEE0 100%
+            ) !important;
         color: var(--text-main);
         font-family: 'DM Sans', sans-serif;
     }
@@ -502,13 +517,28 @@ else:
 # ==========================================
 LG_BG = """
   background:
-    linear-gradient(135deg,
-        rgba(255,255,255,0.30) 0%,
-        rgba(200,210,220,0.20) 30%,
-        rgba(180,190,205,0.25) 60%,
-        rgba(210,215,225,0.20) 100%),
-    url("https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1920&q=80")
-    center/cover no-repeat;"""
+    repeating-linear-gradient(
+        105deg,
+        rgba(255,255,255,0.0)  0px,
+        rgba(255,255,255,0.12) 1px,
+        rgba(255,255,255,0.0)  2px,
+        rgba(255,255,255,0.0)  18px
+    ),
+    linear-gradient(
+        160deg,
+        #E8E9EC  0%,
+        #F4F5F7  8%,
+        #C8CACD 18%,
+        #EAECEE 28%,
+        #B8BBBE 38%,
+        #F0F1F3 48%,
+        #D0D2D5 56%,
+        #FFFFFF 63%,
+        #C0C2C6 72%,
+        #E6E8EA 80%,
+        #B0B2B6 88%,
+        #DCDEE0 100%
+    );"""
 
 LG_CSS_BASE = """
 <style>
