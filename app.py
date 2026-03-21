@@ -11,6 +11,7 @@ import urllib.parse
 import xml.etree.ElementTree as ET
 import warnings
 import google.generativeai as genai
+import json  # 🚨 백업/복구를 위한 JSON 라이브러리 추가
 
 warnings.filterwarnings('ignore')
 
@@ -23,6 +24,10 @@ SECTOR_TICKERS = ['XLK','XLV','XLF','XLY','XLC','XLI','XLP','XLE','XLU','XLRE','
 CORE_TICKERS   = ['QQQ','TQQQ','SOXL','USD','QLD','SSO','SPY','SMH','GLD','^VIX','HYG','IEF','QQQE','UUP']
 TICKERS        = CORE_TICKERS + SECTOR_TICKERS
 ASSET_LIST     = ['TQQQ','SOXL','USD','QLD','SSO','SPY','QQQ','GLD','CASH']
+
+# 🚨 포트폴리오 데이터를 기억하기 위한 세션 스테이트 초기화
+if 'portfolio' not in st.session_state:
+    st.session_state.portfolio = {asset: 0.0 for asset in ASSET_LIST}
 
 @st.cache_data(ttl=3600)
 def load_data():
@@ -161,7 +166,7 @@ target_weights = get_weights_v45(curr_regime, smh_cond)
 # ==========================================
 sidebar_top = st.sidebar.container()
 page = st.sidebar.radio("NAVIGATION MENU",
-    ["📊 시장 분석관 (Home)","🍫 8-Pack 레이더망","📈 백테스트 랩","📰 매크로 뉴스룸"],
+    ["📊 시장 분석관 (Home)", "💼 내 포트폴리오", "🍫 8-Pack 레이더망", "📈 백테스트 랩", "📰 매크로 뉴스룸"],
     label_visibility="collapsed")
 st.sidebar.markdown("<br><hr><br>", unsafe_allow_html=True)
 ui_style = st.sidebar.radio("🎨 UI 테마 선택",
@@ -200,7 +205,7 @@ st.sidebar.markdown(f"""
         Powered by AMLS V4.5 Engine<br>&copy; 2026 SEYOON.</div>""", unsafe_allow_html=True)
 
 # ==========================================
-# 3. CSS
+# 3. CSS (기존 디자인 유지)
 # ==========================================
 neo_tactile_css = """<style>
     :root{--base-bg:#EBE5DF;--text-main:#3A2E28;--accent-primary:#B26A47;
@@ -379,9 +384,6 @@ elif live_regime > curr_regime:
 else:
     regime_committee_msg = f"R{live_regime} 신호 감지 — 5일 확인 대기 중 (현재 R{curr_regime} 배분 유지)"
 
-# ==========================================
-# Liquid Glass HTML 생성 헬퍼
-# ==========================================
 LG_BG = """
   background:
     repeating-linear-gradient(
@@ -873,6 +875,101 @@ body{{font-family:'DM Sans',sans-serif;background:#E8E8ED;padding:12px 6px 4px 6
     with chart_col2: st.plotly_chart(fig_tqqq, use_container_width=True)
 
 # ------------------------------------------
+# PAGE 1.5: 💼 내 포트폴리오
+# ------------------------------------------
+elif page == "💼 내 포트폴리오":
+    st.subheader("💼 내 포트폴리오 & 리밸런싱 지침")
+    st.markdown("현재 보유 중인 자산 금액을 입력하면, 현재 국면(Regime)의 목표 비중에 맞춘 **정확한 리밸런싱(매수/매도) 가이드**를 계산해 드립니다.")
+    
+    col_up, col_down = st.columns(2)
+    with col_up:
+        uploaded_file = st.file_uploader("📂 포트폴리오 복구 (JSON 백업 파일 업로드)", type="json")
+        if uploaded_file is not None:
+            try:
+                data = json.load(uploaded_file)
+                st.session_state.portfolio.update(data)
+                st.success("포트폴리오가 성공적으로 복구되었습니다!")
+            except:
+                st.error("파일 형식이 올바르지 않습니다.")
+    with col_down:
+        st.markdown("<br>", unsafe_allow_html=True)
+        json_str = json.dumps(st.session_state.portfolio)
+        st.download_button(label="💾 현재 포트폴리오 백업 (JSON 다운로드)", 
+                           data=json_str, 
+                           file_name="portfolio_backup.json", 
+                           mime="application/json",
+                           use_container_width=True)
+
+    st.divider()
+    
+    c1, c2 = st.columns([1, 2])
+    
+    with c1:
+        st.markdown("#### 📥 현재 자산 입력 (달러/원 자유)")
+        for asset in ASSET_LIST:
+            st.session_state.portfolio[asset] = st.number_input(f"{asset} 보유 금액", value=float(st.session_state.portfolio[asset]), step=100.0)
+            
+    with c2:
+        st.markdown("#### ⚖️ 리밸런싱 액션 지침")
+        total_val = sum(st.session_state.portfolio.values())
+        st.metric("총 자산 규모 (Total Portfolio Value)", f"{total_val:,.2f}")
+        
+        if total_val > 0:
+            bg_card = 'rgba(255,255,255,0.05)' if is_dark else 'rgba(255,255,255,0.9)'
+            txt_col = '#ECF0F1' if is_dark else '#2C3E50'
+            muted_col = '#A0AEC0' if is_dark else '#7F8C8D'
+
+            rebal_html = f"""
+            <div style="background: {bg_card}; border: 1px solid {h_border}; border-radius: 16px; padding: 20px; box-shadow: {h_shadow};">
+            <table style="width:100%; border-collapse: collapse; text-align:right; color: {txt_col}; font-family: 'DM Sans', 'Pretendard', sans-serif;">
+                <thead>
+                    <tr style="border-bottom: 2px solid {h_border};">
+                        <th style="text-align:left; padding: 12px 5px; color: {muted_col};">자산</th>
+                        <th style="padding: 12px 5px; color: {muted_col};">현재 금액</th>
+                        <th style="padding: 12px 5px; color: {muted_col};">목표 비중</th>
+                        <th style="padding: 12px 5px; color: {muted_col};">목표 금액</th>
+                        <th style="padding: 12px 5px; color: {muted_col};">리밸런싱 차액</th>
+                        <th style="text-align:center; padding: 12px 5px; color: {muted_col};">액션 지침</th>
+                    </tr>
+                </thead>
+                <tbody>
+            """
+            for asset in ASSET_LIST:
+                curr_v = st.session_state.portfolio[asset]
+                tgt_w = target_weights.get(asset, 0.0)
+                tgt_v = total_val * tgt_w
+                diff = tgt_v - curr_v
+                
+                c_green = "#34D399" if is_dark else "#16A34A"
+                c_red = "#F87171" if is_dark else "#DC2626"
+                
+                if abs(diff) < 1.0: 
+                    action = f"<span style='color: {muted_col}; font-weight:bold;'>HOLD</span>"
+                    diff_str = "-"
+                elif diff > 0: 
+                    action = f"<span style='background: rgba(22,163,74,0.15); color: {c_green}; padding: 4px 10px; border-radius: 8px; font-weight:bold;'>BUY (매수)</span>"
+                    diff_str = f"<span style='color: {c_green};'>+{diff:,.2f}</span>"
+                else: 
+                    action = f"<span style='background: rgba(220,38,38,0.15); color: {c_red}; padding: 4px 10px; border-radius: 8px; font-weight:bold;'>SELL (매도)</span>"
+                    diff_str = f"<span style='color: {c_red};'>{diff:,.2f}</span>"
+                    
+                if tgt_w > 0 or curr_v > 0:
+                    rebal_html += f"""
+                    <tr style="border-bottom: 1px solid {h_border};">
+                        <td style="text-align:left; padding: 15px 5px; font-weight:bold; color:{h_accent};">{asset}</td>
+                        <td style="padding: 15px 5px;">{curr_v:,.2f}</td>
+                        <td style="padding: 15px 5px; font-weight:bold;">{tgt_w*100:.0f}%</td>
+                        <td style="padding: 15px 5px;">{tgt_v:,.2f}</td>
+                        <td style="padding: 15px 5px; font-weight:bold;">{diff_str}</td>
+                        <td style="text-align:center; padding: 15px 5px;">{action}</td>
+                    </tr>
+                    """
+            rebal_html += "</tbody></table></div>"
+            st.markdown(rebal_html, unsafe_allow_html=True)
+        else:
+            st.info("👈 왼쪽에 현재 보유 중인 자산 금액을 입력해주세요.")
+
+# ------------------------------------------
 # PAGE 2: 8-PACK
 # ------------------------------------------
 elif page == "🍫 8-Pack 레이더망":
@@ -1187,7 +1284,7 @@ elif page == "📈 백테스트 랩":
                 with st.spinner("AI가 성과를 분석 중입니다..."):
                     response = model.generate_content(prompt)
                     st.markdown(f"""
-                    <div style="background-color: {'rgba(255,255,255,0.05)' if is_dark else 'rgba(0,0,0,0.02)'}; 
+                    <div style="background-color: {'rgba(255,255,255,0.05)' if (ui_style != "Light Mode (Neo-Tactile)") else 'rgba(0,0,0,0.02)'}; 
                                 border: 1px solid {h_border}; border-radius: 16px; padding: 20px; margin-top: 10px; box-shadow: {h_shadow};">
                         {response.text}
                     </div>
@@ -1292,9 +1389,12 @@ elif page == "📰 매크로 뉴스룸":
                             border-radius: 4px;
                         }}
                         </style>
+                        
                         <div class="ai-report-box">
                         """, unsafe_allow_html=True)
+                        
                         st.markdown(response.text)
+                        
                         st.markdown("</div>", unsafe_allow_html=True)
                         
                         with st.expander("📋 텍스트로 복사하기"): 
