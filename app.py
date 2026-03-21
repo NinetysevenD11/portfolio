@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 import warnings
 import google.generativeai as genai
 import json
-import os  # 파일 자동 저장을 위한 os 라이브러리 추가
+import os
 
 warnings.filterwarnings('ignore')
 
@@ -26,26 +26,28 @@ CORE_TICKERS   = ['QQQ','TQQQ','SOXL','USD','QLD','SSO','SPY','SMH','GLD','^VIX'
 TICKERS        = CORE_TICKERS + SECTOR_TICKERS
 ASSET_LIST     = ['TQQQ','SOXL','USD','QLD','SSO','SPY','QQQ','GLD','CASH']
 
-# 🚨 [핵심 업데이트] 포트폴리오 자동 로드 (Auto-Load)
+# 🚨 [업데이트] 포트폴리오 자동 로드 및 데이터 구조 고도화 (수량, 단가, 환율 포함)
 PORTFOLIO_FILE = 'portfolio_autosave.json'
 
 if 'portfolio' not in st.session_state:
+    st.session_state.portfolio = {asset: {'shares':0.0, 'avg_price':0.0, 'fx':1350.0} for asset in ASSET_LIST}
     if os.path.exists(PORTFOLIO_FILE):
         try:
             with open(PORTFOLIO_FILE, 'r') as f:
-                st.session_state.portfolio = json.load(f)
-        except:
-            st.session_state.portfolio = {asset: 0.0 for asset in ASSET_LIST}
-    else:
-        st.session_state.portfolio = {asset: 0.0 for asset in ASSET_LIST}
+                loaded = json.load(f)
+                for k, v in loaded.items():
+                    # 구버전(단순 float) 백업 파일 호환성 유지
+                    if isinstance(v, (int, float)):
+                        st.session_state.portfolio[k] = {'shares': v, 'avg_price': 1.0 if k=='CASH' else 0.0, 'fx': 1350.0}
+                    else:
+                        st.session_state.portfolio[k] = v
+        except: pass
 
-# 🚨 포트폴리오 자동 저장 함수 (Auto-Save)
 def save_portfolio_to_disk():
     try:
         with open(PORTFOLIO_FILE, 'w') as f:
             json.dump(st.session_state.portfolio, f)
-    except:
-        pass
+    except: pass
 
 @st.cache_data(ttl=3600)
 def load_data():
@@ -80,7 +82,8 @@ def load_data():
     for sec in SECTOR_TICKERS: df[f'{sec}_1M'] = df[sec].pct_change(21)
     return df.dropna()
 
-REALTIME_TICKERS = ['QQQ','TQQQ','SMH','^VIX','HYG','IEF','UUP','GLD','SPY']
+# 실시간 가격 티커 확충 (환율 포함)
+REALTIME_TICKERS = ['QQQ','TQQQ','SMH','^VIX','HYG','IEF','UUP','GLD','SPY','SOXL','USD','QLD','SSO','USDKRW=X']
 @st.cache_data(ttl=60)
 def fetch_realtime_prices():
     prices = {}
@@ -625,7 +628,6 @@ body{{font-family:'DM Sans',sans-serif;background:#E8E8ED;padding:12px 6px 4px 6
         components.html(tr_html, height=620, scrolling=False)
 
     else:
-        # ── Neo / Dark ──────────────────────────────────────
         with c1:
             msg_bg = 'transparent' if is_neo_style else 'rgba(139,92,246,0.1)'
             st.markdown(f"""
@@ -708,11 +710,11 @@ body{{font-family:'DM Sans',sans-serif;background:#E8E8ED;padding:12px 6px 4px 6
     with chart_col2: st.plotly_chart(fig_tqqq, use_container_width=True)
 
 # ------------------------------------------
-# PAGE 1.5: 💼 내 포트폴리오
+# PAGE 1.5: 💼 내 포트폴리오 (데이터 입력 & 리밸런싱)
 # ------------------------------------------
 elif page == "💼 내 포트폴리오":
     st.subheader("💼 내 포트폴리오 & 리밸런싱 지침")
-    st.markdown("현재 보유 중인 자산 금액을 입력하면, **입력과 동시에 즉시 자동 저장**되며 목표 비중에 맞춘 **정확한 리밸런싱(매수/매도) 가이드**를 제시합니다.")
+    st.markdown("자산별 **보유 수량, 매수 단가, 매입 환율**을 표에 입력하면 현재가 기준으로 평가 금액과 수익률을 계산하여 **최적의 리밸런싱 액션**을 제시합니다.")
     
     col_up, col_down = st.columns(2)
     with col_up:
@@ -729,83 +731,154 @@ elif page == "💼 내 포트폴리오":
         st.markdown("<br>", unsafe_allow_html=True)
         json_str = json.dumps(st.session_state.portfolio)
         st.download_button(label="💾 현재 포트폴리오 수동 백업 (JSON 다운로드)", 
-                           data=json_str, 
-                           file_name="portfolio_backup.json", 
-                           mime="application/json",
-                           use_container_width=True)
+                           data=json_str, file_name="portfolio_backup.json", 
+                           mime="application/json", use_container_width=True)
 
     st.divider()
     
-    c1, c2 = st.columns([1, 2])
+    # --- 1. 입력부 (Data Editor) ---
+    st.markdown(f"<h4 style='color:{h_color};'>📥 포트폴리오 자산 입력</h4>", unsafe_allow_html=True)
+    st.markdown(f"<span style='color:{h_muted};'>아래 표를 클릭하여 직접 타이핑하거나 엑셀에서 복사/붙여넣기 하세요. (CASH는 달러 총액을 수량에 입력)</span>", unsafe_allow_html=True)
     
-    with c1:
-        st.markdown("#### 📥 현재 자산 입력 (자동 저장)")
-        for asset in ASSET_LIST:
-            # 입력값이 변경될 때마다 session_state가 갱신되고, 이후 즉시 로컬 파일로 저장됩니다.
-            st.session_state.portfolio[asset] = st.number_input(f"{asset} 보유 금액", value=float(st.session_state.portfolio[asset]), step=100.0)
-        
-        # 반복문이 끝난 후, 갱신된 포트폴리오를 파일에 자동 저장
-        save_portfolio_to_disk()
+    # 에디터에 넣을 데이터프레임 구성
+    editor_data = []
+    for asset in ASSET_LIST:
+        editor_data.append({
+            "자산": asset,
+            "수량": float(st.session_state.portfolio[asset].get('shares', 0.0)),
+            "매수단가($)": float(st.session_state.portfolio[asset].get('avg_price', 0.0)),
+            "매입환율(₩)": float(st.session_state.portfolio[asset].get('fx', 1350.0))
+        })
+    df_editor = pd.DataFrame(editor_data)
+    
+    # 깔끔한 UI의 Data Editor 생성
+    edited_df = st.data_editor(
+        df_editor,
+        disabled=["자산"],
+        hide_index=True,
+        use_container_width=True,
+        column_config={
+            "수량": st.column_config.NumberColumn("보유 수량", min_value=0.0, format="%.4f"),
+            "매수단가($)": st.column_config.NumberColumn("매수단가 ($)", min_value=0.0, format="%.2f"),
+            "매입환율(₩)": st.column_config.NumberColumn("매입환율 (₩)", min_value=0.0, format="%.2f")
+        }
+    )
+    
+    # 에디터에서 변경된 내용을 session_state와 로컬 파일에 즉시 자동 저장
+    for _, row in edited_df.iterrows():
+        asset = row["자산"]
+        st.session_state.portfolio[asset] = {
+            'shares': float(row["수량"]),
+            'avg_price': float(row["매수단가($)"]),
+            'fx': float(row["매입환율(₩)"])
+        }
+    save_portfolio_to_disk()
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # --- 2. 현황 및 리밸런싱 지침부 ---
+    st.markdown(f"<h4 style='color:{h_color};'>⚖️ 포트폴리오 현황 및 리밸런싱 액션</h4>", unsafe_allow_html=True)
+    
+    # 현재가 가져오기
+    current_prices = {}
+    for t in ASSET_LIST:
+        if t == 'CASH': 
+            current_prices[t] = 1.0
+        elif t in rt_prices: 
+            current_prices[t] = rt_prices[t]
+        elif t in df.columns: 
+            current_prices[t] = df[t].iloc[-1]
+        else: 
+            current_prices[t] = 0.0
             
-    with c2:
-        st.markdown("#### ⚖️ 리밸런싱 액션 지침")
-        total_val = sum(st.session_state.portfolio.values())
-        st.metric("총 자산 규모 (Total Portfolio Value)", f"{total_val:,.2f}")
+    cur_fx = rt_prices.get('USDKRW=X', 1350.0)
+    
+    # 총 자산 가치 계산
+    total_val_usd = sum([st.session_state.portfolio[t]['shares'] * current_prices[t] for t in ASSET_LIST])
+    
+    st.metric("총 자산 규모 (Total Portfolio Value)", f"${total_val_usd:,.2f}", f"현재 적용 환율: ₩{cur_fx:,.2f}")
+    
+    if total_val_usd > 0:
+        bg_card = 'rgba(255,255,255,0.05)' if is_dark else 'rgba(255,255,255,0.9)'
+        txt_col = '#ECF0F1' if is_dark else '#2C3E50'
+        muted_col = '#A0AEC0' if is_dark else '#7F8C8D'
         
-        if total_val > 0:
-            bg_card = 'rgba(255,255,255,0.05)' if is_dark else 'rgba(255,255,255,0.9)'
-            txt_col = '#ECF0F1' if is_dark else '#2C3E50'
-            muted_col = '#A0AEC0' if is_dark else '#7F8C8D'
+        c_green = "#34D399" if is_dark else "#16A34A"
+        c_red = "#F87171" if is_dark else "#DC2626"
 
-            rebal_html = f"""
-            <div style="background: {bg_card}; border: 1px solid {h_border}; border-radius: 16px; padding: 20px; box-shadow: {h_shadow};">
-            <table style="width:100%; border-collapse: collapse; text-align:right; color: {txt_col}; font-family: 'DM Sans', 'Pretendard', sans-serif;">
-                <thead>
-                    <tr style="border-bottom: 2px solid {h_border};">
-                        <th style="text-align:left; padding: 12px 5px; color: {muted_col};">자산</th>
-                        <th style="padding: 12px 5px; color: {muted_col};">현재 금액</th>
-                        <th style="padding: 12px 5px; color: {muted_col};">목표 비중</th>
-                        <th style="padding: 12px 5px; color: {muted_col};">목표 금액</th>
-                        <th style="padding: 12px 5px; color: {muted_col};">리밸런싱 차액</th>
-                        <th style="text-align:center; padding: 12px 5px; color: {muted_col};">액션 지침</th>
-                    </tr>
-                </thead>
-                <tbody>
-            """
-            for asset in ASSET_LIST:
-                curr_v = st.session_state.portfolio[asset]
-                tgt_w = target_weights.get(asset, 0.0)
-                tgt_v = total_val * tgt_w
-                diff = tgt_v - curr_v
+        rebal_html = f"""
+        <div style="background: {bg_card}; border: 1px solid {h_border}; border-radius: 16px; padding: 20px; box-shadow: {h_shadow}; overflow-x: auto;">
+        <table style="width:100%; border-collapse: collapse; text-align:right; color: {txt_col}; font-family: 'DM Sans', 'Pretendard', sans-serif; white-space: nowrap;">
+            <thead>
+                <tr style="border-bottom: 2px solid {h_border};">
+                    <th style="text-align:left; padding: 12px 10px; color: {muted_col};">자산</th>
+                    <th style="padding: 12px 10px; color: {muted_col};">매수단가 → 현재가</th>
+                    <th style="padding: 12px 10px; color: {muted_col};">수익률 (KRW)</th>
+                    <th style="padding: 12px 10px; color: {muted_col};">평가금액 ($)</th>
+                    <th style="padding: 12px 10px; color: {muted_col};">목표비중</th>
+                    <th style="padding: 12px 10px; color: {muted_col};">목표금액 ($)</th>
+                    <th style="padding: 12px 10px; color: {muted_col};">리밸런싱 ($)</th>
+                    <th style="text-align:center; padding: 12px 10px; color: {muted_col};">액션 지침</th>
+                </tr>
+            </thead>
+            <tbody>
+        """
+        
+        for asset in ASSET_LIST:
+            shares = st.session_state.portfolio[asset]['shares']
+            avg_p  = st.session_state.portfolio[asset]['avg_price']
+            pur_fx = st.session_state.portfolio[asset]['fx']
+            cur_p  = current_prices[asset]
+            
+            curr_v = shares * cur_p
+            tgt_w  = target_weights.get(asset, 0.0)
+            tgt_v  = total_val_usd * tgt_w
+            diff   = tgt_v - curr_v
+            
+            # 수익률 계산
+            if asset == 'CASH':
+                avg_p_str = "-"
+                ret_usd = 0.0
+                ret_krw = ((cur_fx / pur_fx) - 1) * 100 if pur_fx > 0 else 0.0
+            else:
+                avg_p_str = f"${avg_p:,.2f} &rarr; ${cur_p:,.2f}"
+                ret_usd = (cur_p / avg_p - 1) * 100 if avg_p > 0 else 0.0
+                ret_krw = ((cur_p * cur_fx) / (avg_p * pur_fx) - 1) * 100 if (avg_p > 0 and pur_fx > 0) else 0.0
                 
-                c_green = "#34D399" if is_dark else "#16A34A"
-                c_red = "#F87171" if is_dark else "#DC2626"
+            # HTML 렌더링용 서식
+            ret_usd_color = c_green if ret_usd >= 0 else c_red
+            ret_krw_color = c_green if ret_krw >= 0 else c_red
+            ret_usd_str = f"{ret_usd:+.2f}%" if asset != 'CASH' else "-"
+            ret_krw_str = f"₩ {ret_krw:+.2f}%"
+            
+            if abs(diff) < 1.0: 
+                action = f"<span style='color: {muted_col}; font-weight:bold;'>HOLD</span>"
+                diff_str = "-"
+            elif diff > 0: 
+                action = f"<span style='background: rgba(22,163,74,0.15); color: {c_green}; padding: 4px 10px; border-radius: 8px; font-weight:bold;'>BUY (매수)</span>"
+                diff_str = f"<span style='color: {c_green};'>+{diff:,.2f}</span>"
+            else: 
+                action = f"<span style='background: rgba(220,38,38,0.15); color: {c_red}; padding: 4px 10px; border-radius: 8px; font-weight:bold;'>SELL (매도)</span>"
+                diff_str = f"<span style='color: {c_red};'>{diff:,.2f}</span>"
                 
-                if abs(diff) < 1.0: 
-                    action = f"<span style='color: {muted_col}; font-weight:bold;'>HOLD</span>"
-                    diff_str = "-"
-                elif diff > 0: 
-                    action = f"<span style='background: rgba(22,163,74,0.15); color: {c_green}; padding: 4px 10px; border-radius: 8px; font-weight:bold;'>BUY (매수)</span>"
-                    diff_str = f"<span style='color: {c_green};'>+{diff:,.2f}</span>"
-                else: 
-                    action = f"<span style='background: rgba(220,38,38,0.15); color: {c_red}; padding: 4px 10px; border-radius: 8px; font-weight:bold;'>SELL (매도)</span>"
-                    diff_str = f"<span style='color: {c_red};'>{diff:,.2f}</span>"
-                    
-                if tgt_w > 0 or curr_v > 0:
-                    rebal_html += f"""
-                    <tr style="border-bottom: 1px solid {h_border};">
-                        <td style="text-align:left; padding: 15px 5px; font-weight:bold; color:{h_accent};">{asset}</td>
-                        <td style="padding: 15px 5px;">{curr_v:,.2f}</td>
-                        <td style="padding: 15px 5px; font-weight:bold;">{tgt_w*100:.0f}%</td>
-                        <td style="padding: 15px 5px;">{tgt_v:,.2f}</td>
-                        <td style="padding: 15px 5px; font-weight:bold;">{diff_str}</td>
-                        <td style="text-align:center; padding: 15px 5px;">{action}</td>
-                    </tr>
-                    """
-            rebal_html += "</tbody></table></div>"
-            st.markdown(rebal_html, unsafe_allow_html=True)
-        else:
-            st.info("👈 왼쪽에 현재 보유 중인 자산 금액을 입력해주세요. (입력 시 자동 저장됩니다)")
+            if tgt_w > 0 or curr_v > 0 or shares > 0:
+                rebal_html += f"""
+                <tr style="border-bottom: 1px solid {h_border};">
+                    <td style="text-align:left; padding: 15px 10px; font-weight:bold; color:{h_accent};">{asset}</td>
+                    <td style="padding: 15px 10px;">{avg_p_str}</td>
+                    <td style="padding: 15px 10px; line-height:1.4;">
+                        <span style="color: {ret_usd_color};">{ret_usd_str}</span><br>
+                        <span style="font-size: 0.85em; color: {ret_krw_color};">{ret_krw_str}</span>
+                    </td>
+                    <td style="padding: 15px 10px; font-weight:600;">{curr_v:,.2f}</td>
+                    <td style="padding: 15px 10px; font-weight:bold;">{tgt_w*100:.0f}%</td>
+                    <td style="padding: 15px 10px;">{tgt_v:,.2f}</td>
+                    <td style="padding: 15px 10px; font-weight:bold;">{diff_str}</td>
+                    <td style="text-align:center; padding: 15px 10px;">{action}</td>
+                </tr>
+                """
+        rebal_html += "</tbody></table></div>"
+        st.markdown(rebal_html, unsafe_allow_html=True)
 
 # ------------------------------------------
 # PAGE 2: 8-PACK
@@ -986,24 +1059,19 @@ elif page == "🍫 8-Pack 레이더망":
             fig8.update_layout(**radar_layout,showlegend=False); st.plotly_chart(fig8,use_container_width=True)
 
 # ------------------------------------------
-# PAGE 3: 📈 백테스트 랩
+# PAGE 3: 📈 백테스트 랩 
 # ------------------------------------------
 elif page == "📈 백테스트 랩":
     st.subheader("📈 AMLS V4.5 공식 백테스트 랩")
     st.markdown("현재 로드된 데이터 기간 동안의 AMLS V4.5 성과를 **나스닥(QQQ) 및 2배/3배 레버리지 장기투자** 성과와 비교 검증합니다.")
 
     with st.spinner("과거 데이터 기반 정밀 시뮬레이션 가동 중..."):
-        # 수익률 계산을 위한 데이터 준비
         daily_ret = df[['QQQ','TQQQ','SOXL','USD','QLD','SSO','SPY','SMH','GLD']].pct_change().fillna(0)
-        
-        # 시작 비중 세팅
         w_orig = get_weights_v45(df['Regime'].iloc[0], False)
         
-        # 1. 초기 자본 세팅 (1만 달러)
         val_o, val_q, val_qld, val_tqqq = 10000, 10000, 10000, 10000
         hist_o, hist_q, hist_qld, hist_tqqq = [val_o], [val_q], [val_qld], [val_tqqq]
         
-        # 2. 시뮬레이션 루프
         for i in range(1, len(df)):
             ret_o = sum(w_orig.get(t,0) * daily_ret[t].iloc[i] for t in w_orig if t in daily_ret.columns)
             
@@ -1017,7 +1085,6 @@ elif page == "📈 백테스트 랩":
             hist_qld.append(val_qld)
             hist_tqqq.append(val_tqqq)
             
-            # 종가 기준으로 다음 날 비중 리밸런싱
             smh_cond_i = (df['SMH'].iloc[i] > df['SMH_MA50'].iloc[i]) and (df['SMH_3M_Ret'].iloc[i] > 0.05) and (df['SMH_RSI'].iloc[i] > 50)
             w_orig = get_weights_v45(df['Regime'].iloc[i], smh_cond_i)
             
@@ -1029,7 +1096,6 @@ elif page == "📈 백테스트 랩":
         
         days = (res_df.index[-1] - res_df.index[0]).days
         
-        # 3. 성과 지표 계산 함수
         def calc_metrics(series):
             ret = (series[-1]/series[0]) - 1
             cagr = (series[-1]/series[0]) ** (365.25 / days) - 1 if days > 0 else 0
@@ -1041,7 +1107,6 @@ elif page == "📈 백테스트 랩":
         ret_qld, cagr_qld, mdd_qld = calc_metrics(res_df['QLD'])
         ret_t, cagr_t, mdd_t       = calc_metrics(res_df['TQQQ'])
         
-        # ── 시각화 1: 4개 전략 성과 카드 UI ──
         st.markdown(f"#### 📊 핵심 성과 지표 (최근 {days}일)")
         mc1, mc2, mc3, mc4 = st.columns(4)
         
@@ -1070,7 +1135,6 @@ elif page == "📈 백테스트 랩":
         st.markdown("<br>", unsafe_allow_html=True)
         chart_col1, chart_col2 = st.columns([1, 1])
 
-        # ── 시각화 2: 자산 성장 곡선 차트 ──
         st.markdown("#### 📈 자산 성장 곡선 (Equity Curve)", unsafe_allow_html=True)
         fig_eq = go.Figure()
         fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['QQQ'], name='QQQ (1x)', line=dict(color='#A0AEC0', width=1.5, dash='dot')))
@@ -1083,7 +1147,6 @@ elif page == "📈 백테스트 랩":
                              legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
         st.plotly_chart(fig_eq, use_container_width=True)
         
-        # ── 시각화 3: 최대 낙폭(Drawdown) 수중 차트 ──
         st.markdown("#### 📉 수중 차트 (Drawdown - 멘탈 스트레스 지수)", unsafe_allow_html=True)
         def get_dd_series(series): return (series / series.cummax()) - 1
         
@@ -1098,7 +1161,6 @@ elif page == "📈 백테스트 랩":
                              legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
         st.plotly_chart(fig_dd, use_container_width=True)
         
-        # ── AI 자동 브리핑 ──
         st.divider()
         st.markdown("#### 🤖 AI 전략 성과 브리핑 리포트")
         st.markdown("제미나이(Gemini) 모델이 위 백테스트의 수익률(Return)과 낙폭(Drawdown)을 비교 분석하여 전략의 우위성을 해설합니다.")
@@ -1136,7 +1198,6 @@ elif page == "📈 백테스트 랩":
 elif page == "📰 매크로 뉴스룸":
     headlines_for_ai, news_items = fetch_macro_news()
 
-    # 헤더 영역
     if is_glass_style:
         components.html(f"""<!DOCTYPE html><html><head><meta charset="UTF-8">{LG_CSS_BASE}</head>
 <body>
@@ -1159,7 +1220,6 @@ elif page == "📰 매크로 뉴스룸":
     else:
         st.markdown(f"### 📰 실시간 글로벌 매크로 뉴스 & AI 브리핑")
 
-    # ── AI 심층 분석 영역 ──
     with st.expander("✨ System-2 심층 추론 애널리스트 분석", expanded=True):
         if st.button("🚀 심층 추론 요약 실행", use_container_width=True):
             try:
@@ -1191,48 +1251,15 @@ elif page == "📰 매크로 뉴스룸":
                         
                         st.markdown(f"""
                         <style>
-                        .ai-report-box {{
-                            background-color: {ai_bg};
-                            border: 1px solid {h_border};
-                            border-radius: 16px;
-                            padding: 30px;
-                            margin-top: 15px;
-                            margin-bottom: 25px;
-                            box-shadow: {h_shadow};
-                        }}
-                        .ai-report-box h2 {{
-                            color: {h_accent};
-                            font-size: 1.5em !important;
-                            font-weight: 800;
-                            border-bottom: 2px solid {h_border};
-                            padding-bottom: 8px;
-                            margin-top: 25px;
-                            margin-bottom: 15px;
-                        }}
-                        .ai-report-box h2:first-child {{
-                            margin-top: 0;
-                        }}
-                        .ai-report-box p, .ai-report-box li {{
-                            color: {text_col};
-                            font-size: 1.1em;
-                            line-height: 1.7;
-                            font-family: 'Pretendard', 'DM Sans', sans-serif;
-                            font-weight: 500;
-                        }}
-                        .ai-report-box strong {{
-                            color: {h_color};
-                            font-weight: 700;
-                            background-color: {'rgba(255,255,255,0.1)' if is_dark else 'rgba(0,0,0,0.05)'};
-                            padding: 2px 6px;
-                            border-radius: 4px;
-                        }}
+                        .ai-report-box {{ background-color: {ai_bg}; border: 1px solid {h_border}; border-radius: 16px; padding: 30px; margin-top: 15px; margin-bottom: 25px; box-shadow: {h_shadow}; }}
+                        .ai-report-box h2 {{ color: {h_accent}; font-size: 1.5em !important; font-weight: 800; border-bottom: 2px solid {h_border}; padding-bottom: 8px; margin-top: 25px; margin-bottom: 15px; }}
+                        .ai-report-box h2:first-child {{ margin-top: 0; }}
+                        .ai-report-box p, .ai-report-box li {{ color: {text_col}; font-size: 1.1em; line-height: 1.7; font-family: 'Pretendard', 'DM Sans', sans-serif; font-weight: 500; }}
+                        .ai-report-box strong {{ color: {h_color}; font-weight: 700; background-color: {'rgba(255,255,255,0.1)' if is_dark else 'rgba(0,0,0,0.05)'}; padding: 2px 6px; border-radius: 4px; }}
                         </style>
-                        
                         <div class="ai-report-box">
                         """, unsafe_allow_html=True)
-                        
                         st.markdown(response.text)
-                        
                         st.markdown("</div>", unsafe_allow_html=True)
                         
                         with st.expander("📋 텍스트로 복사하기"): 
@@ -1242,7 +1269,6 @@ elif page == "📰 매크로 뉴스룸":
 
     st.divider()
 
-    # ── 최신 경제 헤드라인 갤러리 영역 ──
     if news_items:
         if is_glass_style:
             cards = "".join([f'<div class="ncard"><div class="ntitle"><a href="{i["link"]}" target="_blank">{i["title"].replace("&","&amp;")}</a></div><div class="ndate">{i["date"]}</div></div>'
