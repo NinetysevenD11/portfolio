@@ -120,7 +120,7 @@ with st.spinner('데이터 수집 중...'):
     df        = load_data()
     rt_prices = fetch_realtime_prices()
 
-# 🚨 [방어 코드 추가] 데이터가 비어있을 경우 앱을 안전하게 중단합니다.
+# 🚨 [방어 코드] 데이터가 비어있을 경우 앱을 안전하게 중단합니다.
 if df is None or df.empty:
     st.error("🚨 야후 파이낸스(Yahoo Finance) 서버 통신이 지연되어 데이터를 불러오지 못했습니다. (API 호출 제한 또는 네트워크 오류) 잠시 후 새로고침 해주세요.")
     st.stop()
@@ -174,7 +174,11 @@ hist_regime   = int(df.iloc[-1]['Regime'])
 curr_regime   = live_regime if live_regime > hist_regime else hist_regime
 target_regime = live_regime
 
-smh_cond = (smh_close > smh_ma50) and (smh_3m > 0.05 or smh_1m > 0.10) and (smh_rsi > 50)
+# 🚨 [오류 수정] 반도체 진입 조건 개별 변수 복구
+smh_c1 = smh_close > smh_ma50
+smh_c2 = (smh_3m > 0.05 or smh_1m > 0.10)
+smh_c3 = smh_rsi > 50
+smh_cond = smh_c1 and smh_c2 and smh_c3
 
 def get_weights_v45(reg, smh_ok):
     w = {t: 0.0 for t in ASSET_LIST}
@@ -191,7 +195,7 @@ elif live_regime > curr_regime: regime_committee_msg = f"R{live_regime} 하향 �
 else: regime_committee_msg = f"R{live_regime} 신호 감지 — 5일 확인 대기 중"
 
 # ==========================================
-# 2. 전면 개편된 2026 Spatial UI CSS (글씨 크기 하향 조정)
+# 2. 전면 개편된 2026 Spatial UI CSS
 # ==========================================
 st.markdown("""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -225,18 +229,18 @@ st.markdown("""<style>
         border-right: 1px solid rgba(255, 255, 255, 0.8) !important;
     }
     
-    /* 🚨 [글씨 크기 대폭 축소] 사이드바 메뉴 버튼 */
+    /* [사이드바 메뉴 버튼] */
     div.row-widget.stRadio > div { gap: 10px; }
     div.row-widget.stRadio > div > label {
         background: rgba(255, 255, 255, 0.4) !important;
         border: 1px solid rgba(255, 255, 255, 0.8) !important;
         border-radius: 50px !important;
-        padding: 10px 18px !important; /* 여백 줄임 */
+        padding: 10px 18px !important; 
         box-shadow: 0 4px 10px rgba(0,0,0,0.01) !important;
         transition: all 0.2s ease !important;
     }
     div.row-widget.stRadio > div > label p {
-        font-size: 0.9em !important; /* 폰트 크기 축소 */
+        font-size: 0.9em !important; 
         font-weight: 600 !important;
         color: var(--text-main) !important;
     }
@@ -283,7 +287,7 @@ st.markdown("""<style>
 </style>""", unsafe_allow_html=True)
 
 # ==========================================
-# 3. 사이드바 UI (글씨 크기 줄인 버전)
+# 3. 사이드바 UI
 # ==========================================
 sidebar_top = st.sidebar.container()
 sidebar_top.markdown(f"""
@@ -305,7 +309,7 @@ st.sidebar.markdown(f"""
     <div style="font-size:0.75em; font-weight:700; color:#64748B; margin-top: 4px;">Spatial Glass v4.5<br>&copy; 2026 SEYOON.</div>
 </div>""", unsafe_allow_html=True)
 
-# 메인 타이틀 영역 (크기 하향 조정)
+# 메인 타이틀 영역
 st.markdown(f"""
 <div style="padding-bottom:15px; margin-bottom:30px; display:flex; justify-content:space-between; align-items:flex-end; border-bottom: 1px solid rgba(0,0,0,0.05);">
     <div>
@@ -361,8 +365,8 @@ if page == "📊 시장 분석관 (Home)":
                 <div style="font-weight:700; color:#64748B; font-size:0.9em; margin-top:4px;">{'공격적 진입' if smh_cond else '보수적 방어'}</div>
             </div>
             {_lg_row('① 추세 (SMH > 50MA)', f'${smh_close:.1f}', smh_c1)}
-            {_lg_row('② 모멘텀 (1M > 10%)', f'{smh_1m*100:.1f}%', smh_1m>0.10)}
-            {_lg_row('③ 매수심리 (RSI > 50)', f'{smh_rsi:.1f}', smh_rsi>50)}
+            {_lg_row('② 모멘텀 (1M > 10%)', f'{smh_1m*100:.1f}%', smh_c2)}
+            {_lg_row('③ 매수심리 (RSI > 50)', f'{smh_rsi:.1f}', smh_c3)}
             <div style="margin-top:auto; padding:10px; font-size:0.8em; text-align:center; color:#64748B; font-weight:600; border-top:1px dashed rgba(0,0,0,0.05);">※ 필터 통과 시에만 SOXL 편입</div>
         </div>""", unsafe_allow_html=True)
     with c3:
