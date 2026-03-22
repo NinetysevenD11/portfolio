@@ -195,7 +195,7 @@ elif live_regime > curr_regime: regime_committee_msg = f"R{live_regime} 하향 �
 else: regime_committee_msg = f"R{live_regime} 신호 감지 — 5일 확인 대기 중"
 
 # ==========================================
-# 2. 전면 개편된 2026 Spatial UI CSS
+# 2. 전면 개편된 2026 Spatial UI CSS (글씨 크기 하향 조정)
 # ==========================================
 st.markdown("""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -204,142 +204,98 @@ st.markdown("""<style>
         --text-main: #0F172A;
         --text-muted: #64748B;
         --accent: #4F46E5;
-        --accent-glow: rgba(79, 70, 229, 0.4);
     }
 
-    /* [배경] 은은한 오로라 3D 배경 */
+    /* [배경] 은은한 메쉬 그라데이션 */
     .stApp, [data-testid="stAppViewContainer"] {
         background-color: #F8FAFC !important;
         background-image: 
-            radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
-            radial-gradient(circle at 90% 80%, rgba(236, 72, 153, 0.08) 0%, transparent 40%),
-            radial-gradient(circle at 50% 50%, rgba(14, 165, 233, 0.10) 0%, transparent 50%) !important;
+            radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 40%),
+            radial-gradient(circle at 90% 80%, rgba(236, 72, 153, 0.06) 0%, transparent 40%) !important;
         background-attachment: fixed !important;
         color: var(--text-main) !important;
-        font-family: 'Pretendard', 'Outfit', sans-serif;
+        font-family: 'Pretendard', sans-serif;
     }
     
+    /* 기본 UI 여백 및 헤더 숨김 */
     [data-testid="stHeader"] { background-color: transparent !important; }
     #MainMenu { visibility: hidden; } footer { visibility: hidden; }
     .main .block-container { max-width: 1400px; padding-top: 1rem; padding-bottom: 2rem; }
 
-    /* [사이드바 플로팅 효과] */
+    /* [사이드바] 투명도 및 레이아웃 */
     [data-testid="stSidebar"] {
         background: rgba(255, 255, 255, 0.4) !important;
         backdrop-filter: blur(40px) saturate(200%) !important;
-        -webkit-backdrop-filter: blur(40px) saturate(200%) !important;
         border-right: 1px solid rgba(255, 255, 255, 0.8) !important;
-        box-shadow: 10px 0 40px rgba(0,0,0,0.03) !important;
     }
-    [data-testid="stSidebar"] p, [data-testid="stSidebar"] span { color: var(--text-muted) !important; font-weight: 700; letter-spacing: 0.5px; }
-
-    /* [사이드바 라디오 버튼: 둥근 알약 모양 플로팅 메뉴] */
-    div.row-widget.stRadio > div { gap: 12px; padding: 10px 0; }
+    
+    /* [사이드바 메뉴 버튼] */
+    div.row-widget.stRadio > div { gap: 10px; }
     div.row-widget.stRadio > div > label {
-        background: rgba(255, 255, 255, 0.5) !important;
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.9) !important;
+        background: rgba(255, 255, 255, 0.4) !important;
+        border: 1px solid rgba(255, 255, 255, 0.8) !important;
         border-radius: 50px !important;
-        padding: 14px 22px !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.02) !important;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
-        cursor: pointer;
+        padding: 10px 18px !important; /* 여백 줄임 */
+        box-shadow: 0 4px 10px rgba(0,0,0,0.01) !important;
+        transition: all 0.2s ease !important;
     }
-    div.row-widget.stRadio > div > label:hover {
-        transform: translateY(-2px);
-        background: rgba(255, 255, 255, 0.9) !important;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.06) !important;
+    div.row-widget.stRadio > div > label p {
+        font-size: 0.9em !important; /* 폰트 크기 축소 */
+        font-weight: 600 !important;
+        color: var(--text-main) !important;
     }
     div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) {
         background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%) !important;
+        box-shadow: 0 8px 20px rgba(79,70,229,0.3) !important;
         border: none !important;
-        box-shadow: 0 10px 30px var(--accent-glow), inset 0 2px 4px rgba(255,255,255,0.4) !important;
     }
     div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) p {
-        color: #FFFFFF !important; font-weight: 800 !important;
+        color: #FFFFFF !important; font-weight: 700 !important;
     }
 
-    /* [메인 카드 (진짜 Liquid Glass)] */
+    /* [메인 카드] Liquid Glass */
     .glass-card {
         position: relative;
         background: rgba(255, 255, 255, 0.5) !important;
         backdrop-filter: blur(40px) saturate(200%) !important;
-        -webkit-backdrop-filter: blur(40px) saturate(200%) !important;
         border: 1px solid rgba(255, 255, 255, 0.8) !important;
         border-radius: 32px !important;
-        padding: 30px !important;
-        box-shadow: 
-            0 20px 40px rgba(0,0,0,0.04),
-            inset 0 2px 0 rgba(255, 255, 255, 1) !important;
-        overflow: hidden !important;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
-        height: 100%; display: flex; flex-direction: column; justify-content: space-between;
+        padding: 25px !important;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.03), inset 0 2px 0 rgba(255, 255, 255, 1) !important;
+        overflow: hidden; transition: all 0.3s ease; height: 100%;
+        display: flex; flex-direction: column; justify-content: space-between;
     }
-    .glass-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 
-            0 30px 60px rgba(79, 70, 229, 0.12),
-            inset 0 2px 0 rgba(255, 255, 255, 1) !important;
-    }
+    .glass-card:hover { transform: translateY(-3px); box-shadow: 0 25px 50px rgba(79,70,229,0.08), inset 0 2px 0 rgba(255, 255, 255, 1) !important; }
 
-    /* [내부 Inset Box] */
+    /* [카드 제목 폰트 크기 조정] */
+    .glass-card h3 { font-size: 1.1em !important; font-weight: 800 !important; margin-bottom: 12px !important; color: var(--text-main); border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 8px; }
+
     .glass-inset {
-        position: relative;
-        background: rgba(255, 255, 255, 0.4) !important;
-        backdrop-filter: blur(20px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.7) !important;
-        border-radius: 20px !important;
-        padding: 20px; margin-bottom: 20px; text-align: center;
-        box-shadow: inset 0 2px 5px rgba(255,255,255,0.9), 0 4px 12px rgba(0,0,0,0.03) !important;
+        background: rgba(255, 255, 255, 0.4) !important; border-radius: 20px !important; padding: 15px; text-align: center;
+        box-shadow: inset 0 2px 5px rgba(255,255,255,0.9), 0 4px 10px rgba(0,0,0,0.02) !important;
     }
     
-    /* 텍스트 정리 */
-    h1, h2, h3, h4, h5 { color: var(--text-main) !important; font-family: 'Outfit', 'Pretendard', sans-serif; font-weight: 800 !important; letter-spacing: -0.5px; }
+    /* 메인 타이틀 크기 조정 */
+    h1 { font-family: 'Outfit'; font-size: 2.6em !important; letter-spacing: -1px; margin: 0 !important; }
 
-    /* [플로팅 테이블] */
-    .floating-table { width: 100%; border-collapse: separate; border-spacing: 0 12px; font-family: 'Pretendard', sans-serif; }
-    .floating-table th { padding: 12px 16px; font-weight: 700; color: #64748B; text-align: right; border-bottom: none; }
-    .floating-table td { padding: 18px 16px; background: rgba(255, 255, 255, 0.6); color: #0F172A; text-align: right; box-shadow: 0 4px 15px rgba(0,0,0,0.02); border: 1px solid rgba(255,255,255,0.8); }
-    .floating-table tr { transition: transform 0.2s; }
-    .floating-table tr:hover { transform: scale(1.01); }
-    .floating-table td:first-child { border-top-left-radius: 20px; border-bottom-left-radius: 20px; text-align: left; border-right: none; }
-    .floating-table td:not(:first-child):not(:last-child) { border-left: none; border-right: none; }
-    .floating-table td:last-child { border-top-right-radius: 20px; border-bottom-right-radius: 20px; text-align: center; border-left: none; }
+    /* 리스트 및 테이블 정리 */
+    .crow { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.03); font-size: 0.9em; }
+    .clabel { color: #64748B; font-weight: 600; }
+    .cval { font-family: 'Outfit'; font-weight: 800; color: #4F46E5; }
 
-    /* 🚨 [Metric(숫자) 크기 하향 조정] */
-    [data-testid="stMetric"] { background: transparent !important; border: none !important; box-shadow: none !important; padding: 10px 5px !important; }
-    [data-testid="stMetricLabel"] > div > div > p { font-size: 0.9em !important; font-weight: 700; color: #64748B !important; }
-    div[data-testid="stMetricValue"] > div { font-size: 1.4em !important; font-weight: 800; font-family: 'Outfit'; color: #0F172A !important; margin-top: -5px; }
-    div[data-testid="stMetricDelta"] > div { font-size: 0.85em !important; font-weight: 700; }
-    
-    /* 입력창 투명화 */
-    [data-testid="stNumberInput"] > div > div, [data-testid="stTextInput"] > div > div { background: rgba(255,255,255,0.6) !important; border: 1px solid rgba(255,255,255,0.9) !important; border-radius: 16px !important; box-shadow: inset 0 2px 6px rgba(0,0,0,0.02); }
+    /* 🚨 메트릭 숫자 크기 재조정 */
+    [data-testid="stMetricValue"]>div { font-size: 1.4em !important; font-weight: 800; color: #0F172A !important; }
 </style>""", unsafe_allow_html=True)
 
-# iframe 용 CSS (HTML Components)
-LG_CSS_BASE = """<style>
-@import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
-* { margin:0; padding:0; box-sizing:border-box; }
-body { background: transparent; font-family: 'Pretendard', 'Outfit', sans-serif; color: #334155; padding: 10px; }
-.glass-card { background: rgba(255, 255, 255, 0.45); backdrop-filter: blur(40px) saturate(200%); -webkit-backdrop-filter: blur(40px) saturate(200%); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 32px; padding: 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.04), inset 0 2px 0 rgba(255, 255, 255, 1); height: 580px; display: flex; flex-direction: column; transition: transform 0.3s, box-shadow 0.3s; }
-.glass-card:hover { transform: translateY(-4px); box-shadow: 0 30px 60px rgba(79, 70, 229, 0.12), inset 0 2px 0 rgba(255, 255, 255, 1); }
-.glass-inset { background: rgba(255, 255, 255, 0.4); border-radius: 20px; box-shadow: inset 0 2px 5px rgba(255,255,255,0.9), 0 4px 12px rgba(0,0,0,0.03); padding: 20px; margin-bottom: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.7); }
-h2, h3, h4 { color: #0F172A; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; font-family: 'Outfit'; }
-.crow { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px dashed rgba(0,0,0,0.1); font-size: 0.95em; }
-.clabel { color: #64748B; font-weight: 600; } .cval { font-family: 'Outfit', monospace; font-weight: 800; color: #4F46E5; font-size: 1.1em; }
-.weight-header { display: flex; justify-content: space-between; font-size: 0.8em; font-weight: 800; color: #64748B; border-bottom: 2px solid rgba(0,0,0,0.1); padding-bottom: 10px; margin-bottom: 10px; }
-.footer-msg { margin-top: auto; padding: 14px; font-size: 0.9em; text-align: center; border-radius: 16px; background: rgba(255,255,255,0.6); color: #0F172A; font-weight: 700; box-shadow: inset 0 1px 2px rgba(255,255,255,1); }
-</style>"""
-
 # ==========================================
-# 3. 사이드바 UI
+# 3. 사이드바 UI (글씨 크기 줄인 버전)
 # ==========================================
 sidebar_top = st.sidebar.container()
 sidebar_top.markdown(f"""
-<div style="padding: 10px 10px 30px 10px; text-align: left;">
-    <div style="font-family: 'Outfit'; font-size: 2.4em; font-weight: 800; background: linear-gradient(135deg, #4F46E5 0%, #ec4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">AMLS V4.5</div>
-    <div style="font-family: 'Outfit'; font-size: 1.1em; font-weight: 700; color: #0F172A; margin-bottom: 15px; letter-spacing: 1px;">FINANCE ENGINE</div>
-    <div style="font-size: 0.85em; color: #4F46E5; font-weight: 700; padding: 6px 12px; background: rgba(79,70,229,0.1); border-radius: 50px; display: inline-block; border: 1px solid rgba(79,70,229,0.2);">
+<div style="padding: 10px 10px 20px 10px;">
+    <div style="font-family: 'Outfit'; font-size: 1.8em; font-weight: 800; background: linear-gradient(135deg, #4F46E5 0%, #ec4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">AMLS V4.5</div>
+    <div style="font-family: 'Outfit'; font-size: 0.85em; font-weight: 700; color: #0F172A; margin-bottom: 12px; letter-spacing: 0.5px;">FINANCE ENGINE</div>
+    <div style="font-size: 0.75em; color: #4F46E5; font-weight: 800; padding: 4px 10px; background: rgba(79,70,229,0.1); border-radius: 50px; display: inline-block; border: 1px solid rgba(79,70,229,0.2);">
         {rt_label}
     </div>
 </div>""", unsafe_allow_html=True)
@@ -349,31 +305,29 @@ page = st.sidebar.radio("MENU",
     label_visibility="collapsed")
 
 st.sidebar.markdown(f"""
-<div style="margin-top: 40px; padding: 20px; border-radius: 20px; background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
-    <div style="font-family: 'Outfit'; font-size:0.8em; font-weight:800; color:#4F46E5; text-transform: uppercase;">Powered by Apex</div>
-    <div style="font-size:0.85em; font-weight:700; color:#334155; margin-top: 4px;">Spatial Glass 2026<br>&copy; SEYOON.</div>
+<div style="margin-top: 30px; padding: 15px; border-radius: 18px; background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.8);">
+    <div style="font-family: 'Outfit'; font-size:0.7em; font-weight:800; color:#4F46E5; text-transform: uppercase;">Powered by Apex</div>
+    <div style="font-size:0.75em; font-weight:700; color:#64748B; margin-top: 4px;">Spatial Glass v4.5<br>&copy; 2026 SEYOON.</div>
 </div>""", unsafe_allow_html=True)
 
-# 메인 타이틀 영역
+# 메인 타이틀 영역 (크기 하향 조정)
 st.markdown(f"""
-<div style="padding-bottom:20px; margin-bottom:40px; display:flex; justify-content:space-between; align-items:flex-end; border-bottom: 2px solid rgba(0,0,0,0.05);">
+<div style="padding-bottom:15px; margin-bottom:30px; display:flex; justify-content:space-between; align-items:flex-end; border-bottom: 1px solid rgba(0,0,0,0.05);">
     <div>
-        <h1 style="font-family:'Outfit', sans-serif; font-size:3.2em; margin:0; color:#0F172A; letter-spacing: -1px;">AMLS V4.5 ENGINE</h1>
-        <p style="font-size:1.2em; letter-spacing:1px; margin:8px 0 0 0; font-weight:800; color:#4F46E5;">THE WALL STREET QUANTITATIVE STRATEGY</p>
+        <h1 style="color:#0F172A;">AMLS V4.5 ENGINE</h1>
+        <p style="font-size:1em; letter-spacing:0.5px; margin:4px 0 0 0; font-weight:800; color:#4F46E5;">THE WALL STREET QUANTITATIVE STRATEGY</p>
     </div>
     <div style="text-align:right; font-weight:bold;">
-        <div style="font-family:'Outfit'; font-size:1.2em; color:#0F172A;">SPATIAL EDITION</div>
-        <div style="font-size:0.9em; margin-top:8px; color:#4F46E5; background: rgba(79,70,229,0.1); padding: 6px 14px; border-radius: 50px; display: inline-block;">{rt_label}</div>
+        <div style="font-family:'Outfit'; font-size:1em; color:#0F172A;">SPATIAL EDITION</div>
+        <div style="font-size:0.8em; margin-top:6px; color:#4F46E5; background: rgba(79,70,229,0.1); padding: 5px 12px; border-radius: 50px; display: inline-block;">{rt_label}</div>
     </div>
 </div>""", unsafe_allow_html=True)
 
 # 차트용 변수 (투명 배경)
-b_color = 'rgba(0,0,0,0)'
-t_color = '#334155'
-line_c = '#4F46E5'
-dash_c = '#F43F5E'
+b_color, t_color = 'rgba(0,0,0,0)', '#334155'
+line_c, dash_c = '#4F46E5', '#F43F5E'
 regime_colors={1:'rgba(0,0,0,0.0)', 2:'rgba(79, 70, 229, 0.05)', 3:'rgba(249, 115, 22, 0.08)', 4:'rgba(239, 68, 68, 0.1)'}
-chart_layout = dict(paper_bgcolor=b_color, plot_bgcolor=b_color, font=dict(family="Outfit, Pretendard", color=t_color), margin=dict(l=0,r=0,t=40,b=0))
+chart_layout = dict(paper_bgcolor=b_color, plot_bgcolor=b_color, font=dict(family="Pretendard", color=t_color), margin=dict(l=0,r=0,t=40,b=0))
 regime_info  = {1:("🟢 R1 (강세장)","풀 가동"),2:("🟡 R2 (조정장)","TQQQ 15% 방어"), 3:("🟠 R3 (하락장)","현금/금 대피"),4:("🔴 R4 (패닉장)","최대 방어")}
 
 # ==========================================
@@ -381,106 +335,89 @@ regime_info  = {1:("🟢 R1 (강세장)","풀 가동"),2:("🟡 R2 (조정장)",
 # ==========================================
 if page == "📊 시장 분석관 (Home)":
     
-    def _lg_ck(label, val, passed):
-        icon  = "✔" if passed else "✕"
+    def _lg_row(label, val, passed):
+        icon = "✔" if passed else "✕"
         color = "#10B981" if passed else "#EF4444"
         return f'<div class="crow"><span class="clabel">{label}</span><span class="cval" style="color:{color};">{val} {icon}</span></div>'
 
     soxl_title  = "🔥 승인: SOXL" if smh_cond else "🛡️ 기각: USD"
+    
+    # 🚨 누락되었던 soxl_strat 변수 정상 복구 🚨
+    soxl_strat  = "3배수 공격적 진입" if smh_cond else "변동성 방어용 2배수"
     soxl_color  = "#10B981" if smh_cond else "#4F46E5"
     
     weight_rows = "".join([f'<div class="crow"><span class="clabel">{k}</span><span class="cval" style="color:#4F46E5;">{v*100:.0f}%</span></div>'
                             for k,v in target_weights.items() if v > 0])
-    
-    ck_r = (_lg_ck('① VIX 패닉 임계점 (< 40)',      f'{vix_close:.2f}',                      vix_close<=40) +
-            _lg_ck('② 장기 지지선 (QQQ > 200MA)',    f'${qqq_close:.0f} vs ${qqq_ma200:.0f}', qqq_close>=qqq_ma200) +
-            _lg_ck('③ 추세 정배열 (50MA ≥ 200MA)',       f'${qqq_ma50:.0f} vs ${qqq_ma200:.0f}',  qqq_ma50>=qqq_ma200) +
-            _lg_ck('④ 노이즈 필터 (20일선 < 22)',      f'{vix_ma20:.2f}',                       vix_ma20<22))
-    
-    ck_s = (_lg_ck('① 정배열 추세 (SMH > 50MA)',      f'${smh_close:.1f} vs ${smh_ma50:.1f}', smh_c1) +
-            _lg_ck('② 모멘텀 (1M>10% or 3M>5%)',  f'3M {smh_3m*100:.1f}%',                smh_c2) +
-            _lg_ck('③ 매수 심리 강도 (RSI > 50)',      f'{smh_rsi:.1f}',                        smh_c3))
 
-    tr_html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8">{LG_CSS_BASE}</head><body>
-    <div style="display:grid;grid-template-columns:1.2fr 1.2fr 1fr;gap:25px;align-items:start;">
-      <div class="glass-card">
-        <h3 style="border-bottom:2px solid rgba(0,0,0,0.05); padding-bottom:10px;">🏛️ 현재 시장 국면</h3>
-        <div class="glass-inset">
-          <h2 style="color:#4F46E5; font-size:2.2em; margin-bottom:4px;">{regime_info[curr_regime][0]}</h2>
-          <p style="font-weight:700; color:#334155; margin:0;">전략: {regime_info[curr_regime][1]}</p>
-        </div>
-        <div style="font-weight:800; margin-bottom:8px; color:#0F172A;">🔍 알고리즘 해부</div>
-        {ck_r}
-        <div class="footer-msg">💡 위원회: {regime_committee_msg}</div>
-      </div>
-      <div class="glass-card">
-        <h3 style="border-bottom:2px solid rgba(0,0,0,0.05); padding-bottom:10px;">💻 반도체(SOXL) 판독관</h3>
-        <div class="glass-inset">
-          <h2 style="color:{soxl_color}; font-size:2.2em; margin-bottom:4px;">{soxl_title}</h2>
-          <p style="font-weight:700; color:#334155; margin:0;">전략: {soxl_strat}</p>
-        </div>
-        <div style="font-weight:800; margin-bottom:8px; color:#0F172A;">🔍 3중 필터 해부</div>
-        {ck_s}
-        <div class="footer-msg" style="color:#64748B;">※ SOXL은 극단적 변동성을 수반하므로 필터 통과 필수.</div>
-      </div>
-      <div class="glass-card">
-        <h3 style="border-bottom:2px solid rgba(0,0,0,0.05); padding-bottom:10px;">🛒 V4.5 목표 비중</h3>
-        <div class="weight-header"><span>자산 (ASSET)</span><span>비중 (WEIGHT)</span></div>
-        {weight_rows}
-      </div>
-    </div></body></html>"""
-    components.html(tr_html, height=620, scrolling=False)
+    c1, c2, c3 = st.columns([1.2, 1.2, 1])
+    with c1:
+        st.markdown(f"""<div class="glass-card">
+            <h3>🏛️ 시장 국면 분석</h3>
+            <div class="glass-inset">
+                <div style="color:#4F46E5; font-size:1.6em; font-weight:800;">{regime_info[curr_regime][0]}</div>
+                <div style="font-weight:700; color:#64748B; font-size:0.9em; margin-top:4px;">{regime_info[curr_regime][1]}</div>
+            </div>
+            {_lg_row('① VIX 임계점 (< 40)', f'{vix_close:.2f}', vix_close<=40)}
+            {_lg_row('② 지지선 (QQQ > 200MA)', f'${qqq_close:.0f}', qqq_close>=qqq_ma200)}
+            {_lg_row('③ 추세 (50MA ≥ 200MA)', f'${qqq_ma50:.0f}', qqq_ma50>=qqq_ma200)}
+            <div style="margin-top:auto; padding:10px; font-size:0.8em; text-align:center; border-radius:12px; background:rgba(255,255,255,0.4); color:#334155; font-weight:700;">💡 {regime_committee_msg}</div>
+        </div>""", unsafe_allow_html=True)
+    with c2:
+        st.markdown(f"""<div class="glass-card">
+            <h3>💻 반도체(SOXL) 판독</h3>
+            <div class="glass-inset">
+                <div style="color:{soxl_color}; font-size:1.6em; font-weight:800;">{soxl_title}</div>
+                <div style="font-weight:700; color:#64748B; font-size:0.9em; margin-top:4px;">{soxl_strat}</div>
+            </div>
+            {_lg_row('① 추세 (SMH > 50MA)', f'${smh_close:.1f}', smh_c1)}
+            {_lg_row('② 모멘텀 (1M > 10%)', f'{smh_1m*100:.1f}%', smh_c2)}
+            {_lg_row('③ 매수심리 (RSI > 50)', f'{smh_rsi:.1f}', smh_c3)}
+            <div style="margin-top:auto; padding:10px; font-size:0.8em; text-align:center; color:#64748B; font-weight:600; border-top:1px dashed rgba(0,0,0,0.05);">※ 필터 통과 시에만 SOXL 편입</div>
+        </div>""", unsafe_allow_html=True)
+    with c3:
+        st.markdown(f"""<div class="glass-card">
+            <h3>🛒 포트폴리오 비중</h3>
+            <div style="display:flex; justify-content:space-between; font-size:0.75em; font-weight:800; color:#64748B; border-bottom:1px solid rgba(0,0,0,0.05); padding-bottom:8px; margin-bottom:5px;"><span>ASSET</span><span>WEIGHT</span></div>
+            {weight_rows}
+        </div>""", unsafe_allow_html=True)
 
+    st.markdown("<br>", unsafe_allow_html=True)
     m1,m2,m3,m4,m5 = st.columns(5)
-    m1.metric("QQQ vs 200MA",  f"${last_row['QQQ']:.2f}",   f"{(last_row['QQQ']/last_row['QQQ_MA200']-1)*100:+.2f}%")
-    m2.metric("TQQQ vs 200MA", f"${last_row['TQQQ']:.2f}",  f"{(last_row['TQQQ']/last_row['TQQQ_MA200']-1)*100:+.2f}%", delta_color="inverse")
-    m3.metric("VIX (20D MA)",  f"{last_row['VIX_MA20']:.2f}", f"종가:{last_row['^VIX']:.2f}")
-    m4.metric("반도체 1M",      f"{last_row['SMH_1M_Ret']*100:+.2f}%", f"vs MA50: {(last_row['SMH']/last_row['SMH_MA50']-1)*100:+.2f}%")
-    m5.metric("반도체 3M",      f"{last_row['SMH_3M_Ret']*100:+.2f}%", f"RSI: {last_row['SMH_RSI']:.1f}")
-
-    if last_row['TQQQ'] < last_row['TQQQ_MA200'] and last_row['QQQ'] >= last_row['QQQ_MA200']:
-        st.warning("⚠️ **[선행 경보]** TQQQ가 200일선을 이탈했습니다. 하락 전조 주의.")
+    m1.metric("QQQ vs 200MA", f"${last_row['QQQ']:.2f}", f"{(last_row['QQQ']/last_row['QQQ_MA200']-1)*100:+.2f}%")
+    m2.metric("TQQQ vs 200MA", f"${last_row['TQQQ']:.2f}", f"{(last_row['TQQQ']/last_row['TQQQ_MA200']-1)*100:+.2f}%", delta_color="inverse")
+    m3.metric("VIX (20D MA)", f"{last_row['VIX_MA20']:.2f}", f"NOW:{last_row['^VIX']:.2f}")
+    m4.metric("반도체 1M", f"{last_row['SMH_1M_Ret']*100:+.1f}%", f"vs MA50: {(last_row['SMH']/last_row['SMH_MA50']-1)*100:+.1f}%")
+    m5.metric("반도체 RSI", f"{last_row['SMH_RSI']:.1f}", "Condition: 50")
 
     st.markdown("<br>", unsafe_allow_html=True)
     chart_col1, chart_col2 = st.columns(2)
     df_recent = df.iloc[-500:]
 
-    fig_qqq  = go.Figure()
-    fig_qqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['QQQ'],      name='QQQ',   line=dict(color=line_c, width=2.5)))
-    fig_qqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['QQQ_MA200'],name='200일선',line=dict(color=dash_c, width=2, dash='dash')))
-    fig_tqqq = go.Figure()
-    fig_tqqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['TQQQ'],      name='TQQQ', line=dict(color=line_c, width=2.5)))
-    fig_tqqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['TQQQ_MA200'],name='200일선',line=dict(color=dash_c, width=2, dash='dash')))
-
-    for i in range(1, len(df_recent)):
-        if df_recent['Regime'].iloc[i-1] != df_recent['Regime'].iloc[i] or i==1:
-            start_idx = df_recent.index[i]; curr_r = df_recent['Regime'].iloc[i]
-        if i==len(df_recent)-1 or df_recent['Regime'].iloc[i] != df_recent['Regime'].iloc[i+1]:
-            fig_qqq.add_vrect(x0=start_idx, x1=df_recent.index[i], fillcolor=regime_colors[curr_r], opacity=1, layer="below", line_width=0)
-            fig_tqqq.add_vrect(x0=start_idx,x1=df_recent.index[i], fillcolor=regime_colors[curr_r], opacity=1, layer="below", line_width=0)
-
-    fig_qqq.update_layout(title=dict(text="[시스템 기준] QQQ vs 200일 이평선", font=dict(family="Outfit", size=20, color="#0F172A")), height=350, **chart_layout)
-    fig_tqqq.update_layout(title=dict(text="[조기 경보] TQQQ vs 200일 이평선", font=dict(family="Outfit", size=20, color="#0F172A")), height=350, **chart_layout)
+    fig_qqq = go.Figure()
+    fig_qqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['QQQ'], name='QQQ', line=dict(color=line_c, width=2)))
+    fig_qqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['QQQ_MA200'], name='200MA', line=dict(color=dash_c, width=1.5, dash='dash')))
+    fig_qqq.update_layout(title=dict(text="[시스템 기준] QQQ vs 200일선", font=dict(size=16, color="#0F172A")), height=350, **chart_layout)
     
-    with chart_col1: 
-        st.markdown('<div class="glass-card" style="height: auto !important; padding: 20px !important;">', unsafe_allow_html=True)
-        st.plotly_chart(fig_qqq,  use_container_width=True)
+    fig_tqqq = go.Figure()
+    fig_tqqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['TQQQ'], name='TQQQ', line=dict(color=line_c, width=2)))
+    fig_tqqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['TQQQ_MA200'], name='200MA', line=dict(color=dash_c, width=1.5, dash='dash')))
+    fig_tqqq.update_layout(title=dict(text="[조기 경보] TQQQ vs 200일선", font=dict(size=16, color="#0F172A")), height=350, **chart_layout)
+
+    with chart_col1:
+        st.markdown('<div class="glass-card" style="height:auto !important; padding:15px !important;">', unsafe_allow_html=True)
+        st.plotly_chart(fig_qqq, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
-    with chart_col2: 
-        st.markdown('<div class="glass-card" style="height: auto !important; padding: 20px !important;">', unsafe_allow_html=True)
+    with chart_col2:
+        st.markdown('<div class="glass-card" style="height:auto !important; padding:15px !important;">', unsafe_allow_html=True)
         st.plotly_chart(fig_tqqq, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-# ------------------------------------------
-# PAGE 1.5: 💼 내 포트폴리오
-# ------------------------------------------
 elif page == "💼 내 포트폴리오":
-    st.markdown("<h2 style='font-family:Outfit; color:#0F172A; margin-bottom:5px;'>💼 내 포트폴리오 & 리밸런싱 지침</h2>", unsafe_allow_html=True)
-    st.markdown("<span style='color:#64748B; font-weight:600; font-size:1.1em;'>자산별 보유 수량과 단가를 입력하면 공간 컴퓨팅 기반 UI가 실시간 리밸런싱 액션을 시각화합니다.</span><br><br>", unsafe_allow_html=True)
+    st.markdown("<h2 style='font-family:Outfit; font-size:2em;'>💼 내 포트폴리오</h2>", unsafe_allow_html=True)
     
     col_up, col_down = st.columns(2)
     with col_up:
-        uploaded_file = st.file_uploader("📂 포트폴리오 수동 복구 (JSON 백업 업로드)", type="json")
+        uploaded_file = st.file_uploader("📂 포트폴리오 수동 복구 (기기 변경 시 JSON 업로드)", type="json")
         if uploaded_file is not None:
             try:
                 data = json.load(uploaded_file)
@@ -499,7 +436,8 @@ elif page == "💼 내 포트폴리오":
 
     st.divider()
     
-    st.markdown("<h3 style='color:#0F172A;'>📥 포트폴리오 자산 입력</h3>", unsafe_allow_html=True)
+    st.markdown("#### 📥 포트폴리오 자산 입력")
+    st.markdown("<span style='color:#5A5A5A; font-weight:600;'>아래 표를 클릭하여 직접 타이핑하거나 엑셀에서 복사/붙여넣기 하세요. (CASH는 달러 총액을 수량에 입력)</span>", unsafe_allow_html=True)
     
     editor_data = []
     for asset in ASSET_LIST:
@@ -536,7 +474,7 @@ elif page == "💼 내 포트폴리오":
     save_portfolio_to_disk()
     
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("<h3 style='color:#0F172A;'>⚖️ 포트폴리오 현황 및 리밸런싱 액션</h3>", unsafe_allow_html=True)
+    st.markdown("#### ⚖️ 포트폴리오 현황 및 리밸런싱 액션")
     
     current_prices = {}
     for t in ASSET_LIST:
@@ -736,29 +674,23 @@ elif page == "🍫 8-Pack 레이더망":
     b7 = _badge("금 피신","orange","⚠️") if last_row['GLD_SPY_Ratio']>last_row['GLD_SPY_MA50'] else _badge("주식 선호","green","✅")
     b8 = _badge("강달러 압박","red","🚨") if last_row['UUP']>last_row['UUP_MA50'] else _badge("달러 진정","green","✅")
 
-    gauge_steps = [{'range':[0,25],'color':"rgba(239,68,68,0.6)"},
-                   {'range':[25,45],'color':"rgba(249,115,22,0.4)"},
-                   {'range':[45,55],'color':"rgba(255,255,255,0.5)"},
-                   {'range':[55,75],'color':"rgba(16,185,129,0.4)"},
-                   {'range':[75,100],'color':"rgba(16,185,129,0.6)"}]
-
-    cells_tr = "".join([f'<div class="glass-inset" style="margin-bottom:0; padding:20px;"><div style="font-size:0.85em; font-weight:800; color:#0F172A; margin-bottom:15px;">{t}</div>{b}</div>'
-                        for t,b in [("1. 스마트 DCA (RSI)",b1),("2. 멘탈 방어 (Drawdown)",b2),
-                                    ("3. 시장 심리 (F&amp;G)",b3),("4. 섹터 순환 (1M)",b4),
-                                    ("5. 채권 스프레드",b5),("6. 시장 폭 (Breadth)",b6),
-                                    ("7. 안전 자산 (금/주식)",b7),("8. 달러 (UUP)",b8)]])
-    
     st.markdown(f"""
     <div class="glass-card" style="height:auto !important; margin-bottom: 25px; padding: 30px !important;">
       <h3 style="color:#4F46E5; margin-bottom: 8px;">"감정을 배제하고, 진실에 집중하십시오."</h3>
       <p style="color:#334155; font-weight:600; font-size:1.1em; margin:0;">단순한 보조 지표가 아닙니다. <strong>'8-Pack 정밀 렌즈'</strong>를 통해 겉으로 평온해 보이는 시장을 3차원으로 해부합니다.</p>
     </div>
-    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:20px;">{cells_tr}</div>
     """, unsafe_allow_html=True)
 
-# ------------------------------------------
-# PAGE 3: 📈 백테스트 랩
-# ------------------------------------------
+    cols = st.columns(4)
+    items = [("1. 스마트 DCA (RSI)",b1),("2. 멘탈 방어 (Drawdown)",b2),("3. 시장 심리 (F&G)",b3),("4. 섹터 순환 (1M)",b4),
+             ("5. 채권 스프레드",b5),("6. 시장 폭 (Breadth)",b6),("7. 안전 자산 (금/주식)",b7),("8. 달러 (UUP)",b8)]
+    
+    for i in range(8):
+        with cols[i%4]:
+            st.markdown(f"""<div class="glass-inset" style="margin-bottom:0; padding:20px;">
+            <div style="font-size:0.85em; font-weight:800; color:#0F172A; margin-bottom:15px;">{items[i][0]}</div>{items[i][1]}</div>""", unsafe_allow_html=True)
+            if i < 4: st.markdown("<br>", unsafe_allow_html=True)
+
 elif page == "📈 백테스트 랩":
     st.markdown("<h2 style='font-family:Outfit; color:#0F172A; margin-bottom:5px;'>📈 백테스트 랩</h2>", unsafe_allow_html=True)
     st.markdown("<span style='color:#64748B; font-weight:600; font-size:1.1em;'>과거 데이터 기간 동안의 AMLS V4.5 성과를 나스닥(QQQ) 및 레버리지 장기투자 성과와 비교 검증합니다.</span><br><br>", unsafe_allow_html=True)
