@@ -194,6 +194,15 @@ if curr_regime == live_regime: regime_committee_msg = "모든 조건이 현재 �
 elif live_regime > curr_regime: regime_committee_msg = f"R{live_regime} 하향 즉시 반영 중입니다."
 else: regime_committee_msg = f"R{live_regime} 신호 감지 — 5일 확인 대기 중"
 
+# 차트 및 디자인 전역 색상 변수 추가 (오류 방지)
+b_color, t_color = 'rgba(0,0,0,0)', '#334155'
+line_c, dash_c = '#4F46E5', '#F43F5E'
+rsi_low_c = '#10B981' # 🚨 8-Pack 차트를 위해 추가됨!
+regime_colors={1:'rgba(0,0,0,0.0)', 2:'rgba(79, 70, 229, 0.05)', 3:'rgba(249, 115, 22, 0.08)', 4:'rgba(239, 68, 68, 0.1)'}
+chart_layout = dict(paper_bgcolor=b_color, plot_bgcolor=b_color, font=dict(family="Pretendard", color=t_color), margin=dict(l=0,r=0,t=40,b=0))
+radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15), paper_bgcolor=b_color, plot_bgcolor=b_color, font=dict(family="Pretendard", color=t_color))
+regime_info  = {1:("🟢 R1 (강세장)","풀 가동"),2:("🟡 R2 (조정장)","TQQQ 15% 방어"), 3:("🟠 R3 (하락장)","현금/금 대피"),4:("🔴 R4 (패닉장)","최대 방어")}
+
 # ==========================================
 # 2. 전면 개편된 2026 Spatial UI CSS
 # ==========================================
@@ -235,12 +244,12 @@ st.markdown("""<style>
         background: rgba(255, 255, 255, 0.4) !important;
         border: 1px solid rgba(255, 255, 255, 0.8) !important;
         border-radius: 50px !important;
-        padding: 10px 18px !important; 
+        padding: 10px 18px !important; /* 여백 줄임 */
         box-shadow: 0 4px 10px rgba(0,0,0,0.01) !important;
         transition: all 0.2s ease !important;
     }
     div.row-widget.stRadio > div > label p {
-        font-size: 0.9em !important; 
+        font-size: 0.9em !important; /* 폰트 크기 축소 */
         font-weight: 600 !important;
         color: var(--text-main) !important;
     }
@@ -290,6 +299,21 @@ st.markdown("""<style>
     div[data-testid="stMetricDelta"] > div { font-size: 0.85em !important; font-weight: 700; }
 </style>""", unsafe_allow_html=True)
 
+# iframe 용 CSS (HTML Components)
+LG_CSS_BASE = """<style>
+@import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background: transparent; font-family: 'Pretendard', 'Outfit', sans-serif; color: #334155; padding: 10px; }
+.glass-card { background: rgba(255, 255, 255, 0.45); backdrop-filter: blur(40px) saturate(200%); -webkit-backdrop-filter: blur(40px) saturate(200%); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 32px; padding: 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.04), inset 0 2px 0 rgba(255, 255, 255, 1); height: 580px; display: flex; flex-direction: column; transition: transform 0.3s, box-shadow 0.3s; }
+.glass-card:hover { transform: translateY(-4px); box-shadow: 0 30px 60px rgba(79, 70, 229, 0.12), inset 0 2px 0 rgba(255, 255, 255, 1); }
+.glass-inset { background: rgba(255, 255, 255, 0.4); border-radius: 20px; box-shadow: inset 0 2px 5px rgba(255,255,255,0.9), 0 4px 12px rgba(0,0,0,0.03); padding: 20px; margin-bottom: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.7); }
+h2, h3, h4 { color: #0F172A; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; font-family: 'Outfit'; }
+.crow { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px dashed rgba(0,0,0,0.1); font-size: 0.95em; }
+.clabel { color: #64748B; font-weight: 600; } .cval { font-family: 'Outfit', monospace; font-weight: 800; color: #4F46E5; font-size: 1.1em; }
+.weight-header { display: flex; justify-content: space-between; font-size: 0.8em; font-weight: 800; color: #64748B; border-bottom: 2px solid rgba(0,0,0,0.1); padding-bottom: 10px; margin-bottom: 10px; }
+.footer-msg { margin-top: auto; padding: 14px; font-size: 0.9em; text-align: center; border-radius: 16px; background: rgba(255,255,255,0.6); color: #0F172A; font-weight: 700; box-shadow: inset 0 1px 2px rgba(255,255,255,1); }
+</style>"""
+
 # ==========================================
 # 3. 사이드바 UI
 # ==========================================
@@ -326,13 +350,6 @@ st.markdown(f"""
     </div>
 </div>""", unsafe_allow_html=True)
 
-# 차트용 변수 (투명 배경)
-b_color, t_color = 'rgba(0,0,0,0)', '#334155'
-line_c, dash_c = '#4F46E5', '#F43F5E'
-regime_colors={1:'rgba(0,0,0,0.0)', 2:'rgba(79, 70, 229, 0.05)', 3:'rgba(249, 115, 22, 0.08)', 4:'rgba(239, 68, 68, 0.1)'}
-chart_layout = dict(paper_bgcolor=b_color, plot_bgcolor=b_color, font=dict(family="Pretendard", color=t_color), margin=dict(l=0,r=0,t=40,b=0))
-regime_info  = {1:("🟢 R1 (강세장)","풀 가동"),2:("🟡 R2 (조정장)","TQQQ 15% 방어"), 3:("🟠 R3 (하락장)","현금/금 대피"),4:("🔴 R4 (패닉장)","최대 방어")}
-
 # ==========================================
 # 5. 페이지 라우팅
 # ==========================================
@@ -365,7 +382,7 @@ if page == "📊 시장 분석관 (Home)":
         </div>""", unsafe_allow_html=True)
     with c2:
         st.markdown(f"""<div class="glass-card">
-            <h3>💻 반도체(SOXL) 판독</h3>
+            <h3>💻 반도체(SOXL) 판독관</h3>
             <div class="glass-inset">
                 <div style="color:{soxl_color}; font-size:1.6em; font-weight:800;">{soxl_title}</div>
                 <div style="font-weight:700; color:#64748B; font-size:0.9em; margin-top:4px;">{soxl_strat}</div>
@@ -413,9 +430,6 @@ if page == "📊 시장 분석관 (Home)":
         st.plotly_chart(fig_tqqq, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-# ------------------------------------------
-# PAGE 1.5: 💼 내 포트폴리오
-# ------------------------------------------
 elif page == "💼 내 포트폴리오":
     st.markdown("<h2 style='font-family:Outfit; font-size:2em;'>💼 내 포트폴리오</h2>", unsafe_allow_html=True)
     
@@ -691,7 +705,6 @@ elif page == "🍫 8-Pack 레이더망":
     </div>
     """, unsafe_allow_html=True)
 
-    # 🚨 누락되었던 8-Pack 시각화 차트들을 액션 뱃지와 함께 렌더링 복구 🚨
     row1 = st.columns(4)
     with row1[0]:
         st.markdown(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:20px;"><div class="glass-inset" style="margin-bottom:10px; padding:15px;"><div style="font-size:0.85em; font-weight:800; color:#0F172A; margin-bottom:10px;">1. 스마트 DCA (RSI)</div>{b1}</div>', unsafe_allow_html=True)
