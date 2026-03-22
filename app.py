@@ -122,7 +122,7 @@ with st.spinner('데이터 수집 중...'):
 
 # 🚨 [방어 코드] 데이터가 비어있을 경우 앱을 안전하게 중단합니다.
 if df is None or df.empty:
-    st.error("🚨 야후 파이낸스(Yahoo Finance) 서버 통신이 지연되어 데이터를 불러오지 못했습니다. (API 호출 제한 또는 네트워크 오류) 잠시 후 새로고침 해주세요.")
+    st.error("🚨 야후 파이낸스(Yahoo Finance) 서버 통신이 지연되어 데이터를 불러오지 못했습니다. API 호출 제한 또는 네트워크 오류일 수 있으니 잠시 후 새로고침 해주세요.")
     st.stop()
 
 last_row    = df.iloc[-1].copy()
@@ -204,7 +204,7 @@ radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15), paper_bgcolor=
 regime_info  = {1:("🟢 R1 (강세장)","풀 가동"),2:("🟡 R2 (조정장)","TQQQ 15% 방어"), 3:("🟠 R3 (하락장)","현금/금 대피"),4:("🔴 R4 (패닉장)","최대 방어")}
 
 # ==========================================
-# 2. 전면 개편된 2026 Spatial UI CSS
+# 2. 전면 개편된 2026 Spatial UI CSS (사이드바 메뉴 수정 포함)
 # ==========================================
 st.markdown("""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -233,47 +233,69 @@ st.markdown("""<style>
 
     /* [사이드바] 투명도 및 레이아웃 */
     [data-testid="stSidebar"] {
-        background: rgba(255, 255, 255, 0.5) !important;
-        backdrop-filter: blur(40px) saturate(200%) !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.8) !important;
+        background: rgba(255, 255, 255, 0.3) !important;
+        backdrop-filter: blur(50px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(50px) saturate(180%) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.5) !important;
     }
     
-    /* 🚨 [사이드바 메뉴 전면 개편] 🚨 */
-    /* 불필요한 기본 라디오 동그라미 숨김 */
-    div.row-widget.stRadio > div > label > div:first-child { display: none !important; }
+    /* 🚨 [사이드바 메뉴 전면 수정: Borderless 구현] 🚨 */
+    /* 1. 기본 라디오 컴포넌트 내부의 선택 동그라미(Radio circle)를 완벽하게 숨김 */
+    [data-testid="stSidebar"] div.row-widget.stRadio div[role="radiogroup"] label[data-baseweb="radio"] div:first-child {
+        display: none !important;
+        visibility: hidden !important;
+    }
     
-    div.row-widget.stRadio > div { gap: 8px; padding: 10px 0; }
-    div.row-widget.stRadio > div > label {
+    /* 2. 메뉴 컨테이너 설정 */
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] {
+        gap: 6px; 
+        padding: 10px 0;
         background: transparent !important;
-        border: 1px solid transparent !important;
-        border-radius: 16px !important; /* 약간 각진 라운딩이 더 모던함 */
-        padding: 14px 20px !important;
+    }
+    
+    /* 3. 메뉴 아이템 기본 스타일 (Borderless) */
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label {
+        background: transparent !important; /* 평소에는 투명 */
+        border: 1px solid transparent !important; /* 평소에는 테두리 없음 */
+        border-radius: 14px !important;
+        padding: 14px 22px !important;
         box-shadow: none !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
         cursor: pointer;
         width: 100%;
+        margin: 0 !important;
     }
-    /* 마우스 호버 시 살짝 배경이 깔리며 우측으로 이동 */
-    div.row-widget.stRadio > div > label:hover {
-        background: rgba(255, 255, 255, 0.6) !important;
-        border: 1px solid rgba(255, 255, 255, 0.9) !important;
-        transform: translateX(6px) !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.02) !important;
-    }
-    div.row-widget.stRadio > div > label p {
+    
+    /* 4. 메뉴 아이템 내부 텍스트 스타일 */
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label p {
         font-size: 0.95em !important; 
         font-weight: 600 !important;
-        color: #475569 !important; /* 차분한 슬레이트 그레이 */
+        color: #57606A !important; /* 차분한 그레이 */
+        margin: 0 !important;
+        padding-left: 0 !important; /* 동그라미가 사라진 만큼 여백 제거 */
     }
-    /* 선택된 메뉴 (강렬한 그라데이션과 네온 글로우) */
-    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) {
-        background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%) !important;
-        box-shadow: 0 8px 25px rgba(79,70,229,0.3), inset 0 2px 4px rgba(255,255,255,0.4) !important;
-        border: none !important;
-        transform: scale(1.02) !important;
+    
+    /* 5. 마우스 호버(Hover) 효과 (레퍼런스 따라하기: 미세한 투명 배경과 밀림 현상) */
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover {
+        background: rgba(255, 255, 255, 0.6) !important;
+        border: 1px solid rgba(255, 255, 255, 0.8) !important;
+        transform: translateX(5px) !important; /* 살짝 우측으로 밀림 */
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important;
     }
-    div.row-widget.stRadio > div > label[data-baseweb="radio"]:has(input:checked) p {
-        color: #FFFFFF !important; font-weight: 800 !important;
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover p {
+        color: #0F172A !important;
+    }
+    
+    /* 6. 선택된 메뉴(Checked) 효과 (레퍼런스 따라하기: 흰색 투명 유리 배경) */
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) {
+        background: rgba(255, 255, 255, 0.7) !important; /* 강렬한 그라데이션 대신 차분한 흰색 투명 유리 */
+        border: 1px solid rgba(255, 255, 255, 1) !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05), inset 0 2px 4px rgba(255,255,255,1) !important;
+        transform: translateX(5px) !important; /* 선택된 상태도 살짝 우측 유지 */
+    }
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) p {
+        color: #4F46E5 !important; /* 텍스트는 포인트 컬러로 */
+        font-weight: 800 !important;
     }
 
     /* [메인 카드] Liquid Glass */
@@ -329,7 +351,7 @@ h2, h3, h4 { color: #0F172A; font-weight: 800; margin-bottom: 8px; letter-spacin
 </style>"""
 
 # ==========================================
-# 3. 사이드바 UI (새롭게 디자인된 영역)
+# 3. 사이드바 UI (개편된 디자인)
 # ==========================================
 sidebar_top = st.sidebar.container()
 sidebar_top.markdown(f"""
@@ -341,6 +363,7 @@ sidebar_top.markdown(f"""
     </div>
 </div>""", unsafe_allow_html=True)
 
+# 🚨collapsed 상태를 유지하되 내부적으로 Borderless CSS를 적용
 page = st.sidebar.radio("MENU",
     ["📊 시장 분석관 (Home)", "💼 내 포트폴리오", "🍫 8-Pack 레이더망", "📈 백테스트 랩", "📰 매크로 뉴스룸"],
     label_visibility="collapsed")
@@ -883,7 +906,7 @@ elif page == "📈 백테스트 랩":
         st.markdown('</div>', unsafe_allow_html=True)
         
         st.divider()
-        st.markdown("<h4 style='color:#0F172A;'>🤖 AI 전략 성과 브리핑 리포트</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color:#0F172A;'>🤖 AI 전략 성과 브리핑 리포트</strong></h4>", unsafe_allow_html=True)
         st.markdown("<span style='color:#64748B; font-weight:600;'>제미나이(Gemini) 모델이 위 백테스트의 수익률과 낙폭을 비교 분석하여 전략의 우위성을 해설합니다.</span>", unsafe_allow_html=True)
         
         if st.button("✨ 백테스트 결과 AI 분석 실행", use_container_width=True):
@@ -906,7 +929,7 @@ elif page == "📈 백테스트 랩":
                     response = model.generate_content(prompt)
                     st.markdown(f"""<div class="glass-card" style="height: auto !important; padding: 30px !important;">{response.text}</div>""", unsafe_allow_html=True)
             except Exception as e:
-                st.error(f"API 호출 오류 (Secrets에 GEMINI_API_KEY가 등록되어 있는지 확인하세요): {e}")
+                st.error(f"API 호출 오류 Secrets에 GEMINI_API_KEY가 등록되어 있는지 확인하세요: {e}")
 
 # ------------------------------------------
 # PAGE 4: 매크로 뉴스룸
@@ -940,11 +963,11 @@ elif page == "📰 매크로 뉴스룸":
                         prompt = """너는 1920년대 전설적인 월스트리트 퀀트 애널리스트야. 매우 냉철하고 전문적인 어조로 작성해.
                         다음 뉴스 헤드라인들을 분석해서 아래 3가지 목차로 요약해줘.
                         
-                        ## 1. 주요 뉴스 분류 (섹터/테마별 묶음)
-                        ## 2. 시장 잠재 리스크 (VIX 상승 요소)
-                        ## 3. 애널리스트의 최종 고찰 (투자 스탠스)
+                        ## 1. 주요 뉴스 분류 섹터/테마별 묶음
+                        ## 2. 시장 잠재 리스크 VIX 상승 요소
+                        ## 3. 애널리스트의 최종 고찰 투자 스탠스
                         
-                        각 목차의 제목은 반드시 `##` 마크다운을 사용해서 크게 눈에 띄게 해주고, 내용은 글머리 기호(`*` 또는 `-`)를 사용해서 가독성 좋게 정리해.
+                        각 목차의 제목은 반드시 `##` 마크다운을 사용해서 크게 눈에 띄게 해주고, 내용은 글머리 기호`*` 또는 `-`를 사용해서 가독성 좋게 정리해.
                         
                         [뉴스 헤드라인]:
                         """ + "\n".join(headlines_for_ai)
@@ -982,4 +1005,4 @@ elif page == "📰 매크로 뉴스룸":
                 </div>
                 """, unsafe_allow_html=True)
     else:
-        st.write("수신된 뉴스가 없습니다. (15분 후 갱신)")
+        st.write("수신된 뉴스가 없습니다. 15분 후 갱신")
