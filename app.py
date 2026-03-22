@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import yfinance as yf
 import pandas as pd
 import pandas_ta as ta
@@ -10,6 +9,7 @@ import urllib.request
 import urllib.parse
 import xml.etree.ElementTree as ET
 import warnings
+import google.generativeai as genai
 import json
 import os
 
@@ -173,6 +173,7 @@ hist_regime   = int(df.iloc[-1]['Regime'])
 curr_regime   = live_regime if live_regime > hist_regime else hist_regime
 target_regime = live_regime
 
+# 반도체 진입 조건
 smh_c1 = smh_close > smh_ma50
 smh_c2 = (smh_3m > 0.05 or smh_1m > 0.10)
 smh_c3 = smh_rsi > 50
@@ -192,19 +193,21 @@ if curr_regime == live_regime: regime_committee_msg = "🟢 조건 부합 (안�
 elif live_regime > curr_regime: regime_committee_msg = f"🔴 R{live_regime} 하향 즉시 반영"
 else: regime_committee_msg = f"🟡 R{live_regime} 승급 대기 (5일)"
 
+# ==========================================
 # 차트 전역 색상 변수 (Light Mint Theme)
+# ==========================================
 b_color = 'rgba(0,0,0,0)'
-t_color = '#1E293B'
-line_c = '#10B981'
-dash_c = '#94A3B8'
-rsi_low_c = '#10B981'
+t_color = '#1E293B' # 짙은 텍스트
+line_c = '#10B981'  # 🌿 메인 포인트 컬러 (Mint Green)
+dash_c = '#94A3B8'  # 보조 컬러 (Slate Gray)
+rsi_low_c = '#10B981' # RSI 등 기준선 컬러
 regime_colors={1:'rgba(0,0,0,0.0)', 2:'rgba(16, 185, 129, 0.05)', 3:'rgba(245, 158, 11, 0.08)', 4:'rgba(239, 68, 68, 0.1)'}
 chart_layout = dict(paper_bgcolor=b_color, plot_bgcolor=b_color, font=dict(family="Pretendard", color=t_color), margin=dict(l=0,r=0,t=40,b=0))
 radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15), paper_bgcolor=b_color, plot_bgcolor=b_color, font=dict(family="Pretendard", color=t_color))
 regime_info  = {1:("R1 BULL","풀 가동"),2:("R2 CORR","방어 진입"), 3:("R3 BEAR","대피"),4:("R4 PANIC","최대 방어")}
 
 # ==========================================
-# 2. Light Mint Theme CSS (+ 사이드바 집중 개편)
+# 2. 전면 개편: Light Mint Glass UI CSS
 # ==========================================
 st.markdown("""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -218,6 +221,7 @@ st.markdown("""<style>
         --border-glass: rgba(16, 185, 129, 0.2); 
     }
 
+    /* [배경] 밝고 깨끗한 화이트 & 민트 메쉬 그라데이션 */
     .stApp, [data-testid="stAppViewContainer"] {
         background-color: var(--bg-main) !important;
         background-image: 
@@ -231,9 +235,7 @@ st.markdown("""<style>
     #MainMenu { visibility: hidden; } footer { visibility: hidden; }
     .main .block-container { max-width: 1400px; padding-top: 1rem; padding-bottom: 2rem; }
 
-    /* =========================================
-       🔥 사이드바 집중 개편 영역 🔥
-       ========================================= */
+    /* [사이드바] 맑고 투명한 유리 */
     [data-testid="stSidebar"] {
         background: rgba(255, 255, 255, 0.7) !important;
         backdrop-filter: blur(30px) saturate(150%) !important;
@@ -241,64 +243,38 @@ st.markdown("""<style>
         border-right: 1px solid rgba(16, 185, 129, 0.15) !important;
     }
     
-    /* 1. 기본 라디오 버튼 동그라미 완전히 삭제 */
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] label[data-baseweb="radio"] div:first-child { 
-        display: none !important; 
-    }
-    
-    /* 2. 메뉴 컨테이너 및 큼직한 레이아웃 */
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] { 
-        gap: 8px; 
-        padding: 20px 10px; 
-        background: transparent !important; 
-    }
-    
-    /* 3. 메뉴 아이템 기본 상태 (투명, 큼직한 여백) */
+    /* [사이드바 메뉴: 완벽한 Borderless Sliding UI] */
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] label[data-baseweb="radio"] div:first-child { display: none !important; }
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] { gap: 6px; padding: 10px 15px; background: transparent !important; }
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label {
         background: transparent !important;
         border: none !important;
         border-radius: 12px !important;
-        padding: 16px 20px !important;
-        cursor: pointer; 
-        width: 100%; 
-        margin: 0 !important;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+        padding: 12px 18px !important;
+        cursor: pointer; width: 100%; margin: 0 !important;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
-    
-    /* 4. 메뉴 텍스트 - 크고 시원하게 */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label p {
-        font-size: 1.25em !important; 
-        font-weight: 500 !important; 
-        color: var(--text-muted) !important; 
-        margin: 0 !important; 
-        padding-left: 0 !important;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
-        transform-origin: left center !important;
+        font-size: 0.95em !important; font-weight: 600 !important; color: var(--text-muted) !important; margin: 0 !important; padding-left: 0 !important;
     }
-    
-    /* 5. 🚨 Hover 효과 (글씨 확대 + 연한 배경) 🚨 */
+    /* 마우스 호버 효과 */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover {
-        background: rgba(16, 185, 129, 0.08) !important; /* 연한 민트 배경 오버레이 */
+        background: rgba(16, 185, 129, 0.05) !important;
+        transform: translateX(4px) !important;
     }
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover p { 
-        color: var(--text-main) !important; 
-        transform: scale(1.08) !important; /* 글씨 살짝 확대 */
-        font-weight: 600 !important;
-    }
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover p { color: var(--accent-dark) !important; }
     
-    /* 6. Checked 상태 (선택된 메뉴) */
+    /* 선택된 메뉴 (민트 그라데이션) */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) {
-        background: rgba(16, 185, 129, 0.15) !important;
-        box-shadow: inset 4px 0 0 var(--accent-mint) !important; /* 좌측 민트 엣지 라인 */
-        border-radius: 8px !important;
+        background: linear-gradient(135deg, #10B981 0%, #34D399 100%) !important;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25) !important;
+        transform: translateX(4px) !important;
     }
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) p {
-        color: var(--accent-dark) !important; 
-        font-weight: 800 !important;
-        transform: scale(1.08) !important; /* 선택 상태에서도 확대 유지 */
+        color: #FFFFFF !important; font-weight: 800 !important;
     }
-    /* ========================================= */
 
+    /* [메인 패널 (Light Mint Glass Card)] */
     .glass-card {
         background: rgba(255, 255, 255, 0.65) !important;
         backdrop-filter: blur(20px) saturate(150%) !important;
@@ -316,6 +292,7 @@ st.markdown("""<style>
     }
     .glass-card h3 { font-family: 'Outfit', sans-serif; font-size: 1.15em !important; font-weight: 800 !important; color: var(--text-main); margin-bottom: 15px !important; letter-spacing: -0.5px; border-bottom: 2px solid rgba(16, 185, 129, 0.1); padding-bottom: 8px; }
 
+    /* [내부 Inset Box] */
     .glass-inset {
         background: rgba(255, 255, 255, 0.8) !important;
         border: 1px solid rgba(16, 185, 129, 0.15) !important;
@@ -325,15 +302,18 @@ st.markdown("""<style>
     
     h1 { font-family: 'Outfit', sans-serif; font-size: 2.6em !important; font-weight: 800 !important; letter-spacing: -1px; margin: 0 !important; color: var(--text-main) !important; }
 
+    /* 리스트 UI */
     .crow { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 0.9em; }
     .clabel { color: var(--text-muted); font-weight: 600; }
     .cval { font-family: 'Outfit', sans-serif; font-weight: 800; color: var(--accent-mint); }
 
+    /* 🚨 메트릭 숫자 컴포넌트 */
     [data-testid="stMetric"] { background: transparent !important; border: none !important; box-shadow: none !important; padding: 5px !important; }
     [data-testid="stMetricLabel"] > div > div > p { font-size: 0.85em !important; font-weight: 600; color: var(--text-muted) !important; }
     [data-testid="stMetricValue"] > div { font-family: 'Outfit', sans-serif; font-size: 1.5em !important; font-weight: 800; color: var(--text-main) !important; }
     div[data-testid="stMetricDelta"] > div { font-size: 0.85em !important; font-weight: 700; }
     
+    /* [포트폴리오 테이블 UI] */
     .mint-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; font-family: 'Pretendard', sans-serif; }
     .mint-table th { padding: 10px 14px; font-weight: 700; color: #64748B; text-align: right; border-bottom: none; font-size: 0.9em; }
     .mint-table td { padding: 14px; background: rgba(255, 255, 255, 0.8); color: #0F172A; text-align: right; border-top: 1px solid rgba(16, 185, 129, 0.1); border-bottom: 1px solid rgba(16, 185, 129, 0.1); }
@@ -342,9 +322,13 @@ st.markdown("""<style>
     .mint-table td:first-child { border-left: 1px solid rgba(16, 185, 129, 0.1); border-top-left-radius: 12px; border-bottom-left-radius: 12px; text-align: left; }
     .mint-table td:last-child { border-right: 1px solid rgba(16, 185, 129, 0.1); border-top-right-radius: 12px; border-bottom-right-radius: 12px; text-align: center; }
 
+    /* 입력창 디자인 */
     [data-testid="stNumberInput"] > div > div, [data-testid="stTextInput"] > div > div { background: rgba(255,255,255,0.8) !important; border: 1px solid var(--border-glass) !important; border-radius: 12px !important; color: var(--text-main) !important; }
 </style>""", unsafe_allow_html=True)
 
+# ==========================================
+# 3. 사이드바 UI (Light Mint Theme)
+# ==========================================
 sidebar_top = st.sidebar.container()
 sidebar_top.markdown(f"""
 <div style="padding: 20px 15px;">
@@ -365,6 +349,7 @@ st.sidebar.markdown(f"""
     <div style="font-size:0.75em; font-weight:500; color:#94A3B8; margin-top: 4px;">Mint Glass Edition v4.5<br>&copy; 2026 SEYOON.</div>
 </div>""", unsafe_allow_html=True)
 
+# 메인 타이틀 영역
 st.markdown(f"""
 <div style="padding-bottom:15px; margin-bottom:25px; display:flex; justify-content:space-between; align-items:flex-end; border-bottom: 2px solid rgba(16,185,129,0.1);">
     <div>
@@ -377,6 +362,9 @@ st.markdown(f"""
     </div>
 </div>""", unsafe_allow_html=True)
 
+# ==========================================
+# 5. 페이지 라우팅
+# ==========================================
 if page == "📊 Dashboard":
     
     def _lg_row(label, val, passed):
@@ -661,12 +649,11 @@ elif page == "🍫 8-Pack Radar":
     b7 = _badge("GOLD","orange","⚠️") if last_row['GLD_SPY_Ratio']>last_row['GLD_SPY_MA50'] else _badge("EQUITY","green","✅")
     b8 = _badge("STRONG USD","red","🚨") if last_row['UUP']>last_row['UUP_MA50'] else _badge("WEAK USD","green","✅")
 
-    st.markdown("""
-    <div class="glass-card" style="height:auto !important; margin-bottom: 25px; padding: 30px !important;">
-      <h3 style="color:#10B981; margin-bottom: 8px;">"감정을 배제하고, 진실에 집중하십시오."</h3>
-      <p style="color:#334155; font-weight:600; font-size:1.1em; margin:0;">단순한 보조 지표가 아닙니다. <strong>'8-Pack 정밀 렌즈'</strong>를 통해 겉으로 평온해 보이는 시장을 3차원으로 해부합니다.</p>
-    </div>
-    """, unsafe_allow_html=True)
+    gauge_steps = [{'range':[0,25],'color':"rgba(239,68,68,0.5)"},{'range':[25,45],'color':"rgba(245,158,11,0.4)"},
+                   {'range':[45,55],'color':"rgba(255,255,255,0.8)"},{'range':[55,75],'color':"rgba(16,185,129,0.4)"},
+                   {'range':[75,100],'color':"rgba(16,185,129,0.6)"}]
+
+    st.markdown('<h2 style="font-family:Outfit; font-size:1.8em; color:#0F172A; margin-bottom:15px;">🍫 8-Pack Radar</h2>', unsafe_allow_html=True)
 
     row1 = st.columns(4)
     with row1[0]:
@@ -682,8 +669,8 @@ elif page == "🍫 8-Pack Radar":
         st.plotly_chart(fig2,use_container_width=True)
     with row1[2]:
         st.markdown(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:15px;"><div style="font-size:0.85em; font-weight:700; color:#64748B;">3. Fear & Greed</div>{b3}</div>', unsafe_allow_html=True)
-        # Indicator for FG (Simplified for visual clean UI without gauge steps mapping issues)
-        fig3=go.Figure(go.Indicator(mode="number+delta", value=fg_score, delta={'reference': 50, 'position': "bottom"}))
+        fig3=go.Figure(go.Indicator(mode="gauge+number",value=fg_score,domain={'x':[0,1],'y':[0,1]},
+            gauge={'axis':{'range':[0,100]},'bar':{'color':line_c},'steps':gauge_steps}))
         fig3.update_layout(height=200,margin=dict(l=15,r=15,t=10,b=10),paper_bgcolor=b_color,font=dict(family="Pretendard",color=t_color))
         st.plotly_chart(fig3,use_container_width=True)
     with row1[3]:
@@ -772,6 +759,7 @@ elif page == "📈 Backtest Lab":
         fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['QLD'], name='QLD', line=dict(color='#3B82F6', width=1.5, dash='dash')))
         fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['TQQQ'], name='TQQQ', line=dict(color='#EF4444', width=1.5, dash='dash')))
         fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['V4.5'], name='AMLS', line=dict(color='#10B981', width=3.5)))
+        # 🚨 에러 원인이었던 margin 중복 설정 제거 완료
         fig_eq.update_layout(title=dict(text="Equity Curve (Log)", font=dict(family='Outfit', size=16, color="#0F172A")), height=400, yaxis_type='log', **chart_layout)
         st.markdown('<div class="glass-card" style="height:auto !important; padding:15px !important;">', unsafe_allow_html=True)
         st.plotly_chart(fig_eq, use_container_width=True)
@@ -784,6 +772,7 @@ elif page == "📈 Backtest Lab":
         fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['QLD']), name='QLD', line=dict(color='#3B82F6', width=1)))
         fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['TQQQ']), name='TQQQ', line=dict(color='#EF4444', width=1)))
         fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['V4.5']), name='AMLS', fill='tozeroy', line=dict(color='#10B981', width=2.5)))
+        # 🚨 에러 원인이었던 margin 중복 설정 제거 완료
         fig_dd.update_layout(title=dict(text="Drawdown Curve", font=dict(family='Outfit', size=16, color="#0F172A")), height=300, yaxis=dict(tickformat='.0%'), **chart_layout)
         st.markdown('<div class="glass-card" style="height:auto !important; padding:15px !important;">', unsafe_allow_html=True)
         st.plotly_chart(fig_dd, use_container_width=True)
@@ -807,44 +796,28 @@ elif page == "📈 Backtest Lab":
 
 elif page == "📰 Macro News":
     headlines_for_ai, news_items = fetch_macro_news()
+    st.markdown("<h2 style='font-family:Outfit; font-size:1.8em; color:#0F172A; margin-bottom: 20px;'>📰 Macro News</h2>", unsafe_allow_html=True)
 
-    st.markdown(f"""
-    <div class="glass-card" style="height:auto !important; display:flex; flex-direction:row; align-items:center; gap:20px; margin-bottom: 30px; padding: 25px 35px !important;">
-      <div style="font-size:2.5em;">📰</div>
-      <div>
-          <h2 style="margin:0; color:#0F172A; font-size: 1.8em; font-family:'Outfit', sans-serif; font-weight:800; letter-spacing:-1px;">GLOBAL MACRO & AI BRIEFING</h2>
-          <p style="margin:5px 0 0 0; color:#10B981; font-weight:700;">월스트리트 주요 속보와 AI 애널리스트의 심층 고찰</p>
-      </div>
-      <div style="margin-left:auto; background:rgba(255,255,255,0.8); padding:8px 20px; border-radius:50px; font-weight:800; color:#10B981; box-shadow: inset 0 2px 4px rgba(255,255,255,1), 0 4px 15px rgba(0,0,0,0.05);">{rt_label}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    with st.expander("✨ System-2 심층 추론 애널리스트 분석", expanded=True):
-        if st.button("🚀 심층 추론 요약 실행", use_container_width=True):
-            try:
-                api_key = st.secrets["GEMINI_API_KEY"]
-                if not headlines_for_ai: 
-                    st.warning("분석할 뉴스가 없습니다.")
-                else:
-                    with st.spinner("AI 분석 중..."):
-                        genai.configure(api_key=api_key)
-                        models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-                        model  = genai.GenerativeModel(models[0].replace('models/',''))
-                        prompt = "너는 퀀트 애널리스트야. 다음 뉴스를 섹터별, 리스크 요소, 최종 투자 스탠스로 나누어 3문단으로 요약해.\n" + "\n".join(headlines_for_ai)
-                        response = model.generate_content(prompt)
-                        st.markdown(f"""<div class="glass-card" style="height: auto !important; padding: 30px !important;">{response.text}</div>""", unsafe_allow_html=True)
-            except KeyError: st.error("🚨 GEMINI_API_KEY 누락")
-
-    st.divider()
+    if st.button("✨ AI 추론 요약 실행", use_container_width=True):
+        try:
+            api_key = st.secrets["GEMINI_API_KEY"]
+            if headlines_for_ai:
+                with st.spinner("AI 분석 중..."):
+                    genai.configure(api_key=api_key)
+                    models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+                    model  = genai.GenerativeModel(models[0].replace('models/',''))
+                    prompt = "너는 퀀트 애널리스트야. 다음 뉴스를 섹터별, 리스크 요소, 최종 투자 스탠스로 나누어 3문단으로 요약해.\n" + "\n".join(headlines_for_ai)
+                    response = model.generate_content(prompt)
+                    st.markdown(f"""<div class="glass-card" style="height: auto !important; padding: 30px !important; color:#0F172A; font-weight:500;">{response.text}</div>""", unsafe_allow_html=True)
+        except KeyError: st.error("🚨 GEMINI_API_KEY 누락")
 
     if news_items:
-        st.markdown("<div style='font-size: 1.4em; font-family: Outfit; font-weight: 800; color: #0F172A; margin-bottom: 20px;'>🖼️ LATEST HEADLINES</div>", unsafe_allow_html=True)
         cols = st.columns(3)
         for idx,item in enumerate(news_items):
             with cols[idx%3]:
                 st.markdown(f"""<div class="glass-card" style="padding:20px !important; margin-bottom:15px; height:150px !important; display:flex; flex-direction:column; justify-content:space-between;">
-                    <div style="font-weight:600; font-size:1em; line-height:1.4; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">
+                    <div style="font-weight:700; font-size:1em; line-height:1.4; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">
                         <a href="{item['link']}" target="_blank" style="color:#0F172A; text-decoration:none;">{item['title']}</a>
                     </div>
-                    <div style="color:#10B981; font-family:Outfit; font-size:0.85em; font-weight:800; margin-top:10px;">{item['date']}</div>
+                    <div style="color:#10B981; font-family:Outfit; font-size:0.85em; font-weight:700; margin-top:10px;">{item['date']}</div>
                 </div>""", unsafe_allow_html=True)
