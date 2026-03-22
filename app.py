@@ -195,7 +195,7 @@ elif live_regime > curr_regime: regime_committee_msg = f"R{live_regime} 하향 �
 else: regime_committee_msg = f"R{live_regime} 신호 감지 — 5일 확인 대기 중"
 
 # ==========================================
-# 2. 전면 개편된 2026 Spatial UI CSS (글씨 크기 하향 조정)
+# 2. 전면 개편된 2026 Spatial UI CSS
 # ==========================================
 st.markdown("""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -235,12 +235,12 @@ st.markdown("""<style>
         background: rgba(255, 255, 255, 0.4) !important;
         border: 1px solid rgba(255, 255, 255, 0.8) !important;
         border-radius: 50px !important;
-        padding: 10px 18px !important; /* 여백 줄임 */
+        padding: 10px 18px !important; 
         box-shadow: 0 4px 10px rgba(0,0,0,0.01) !important;
         transition: all 0.2s ease !important;
     }
     div.row-widget.stRadio > div > label p {
-        font-size: 0.9em !important; /* 폰트 크기 축소 */
+        font-size: 0.9em !important; 
         font-weight: 600 !important;
         color: var(--text-main) !important;
     }
@@ -284,11 +284,14 @@ st.markdown("""<style>
     .cval { font-family: 'Outfit'; font-weight: 800; color: #4F46E5; }
 
     /* 🚨 메트릭 숫자 크기 재조정 */
-    [data-testid="stMetricValue"]>div { font-size: 1.4em !important; font-weight: 800; color: #0F172A !important; }
+    [data-testid="stMetric"] { background: transparent !important; border: none !important; box-shadow: none !important; padding: 10px 5px !important; }
+    [data-testid="stMetricLabel"] > div > div > p { font-size: 0.9em !important; font-weight: 700; color: #64748B !important; }
+    [data-testid="stMetricValue"] > div { font-size: 1.4em !important; font-weight: 800; color: #0F172A !important; }
+    div[data-testid="stMetricDelta"] > div { font-size: 0.85em !important; font-weight: 700; }
 </style>""", unsafe_allow_html=True)
 
 # ==========================================
-# 3. 사이드바 UI (글씨 크기 줄인 버전)
+# 3. 사이드바 UI
 # ==========================================
 sidebar_top = st.sidebar.container()
 sidebar_top.markdown(f"""
@@ -310,7 +313,7 @@ st.sidebar.markdown(f"""
     <div style="font-size:0.75em; font-weight:700; color:#64748B; margin-top: 4px;">Spatial Glass v4.5<br>&copy; 2026 SEYOON.</div>
 </div>""", unsafe_allow_html=True)
 
-# 메인 타이틀 영역 (크기 하향 조정)
+# 메인 타이틀 영역
 st.markdown(f"""
 <div style="padding-bottom:15px; margin-bottom:30px; display:flex; justify-content:space-between; align-items:flex-end; border-bottom: 1px solid rgba(0,0,0,0.05);">
     <div>
@@ -341,8 +344,6 @@ if page == "📊 시장 분석관 (Home)":
         return f'<div class="crow"><span class="clabel">{label}</span><span class="cval" style="color:{color};">{val} {icon}</span></div>'
 
     soxl_title  = "🔥 승인: SOXL" if smh_cond else "🛡️ 기각: USD"
-    
-    # 🚨 누락되었던 soxl_strat 변수 정상 복구 🚨
     soxl_strat  = "3배수 공격적 진입" if smh_cond else "변동성 방어용 2배수"
     soxl_color  = "#10B981" if smh_cond else "#4F46E5"
     
@@ -412,6 +413,9 @@ if page == "📊 시장 분석관 (Home)":
         st.plotly_chart(fig_tqqq, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
+# ------------------------------------------
+# PAGE 1.5: 💼 내 포트폴리오
+# ------------------------------------------
 elif page == "💼 내 포트폴리오":
     st.markdown("<h2 style='font-family:Outfit; font-size:2em;'>💼 내 포트폴리오</h2>", unsafe_allow_html=True)
     
@@ -674,6 +678,12 @@ elif page == "🍫 8-Pack 레이더망":
     b7 = _badge("금 피신","orange","⚠️") if last_row['GLD_SPY_Ratio']>last_row['GLD_SPY_MA50'] else _badge("주식 선호","green","✅")
     b8 = _badge("강달러 압박","red","🚨") if last_row['UUP']>last_row['UUP_MA50'] else _badge("달러 진정","green","✅")
 
+    gauge_steps = [{'range':[0,25],'color':"rgba(239,68,68,0.6)"},
+                   {'range':[25,45],'color':"rgba(249,115,22,0.4)"},
+                   {'range':[45,55],'color':"rgba(255,255,255,0.5)"},
+                   {'range':[55,75],'color':"rgba(16,185,129,0.4)"},
+                   {'range':[75,100],'color':"rgba(16,185,129,0.6)"}]
+
     st.markdown(f"""
     <div class="glass-card" style="height:auto !important; margin-bottom: 25px; padding: 30px !important;">
       <h3 style="color:#4F46E5; margin-bottom: 8px;">"감정을 배제하고, 진실에 집중하십시오."</h3>
@@ -681,16 +691,69 @@ elif page == "🍫 8-Pack 레이더망":
     </div>
     """, unsafe_allow_html=True)
 
-    cols = st.columns(4)
-    items = [("1. 스마트 DCA (RSI)",b1),("2. 멘탈 방어 (Drawdown)",b2),("3. 시장 심리 (F&G)",b3),("4. 섹터 순환 (1M)",b4),
-             ("5. 채권 스프레드",b5),("6. 시장 폭 (Breadth)",b6),("7. 안전 자산 (금/주식)",b7),("8. 달러 (UUP)",b8)]
-    
-    for i in range(8):
-        with cols[i%4]:
-            st.markdown(f"""<div class="glass-inset" style="margin-bottom:0; padding:20px;">
-            <div style="font-size:0.85em; font-weight:800; color:#0F172A; margin-bottom:15px;">{items[i][0]}</div>{items[i][1]}</div>""", unsafe_allow_html=True)
-            if i < 4: st.markdown("<br>", unsafe_allow_html=True)
+    # 🚨 누락되었던 8-Pack 시각화 차트들을 액션 뱃지와 함께 렌더링 복구 🚨
+    row1 = st.columns(4)
+    with row1[0]:
+        st.markdown(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:20px;"><div class="glass-inset" style="margin-bottom:10px; padding:15px;"><div style="font-size:0.85em; font-weight:800; color:#0F172A; margin-bottom:10px;">1. 스마트 DCA (RSI)</div>{b1}</div>', unsafe_allow_html=True)
+        fig1=go.Figure(); fig1.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_RSI'],line=dict(color=line_c,width=2)))
+        fig1.add_hline(y=70,line_dash='dash',line_color=dash_c); fig1.add_hline(y=30,line_dash='dash',line_color=rsi_low_c)
+        fig1.update_layout(**radar_layout,yaxis=dict(range=[10,90]),showlegend=False)
+        st.plotly_chart(fig1,use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    with row1[1]:
+        st.markdown(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:20px;"><div class="glass-inset" style="margin-bottom:10px; padding:15px;"><div style="font-size:0.85em; font-weight:800; color:#0F172A; margin-bottom:10px;">2. 멘탈 방어 (Drawdown)</div>{b2}</div>', unsafe_allow_html=True)
+        fig2=go.Figure(); fig2.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_DD'],fill='tozeroy',line=dict(color=dash_c,width=2)))
+        fig2.update_layout(**radar_layout,yaxis=dict(tickformat='.0%'),showlegend=False)
+        st.plotly_chart(fig2,use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    with row1[2]:
+        st.markdown(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:20px;"><div class="glass-inset" style="margin-bottom:10px; padding:15px;"><div style="font-size:0.85em; font-weight:800; color:#0F172A; margin-bottom:10px;">3. 시장 심리 (F&G)</div>{b3}</div>', unsafe_allow_html=True)
+        fig3=go.Figure(go.Indicator(mode="gauge+number",value=fg_score,domain={'x':[0,1],'y':[0,1]},
+            gauge={'axis':{'range':[0,100]},'bar':{'color':line_c},'steps':gauge_steps}))
+        fig3.update_layout(height=200,margin=dict(l=15,r=15,t=10,b=10),paper_bgcolor=b_color,font=dict(family="Outfit, Pretendard",color=t_color))
+        st.plotly_chart(fig3,use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    with row1[3]:
+        st.markdown(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:20px;"><div class="glass-inset" style="margin-bottom:10px; padding:15px;"><div style="font-size:0.85em; font-weight:800; color:#0F172A; margin-bottom:10px;">4. 섹터 순환 (1M)</div>{b4}</div>', unsafe_allow_html=True)
+        fig4=go.Figure(go.Bar(x=sec_df['수익률'],y=sec_df['섹터'],orientation='h',
+            marker_color=[dash_c if v<0 else line_c for v in sec_df['수익률']]))
+        fig4.update_layout(**radar_layout,showlegend=False)
+        st.plotly_chart(fig4,use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
+    row2 = st.columns(4)
+    with row2[0]:
+        st.markdown(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:20px;"><div class="glass-inset" style="margin-bottom:10px; padding:15px;"><div style="font-size:0.85em; font-weight:800; color:#0F172A; margin-bottom:10px;">5. 채권 스프레드</div>{b5}</div>', unsafe_allow_html=True)
+        fig5=go.Figure(); fig5.add_trace(go.Scatter(x=df_view.index,y=df_view['HYG_IEF_Ratio'],line=dict(color=line_c,width=2)))
+        fig5.add_trace(go.Scatter(x=df_view.index,y=df_view['HYG_IEF_MA50'],line=dict(color=dash_c,dash='dot')))
+        fig5.update_layout(**radar_layout,showlegend=False)
+        st.plotly_chart(fig5,use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    with row2[1]:
+        st.markdown(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:20px;"><div class="glass-inset" style="margin-bottom:10px; padding:15px;"><div style="font-size:0.85em; font-weight:800; color:#0F172A; margin-bottom:10px;">6. 시장 폭 (Breadth)</div>{b6}</div>', unsafe_allow_html=True)
+        fig6=go.Figure(); fig6.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_20d_Ret'],name='QQQ',line=dict(color=line_c,width=2)))
+        fig6.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQE_20d_Ret'],name='QQQE',line=dict(color=dash_c,dash='dot')))
+        fig6.update_layout(**radar_layout,showlegend=False,yaxis=dict(tickformat='.0%'))
+        st.plotly_chart(fig6,use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    with row2[2]:
+        st.markdown(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:20px;"><div class="glass-inset" style="margin-bottom:10px; padding:15px;"><div style="font-size:0.85em; font-weight:800; color:#0F172A; margin-bottom:10px;">7. 안전 자산 (금/주식)</div>{b7}</div>', unsafe_allow_html=True)
+        fig7=go.Figure(); fig7.add_trace(go.Scatter(x=df_view.index,y=df_view['GLD_SPY_Ratio'],line=dict(color=line_c,width=2)))
+        fig7.add_trace(go.Scatter(x=df_view.index,y=df_view['GLD_SPY_MA50'],line=dict(color=dash_c,dash='dot')))
+        fig7.update_layout(**radar_layout,showlegend=False)
+        st.plotly_chart(fig7,use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    with row2[3]:
+        st.markdown(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:20px;"><div class="glass-inset" style="margin-bottom:10px; padding:15px;"><div style="font-size:0.85em; font-weight:800; color:#0F172A; margin-bottom:10px;">8. 달러 (UUP)</div>{b8}</div>', unsafe_allow_html=True)
+        fig8=go.Figure(); fig8.add_trace(go.Scatter(x=df_view.index,y=df_view['UUP'],line=dict(color=line_c,width=2)))
+        fig8.add_trace(go.Scatter(x=df_view.index,y=df_view['UUP_MA50'],line=dict(color=dash_c,dash='dot')))
+        fig8.update_layout(**radar_layout,showlegend=False)
+        st.plotly_chart(fig8,use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# ------------------------------------------
+# PAGE 3: 📈 백테스트 랩
+# ------------------------------------------
 elif page == "📈 백테스트 랩":
     st.markdown("<h2 style='font-family:Outfit; color:#0F172A; margin-bottom:5px;'>📈 백테스트 랩</h2>", unsafe_allow_html=True)
     st.markdown("<span style='color:#64748B; font-weight:600; font-size:1.1em;'>과거 데이터 기간 동안의 AMLS V4.5 성과를 나스닥(QQQ) 및 레버리지 장기투자 성과와 비교 검증합니다.</span><br><br>", unsafe_allow_html=True)
