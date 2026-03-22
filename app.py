@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import yfinance as yf
 import pandas as pd
 import pandas_ta as ta
@@ -9,7 +10,6 @@ import urllib.request
 import urllib.parse
 import xml.etree.ElementTree as ET
 import warnings
-import google.generativeai as genai
 import json
 import os
 
@@ -193,9 +193,7 @@ if curr_regime == live_regime: regime_committee_msg = "🟢 조건 부합 (안�
 elif live_regime > curr_regime: regime_committee_msg = f"🔴 R{live_regime} 하향 즉시 반영"
 else: regime_committee_msg = f"🟡 R{live_regime} 승급 대기 (5일)"
 
-# ==========================================
 # 차트 전역 색상 변수 (Light Mint Theme)
-# ==========================================
 b_color = 'rgba(0,0,0,0)'
 t_color = '#1E293B' # 짙은 텍스트
 line_c = '#10B981'  # 🌿 메인 포인트 컬러 (Mint Green)
@@ -243,35 +241,69 @@ st.markdown("""<style>
         border-right: 1px solid rgba(16, 185, 129, 0.15) !important;
     }
     
-    /* [사이드바 메뉴: 완벽한 Borderless Sliding UI] */
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] label[data-baseweb="radio"] div:first-child { display: none !important; }
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] { gap: 6px; padding: 10px 15px; background: transparent !important; }
+    /* =========================================
+       🚨 [사이드바 메뉴: 완벽한 Borderless & No-Circle UI] 🚨 
+       ========================================= */
+    /* 어떤 버전의 스트림릿이든 라디오 버튼 동그라미(SVG, DIV 등)를 완벽하게 추적해서 학살(Kill)합니다. */
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] label[data-baseweb="radio"] > div:first-child,
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] label[data-baseweb="radio"] svg,
+    [data-testid="stSidebar"] .stRadio [role="radiogroup"] label > div:first-child { 
+        display: none !important; 
+        opacity: 0 !important; 
+        visibility: hidden !important; 
+        width: 0px !important; 
+        height: 0px !important; 
+        margin: 0 !important; 
+        padding: 0 !important; 
+    }
+    
+    /* 메뉴 컨테이너 (위아래 여백 살짝) */
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] { 
+        gap: 6px; 
+        padding: 10px 15px; 
+        background: transparent !important; 
+    }
+    
+    /* 각 메뉴 항목(버튼)의 뼈대 (투명하고 선 없음) */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label {
         background: transparent !important;
         border: none !important;
         border-radius: 12px !important;
-        padding: 12px 18px !important;
-        cursor: pointer; width: 100%; margin: 0 !important;
+        padding: 14px 20px !important; /* 클릭 영역 큼직하게 */
+        cursor: pointer; 
+        width: 100%; 
+        margin: 0 !important;
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label p {
-        font-size: 0.95em !important; font-weight: 600 !important; color: var(--text-muted) !important; margin: 0 !important; padding-left: 0 !important;
-    }
-    /* 마우스 호버 효과 */
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover {
-        background: rgba(16, 185, 129, 0.05) !important;
-        transform: translateX(4px) !important;
-    }
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover p { color: var(--accent-dark) !important; }
     
-    /* 선택된 메뉴 (민트 그라데이션) */
+    /* 메뉴 텍스트 (큼직하고 둥글둥글한 폰트) */
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label p {
+        font-size: 1.15em !important; 
+        font-weight: 600 !important; 
+        color: var(--text-muted) !important; 
+        margin: 0 !important; 
+        padding-left: 0 !important;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    
+    /* 🚨 Hover 효과 (마우스를 올렸을 때: 연한 민트 배경 + 살짝 확대됨) */
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover {
+        background: rgba(16, 185, 129, 0.08) !important; /* 연한 민트 배경스며들기 */
+    }
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover p { 
+        color: var(--accent-dark) !important; 
+        transform: scale(1.05) translateX(4px) !important; /* 글자 살짝 커지고 우측으로 밀림 */
+    }
+    
+    /* 🚨 Checked 효과 (선택된 메뉴: 그라데이션) */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) {
         background: linear-gradient(135deg, #10B981 0%, #34D399 100%) !important;
-        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25) !important;
-        transform: translateX(4px) !important;
+        box-shadow: 0 6px 15px rgba(16, 185, 129, 0.25) !important;
     }
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) p {
-        color: #FFFFFF !important; font-weight: 800 !important;
+        color: #FFFFFF !important; 
+        font-weight: 800 !important;
+        transform: scale(1.05) translateX(4px) !important; /* 클릭 상태에서도 스케일 유지 */
     }
 
     /* [메인 패널 (Light Mint Glass Card)] */
@@ -759,7 +791,6 @@ elif page == "📈 Backtest Lab":
         fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['QLD'], name='QLD', line=dict(color='#3B82F6', width=1.5, dash='dash')))
         fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['TQQQ'], name='TQQQ', line=dict(color='#EF4444', width=1.5, dash='dash')))
         fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['V4.5'], name='AMLS', line=dict(color='#10B981', width=3.5)))
-        # 🚨 에러 원인이었던 margin 중복 설정 제거 완료
         fig_eq.update_layout(title=dict(text="Equity Curve (Log)", font=dict(family='Outfit', size=16, color="#0F172A")), height=400, yaxis_type='log', **chart_layout)
         st.markdown('<div class="glass-card" style="height:auto !important; padding:15px !important;">', unsafe_allow_html=True)
         st.plotly_chart(fig_eq, use_container_width=True)
@@ -772,7 +803,6 @@ elif page == "📈 Backtest Lab":
         fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['QLD']), name='QLD', line=dict(color='#3B82F6', width=1)))
         fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['TQQQ']), name='TQQQ', line=dict(color='#EF4444', width=1)))
         fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['V4.5']), name='AMLS', fill='tozeroy', line=dict(color='#10B981', width=2.5)))
-        # 🚨 에러 원인이었던 margin 중복 설정 제거 완료
         fig_dd.update_layout(title=dict(text="Drawdown Curve", font=dict(family='Outfit', size=16, color="#0F172A")), height=300, yaxis=dict(tickformat='.0%'), **chart_layout)
         st.markdown('<div class="glass-card" style="height:auto !important; padding:15px !important;">', unsafe_allow_html=True)
         st.plotly_chart(fig_dd, use_container_width=True)
@@ -815,8 +845,8 @@ elif page == "📰 Macro News":
         cols = st.columns(3)
         for idx,item in enumerate(news_items):
             with cols[idx%3]:
-                st.markdown(f"""<div class="glass-card" style="padding:20px !important; margin-bottom:15px; height:150px !important; display:flex; flex-direction:column; justify-content:space-between;">
-                    <div style="font-weight:700; font-size:1em; line-height:1.4; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">
+                st.markdown(f"""<div class="glass-card" style="padding:20px !important; margin-bottom:15px; height:140px !important; display:flex; flex-direction:column; justify-content:space-between;">
+                    <div style="font-weight:500; font-size:0.95em; line-height:1.4; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">
                         <a href="{item['link']}" target="_blank" style="color:#0F172A; text-decoration:none;">{item['title']}</a>
                     </div>
                     <div style="color:#10B981; font-family:Outfit; font-size:0.85em; font-weight:700; margin-top:10px;">{item['date']}</div>
