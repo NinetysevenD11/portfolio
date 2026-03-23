@@ -20,6 +20,25 @@ warnings.filterwarnings('ignore')
 # ==========================================
 st.set_page_config(page_title="AMLS V4.5 FINANCE STRATEGY", layout="wide", page_icon="🌿", initial_sidebar_state="expanded")
 
+# --- 🎨 테마 커스텀 시스템 추가 ---
+if 'main_color' not in st.session_state:
+    st.session_state.main_color = '#10B981' # 기본값: 민트
+main_color = st.session_state.main_color
+
+def hex_to_rgb(hex_col):
+    h = hex_col.lstrip('#')
+    return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+r_c, g_c, b_c = hex_to_rgb(main_color)
+
+# 대시보드 전체의 하드코딩된 민트색을 사용자가 선택한 색상으로 동기화하는 도우미 함수
+def apply_theme(text):
+    if not isinstance(text, str): return text
+    text = text.replace("#10B981", main_color)
+    text = text.replace("#10b981", main_color)
+    text = text.replace("16, 185, 129", f"{r_c}, {g_c}, {b_c}")
+    text = text.replace("16,185,129", f"{r_c},{g_c},{b_c}")
+    return text
+
 SECTOR_TICKERS = ['XLK','XLV','XLF','XLY','XLC','XLI','XLP','XLE','XLU','XLRE','XLB']
 CORE_TICKERS   = ['QQQ','TQQQ','SOXL','USD','QLD','SSO','SPY','SMH','GLD','^VIX','HYG','IEF','QQQE','UUP']
 TICKERS        = CORE_TICKERS + SECTOR_TICKERS
@@ -173,7 +192,6 @@ hist_regime   = int(df.iloc[-1]['Regime'])
 curr_regime   = live_regime if live_regime > hist_regime else hist_regime
 target_regime = live_regime
 
-# 반도체 진입 조건
 smh_c1 = smh_close > smh_ma50
 smh_c2 = (smh_3m > 0.05 or smh_1m > 0.10)
 smh_c3 = smh_rsi > 50
@@ -193,12 +211,12 @@ if curr_regime == live_regime: regime_committee_msg = "🟢 조건 부합 (안�
 elif live_regime > curr_regime: regime_committee_msg = f"🔴 R{live_regime} 하향 즉시 반영"
 else: regime_committee_msg = f"🟡 R{live_regime} 승급 대기 (5일)"
 
-# 차트 전역 색상 변수
+# 차트 전역 색상 변수 (사용자 정의 색상 연동)
 b_color = 'rgba(0,0,0,0)'
 t_color = '#1E293B'
-line_c = '#10B981'
+line_c = main_color
 dash_c = '#94A3B8'
-rsi_low_c = '#10B981'
+rsi_low_c = main_color
 chart_layout = dict(paper_bgcolor=b_color, plot_bgcolor=b_color, font=dict(family="Pretendard", color=t_color), margin=dict(l=0,r=0,t=40,b=0))
 radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15), paper_bgcolor=b_color, plot_bgcolor=b_color, font=dict(family="Pretendard", color=t_color))
 regime_info  = {1:("R1 BULL","풀 가동"),2:("R2 CORR","방어 진입"), 3:("R3 BEAR","대피"),4:("R4 PANIC","최대 방어")}
@@ -206,53 +224,50 @@ regime_info  = {1:("R1 BULL","풀 가동"),2:("R2 CORR","방어 진입"), 3:("R3
 # ==========================================
 # 2. V4.4 레트로 사이드바 + V4.5 입체 카드 통합 CSS
 # ==========================================
-st.markdown("""<style>
+css_block = f"""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
     
-    :root {
+    :root {{
         --bg-main: #F8FAFC; 
         --text-main: #0F172A; 
         --text-muted: #64748B; 
         --accent-mint: #10B981; 
-    }
+    }}
 
     /* 대시보드 메인 배경 */
-    .stApp, [data-testid="stAppViewContainer"] {
+    .stApp, [data-testid="stAppViewContainer"] {{
         background-color: var(--bg-main) !important;
         background-image: 
             radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
             radial-gradient(circle at 90% 80%, rgba(52, 211, 153, 0.06) 0%, transparent 40%) !important;
         color: var(--text-main) !important;
         font-family: 'Pretendard', sans-serif;
-    }
+    }}
     
-    [data-testid="stHeader"] { background-color: transparent !important; }
-    #MainMenu { visibility: hidden; } footer { visibility: hidden; }
-    .main .block-container { max-width: 1400px; padding-top: 1rem; padding-bottom: 2rem; }
+    [data-testid="stHeader"] {{ background-color: transparent !important; }}
+    #MainMenu {{ visibility: hidden; }} footer {{ visibility: hidden; }}
+    .main .block-container {{ max-width: 1400px; padding-top: 1rem; padding-bottom: 2rem; }}
 
     /* =========================================
-       🔥 사이드바: 전달해주신 레트로 스타일 완벽 이식 🔥
+       🔥 사이드바: 레트로 스타일 완벽 이식 🔥
        ========================================= */
-    [data-testid="stSidebar"] {
-        background: #f0f0e8 !important; /* 연한 베이지색 배경 */
-        border-right: 2.5px solid #1a1a1a !important; /* 굵은 까만 테두리 */
-    }
+    [data-testid="stSidebar"] {{
+        background: #f0f0e8 !important; 
+        border-right: 2.5px solid #1a1a1a !important; 
+    }}
     
-    /* 1. 라디오 버튼 동그라미 삭제 */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] label[data-baseweb="radio"] > div:first-child,
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] label[data-baseweb="radio"] svg { 
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] label[data-baseweb="radio"] svg {{ 
         display: none !important; opacity: 0 !important; width: 0px !important; height: 0px !important; margin: 0 !important; padding: 0 !important; 
-    }
+    }}
     
-    /* 2. 메뉴 컨테이너 */
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] { 
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] {{ 
         gap: 6px; 
         padding: 10px 15px; 
         background: transparent !important; 
-    }
+    }}
     
-    /* 3. 메뉴 아이템 기본 상태 (Brutalist Style) */
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label {
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label {{
         display: flex;
         align-items: center;
         background: rgba(0,0,0,0.03) !important;
@@ -264,53 +279,51 @@ st.markdown("""<style>
         width: 100%; 
         transition: all 0.2s !important;
         box-shadow: none !important;
-    }
+    }}
     
-    /* 4. 텍스트 디자인 */
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label p {
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label p {{
         color: #1a1a1a !important; 
         font-weight: 800 !important;
         font-size: 0.95rem !important; 
         margin: 0 !important; 
         transform: none !important;
-    }
+    }}
     
-    /* 5. Hover 효과 (호버 시 박스가 튀어나옴) */
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover {
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover {{
         border: 2.5px solid #1a1a1a !important;
         background-color: #ffffff !important;
         transform: translateX(3px) !important;
         box-shadow: 2px 2px 0px #1a1a1a !important;
-    }
+    }}
     
-    /* 6. 🚨 Checked 상태 🚨 */
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) {
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) {{
         border: 2.5px solid #1a1a1a !important;
         background-color: #ffffff !important;
         transform: translateX(3px) !important;
         box-shadow: 2px 2px 0px #1a1a1a !important;
         width: 100% !important;
         margin-right: 0 !important;
-    }
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) p {
-        color: var(--accent-mint) !important; /* 활성화 시 V4.5의 민트색 유지 */
-    }
+    }}
+    
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) p {{
+        color: var(--accent-mint) !important; 
+    }}
 
-    /* 📌 추가: 하단 즐겨찾기 사이드바 링크 스타일 (주신 코드 동일 적용) */
-    .sidebar-link { 
+    /* 📌 하단 즐겨찾기 사이드바 링크 스타일 */
+    .sidebar-link {{ 
         display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; 
         border-radius: 10px; border: 2.5px solid transparent; text-decoration: none !important; 
         color: #1a1a1a !important; font-weight: 800; font-size: 0.95rem; 
         transition: all 0.2s; background: rgba(0,0,0,0.03); 
-    }
-    .sidebar-link:hover { 
+    }}
+    .sidebar-link:hover {{ 
         border: 2.5px solid #1a1a1a; background-color: #ffffff; 
         transform: translateX(3px); box-shadow: 2px 2px 0px #1a1a1a; 
-    }
+    }}
     /* ========================================= */
 
-    /* 🚨 메인 대시보드 카드 UI (V4.5 입체 양각 디자인 유지) 🚨 */
-    .glass-card {
+    /* 🚨 메인 대시보드 카드 UI (V4.5 입체 양각) 🚨 */
+    .glass-card {{
         background: #FFFFFF !important; 
         border-top: 1px solid rgba(16, 185, 129, 0.3) !important;
         border-left: 1px solid rgba(16, 185, 129, 0.3) !important;
@@ -325,17 +338,17 @@ st.markdown("""<style>
             
         height: 100%; display: flex; flex-direction: column; justify-content: space-between;
         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    }
-    .glass-card:hover {
+    }}
+    .glass-card:hover {{
         transform: translateY(-5px); 
         border-bottom: 3.5px solid rgba(16, 185, 129, 0.8) !important; 
         border-right: 3.5px solid rgba(16, 185, 129, 0.8) !important; 
         box-shadow: 16px 16px 32px rgba(16, 185, 129, 0.18), -16px -16px 32px rgba(255, 255, 255, 1) !important;
-    }
-    .glass-card h3 { font-family: 'Outfit', sans-serif; font-size: 1.15em !important; font-weight: 800 !important; color: var(--text-main); margin-bottom: 15px !important; letter-spacing: -0.5px; border-bottom: 2px solid rgba(16, 185, 129, 0.1); padding-bottom: 8px; }
+    }}
+    .glass-card h3 {{ font-family: 'Outfit', sans-serif; font-size: 1.15em !important; font-weight: 800 !important; color: var(--text-main); margin-bottom: 15px !important; letter-spacing: -0.5px; border-bottom: 2px solid rgba(16, 185, 129, 0.1); padding-bottom: 8px; }}
 
     /* 내부 박스 음각 처리 */
-    .glass-inset {
+    .glass-inset {{
         background: #F8FAFC !important; 
         border-top: 1px solid rgba(16, 185, 129, 0.4) !important;
         border-left: 1px solid rgba(16, 185, 129, 0.4) !important;
@@ -343,48 +356,59 @@ st.markdown("""<style>
         border-right: 1px solid rgba(255, 255, 255, 1) !important;
         border-radius: 16px !important; padding: 18px; text-align: center; margin-bottom: 16px;
         box-shadow: inset 6px 6px 12px rgba(16, 185, 129, 0.12), inset -6px -6px 12px rgba(255, 255, 255, 1) !important;
-    }
+    }}
     
-    h1 { font-family: 'Outfit', sans-serif; font-size: 2.6em !important; font-weight: 800 !important; letter-spacing: -1px; margin: 0 !important; color: var(--text-main) !important; }
+    h1 {{ font-family: 'Outfit', sans-serif; font-size: 2.6em !important; font-weight: 800 !important; letter-spacing: -1px; margin: 0 !important; color: var(--text-main) !important; }}
 
-    .crow { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 0.9em; }
-    .clabel { color: var(--text-muted); font-weight: 600; }
-    .cval { font-family: 'Outfit', sans-serif; font-weight: 800; color: var(--accent-mint); }
+    .crow {{ display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 0.9em; }}
+    .clabel {{ color: var(--text-muted); font-weight: 600; }}
+    .cval {{ font-family: 'Outfit', sans-serif; font-weight: 800; color: var(--accent-mint); }}
 
-    [data-testid="stMetric"] { background: transparent !important; border: none !important; box-shadow: none !important; padding: 5px !important; }
-    [data-testid="stMetricLabel"] > div > div > p { font-size: 0.85em !important; font-weight: 600; color: var(--text-muted) !important; }
-    [data-testid="stMetricValue"] > div { font-family: 'Outfit', sans-serif; font-size: 1.5em !important; font-weight: 800; color: var(--text-main) !important; }
-    div[data-testid="stMetricDelta"] > div { font-size: 0.85em !important; font-weight: 700; }
+    [data-testid="stMetric"] {{ background: transparent !important; border: none !important; box-shadow: none !important; padding: 5px !important; }}
+    [data-testid="stMetricLabel"] > div > div > p {{ font-size: 0.85em !important; font-weight: 600; color: var(--text-muted) !important; }}
+    [data-testid="stMetricValue"] > div {{ font-family: 'Outfit', sans-serif; font-size: 1.5em !important; font-weight: 800; color: var(--text-main) !important; }}
+    div[data-testid="stMetricDelta"] > div {{ font-size: 0.85em !important; font-weight: 700; }}
     
-    .mint-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; font-family: 'Pretendard', sans-serif; }
-    .mint-table th { padding: 10px 14px; font-weight: 700; color: #64748B; text-align: right; border-bottom: none; font-size: 0.9em; }
-    .mint-table td { padding: 14px; background: rgba(255, 255, 255, 0.8); color: #0F172A; text-align: right; border-top: 1px solid rgba(16, 185, 129, 0.1); border-bottom: 1px solid rgba(16, 185, 129, 0.1); }
-    .mint-table tr { transition: transform 0.2s; }
-    .mint-table tr:hover { transform: scale(1.01); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.05); }
-    .mint-table td:first-child { border-left: 1px solid rgba(16, 185, 129, 0.1); border-top-left-radius: 12px; border-bottom-left-radius: 12px; text-align: left; }
-    .mint-table td:last-child { border-right: 1px solid rgba(16, 185, 129, 0.1); border-top-right-radius: 12px; border-bottom-right-radius: 12px; text-align: center; }
+    .mint-table {{ width: 100%; border-collapse: separate; border-spacing: 0 8px; font-family: 'Pretendard', sans-serif; }}
+    .mint-table th {{ padding: 10px 14px; font-weight: 700; color: #64748B; text-align: right; border-bottom: none; font-size: 0.9em; }}
+    .mint-table td {{ padding: 14px; background: rgba(255, 255, 255, 0.8); color: #0F172A; text-align: right; border-top: 1px solid rgba(16, 185, 129, 0.1); border-bottom: 1px solid rgba(16, 185, 129, 0.1); }}
+    .mint-table tr {{ transition: transform 0.2s; }}
+    .mint-table tr:hover {{ transform: scale(1.01); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.05); }}
+    .mint-table td:first-child {{ border-left: 1px solid rgba(16, 185, 129, 0.1); border-top-left-radius: 12px; border-bottom-left-radius: 12px; text-align: left; }}
+    .mint-table td:last-child {{ border-right: 1px solid rgba(16, 185, 129, 0.1); border-top-right-radius: 12px; border-bottom-right-radius: 12px; text-align: center; }}
 
-    [data-testid="stNumberInput"] > div > div, [data-testid="stTextInput"] > div > div { background: rgba(255,255,255,0.8) !important; border: 1px solid rgba(16,185,129,0.3) !important; border-radius: 12px !important; color: var(--text-main) !important; }
-</style>""", unsafe_allow_html=True)
+    [data-testid="stNumberInput"] > div > div, [data-testid="stTextInput"] > div > div {{ background: rgba(255,255,255,0.8) !important; border: 1px solid rgba(16,185,129,0.3) !important; border-radius: 12px !important; color: var(--text-main) !important; }}
+</style>"""
+st.markdown(apply_theme(css_block), unsafe_allow_html=True)
 
 # ==========================================
 # 3. 사이드바 UI
 # ==========================================
 sidebar_top = st.sidebar.container()
-sidebar_top.markdown(f"""
+sidebar_top.markdown(apply_theme(f"""
 <div style="padding: 10px 15px;">
     <div style="font-family: 'Outfit'; font-size: 1.8em; font-weight: 800; color: #1a1a1a; letter-spacing: -0.5px;">AMLS <span style="color:#10B981;">V4.5</span></div>
     <div style="font-family: 'Outfit'; font-size: 0.85em; font-weight: 800; color: #444444; margin-bottom: 10px;">QUANTITATIVE ENGINE</div>
     <div style="font-size: 0.75em; color: #1a1a1a; font-weight: 800; padding: 4px 10px; background: rgba(0,0,0,0.05); border-radius: 10px; display: inline-block; border: 2px solid #1a1a1a;">
         {rt_label}
     </div>
-</div>""", unsafe_allow_html=True)
+</div>"""), unsafe_allow_html=True)
 
 page = st.sidebar.radio("MENU",
     ["📊 Dashboard", "💼 Portfolio", "🍫 8-Pack Radar", "📈 Backtest Lab", "📰 Macro News"],
     label_visibility="collapsed")
 
-# 📌 추가된 즐겨찾기 섹션
+# 📌 사이드바 커스텀 메인 컬러 설정기
+st.sidebar.markdown("---")
+st.sidebar.markdown("<div style='font-size:1.2rem; font-weight:900; color:#1a1a1a; margin-bottom:5px; padding: 0 15px;'>🎨 테마 색상 설정</div>", unsafe_allow_html=True)
+col1, col2, col3 = st.sidebar.columns([0.1, 1, 0.1])
+with col2:
+    new_color = st.color_picker("메인 컬러를 지정하세요", st.session_state.main_color, label_visibility="collapsed")
+    if new_color != st.session_state.main_color:
+        st.session_state.main_color = new_color
+        st.rerun()
+
+# 📌 즐겨찾기 섹션
 st.sidebar.markdown("---")
 st.sidebar.markdown("<div style='font-size:1.2rem; font-weight:900; color:#1a1a1a; margin-bottom:10px; padding: 0 15px;'>⭐ 즐겨찾기</div>", unsafe_allow_html=True)
 st.sidebar.markdown("""
@@ -404,19 +428,18 @@ st.sidebar.markdown("""
 """, unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
-
 # 메인 타이틀 영역
-st.markdown(f"""
+st.markdown(apply_theme(f"""
 <div style="padding-bottom:15px; margin-bottom:25px; display:flex; justify-content:space-between; align-items:flex-end; border-bottom: 2px solid rgba(16,185,129,0.1);">
     <div>
         <h1>AMLS V4.5 ENGINE</h1>
         <p style="font-family:'Outfit'; font-size:1.05em; margin:4px 0 0 0; font-weight:700; color:#10B981; letter-spacing:0.5px;">THE WALL STREET QUANTITATIVE STRATEGY</p>
     </div>
     <div style="text-align:right;">
-        <div style="font-family:'Outfit'; font-size:1.1em; font-weight:800; color:#0F172A;">MINT EDITION</div>
+        <div style="font-family:'Outfit'; font-size:1.1em; font-weight:800; color:#0F172A;">CUSTOM THEME EDITION</div>
         <div style="font-size:0.8em; font-weight:700; color:#10B981; border: 1px solid rgba(16,185,129,0.4); padding: 4px 12px; border-radius: 50px; margin-top:4px; display:inline-block;">{rt_label} STATUS</div>
     </div>
-</div>""", unsafe_allow_html=True)
+</div>"""), unsafe_allow_html=True)
 
 # ==========================================
 # 5. 페이지 라우팅
@@ -425,19 +448,19 @@ if page == "📊 Dashboard":
     
     def _lg_row(label, val, passed):
         icon = "🟢" if passed else "🔴"
-        color = "#10B981" if passed else "#EF4444"
+        color = main_color if passed else "#EF4444"
         return f'<div class="crow"><span class="clabel">{label}</span><span class="cval" style="color:{color};">{val} {icon}</span></div>'
 
     soxl_title  = "SOXL 진입 승인" if smh_cond else "USD 방어 진입"
     soxl_strat  = "3x Leverage" if smh_cond else "2x Defense"
-    soxl_color  = "#10B981" if smh_cond else "#0F172A"
+    soxl_color  = main_color if smh_cond else "#0F172A"
     
     weight_rows = "".join([f'<div class="crow"><span class="clabel">{k}</span><span class="cval" style="color:#10B981;">{v*100:.0f}%</span></div>'
                             for k,v in target_weights.items() if v > 0])
 
     c1, c2, c3 = st.columns([1.2, 1.2, 1])
     with c1:
-        st.markdown(f"""<div class="glass-card">
+        st.markdown(apply_theme(f"""<div class="glass-card">
             <h3>MARKET REGIME</h3>
             <div class="glass-inset">
                 <div style="color:#10B981; font-family:'Outfit'; font-size:2em; font-weight:800;">{regime_info[curr_regime][0]}</div>
@@ -447,9 +470,9 @@ if page == "📊 Dashboard":
             {_lg_row('QQQ > 200MA', f'${qqq_close:.0f}', qqq_close>=qqq_ma200)}
             {_lg_row('50MA ≥ 200MA', f'${qqq_ma50:.0f}', qqq_ma50>=qqq_ma200)}
             <div style="margin-top:auto; padding:12px; font-size:0.85em; text-align:center; border-radius:8px; background:rgba(16,185,129,0.1); color:#047857; font-weight:700;">{regime_committee_msg}</div>
-        </div>""", unsafe_allow_html=True)
+        </div>"""), unsafe_allow_html=True)
     with c2:
-        st.markdown(f"""<div class="glass-card">
+        st.markdown(apply_theme(f"""<div class="glass-card">
             <h3>SEMI-CONDUCTOR (SOXL)</h3>
             <div class="glass-inset">
                 <div style="color:{soxl_color}; font-family:'Outfit'; font-size:2em; font-weight:800;">{soxl_title}</div>
@@ -459,13 +482,13 @@ if page == "📊 Dashboard":
             {_lg_row('Mom (1M>10%)', f'{smh_1m*100:.1f}%', smh_c2)}
             {_lg_row('RSI > 50', f'{smh_rsi:.1f}', smh_c3)}
             <div style="margin-top:auto; padding:12px; font-size:0.85em; text-align:center; color:#64748B; font-weight:600; border-top:1px dashed rgba(16,185,129,0.3);">※ 3 filters required for SOXL</div>
-        </div>""", unsafe_allow_html=True)
+        </div>"""), unsafe_allow_html=True)
     with c3:
-        st.markdown(f"""<div class="glass-card">
+        st.markdown(apply_theme(f"""<div class="glass-card">
             <h3>TARGET WEIGHTS</h3>
             <div style="display:flex; justify-content:space-between; font-size:0.8em; font-family:'Outfit'; font-weight:700; color:#94A3B8; border-bottom:2px solid rgba(16,185,129,0.15); padding-bottom:8px; margin-bottom:5px;"><span>ASSET</span><span>WEIGHT</span></div>
             {weight_rows}
-        </div>""", unsafe_allow_html=True)
+        </div>"""), unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
     m1,m2,m3,m4,m5 = st.columns(5)
@@ -490,11 +513,11 @@ if page == "📊 Dashboard":
     fig_tqqq.update_layout(title=dict(text="TQQQ vs 200MA", font=dict(family='Outfit', size=16, color="#0F172A")), height=350, **chart_layout)
 
     with chart_col1:
-        st.markdown('<div class="glass-card" style="height:auto !important; padding:15px !important;">', unsafe_allow_html=True)
+        st.markdown(apply_theme('<div class="glass-card" style="height:auto !important; padding:15px !important;">'), unsafe_allow_html=True)
         st.plotly_chart(fig_qqq, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
     with chart_col2:
-        st.markdown('<div class="glass-card" style="height:auto !important; padding:15px !important;">', unsafe_allow_html=True)
+        st.markdown(apply_theme('<div class="glass-card" style="height:auto !important; padding:15px !important;">'), unsafe_allow_html=True)
         st.plotly_chart(fig_tqqq, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -531,7 +554,7 @@ elif page == "💼 Portfolio":
         })
     df_editor = pd.DataFrame(editor_data)
     
-    st.markdown('<div class="glass-card" style="height: auto !important; padding: 20px !important;">', unsafe_allow_html=True)
+    st.markdown(apply_theme('<div class="glass-card" style="height: auto !important; padding: 20px !important;">'), unsafe_allow_html=True)
     edited_df = st.data_editor(
         df_editor,
         disabled=["Asset"],
@@ -566,7 +589,7 @@ elif page == "💼 Portfolio":
     st.metric("Total NAV", f"${total_val_usd:,.2f}", f"FX: ₩{cur_fx:,.2f}")
     
     if total_val_usd > 0:
-        c_green, c_red = "#10B981", "#EF4444"
+        c_green, c_red = main_color, "#EF4444"
         pie_layout = dict(margin=dict(l=20, r=20, t=40, b=20), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(family="Pretendard", color="#0F172A", size=12))
         
         diff_vals = {a: (total_val_usd * target_weights.get(a, 0.0)) - curr_vals[a] for a in ASSET_LIST}
@@ -578,7 +601,7 @@ elif page == "💼 Portfolio":
             fig_cur = go.Figure(data=[go.Pie(labels=labels_cur, values=vals_cur, hole=.4, textinfo='label+percent', marker=dict(colors=[line_c, dash_c, '#34D399', '#6EE7B7']))])
             fig_cur.update_layout(title=dict(text="Current", font=dict(family="Outfit", size=16, color="#0F172A")), **pie_layout)
             with chart_c1:
-                st.markdown('<div class="glass-card" style="height: auto !important; padding: 10px !important;">', unsafe_allow_html=True)
+                st.markdown(apply_theme('<div class="glass-card" style="height: auto !important; padding: 10px !important;">'), unsafe_allow_html=True)
                 st.plotly_chart(fig_cur, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
         
@@ -587,7 +610,7 @@ elif page == "💼 Portfolio":
         fig_tgt = go.Figure(data=[go.Pie(labels=labels_tgt, values=vals_tgt, hole=.4, textinfo='label+percent', marker=dict(colors=[line_c, dash_c, '#34D399', '#6EE7B7']))])
         fig_tgt.update_layout(title=dict(text=f"Target (R{curr_regime})", font=dict(family="Outfit", size=16, color="#0F172A")), **pie_layout)
         with chart_c2:
-            st.markdown('<div class="glass-card" style="height: auto !important; padding: 10px !important;">', unsafe_allow_html=True)
+            st.markdown(apply_theme('<div class="glass-card" style="height: auto !important; padding: 10px !important;">'), unsafe_allow_html=True)
             st.plotly_chart(fig_tgt, use_container_width=True)
             st.markdown('</div>', unsafe_allow_html=True)
         
@@ -598,7 +621,7 @@ elif page == "💼 Portfolio":
             fig_bar = go.Figure(data=[go.Bar(x=diff_labels, y=diff_values, marker_color=diff_colors, text=[f"${v:,.0f}" for v in diff_values], textposition='auto')])
             fig_bar.update_layout(title=dict(text="Rebalancing Amounts ($)", font=dict(family="Outfit", size=16, color="#0F172A")), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color="#0F172A"), margin=dict(t=40, b=20, l=20, r=20))
             with chart_c3:
-                st.markdown('<div class="glass-card" style="height: auto !important; padding: 10px !important;">', unsafe_allow_html=True)
+                st.markdown(apply_theme('<div class="glass-card" style="height: auto !important; padding: 10px !important;">'), unsafe_allow_html=True)
                 st.plotly_chart(fig_bar, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -606,7 +629,7 @@ elif page == "💼 Portfolio":
         summary_html = f"<div class='glass-card' style='height:auto !important; flex-direction:row; gap: 20px; padding: 20px !important;'>"
         
         sell_text = "<div style='flex: 1;'><strong style='color:#EF4444; font-family:Outfit; font-size:1.2em;'>🔴 SELL</strong><br><br>"
-        buy_text = "<div style='flex: 1;'><strong style='color:#10B981; font-family:Outfit; font-size:1.2em;'>🟢 BUY</strong><br><br>"
+        buy_text = f"<div style='flex: 1;'><strong style='color:#10B981; font-family:Outfit; font-size:1.2em;'>🟢 BUY</strong><br><br>"
         
         for asset in ASSET_LIST:
             cur_p = current_prices[asset] if current_prices[asset] > 0 else 1.0
@@ -625,7 +648,7 @@ elif page == "💼 Portfolio":
                 buy_text += f"<div style='margin-bottom: 8px; font-size: 0.95em;'><span style='color:#10B981; font-weight:800; font-family:Outfit;'>CASH</span> : <span style='color:#10B981; font-weight:700;'>${diff:,.0f}</span> 확보</div>"
                 
         summary_html += sell_text + "</div>" + buy_text + "</div></div>"
-        st.markdown(summary_html, unsafe_allow_html=True)
+        st.markdown(apply_theme(summary_html), unsafe_allow_html=True)
 
         rebal_html = f"""<div style="overflow-x: auto; padding: 10px 0;">
 <table class="mint-table">
@@ -673,7 +696,7 @@ elif page == "💼 Portfolio":
 <td style="font-weight:600;">{tgt_v:,.0f}</td>
 <td>{diff_str}</td><td style="text-align:center;">{action}</td></tr>"""
         rebal_html += "</tbody></table></div>"
-        st.markdown(f'<div class="glass-card" style="height:auto !important; padding:10px !important;">{rebal_html}</div>', unsafe_allow_html=True)
+        st.markdown(apply_theme(f'<div class="glass-card" style="height:auto !important; padding:10px !important;">{rebal_html}</div>'), unsafe_allow_html=True)
 
 elif page == "🍫 8-Pack Radar":
 
@@ -731,8 +754,8 @@ elif page == "🍫 8-Pack Radar":
     else:
         radar_status = "🟢 안정적 순항 (Safe)"
         radar_msg = "매크로 지표들이 안정적인 추세를 지지하고 있습니다. 시스템 알고리즘이 제시하는 비중에 맞춰 추세 추종 전략을 전개하십시오."
-        radar_color = "#10B981"
-        bg_color = "rgba(16,185,129,0.1)"
+        radar_color = main_color
+        bg_color = f"rgba({r_c},{g_c},{b_c},0.1)"
 
     st.markdown('<h2 style="font-family:Outfit; font-size:1.8em; color:#0F172A; margin-bottom:15px;">🍫 8-Pack Radar</h2>', unsafe_allow_html=True)
 
@@ -746,7 +769,7 @@ elif page == "🍫 8-Pack Radar":
     """, unsafe_allow_html=True)
 
     def _badge(label, color, icon):
-        p = {'green':('rgba(16,185,129,0.1)','#10B981'), 'orange':('rgba(245,158,11,0.1)','#F59E0B'),
+        p = {'green':(f'rgba({r_c},{g_c},{b_c},0.1)', main_color), 'orange':('rgba(245,158,11,0.1)','#F59E0B'),
              'red':('rgba(239,68,68,0.1)','#EF4444'), 'blue':('rgba(59,130,246,0.1)','#3B82F6')}
         bg,fg = p[color]
         return f'<div style="background:{bg}; color:{fg}; border:1px solid {fg}; border-radius:8px; padding:6px 12px; font-size:0.85em; font-weight:700; display:inline-block; margin-top:5px;">{icon} {label}</div>'
@@ -754,61 +777,61 @@ elif page == "🍫 8-Pack Radar":
     b1 = _badge("BUY","green","🔥") if qqq_rsi<40 else (_badge("OVER","red","⚠️") if qqq_rsi>70 else _badge("ACC","blue","🟢"))
     b2 = (_badge("BEAR(-20%)","red","🚨") if qqq_dd<-0.20 else (_badge("CORR(-10%)","orange","⚠️") if qqq_dd<-0.10 else _badge("SAFE","green","✅")))
     b3 = (_badge("FEAR","green","🔥") if fg_score<30 else (_badge("GREED","red","⚠️") if fg_score>70 else _badge("NEUTRAL","blue","🟢")))
-    b4 = f'<div style="background:rgba(16,185,129,0.1); color:#10B981; border:1px solid #10B981; border-radius:8px; padding:6px 12px; font-size:0.85em; font-weight:700; display:inline-block; margin-top:5px;">🏆 {top_sec} / 📉 {bot_sec}</div>'
+    b4 = f'<div style="background:rgba({r_c},{g_c},{b_c},0.1); color:{main_color}; border:1px solid {main_color}; border-radius:8px; padding:6px 12px; font-size:0.85em; font-weight:700; display:inline-block; margin-top:5px;">🏆 {top_sec} / 📉 {bot_sec}</div>'
     b5 = _badge("RISK OFF","red","🚨") if last_row['HYG_IEF_Ratio']<last_row['HYG_IEF_MA50'] else _badge("RISK ON","green","✅")
     b6 = (_badge("NARROW","orange","⚠️") if (last_row['QQQ_20d_Ret']>0 and last_row['QQQE_20d_Ret']<0) else _badge("BROAD","green","✅"))
     b7 = _badge("GOLD","orange","⚠️") if last_row['GLD_SPY_Ratio']>last_row['GLD_SPY_MA50'] else _badge("EQUITY","green","✅")
     b8 = _badge("STRONG USD","red","🚨") if last_row['UUP']>last_row['UUP_MA50'] else _badge("WEAK USD","green","✅")
 
     gauge_steps = [{'range':[0,25],'color':"rgba(239,68,68,0.5)"},{'range':[25,45],'color':"rgba(245,158,11,0.4)"},
-                   {'range':[45,55],'color':"rgba(255,255,255,0.8)"},{'range':[55,75],'color':"rgba(16,185,129,0.4)"},
-                   {'range':[75,100],'color':"rgba(16,185,129,0.6)"}]
+                   {'range':[45,55],'color':"rgba(255,255,255,0.8)"},{'range':[55,75],'color':f"rgba({r_c},{g_c},{b_c},0.4)"},
+                   {'range':[75,100],'color':f"rgba({r_c},{g_c},{b_c},0.6)"}]
 
     row1 = st.columns(4)
     with row1[0]:
-        st.markdown(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:15px;"><div style="font-size:0.85em; font-weight:700; color:#64748B;">1. DCA (RSI)</div>{b1}</div>', unsafe_allow_html=True)
+        st.markdown(apply_theme(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:15px;"><div style="font-size:0.85em; font-weight:700; color:#64748B;">1. DCA (RSI)</div>{b1}</div>'), unsafe_allow_html=True)
         fig1=go.Figure(); fig1.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_RSI'],line=dict(color=line_c,width=2.5)))
         fig1.add_hline(y=70,line_dash='dash',line_color=dash_c); fig1.add_hline(y=30,line_dash='dash',line_color=rsi_low_c)
         fig1.update_layout(**radar_layout,yaxis=dict(range=[10,90]),showlegend=False)
         st.plotly_chart(fig1,use_container_width=True)
     with row1[1]:
-        st.markdown(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:15px;"><div style="font-size:0.85em; font-weight:700; color:#64748B;">2. Drawdown</div>{b2}</div>', unsafe_allow_html=True)
+        st.markdown(apply_theme(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:15px;"><div style="font-size:0.85em; font-weight:700; color:#64748B;">2. Drawdown</div>{b2}</div>'), unsafe_allow_html=True)
         fig2=go.Figure(); fig2.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_DD'],fill='tozeroy',line=dict(color=dash_c,width=2.5)))
         fig2.update_layout(**radar_layout,yaxis=dict(tickformat='.0%'),showlegend=False)
         st.plotly_chart(fig2,use_container_width=True)
     with row1[2]:
-        st.markdown(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:15px;"><div style="font-size:0.85em; font-weight:700; color:#64748B;">3. Fear & Greed</div>{b3}</div>', unsafe_allow_html=True)
+        st.markdown(apply_theme(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:15px;"><div style="font-size:0.85em; font-weight:700; color:#64748B;">3. Fear & Greed</div>{b3}</div>'), unsafe_allow_html=True)
         fig3=go.Figure(go.Indicator(mode="gauge+number",value=fg_score,domain={'x':[0,1],'y':[0,1]},
             gauge={'axis':{'range':[0,100]},'bar':{'color':line_c},'steps':gauge_steps}))
         fig3.update_layout(height=200,margin=dict(l=15,r=15,t=10,b=10),paper_bgcolor=b_color,font=dict(family="Pretendard",color=t_color))
         st.plotly_chart(fig3,use_container_width=True)
     with row1[3]:
-        st.markdown(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:15px;"><div style="font-size:0.85em; font-weight:700; color:#64748B;">4. Sector (1M)</div>{b4}</div>', unsafe_allow_html=True)
+        st.markdown(apply_theme(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:15px;"><div style="font-size:0.85em; font-weight:700; color:#64748B;">4. Sector (1M)</div>{b4}</div>'), unsafe_allow_html=True)
         fig4=go.Figure(go.Bar(x=sec_df['수익률'],y=sec_df['섹터'],orientation='h', marker_color=[dash_c if v<0 else line_c for v in sec_df['수익률']]))
         fig4.update_layout(**radar_layout,showlegend=False)
         st.plotly_chart(fig4,use_container_width=True)
 
     row2 = st.columns(4)
     with row2[0]:
-        st.markdown(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:15px;"><div style="font-size:0.85em; font-weight:700; color:#64748B;">5. Credit Spread</div>{b5}</div>', unsafe_allow_html=True)
+        st.markdown(apply_theme(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:15px;"><div style="font-size:0.85em; font-weight:700; color:#64748B;">5. Credit Spread</div>{b5}</div>'), unsafe_allow_html=True)
         fig5=go.Figure(); fig5.add_trace(go.Scatter(x=df_view.index,y=df_view['HYG_IEF_Ratio'],line=dict(color=line_c,width=2.5)))
         fig5.add_trace(go.Scatter(x=df_view.index,y=df_view['HYG_IEF_MA50'],line=dict(color=dash_c,dash='dot')))
         fig5.update_layout(**radar_layout,showlegend=False)
         st.plotly_chart(fig5,use_container_width=True)
     with row2[1]:
-        st.markdown(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:15px;"><div style="font-size:0.85em; font-weight:700; color:#64748B;">6. Market Breadth</div>{b6}</div>', unsafe_allow_html=True)
+        st.markdown(apply_theme(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:15px;"><div style="font-size:0.85em; font-weight:700; color:#64748B;">6. Market Breadth</div>{b6}</div>'), unsafe_allow_html=True)
         fig6=go.Figure(); fig6.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_20d_Ret'],name='QQQ',line=dict(color=line_c,width=2.5)))
         fig6.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQE_20d_Ret'],name='QQQE',line=dict(color=dash_c,dash='dot')))
         fig6.update_layout(**radar_layout,showlegend=False,yaxis=dict(tickformat='.0%'))
         st.plotly_chart(fig6,use_container_width=True)
     with row2[2]:
-        st.markdown(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:15px;"><div style="font-size:0.85em; font-weight:700; color:#64748B;">7. Gold / Equity</div>{b7}</div>', unsafe_allow_html=True)
+        st.markdown(apply_theme(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:15px;"><div style="font-size:0.85em; font-weight:700; color:#64748B;">7. Gold / Equity</div>{b7}</div>'), unsafe_allow_html=True)
         fig7=go.Figure(); fig7.add_trace(go.Scatter(x=df_view.index,y=df_view['GLD_SPY_Ratio'],line=dict(color=line_c,width=2.5)))
         fig7.add_trace(go.Scatter(x=df_view.index,y=df_view['GLD_SPY_MA50'],line=dict(color=dash_c,dash='dot')))
         fig7.update_layout(**radar_layout,showlegend=False)
         st.plotly_chart(fig7,use_container_width=True)
     with row2[3]:
-        st.markdown(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:15px;"><div style="font-size:0.85em; font-weight:700; color:#64748B;">8. USD (UUP)</div>{b8}</div>', unsafe_allow_html=True)
+        st.markdown(apply_theme(f'<div class="glass-card" style="height:auto !important; padding:15px !important; margin-bottom:15px;"><div style="font-size:0.85em; font-weight:700; color:#64748B;">8. USD (UUP)</div>{b8}</div>'), unsafe_allow_html=True)
         fig8=go.Figure(); fig8.add_trace(go.Scatter(x=df_view.index,y=df_view['UUP'],line=dict(color=line_c,width=2.5)))
         fig8.add_trace(go.Scatter(x=df_view.index,y=df_view['UUP_MA50'],line=dict(color=dash_c,dash='dot')))
         fig8.update_layout(**radar_layout,showlegend=False)
@@ -857,19 +880,19 @@ elif page == "📈 Backtest Lab":
 <div style="font-family: 'Outfit'; font-size: 1.8em; font-weight: 800; color: #0F172A; margin-bottom: 10px;">CAGR {cagr*100:.1f}%</div>
 <div style="font-size: 0.9em; color: #64748B; font-weight:600;">누적: <span style="color: #10B981;">{ret*100:.1f}%</span> | MDD: <span style="color: #EF4444;">{mdd*100:.1f}%</span></div></div>"""
             
-        mc1.markdown(render_metric_card("✨ AMLS V4.5", ret_o, cagr_o, mdd_o, True), unsafe_allow_html=True)
-        mc2.markdown(render_metric_card("QQQ", ret_q, cagr_q, mdd_q), unsafe_allow_html=True)
-        mc3.markdown(render_metric_card("QLD", ret_qld, cagr_qld, mdd_qld), unsafe_allow_html=True)
-        mc4.markdown(render_metric_card("TQQQ", ret_t, cagr_t, mdd_t), unsafe_allow_html=True)
+        mc1.markdown(apply_theme(render_metric_card("✨ AMLS V4.5", ret_o, cagr_o, mdd_o, True)), unsafe_allow_html=True)
+        mc2.markdown(apply_theme(render_metric_card("QQQ", ret_q, cagr_q, mdd_q)), unsafe_allow_html=True)
+        mc3.markdown(apply_theme(render_metric_card("QLD", ret_qld, cagr_qld, mdd_qld)), unsafe_allow_html=True)
+        mc4.markdown(apply_theme(render_metric_card("TQQQ", ret_t, cagr_t, mdd_t)), unsafe_allow_html=True)
         
         st.markdown("<br>", unsafe_allow_html=True)
         fig_eq = go.Figure()
         fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['QQQ'], name='QQQ', line=dict(color='#94A3B8', width=1.5, dash='dot')))
         fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['QLD'], name='QLD', line=dict(color='#3B82F6', width=1.5, dash='dash')))
         fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['TQQQ'], name='TQQQ', line=dict(color='#EF4444', width=1.5, dash='dash')))
-        fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['V4.5'], name='AMLS', line=dict(color='#10B981', width=3.5)))
+        fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['V4.5'], name='AMLS', line=dict(color=main_color, width=3.5)))
         fig_eq.update_layout(title=dict(text="Equity Curve (Log)", font=dict(family='Outfit', size=16, color="#0F172A")), height=400, yaxis_type='log', **chart_layout)
-        st.markdown('<div class="glass-card" style="height:auto !important; padding:15px !important;">', unsafe_allow_html=True)
+        st.markdown(apply_theme('<div class="glass-card" style="height:auto !important; padding:15px !important;">'), unsafe_allow_html=True)
         st.plotly_chart(fig_eq, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
         
@@ -879,9 +902,9 @@ elif page == "📈 Backtest Lab":
         fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['QQQ']), name='QQQ', line=dict(color='#94A3B8', width=1)))
         fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['QLD']), name='QLD', line=dict(color='#3B82F6', width=1)))
         fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['TQQQ']), name='TQQQ', line=dict(color='#EF4444', width=1)))
-        fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['V4.5']), name='AMLS', fill='tozeroy', line=dict(color='#10B981', width=2.5)))
+        fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['V4.5']), name='AMLS', fill='tozeroy', line=dict(color=main_color, width=2.5)))
         fig_dd.update_layout(title=dict(text="Drawdown Curve", font=dict(family='Outfit', size=16, color="#0F172A")), height=300, yaxis=dict(tickformat='.0%'), **chart_layout)
-        st.markdown('<div class="glass-card" style="height:auto !important; padding:15px !important;">', unsafe_allow_html=True)
+        st.markdown(apply_theme('<div class="glass-card" style="height:auto !important; padding:15px !important;">'), unsafe_allow_html=True)
         st.plotly_chart(fig_dd, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
         
@@ -899,13 +922,13 @@ elif page == "📈 Backtest Lab":
                 AMLS 전략이 레버리지 MDD를 어떻게 회피하면서 수익을 냈는지 3단락으로 분석해."""
                 with st.spinner("AI 분석 중..."):
                     response = model.generate_content(prompt)
-                    st.markdown(f"""<div class="glass-card" style="height: auto !important; padding: 30px !important; color:#0F172A; font-weight:500;">{response.text}</div>""", unsafe_allow_html=True)
+                    st.markdown(apply_theme(f"""<div class="glass-card" style="height: auto !important; padding: 30px !important; color:#0F172A; font-weight:500;">{response.text}</div>"""), unsafe_allow_html=True)
             except KeyError: st.error("🚨 GEMINI_API_KEY 누락")
 
 elif page == "📰 Macro News":
     headlines_for_ai, news_items = fetch_macro_news()
 
-    st.markdown(f"""
+    st.markdown(apply_theme(f"""
     <div class="glass-card" style="height:auto !important; display:flex; flex-direction:row; align-items:center; gap:20px; margin-bottom: 30px; padding: 25px 35px !important;">
       <div style="font-size:2.5em;">📰</div>
       <div>
@@ -914,7 +937,7 @@ elif page == "📰 Macro News":
       </div>
       <div style="margin-left:auto; background:rgba(255,255,255,0.8); padding:8px 20px; border-radius:50px; font-weight:800; color:#10B981; box-shadow: inset 0 2px 4px rgba(255,255,255,1), 0 4px 15px rgba(0,0,0,0.05);">{rt_label}</div>
     </div>
-    """, unsafe_allow_html=True)
+    """), unsafe_allow_html=True)
 
     with st.expander("✨ System-2 심층 추론 애널리스트 분석", expanded=True):
         if st.button("🚀 심층 추론 요약 실행", use_container_width=True):
@@ -930,7 +953,7 @@ elif page == "📰 Macro News":
                         model  = genai.GenerativeModel(models[0].replace('models/',''))
                         prompt = "너는 퀀트 애널리스트야. 다음 뉴스를 섹터별, 리스크 요소, 최종 투자 스탠스로 나누어 3문단으로 요약해.\n" + "\n".join(headlines_for_ai)
                         response = model.generate_content(prompt)
-                        st.markdown(f"""<div class="glass-card" style="height: auto !important; padding: 30px !important;">{response.text}</div>""", unsafe_allow_html=True)
+                        st.markdown(apply_theme(f"""<div class="glass-card" style="height: auto !important; padding: 30px !important;">{response.text}</div>"""), unsafe_allow_html=True)
             except KeyError: st.error("🚨 GEMINI_API_KEY 누락")
 
     st.divider()
@@ -940,9 +963,9 @@ elif page == "📰 Macro News":
         cols = st.columns(3)
         for idx,item in enumerate(news_items):
             with cols[idx%3]:
-                st.markdown(f"""<div class="glass-card" style="padding:20px !important; margin-bottom:15px; height:150px !important; display:flex; flex-direction:column; justify-content:space-between;">
+                st.markdown(apply_theme(f"""<div class="glass-card" style="padding:20px !important; margin-bottom:15px; height:150px !important; display:flex; flex-direction:column; justify-content:space-between;">
                     <div style="font-weight:600; font-size:1em; line-height:1.4; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">
                         <a href="{item['link']}" target="_blank" style="color:#0F172A; text-decoration:none;">{item['title']}</a>
                     </div>
                     <div style="color:#10B981; font-family:Outfit; font-size:0.85em; font-weight:800; margin-top:10px;">{item['date']}</div>
-                </div>""", unsafe_allow_html=True)
+                </div>"""), unsafe_allow_html=True)
