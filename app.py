@@ -28,27 +28,18 @@ ASSET_LIST     = ['TQQQ','SOXL','USD','QLD','SSO','SPY','QQQ','GLD','CASH']
 
 PORTFOLIO_FILE = 'portfolio_autosave.json'
 
-# 장 상태 판별 함수
 def get_market_status():
     tz = pytz.timezone('US/Eastern')
     now = datetime.now(tz)
-    
-    if now.weekday() >= 5: # 주말
-        return "🌙 CLOSED (WEEKEND)"
-    
+    if now.weekday() >= 5: return "🌙 CLOSED (WEEKEND)"
     market_open = now.replace(hour=9, minute=30, second=0, microsecond=0)
     market_close = now.replace(hour=16, minute=0, second=0, microsecond=0)
     pre_market_start = now.replace(hour=4, minute=0, second=0, microsecond=0)
     after_hours_end = now.replace(hour=20, minute=0, second=0, microsecond=0)
-
-    if market_open <= now <= market_close:
-        return "☀️ REGULAR MARKET"
-    elif pre_market_start <= now < market_open:
-        return "🌅 PRE-MARKET"
-    elif market_close < now <= after_hours_end:
-        return "🌇 AFTER-HOURS"
-    else:
-        return "🌙 CLOSED"
+    if market_open <= now <= market_close: return "☀️ REGULAR MARKET"
+    elif pre_market_start <= now < market_open: return "🌅 PRE-MARKET"
+    elif market_close < now <= after_hours_end: return "🌇 AFTER-HOURS"
+    else: return "🌙 CLOSED"
 
 def sanitize_portfolio():
     for a in ASSET_LIST:
@@ -143,7 +134,6 @@ with st.spinner('데이터 수집 중...'):
     df        = load_data()
     rt_prices = fetch_realtime_prices()
     
-# 데이터 업데이트 시간 기록
 update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S KST")
 market_status = get_market_status()
 
@@ -156,10 +146,8 @@ rt_injected = []
 for ticker, price in rt_prices.items():
     if ticker in last_row.index and price > 0:
         last_row[ticker] = price; rt_injected.append(ticker)
-if 'QQQ' in rt_injected:
-    last_row['QQQ_DD'] = (last_row['QQQ'] / last_row['QQQ_High52']) - 1
-if 'HYG' in rt_injected and 'IEF' in rt_injected:
-    last_row['HYG_IEF_Ratio'] = last_row['HYG'] / last_row['IEF']
+if 'QQQ' in rt_injected: last_row['QQQ_DD'] = (last_row['QQQ'] / last_row['QQQ_High52']) - 1
+if 'HYG' in rt_injected and 'IEF' in rt_injected: last_row['HYG_IEF_Ratio'] = last_row['HYG'] / last_row['IEF']
 rt_ok    = len(rt_injected) >= 3
 rt_label = f"🟢 LIVE ({len(rt_injected)})" if rt_ok else "🟡 DELAYED"
 
@@ -200,7 +188,6 @@ hist_regime   = int(df.iloc[-1]['Regime'])
 curr_regime   = live_regime if live_regime > hist_regime else hist_regime
 target_regime = live_regime
 
-# 반도체 진입 조건
 smh_c1 = smh_close > smh_ma50
 smh_c2 = (smh_3m > 0.05 or smh_1m > 0.10)
 smh_c3 = smh_rsi > 50
@@ -220,19 +207,17 @@ if curr_regime == live_regime: regime_committee_msg = "🟢 조건 부합 (안�
 elif live_regime > curr_regime: regime_committee_msg = f"🔴 R{live_regime} 하향 즉시 반영"
 else: regime_committee_msg = f"🟡 R{live_regime} 승급 대기 (5일)"
 
-# 차트 전역 색상 변수 (Light Mint Theme)
 b_color = 'rgba(0,0,0,0)'
 t_color = '#1E293B'
 line_c = '#10B981'
 dash_c = '#94A3B8'
 rsi_low_c = '#10B981'
-regime_colors={1:'rgba(0,0,0,0.0)', 2:'rgba(16, 185, 129, 0.05)', 3:'rgba(245, 158, 11, 0.08)', 4:'rgba(239, 68, 68, 0.1)'}
 chart_layout = dict(paper_bgcolor=b_color, plot_bgcolor=b_color, font=dict(family="Pretendard", color=t_color), margin=dict(l=0,r=0,t=40,b=0))
 radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15), paper_bgcolor=b_color, plot_bgcolor=b_color, font=dict(family="Pretendard", color=t_color))
 regime_info  = {1:("R1 BULL","풀 가동"),2:("R2 CORR","방어 진입"), 3:("R3 BEAR","대피"),4:("R4 PANIC","최대 방어")}
 
 # ==========================================
-# 2. Light Mint Glass UI CSS (상단 툴바 완벽 복구!)
+# 2. 궁극의 무차별 폭격 CSS + FAVORITES 탭 디자인
 # ==========================================
 st.markdown("""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -243,10 +228,8 @@ st.markdown("""<style>
         --text-muted: #64748B; 
         --accent-mint: #10B981; 
         --accent-dark: #047857;
-        --border-glass: rgba(16, 185, 129, 0.2); 
     }
 
-    /* [배경] 밝고 깨끗한 화이트 & 민트 메쉬 그라데이션 */
     .stApp, [data-testid="stAppViewContainer"] {
         background-color: var(--bg-main) !important;
         background-image: 
@@ -256,12 +239,11 @@ st.markdown("""<style>
         font-family: 'Pretendard', sans-serif;
     }
     
-    /* 🚨 상단 메뉴바(Settings, Favorites 등) 노출을 위해 CSS 삭제! 🚨 */
-    /* stHeader, MainMenu, footer 가리지 않고 모두 살려둠 */
+    /* 🚨 상단 툴바(테마설정, 즐겨찾기)는 절대 가리지 않음 🚨 */
     .main .block-container { max-width: 1400px; padding-top: 1rem; padding-bottom: 2rem; }
 
     /* =========================================
-       🔥 사이드바 (Hover Scale + Mint 형태) 🔥
+       🔥 100% 보장 사이드바 튜닝 (무차별 폭격 CSS) 🔥
        ========================================= */
     [data-testid="stSidebar"] {
         background: rgba(255, 255, 255, 0.7) !important;
@@ -270,9 +252,13 @@ st.markdown("""<style>
         border-right: 1px solid rgba(16, 185, 129, 0.15) !important;
     }
     
-    /* 1. 확실한 동그라미(Bullet) 제거 */
+    /* 🚨 라디오 버튼 동그라미(Bullet)의 모든 형태를 모조리 숨김 🚨 */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label > div:first-child,
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label > div:first-of-type,
     [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"] > div:first-child,
-    [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"] input { 
+    [data-testid="stSidebar"] .stRadio input[type="radio"],
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label::before,
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label::after { 
         display: none !important; 
         opacity: 0 !important; 
         visibility: hidden !important; 
@@ -280,17 +266,18 @@ st.markdown("""<style>
         height: 0 !important; 
         margin: 0 !important; 
         padding: 0 !important; 
+        position: absolute !important;
     }
     
-    /* 2. 메뉴 컨테이너 간격 및 패딩 */
-    [data-testid="stSidebar"] .stRadio [role="radiogroup"] { 
-        gap: 8px !important; 
-        padding: 10px 15px !important; 
+    /* 메뉴 컨테이너 레이아웃 설정 */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] { 
+        gap: 10px !important; 
+        padding: 15px 15px !important; 
         background: transparent !important; 
     }
     
-    /* 3. 메뉴 아이템 레이아웃 (투명하고 깔끔하게) */
-    [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"] {
+    /* 메뉴 아이템 뼈대 (투명) */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label {
         background: transparent !important;
         border: none !important;
         border-radius: 12px !important;
@@ -301,44 +288,71 @@ st.markdown("""<style>
         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
     }
     
-    /* 4. 메뉴 텍스트 - 큼직하게 1.25em */
-    [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"] p {
-        font-size: 1.25em !important; 
+    /* 큼직하고 세련된 폰트 사이즈 */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label p,
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label div[data-testid="stMarkdownContainer"] p {
+        font-family: 'Pretendard', sans-serif !important;
+        font-size: 1.25rem !important; 
         font-weight: 500 !important; 
         color: #64748B !important; 
         margin: 0 !important; 
-        padding-left: 0 !important;
         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
         transform-origin: left center !important;
     }
     
-    /* 5. Hover 효과 (마우스 올렸을 때: 연한 민트 배경 + 부드러운 스케일업) */
-    [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"]:hover {
+    /* 🚨 Hover 애니메이션 (Scale Up & Light Background) */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:hover {
         background: rgba(16, 185, 129, 0.08) !important; 
     }
-    [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"]:hover p { 
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:hover p,
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:hover div[data-testid="stMarkdownContainer"] p { 
         color: #0F172A !important; 
         transform: scale(1.05) translateX(4px) !important; 
         font-weight: 600 !important;
     }
     
-    /* 6. Checked 상태 (선택된 메뉴: 좌측 포인트 엣지 라인) */
-    [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"]:has(input:checked) {
+    /* Checked (선택된 탭) 강조 효과 */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) {
         background: rgba(16, 185, 129, 0.15) !important;
         box-shadow: inset 4px 0 0 #10B981 !important; 
         border-radius: 8px !important;
     }
-    [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"]:has(input:checked) p {
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) p,
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) div[data-testid="stMarkdownContainer"] p {
         color: #047857 !important; 
         font-weight: 800 !important;
         transform: scale(1.05) translateX(4px) !important;
     }
-    /* ========================================= */
 
+    /* =========================================
+       ⭐ 즐겨찾기(Favorites) 탭 커스텀 CSS ⭐
+       ========================================= */
+    .fav-item {
+        display: block;
+        text-decoration: none;
+        padding: 14px 20px;
+        margin-bottom: 8px;
+        border-radius: 12px;
+        color: #64748B;
+        font-size: 1.15rem;
+        font-weight: 500;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        background: transparent;
+    }
+    /* 라디오 버튼과 똑같은 Hover 애니메이션 적용 */
+    .fav-item:hover {
+        background: rgba(139, 92, 246, 0.08); /* 즐겨찾기는 퍼플 톤으로 구별 */
+        color: #0F172A;
+        transform: scale(1.05) translateX(4px);
+        font-weight: 600;
+    }
+
+    /* =========================================
+       메인 패널 디자인 유지
+       ========================================= */
     .glass-card {
         background: rgba(255, 255, 255, 0.65) !important;
         backdrop-filter: blur(20px) saturate(150%) !important;
-        -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
         border: 1px solid rgba(255, 255, 255, 1) !important;
         border-radius: 24px !important;
         padding: 24px !important;
@@ -346,47 +360,24 @@ st.markdown("""<style>
         height: 100%; display: flex; flex-direction: column; justify-content: space-between;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
-    .glass-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 15px 40px rgba(16, 185, 129, 0.1), inset 0 2px 0 rgba(255, 255, 255, 1) !important;
-    }
+    .glass-card:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(16, 185, 129, 0.1), inset 0 2px 0 rgba(255, 255, 255, 1) !important; }
     .glass-card h3 { font-family: 'Outfit', sans-serif; font-size: 1.15em !important; font-weight: 800 !important; color: var(--text-main); margin-bottom: 15px !important; letter-spacing: -0.5px; border-bottom: 2px solid rgba(16, 185, 129, 0.1); padding-bottom: 8px; }
-
-    .glass-inset {
-        background: rgba(255, 255, 255, 0.8) !important;
-        border: 1px solid rgba(16, 185, 129, 0.15) !important;
-        border-radius: 16px !important; padding: 18px; text-align: center; margin-bottom: 16px;
-        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
-    }
-    
+    .glass-inset { background: rgba(255, 255, 255, 0.8) !important; border: 1px solid rgba(16, 185, 129, 0.15) !important; border-radius: 16px !important; padding: 18px; text-align: center; margin-bottom: 16px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
     h1 { font-family: 'Outfit', sans-serif; font-size: 2.6em !important; font-weight: 800 !important; letter-spacing: -1px; margin: 0 !important; color: var(--text-main) !important; }
-
     .crow { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 0.9em; }
     .clabel { color: var(--text-muted); font-weight: 600; }
     .cval { font-family: 'Outfit', sans-serif; font-weight: 800; color: var(--accent-mint); }
-
     [data-testid="stMetric"] { background: transparent !important; border: none !important; box-shadow: none !important; padding: 5px !important; }
     [data-testid="stMetricLabel"] > div > div > p { font-size: 0.85em !important; font-weight: 600; color: var(--text-muted) !important; }
     [data-testid="stMetricValue"] > div { font-family: 'Outfit', sans-serif; font-size: 1.5em !important; font-weight: 800; color: var(--text-main) !important; }
     div[data-testid="stMetricDelta"] > div { font-size: 0.85em !important; font-weight: 700; }
-    
-    .mint-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; font-family: 'Pretendard', sans-serif; }
-    .mint-table th { padding: 10px 14px; font-weight: 700; color: #64748B; text-align: right; border-bottom: none; font-size: 0.9em; }
-    .mint-table td { padding: 14px; background: rgba(255, 255, 255, 0.8); color: #0F172A; text-align: right; border-top: 1px solid rgba(16, 185, 129, 0.1); border-bottom: 1px solid rgba(16, 185, 129, 0.1); }
-    .mint-table tr { transition: transform 0.2s; }
-    .mint-table tr:hover { transform: scale(1.01); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.05); }
-    .mint-table td:first-child { border-left: 1px solid rgba(16, 185, 129, 0.1); border-top-left-radius: 12px; border-bottom-left-radius: 12px; text-align: left; }
-    .mint-table td:last-child { border-right: 1px solid rgba(16, 185, 129, 0.1); border-top-right-radius: 12px; border-bottom-right-radius: 12px; text-align: center; }
-
-    [data-testid="stNumberInput"] > div > div, [data-testid="stTextInput"] > div > div { background: rgba(255,255,255,0.8) !important; border: 1px solid var(--border-glass) !important; border-radius: 12px !important; color: var(--text-main) !important; }
 </style>""", unsafe_allow_html=True)
 
 # ==========================================
-# 3. 사이드바 UI (Light Mint Theme)
+# 3. 사이드바 UI 구성
 # ==========================================
-sidebar_top = st.sidebar.container()
-sidebar_top.markdown(f"""
-<div style="padding: 20px 15px;">
+st.sidebar.markdown(f"""
+<div style="padding: 10px 5px 20px 5px;">
     <div style="font-family: 'Outfit'; font-size: 1.8em; font-weight: 800; color: #10B981; letter-spacing: -0.5px;">AMLS <span style="color:#0F172A;">V4.5</span></div>
     <div style="font-family: 'Outfit'; font-size: 0.85em; font-weight: 600; color: #64748B; margin-bottom: 15px;">QUANTITATIVE ENGINE</div>
     <div style="font-size: 0.75em; color: #10B981; font-weight: 700; padding: 4px 10px; background: rgba(16,185,129,0.1); border-radius: 50px; display: inline-block; border: 1px solid rgba(16,185,129,0.3);">
@@ -394,9 +385,20 @@ sidebar_top.markdown(f"""
     </div>
 </div>""", unsafe_allow_html=True)
 
+# 메인 메뉴 (라디오 버튼)
 page = st.sidebar.radio("MENU",
     ["📊 Dashboard", "💼 Portfolio", "🍫 8-Pack Radar", "📈 Backtest Lab", "📰 Macro News"],
     label_visibility="collapsed")
+
+st.sidebar.markdown("<br>", unsafe_allow_html=True)
+
+# 🚨 즐겨찾기(Favorites) 섹션 복구 🚨
+st.sidebar.markdown("""
+<div style="font-family: 'Outfit'; font-size: 0.85em; font-weight: 800; color: #94A3B8; letter-spacing: 1px; padding-left: 15px; margin-bottom: 10px;">⭐ FAVORITES</div>
+<a href="#" class="fav-item">📈 JB 인사이트</a>
+<a href="#" class="fav-item">📘 오독 (ODOC)</a>
+<a href="#" class="fav-item">🌌 AMLS V4.5</a>
+""", unsafe_allow_html=True)
 
 st.sidebar.markdown(f"""
 <div style="margin-top: 40px; padding: 15px; border-top: 1px solid rgba(16,185,129,0.15);">
@@ -404,7 +406,7 @@ st.sidebar.markdown(f"""
     <div style="font-size:0.75em; font-weight:500; color:#94A3B8; margin-top: 4px;">Mint Glass Edition v4.5<br>&copy; 2026 SEYOON.</div>
 </div>""", unsafe_allow_html=True)
 
-# 메인 타이틀 영역 (시간 & 상태 추가)
+# 메인 타이틀 영역
 st.markdown(f"""
 <div style="padding-bottom:15px; margin-bottom:25px; display:flex; justify-content:space-between; align-items:flex-end; border-bottom: 2px solid rgba(16,185,129,0.1);">
     <div>
@@ -690,7 +692,6 @@ elif page == "🍫 8-Pack Radar":
     sec_df    = pd.DataFrame(sec_data).sort_values(by='수익률', ascending=True)
     top_sec, bot_sec = sec_df.iloc[-1]['섹터'], sec_df.iloc[0]['섹터']
 
-    # 🚨 [레이더망 종합 조언 로직] 🚨
     risk_cnt, warn_cnt, safe_cnt = 0, 0, 0
     
     if qqq_rsi < 40: safe_cnt+=1
@@ -735,7 +736,6 @@ elif page == "🍫 8-Pack Radar":
 
     st.markdown('<h2 style="font-family:Outfit; font-size:1.8em; color:#0F172A; margin-bottom:15px;">🍫 8-Pack Radar</h2>', unsafe_allow_html=True)
 
-    # 🚨 종합 조언 패널 화면 상단에 렌더링 🚨
     st.markdown(f"""
     <div class="glass-card" style="height:auto !important; margin-bottom: 25px; padding: 25px !important; border-left: 5px solid {radar_color} !important; background: {bg_color} !important;">
       <h3 style="color:{radar_color}; margin-bottom: 8px; font-size: 1.4em;">{radar_status}</h3>
