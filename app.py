@@ -5,7 +5,7 @@ import pandas as pd
 import pandas_ta as ta
 import numpy as np
 import plotly.graph_objects as go
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import urllib.request
 import urllib.parse
 import xml.etree.ElementTree as ET
@@ -176,7 +176,7 @@ def load_custom_backtest_data(start_date, end_date):
 
 REALTIME_TICKERS = ['QQQ','TQQQ','SMH','^VIX','HYG','IEF','UUP','GLD','SPY','SOXL','USD','QLD','SSO','USDKRW=X']
 
-# 🚨 [핵심 변경] 실시간 데이터 패치 시점의 정확한 타임스탬프를 반환하도록 수정 🚨
+# 🚨 [수정사항] KST(한국 시간) 기반으로 타임스탬프 강제 보정 🚨
 @st.cache_data(ttl=60)
 def fetch_realtime_prices():
     prices = {}
@@ -187,7 +187,9 @@ def fetch_realtime_prices():
             if price and price > 0: prices[ticker] = float(price)
         except: pass
     
-    fetch_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now_utc = datetime.now(timezone.utc)
+    now_kst = now_utc + timedelta(hours=9)
+    fetch_time = now_kst.strftime("%Y-%m-%d %H:%M:%S")
     return prices, fetch_time
 
 @st.cache_data(ttl=900)
@@ -206,7 +208,7 @@ def fetch_macro_news():
 
 with st.spinner('데이터 수집 중...'):
     df = load_data()
-    rt_prices, last_update_time = fetch_realtime_prices() # 타임스탬프 받아오기
+    rt_prices, last_update_time = fetch_realtime_prices() 
 
 if df is None or df.empty:
     st.error("🚨 야후 파이낸스(Yahoo Finance) 통신 지연. 잠시 후 새로고침 해주세요.")
@@ -272,7 +274,7 @@ radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15), paper_bgcolor=
 regime_info  = {1:("R1 BULL","풀 가동"),2:("R2 CORR","방어 진입"), 3:("R3 BEAR","대피"),4:("R4 PANIC","최대 방어")}
 
 # ==========================================
-# 2. CSS 
+# 2. CSS (사이드바 완벽 통일 + 버튼 디자인)
 # ==========================================
 css_block = f"""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -399,6 +401,24 @@ css_block = f"""<style>
     [data-testid="stMetricValue"] > div {{ font-family: 'Outfit', sans-serif; font-size: 1.6em !important; font-weight: 800; color: var(--text-main) !important; }}
     div[data-testid="stMetricDelta"] > div {{ font-size: 0.9em !important; font-weight: 700; }}
     
+    /* 🚨 새고로침 버튼 스타일 🚨 */
+    [data-testid="stButton"] > button {{
+        background-color: var(--bg-main) !important;
+        border: 2px solid rgba(16, 185, 129, 0.8) !important;
+        color: var(--text-main) !important;
+        border-radius: 12px !important;
+        padding: 4px 10px !important;
+        font-weight: 800 !important;
+        font-size: 0.85em !important;
+        transition: all 0.2s ease !important;
+    }}
+    [data-testid="stButton"] > button:hover {{
+        background-color: rgba(16, 185, 129, 0.1) !important;
+        color: var(--accent-mint) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2) !important;
+    }}
+
     h1 {{ font-family: 'Outfit', sans-serif; font-size: 2.6em !important; font-weight: 800 !important; letter-spacing: -1px; margin: 0 !important; color: var(--text-main) !important; }}
     .crow {{ display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 0.9em; }}
     .clabel {{ color: var(--text-muted); font-weight: 600; }}
@@ -459,19 +479,29 @@ st.sidebar.markdown("""
 """, unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
-# 🚨 [핵심 변경] 실시간 업데이트 시간 헤더 우측에 추가 🚨
-st.markdown(apply_theme(f"""
-<div style="padding-bottom:15px; margin-bottom:25px; display:flex; justify-content:space-between; align-items:flex-end; border-bottom: 2px solid rgba(16,185,129,0.1);">
+# 🚨 [핵심 변경] 수동 새로고침 UI가 추가된 메인 타이틀 영역 🚨
+c_title, c_info = st.columns([1.5, 1])
+with c_title:
+    st.markdown(apply_theme(f"""
     <div>
-        <h1>AMLS V4.5 ENGINE</h1>
+        <h1 style="margin:0; font-family:'Outfit'; font-size: 2.6em; font-weight: 800; letter-spacing: -1px; color: var(--text-main);">AMLS V4.5 ENGINE</h1>
         <p style="font-family:'Outfit'; font-size:1.05em; margin:4px 0 0 0; font-weight:700; color:#10B981; letter-spacing:0.5px;">THE WALL STREET QUANTITATIVE STRATEGY</p>
     </div>
-    <div style="text-align:right;">
-        <div style="font-family:'Outfit'; font-size:1.1em; font-weight:800; color:#0F172A;">CUSTOM THEME EDITION</div>
-        <div style="font-size:0.75rem; font-weight:600; color:var(--text-muted); margin-top:2px;">⏱️ 업데이트: {last_update_time}</div>
-        <div style="font-size:0.8em; font-weight:700; color:#10B981; border: 1px solid rgba(16,185,129,0.4); padding: 4px 12px; border-radius: 50px; margin-top:4px; display:inline-block;">{rt_label} STATUS</div>
-    </div>
-</div>"""), unsafe_allow_html=True)
+    """), unsafe_allow_html=True)
+    
+with c_info:
+    st.markdown(f"<div style='text-align:right; font-family:\"Outfit\"; font-size:1.1em; font-weight:800; color:#0F172A; margin-bottom:10px;'>CUSTOM THEME EDITION</div>", unsafe_allow_html=True)
+    i1, i2 = st.columns([1.5, 1])
+    with i1:
+        st.markdown(f"<div style='text-align:right; font-size:0.8rem; font-weight:600; color:#64748B; margin-top:8px;'>⏱️ {last_update_time}</div>", unsafe_allow_html=True)
+    with i2:
+        if st.button("🔄 즉시 동기화", use_container_width=True):
+            fetch_realtime_prices.clear()
+            load_data.clear()
+            st.rerun()
+
+st.markdown(apply_theme(f'<div style="border-bottom: 2px solid rgba({r_c},{g_c},{b_c},0.1); padding-top: 10px; margin-bottom: 25px;"></div>'), unsafe_allow_html=True)
+
 
 # ==========================================
 # 5. 페이지 라우팅
@@ -887,8 +917,10 @@ elif page == "🍫 8-Pack Radar":
 elif page == "📈 Backtest Lab":
     st.markdown("<h2 style='font-family:Outfit; font-size:1.8em; color:#0F172A;'>📈 Backtest Lab</h2>", unsafe_allow_html=True)
 
+    # 🚨 추가된 기간 설정 및 월 적립금 패널 🚨
     with st.container(border=True):
         st.markdown("<div style='font-size: 0.9em; font-weight: 700; color: #64748B; margin-bottom: 12px; text-transform:uppercase;'>⚙️ 백테스트 환경 설정</div>", unsafe_allow_html=True)
+        
         col_s, col_e, col_m = st.columns(3)
         with col_s:
             bt_start = st.date_input("시작일 (Start Date)", datetime(2020, 1, 1))
