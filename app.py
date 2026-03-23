@@ -264,7 +264,7 @@ radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15), paper_bgcolor=
 regime_info  = {1:("R1 BULL","풀 가동"),2:("R2 CORR","방어 진입"), 3:("R3 BEAR","대피"),4:("R4 PANIC","최대 방어")}
 
 # ==========================================
-# 2. CSS 
+# 2. CSS (사이드바 완벽 통일 + V4.5 입체 카드 + 오류 해결)
 # ==========================================
 css_block = f"""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -276,6 +276,7 @@ css_block = f"""<style>
         --accent-mint: #10B981; 
     }}
 
+    /* 대시보드 메인 배경 */
     .stApp, [data-testid="stAppViewContainer"] {{
         background-color: var(--bg-main) !important;
         background-image: 
@@ -289,6 +290,9 @@ css_block = f"""<style>
     #MainMenu {{ visibility: hidden; }} footer {{ visibility: hidden; }}
     .main .block-container {{ max-width: 1400px; padding-top: 1rem; padding-bottom: 2rem; }}
 
+    /* =========================================
+       🔥 사이드바: 즐겨찾기 링크 스타일과 100% 동일하게 구성 🔥
+       ========================================= */
     [data-testid="stSidebar"] {{
         background: #f0f0e8 !important; 
         border-right: 2.5px solid #1a1a1a !important; 
@@ -325,13 +329,9 @@ css_block = f"""<style>
         border: 2.5px solid #1a1a1a; background-color: #ffffff; 
         transform: translateX(3px); box-shadow: 2px 2px 0px #1a1a1a; 
     }}
+    /* ========================================= */
 
-    /* 🚨 8-Pack Radar 클릭 링크 스타일 🚨 */
-    .radar-link {{ text-decoration: none !important; display: block; }}
-    .radar-link-title {{ font-size: 0.85em; font-weight: 700; color: #64748B; transition: color 0.2s; }}
-    .radar-link:hover .radar-link-title {{ color: var(--accent-mint) !important; }}
-
-    /* 🚨 메인 대시보드 카드 UI (V4.5 입체 양각) 🚨 */
+    /* 🚨 1. HTML로 만든 카드 UI 유지 🚨 */
     .glass-card {{
         background: #FFFFFF !important; 
         border-top: 1px solid rgba(16, 185, 129, 0.3) !important;
@@ -360,6 +360,7 @@ css_block = f"""<style>
         box-shadow: inset 6px 6px 12px rgba(16, 185, 129, 0.12), inset -6px -6px 12px rgba(255, 255, 255, 1) !important;
     }}
 
+    /* 🚨 2. Streamlit 공식 컨테이너(차트용)를 카드 디자인과 똑같이 적용 🚨 */
     div[data-testid="stVerticalBlockBorderWrapper"] > div {{
         background: #FFFFFF !important; 
         border-top: 1px solid rgba(16, 185, 129, 0.3) !important;
@@ -378,6 +379,7 @@ css_block = f"""<style>
         box-shadow: 16px 16px 32px rgba(16, 185, 129, 0.18), -16px -16px 32px rgba(255, 255, 255, 1) !important;
     }}
 
+    /* 🚨 3. 스트림릿 메트릭 카드(st.metric) 양각 처리 🚨 */
     [data-testid="stMetric"] {{ 
         background: #FFFFFF !important; 
         border-top: 1px solid rgba(16, 185, 129, 0.3) !important;
@@ -393,6 +395,7 @@ css_block = f"""<style>
     [data-testid="stMetricValue"] > div {{ font-family: 'Outfit', sans-serif; font-size: 1.6em !important; font-weight: 800; color: var(--text-main) !important; }}
     div[data-testid="stMetricDelta"] > div {{ font-size: 0.9em !important; font-weight: 700; }}
     
+    /* 기타 UI 요소 */
     h1 {{ font-family: 'Outfit', sans-serif; font-size: 2.6em !important; font-weight: 800 !important; letter-spacing: -1px; margin: 0 !important; color: var(--text-main) !important; }}
     .crow {{ display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 0.9em; }}
     .clabel {{ color: var(--text-muted); font-weight: 600; }}
@@ -539,6 +542,7 @@ if page == "📊 Dashboard":
     fig_tqqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['TQQQ_MA200'], name='200MA', line=dict(color=dash_c, width=1.5, dash='dash')))
     fig_tqqq.update_layout(title=dict(text="TQQQ vs 200MA", font=dict(family='Outfit', size=16, color="#0F172A")), height=350, **chart_layout)
 
+    # 🚨 수정됨: 에러를 발생시키던 HTML 래퍼를 걷어내고 st.container 적용 🚨
     with chart_col1:
         with st.container(border=True):
             st.plotly_chart(fig_qqq, use_container_width=True)
@@ -579,6 +583,7 @@ elif page == "💼 Portfolio":
         })
     df_editor = pd.DataFrame(editor_data)
     
+    # 🚨 수정됨: HTML 래퍼 제거 및 st.container 사용 🚨
     with st.container(border=True):
         edited_df = st.data_editor(
             df_editor,
@@ -809,43 +814,30 @@ elif page == "🍫 8-Pack Radar":
                    {'range':[45,55],'color':"rgba(255,255,255,0.8)"},{'range':[55,75],'color':f"rgba({r_c},{g_c},{b_c},0.4)"},
                    {'range':[75,100],'color':f"rgba({r_c},{g_c},{b_c},0.6)"}]
 
-    # 🚨 클릭 URL + 지표 시사점(설명) 함수 🚨
-    def r_head(title, badge, url, desc):
-        return f'<a href="{url}" target="_blank" class="radar-link"><div class="radar-link-title" style="margin-bottom:4px;">{title} 🔗{badge}</div></a><div style="font-size:0.78em; color:var(--text-muted); margin-bottom:12px; line-height:1.3; letter-spacing:-0.3px;">{desc}</div>'
-
-    u1 = "https://kr.tradingview.com/chart/?symbol=NASDAQ:QQQ"
-    u2 = "https://kr.tradingview.com/chart/?symbol=NASDAQ:QQQ"
-    u3 = "https://edition.cnn.com/markets/fear-and-greed"
-    u4 = "https://finviz.com/map.ashx?t=sec"
-    u5 = "https://fred.stlouisfed.org/series/BAMLH0A0HYM2"
-    u6 = "https://kr.tradingview.com/chart/?symbol=NASDAQ:QQQE"
-    u7 = "https://kr.tradingview.com/chart/?symbol=AMEX:GLD"
-    u8 = "https://kr.tradingview.com/chart/?symbol=AMEX:UUP"
-
     row1 = st.columns(4)
     with row1[0]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("1. DCA (RSI)", b1, u1, "QQQ 단기 과열/침체. 30 이하 매수, 70 이상 분할 매도.")), unsafe_allow_html=True)
+            st.markdown(apply_theme(f'<div style="font-size:0.85em; font-weight:700; color:#64748B; margin-bottom:10px;">1. DCA (RSI){b1}</div>'), unsafe_allow_html=True)
             fig1=go.Figure(); fig1.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_RSI'],line=dict(color=line_c,width=2.5)))
             fig1.add_hline(y=70,line_dash='dash',line_color=dash_c); fig1.add_hline(y=30,line_dash='dash',line_color=rsi_low_c)
             fig1.update_layout(**radar_layout,yaxis=dict(range=[10,90]),showlegend=False)
             st.plotly_chart(fig1,use_container_width=True)
     with row1[1]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("2. Drawdown", b2, u2, "고점 대비 하락률. -10%는 1차 지지선, -20% 약세장 의미.")), unsafe_allow_html=True)
+            st.markdown(apply_theme(f'<div style="font-size:0.85em; font-weight:700; color:#64748B; margin-bottom:10px;">2. Drawdown{b2}</div>'), unsafe_allow_html=True)
             fig2=go.Figure(); fig2.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_DD'],fill='tozeroy',line=dict(color=dash_c,width=2.5)))
             fig2.update_layout(**radar_layout,yaxis=dict(tickformat='.0%'),showlegend=False)
             st.plotly_chart(fig2,use_container_width=True)
     with row1[2]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("3. Fear & Greed", b3, u3, "시장 심리 종합. 극단적 공포는 종종 훌륭한 매수 기회.")), unsafe_allow_html=True)
+            st.markdown(apply_theme(f'<div style="font-size:0.85em; font-weight:700; color:#64748B; margin-bottom:10px;">3. Fear & Greed{b3}</div>'), unsafe_allow_html=True)
             fig3=go.Figure(go.Indicator(mode="gauge+number",value=fg_score,domain={'x':[0,1],'y':[0,1]},
                 gauge={'axis':{'range':[0,100]},'bar':{'color':line_c},'steps':gauge_steps}))
             fig3.update_layout(height=200,margin=dict(l=15,r=15,t=10,b=10),paper_bgcolor=b_color,font=dict(family="Pretendard",color=t_color))
             st.plotly_chart(fig3,use_container_width=True)
     with row1[3]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("4. Sector (1M)", b4, u4, "자금 유입 주도 섹터 및 소외 섹터를 통한 흐름 파악.")), unsafe_allow_html=True)
+            st.markdown(apply_theme(f'<div style="font-size:0.85em; font-weight:700; color:#64748B; margin-bottom:10px;">4. Sector (1M){b4}</div>'), unsafe_allow_html=True)
             fig4=go.Figure(go.Bar(x=sec_df['수익률'],y=sec_df['섹터'],orientation='h', marker_color=[dash_c if v<0 else line_c for v in sec_df['수익률']]))
             fig4.update_layout(**radar_layout,showlegend=False)
             st.plotly_chart(fig4,use_container_width=True)
@@ -853,28 +845,28 @@ elif page == "🍫 8-Pack Radar":
     row2 = st.columns(4)
     with row2[0]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("5. Credit Spread", b5, u5, "하이일드/국채 비율. 하락 시 스마트머니 자금 이탈 암시.")), unsafe_allow_html=True)
+            st.markdown(apply_theme(f'<div style="font-size:0.85em; font-weight:700; color:#64748B; margin-bottom:10px;">5. Credit Spread{b5}</div>'), unsafe_allow_html=True)
             fig5=go.Figure(); fig5.add_trace(go.Scatter(x=df_view.index,y=df_view['HYG_IEF_Ratio'],line=dict(color=line_c,width=2.5)))
             fig5.add_trace(go.Scatter(x=df_view.index,y=df_view['HYG_IEF_MA50'],line=dict(color=dash_c,dash='dot')))
             fig5.update_layout(**radar_layout,showlegend=False)
             st.plotly_chart(fig5,use_container_width=True)
     with row2[1]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("6. Market Breadth", b6, u6, "가중/동일가중 비교. 소수 대형주만의 가짜 반등 판별.")), unsafe_allow_html=True)
+            st.markdown(apply_theme(f'<div style="font-size:0.85em; font-weight:700; color:#64748B; margin-bottom:10px;">6. Market Breadth{b6}</div>'), unsafe_allow_html=True)
             fig6=go.Figure(); fig6.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_20d_Ret'],name='QQQ',line=dict(color=line_c,width=2.5)))
             fig6.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQE_20d_Ret'],name='QQQE',line=dict(color=dash_c,dash='dot')))
             fig6.update_layout(**radar_layout,showlegend=False,yaxis=dict(tickformat='.0%'))
             st.plotly_chart(fig6,use_container_width=True)
     with row2[2]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("7. Gold / Equity", b7, u7, "금/주식 상대 강도. 상승 시 안전 자산 선호도 증가.")), unsafe_allow_html=True)
+            st.markdown(apply_theme(f'<div style="font-size:0.85em; font-weight:700; color:#64748B; margin-bottom:10px;">7. Gold / Equity{b7}</div>'), unsafe_allow_html=True)
             fig7=go.Figure(); fig7.add_trace(go.Scatter(x=df_view.index,y=df_view['GLD_SPY_Ratio'],line=dict(color=line_c,width=2.5)))
             fig7.add_trace(go.Scatter(x=df_view.index,y=df_view['GLD_SPY_MA50'],line=dict(color=dash_c,dash='dot')))
             fig7.update_layout(**radar_layout,showlegend=False)
             st.plotly_chart(fig7,use_container_width=True)
     with row2[3]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("8. USD (UUP)", b8, u8, "달러 강세 지표. 상승 시 유동성 축소 및 빅테크 악재.")), unsafe_allow_html=True)
+            st.markdown(apply_theme(f'<div style="font-size:0.85em; font-weight:700; color:#64748B; margin-bottom:10px;">8. USD (UUP){b8}</div>'), unsafe_allow_html=True)
             fig8=go.Figure(); fig8.add_trace(go.Scatter(x=df_view.index,y=df_view['UUP'],line=dict(color=line_c,width=2.5)))
             fig8.add_trace(go.Scatter(x=df_view.index,y=df_view['UUP_MA50'],line=dict(color=dash_c,dash='dot')))
             fig8.update_layout(**radar_layout,showlegend=False)
@@ -883,11 +875,12 @@ elif page == "🍫 8-Pack Radar":
 elif page == "📈 Backtest Lab":
     st.markdown("<h2 style='font-family:Outfit; font-size:1.8em; color:#0F172A;'>📈 Backtest Lab</h2>", unsafe_allow_html=True)
 
+    # 🚨 수정됨: HTML 래퍼 대신 st.container 사용
     with st.container(border=True):
         st.markdown("<div style='font-size: 0.9em; font-weight: 700; color: #64748B; margin-bottom: 12px; text-transform:uppercase;'>⚙️ 백테스트 환경 설정</div>", unsafe_allow_html=True)
         col_s, col_e, col_m = st.columns(3)
         with col_s:
-            bt_start = st.date_input("시작일 (Start Date)", datetime(2020, 1, 1))
+            bt_start = st.date_input("시작일 (Start Date)", datetime(2020, 1, 1)) # 기본값: 2020-01-01
         with col_e:
             bt_end = st.date_input("종료일 (End Date)", datetime.today())
         with col_m:
