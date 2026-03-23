@@ -175,6 +175,8 @@ def load_custom_backtest_data(start_date, end_date):
     return bt_df
 
 REALTIME_TICKERS = ['QQQ','TQQQ','SMH','^VIX','HYG','IEF','UUP','GLD','SPY','SOXL','USD','QLD','SSO','USDKRW=X']
+
+# 🚨 [핵심 변경] 실시간 데이터 패치 시점의 정확한 타임스탬프를 반환하도록 수정 🚨
 @st.cache_data(ttl=60)
 def fetch_realtime_prices():
     prices = {}
@@ -184,7 +186,9 @@ def fetch_realtime_prices():
             price = info.get('last_price') or info.get('lastPrice')
             if price and price > 0: prices[ticker] = float(price)
         except: pass
-    return prices
+    
+    fetch_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return prices, fetch_time
 
 @st.cache_data(ttl=900)
 def fetch_macro_news():
@@ -201,14 +205,13 @@ def fetch_macro_news():
     return headlines_for_ai, news_items
 
 with st.spinner('데이터 수집 중...'):
-    df        = load_data()
-    rt_prices = fetch_realtime_prices()
+    df = load_data()
+    rt_prices, last_update_time = fetch_realtime_prices() # 타임스탬프 받아오기
 
 if df is None or df.empty:
     st.error("🚨 야후 파이낸스(Yahoo Finance) 통신 지연. 잠시 후 새로고침 해주세요.")
     st.stop()
 
-# 🚨 [핵심 변경 1] 실시간 가격을 원본 df의 가장 마지막 행에 덮어쓰기 (실시간 지표 계산용) 🚨
 last_index = df.index[-1]
 rt_injected = []
 for ticker, price in rt_prices.items():
@@ -216,14 +219,11 @@ for ticker, price in rt_prices.items():
         df.at[last_index, ticker] = price
         rt_injected.append(ticker)
 
-# 🚨 [핵심 변경 2] 실시간 가격이 반영된 상태에서, 마지막 행의 파생 지표들을 다시 계산 🚨
-# 이렇게 해야 오늘 장중의 가격 변화로 인해 이탈/돌파하는 이평선을 정확히 잡아냅니다.
 if 'QQQ' in rt_injected:
     df.at[last_index, 'QQQ_DD'] = (df.at[last_index, 'QQQ'] / df['QQQ_High52'].iloc[-1]) - 1
 if 'HYG' in rt_injected and 'IEF' in rt_injected:
     df.at[last_index, 'HYG_IEF_Ratio'] = df.at[last_index, 'HYG'] / df.at[last_index, 'IEF']
 
-# 이제 last_row는 실시간 가격과 재계산된 지표가 모두 담긴 완벽한 최신 상태가 됩니다.
 last_row = df.iloc[-1].copy()
 
 rt_ok    = len(rt_injected) >= 3
@@ -237,13 +237,11 @@ smh_close, smh_ma50, smh_3m, smh_1m, smh_rsi = (last_row['SMH'], last_row['SMH_M
 df['Target'] = df.apply(get_target_v45, axis=1)
 df['Regime'] = apply_asymmetric_delay(df['Target'])
 
-# 실시간 Regime 판별
 live_regime   = get_target_v45(last_row)            
-hist_regime   = int(df.iloc[-2]['Regime']) # 어제까지의 확정 국면
+hist_regime   = int(df.iloc[-2]['Regime']) 
 curr_regime   = live_regime if live_regime > hist_regime else hist_regime
 target_regime = live_regime
 
-# 반도체 진입 조건 (실시간 가격 반영)
 smh_c1 = smh_close > smh_ma50
 smh_c2 = (smh_3m > 0.05 or smh_1m > 0.10)
 smh_c3 = smh_rsi > 50
@@ -274,7 +272,7 @@ radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15), paper_bgcolor=
 regime_info  = {1:("R1 BULL","풀 가동"),2:("R2 CORR","방어 진입"), 3:("R3 BEAR","대피"),4:("R4 PANIC","최대 방어")}
 
 # ==========================================
-# 2. CSS (사이드바 완벽 통일 + V4.5 입체 카드 + 오류 해결)
+# 2. CSS 
 # ==========================================
 css_block = f"""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -286,7 +284,6 @@ css_block = f"""<style>
         --accent-mint: #10B981; 
     }}
 
-    /* 대시보드 메인 배경 */
     .stApp, [data-testid="stAppViewContainer"] {{
         background-color: var(--bg-main) !important;
         background-image: 
@@ -300,9 +297,6 @@ css_block = f"""<style>
     #MainMenu {{ visibility: hidden; }} footer {{ visibility: hidden; }}
     .main .block-container {{ max-width: 1400px; padding-top: 1rem; padding-bottom: 2rem; }}
 
-    /* =========================================
-       🔥 사이드바: 즐겨찾기 링크 스타일과 100% 동일하게 구성 🔥
-       ========================================= */
     [data-testid="stSidebar"] {{
         background: #f0f0e8 !important; 
         border-right: 2.5px solid #1a1a1a !important; 
@@ -339,9 +333,11 @@ css_block = f"""<style>
         border: 2.5px solid #1a1a1a; background-color: #ffffff; 
         transform: translateX(3px); box-shadow: 2px 2px 0px #1a1a1a; 
     }}
-    /* ========================================= */
 
-    /* 🚨 1. HTML로 만든 카드 UI 유지 🚨 */
+    .radar-link {{ text-decoration: none !important; display: block; }}
+    .radar-link-title {{ font-size: 0.85em; font-weight: 700; color: #64748B; transition: color 0.2s; }}
+    .radar-link:hover .radar-link-title {{ color: var(--accent-mint) !important; }}
+
     .glass-card {{
         background: #FFFFFF !important; 
         border-top: 1px solid rgba(16, 185, 129, 0.3) !important;
@@ -366,11 +362,10 @@ css_block = f"""<style>
         background: #F8FAFC !important; 
         border-top: 1px solid rgba(16, 185, 129, 0.4) !important; border-left: 1px solid rgba(16, 185, 129, 0.4) !important;
         border-bottom: 1px solid rgba(255, 255, 255, 1) !important; border-right: 1px solid rgba(255, 255, 255, 1) !important;
-        border-radius: 16px !important; padding: 18px; text-align: center; margin-bottom: 16px;
+        border-radius: 16px !important; padding: 20px 10px 18px !important; text-align: center; margin-bottom: 16px;
         box-shadow: inset 6px 6px 12px rgba(16, 185, 129, 0.12), inset -6px -6px 12px rgba(255, 255, 255, 1) !important;
     }}
 
-    /* 🚨 2. Streamlit 공식 컨테이너(차트용)를 카드 디자인과 똑같이 적용 🚨 */
     div[data-testid="stVerticalBlockBorderWrapper"] > div {{
         background: #FFFFFF !important; 
         border-top: 1px solid rgba(16, 185, 129, 0.3) !important;
@@ -389,7 +384,6 @@ css_block = f"""<style>
         box-shadow: 16px 16px 32px rgba(16, 185, 129, 0.18), -16px -16px 32px rgba(255, 255, 255, 1) !important;
     }}
 
-    /* 🚨 3. 스트림릿 메트릭 카드(st.metric) 양각 처리 🚨 */
     [data-testid="stMetric"] {{ 
         background: #FFFFFF !important; 
         border-top: 1px solid rgba(16, 185, 129, 0.3) !important;
@@ -405,7 +399,6 @@ css_block = f"""<style>
     [data-testid="stMetricValue"] > div {{ font-family: 'Outfit', sans-serif; font-size: 1.6em !important; font-weight: 800; color: var(--text-main) !important; }}
     div[data-testid="stMetricDelta"] > div {{ font-size: 0.9em !important; font-weight: 700; }}
     
-    /* 기타 UI 요소 */
     h1 {{ font-family: 'Outfit', sans-serif; font-size: 2.6em !important; font-weight: 800 !important; letter-spacing: -1px; margin: 0 !important; color: var(--text-main) !important; }}
     .crow {{ display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 0.9em; }}
     .clabel {{ color: var(--text-muted); font-weight: 600; }}
@@ -454,21 +447,19 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("<div style='font-size:1.2rem; font-weight:900; color:#1a1a1a; margin-bottom:10px; padding: 0 15px;'>⭐ 즐겨찾기</div>", unsafe_allow_html=True)
 st.sidebar.markdown("""
 <div style="display:flex; flex-direction:column; gap:2px; padding: 0 15px;">
-    <div style="font-size:0.8rem; font-weight:bold; margin-top:5px; color:#444444;">유튜브</div>
     <a href="https://www.youtube.com/@JB_Insight" target="_blank" class="sidebar-link"><span>📊</span> JB 인사이트</a>
     <a href="https://www.youtube.com/@odokgod" target="_blank" class="sidebar-link"><span>📻</span> 오독</a>
     <a href="https://www.youtube.com/@TQQQCRAZY" target="_blank" class="sidebar-link"><span>🔥</span> TQQQ 미친놈</a>
     <a href="https://www.youtube.com/@developmong" target="_blank" class="sidebar-link"><span>🐒</span> 디벨롭몽</a>
-    <div style="font-size:0.8rem; font-weight:bold; margin-top:15px; color:#444444;">차트 분석</div>
     <a href="https://kr.investing.com/" target="_blank" class="sidebar-link"><span>🌍</span> 인베스팅닷컴</a>
     <a href="https://kr.tradingview.com/" target="_blank" class="sidebar-link"><span>📉</span> 트레이딩뷰</a>
-    <div style="font-size:0.8rem; font-weight:bold; margin-top:15px; color:#444444;">AI 도우미</div>
     <a href="https://claude.ai/" target="_blank" class="sidebar-link"><span>🧠</span> 클로드</a>
     <a href="https://gemini.google.com/" target="_blank" class="sidebar-link"><span>✨</span> 제미나이</a>
 </div>
 """, unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
+# 🚨 [핵심 변경] 실시간 업데이트 시간 헤더 우측에 추가 🚨
 st.markdown(apply_theme(f"""
 <div style="padding-bottom:15px; margin-bottom:25px; display:flex; justify-content:space-between; align-items:flex-end; border-bottom: 2px solid rgba(16,185,129,0.1);">
     <div>
@@ -477,6 +468,7 @@ st.markdown(apply_theme(f"""
     </div>
     <div style="text-align:right;">
         <div style="font-family:'Outfit'; font-size:1.1em; font-weight:800; color:#0F172A;">CUSTOM THEME EDITION</div>
+        <div style="font-size:0.75rem; font-weight:600; color:var(--text-muted); margin-top:2px;">⏱️ 업데이트: {last_update_time}</div>
         <div style="font-size:0.8em; font-weight:700; color:#10B981; border: 1px solid rgba(16,185,129,0.4); padding: 4px 12px; border-radius: 50px; margin-top:4px; display:inline-block;">{rt_label} STATUS</div>
     </div>
 </div>"""), unsafe_allow_html=True)
@@ -635,7 +627,7 @@ elif page == "💼 Portfolio":
         labels_cur = [a for a in ASSET_LIST if curr_vals[a] > 0]
         vals_cur = [curr_vals[a] for a in labels_cur]
         if sum(vals_cur) > 0:
-            fig_cur = go.Figure(data=[go.Pie(labels=labels_cur, values=vals_cur, hole=.4, textinfo='label+percent')])
+            fig_cur = go.Figure(data=[go.Pie(labels=labels_cur, values=vals_cur, hole=.4, textinfo='label+percent', marker=dict(colors=[line_c, dash_c, '#34D399', '#6EE7B7']))])
             fig_cur.update_layout(title=dict(text="Current", font=dict(family="Outfit", size=16, color="#0F172A")), **pie_layout)
             with chart_c1:
                 with st.container(border=True):
@@ -643,7 +635,7 @@ elif page == "💼 Portfolio":
         
         labels_tgt = [a for a in ASSET_LIST if target_weights.get(a, 0) > 0]
         vals_tgt = [target_weights.get(a, 0) for a in labels_tgt]
-        fig_tgt = go.Figure(data=[go.Pie(labels=labels_tgt, values=vals_tgt, hole=.4, textinfo='label+percent')])
+        fig_tgt = go.Figure(data=[go.Pie(labels=labels_tgt, values=vals_tgt, hole=.4, textinfo='label+percent', marker=dict(colors=[line_c, dash_c, '#34D399', '#6EE7B7']))])
         fig_tgt.update_layout(title=dict(text=f"Target (R{curr_regime})", font=dict(family="Outfit", size=16, color="#0F172A")), **pie_layout)
         with chart_c2:
             with st.container(border=True):
@@ -750,6 +742,7 @@ elif page == "🍫 8-Pack Radar":
     sec_df    = pd.DataFrame(sec_data).sort_values(by='수익률', ascending=True)
     top_sec, bot_sec = sec_df.iloc[-1]['섹터'], sec_df.iloc[0]['섹터']
 
+    # 🚨 [새로운 기능] 레이더 종합 분석 판단 로직 🚨
     risk_cnt, warn_cnt, safe_cnt = 0, 0, 0
     
     if qqq_rsi < 40: safe_cnt+=1
@@ -821,30 +814,42 @@ elif page == "🍫 8-Pack Radar":
                    {'range':[45,55],'color':"rgba(255,255,255,0.8)"},{'range':[55,75],'color':f"rgba({r_c},{g_c},{b_c},0.4)"},
                    {'range':[75,100],'color':f"rgba({r_c},{g_c},{b_c},0.6)"}]
 
+    def r_head(title, badge, url, desc):
+        return f'<a href="{url}" target="_blank" class="radar-link"><div class="radar-link-title" style="margin-bottom:4px;">{title} 🔗{badge}</div></a><div style="font-size:0.78em; color:var(--text-muted); margin-bottom:12px; line-height:1.3; letter-spacing:-0.3px;">{desc}</div>'
+
+    u1 = "https://kr.tradingview.com/chart/?symbol=NASDAQ:QQQ"
+    u2 = "https://kr.tradingview.com/chart/?symbol=NASDAQ:QQQ"
+    u3 = "https://edition.cnn.com/markets/fear-and-greed"
+    u4 = "https://finviz.com/map.ashx?t=sec"
+    u5 = "https://fred.stlouisfed.org/series/BAMLH0A0HYM2"
+    u6 = "https://kr.tradingview.com/chart/?symbol=NASDAQ:QQQE"
+    u7 = "https://kr.tradingview.com/chart/?symbol=AMEX:GLD"
+    u8 = "https://kr.tradingview.com/chart/?symbol=AMEX:UUP"
+
     row1 = st.columns(4)
     with row1[0]:
         with st.container(border=True):
-            st.markdown(apply_theme(f'<div style="font-size:0.85em; font-weight:700; color:#64748B; margin-bottom:10px;">1. DCA (RSI){b1}</div>'), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("1. DCA (RSI)", b1, u1, "QQQ 단기 과열/침체. 30 이하 매수, 70 이상 분할 매도.")), unsafe_allow_html=True)
             fig1=go.Figure(); fig1.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_RSI'],line=dict(color=line_c,width=2.5)))
             fig1.add_hline(y=70,line_dash='dash',line_color=dash_c); fig1.add_hline(y=30,line_dash='dash',line_color=rsi_low_c)
             fig1.update_layout(**radar_layout,yaxis=dict(range=[10,90]),showlegend=False)
             st.plotly_chart(fig1,use_container_width=True)
     with row1[1]:
         with st.container(border=True):
-            st.markdown(apply_theme(f'<div style="font-size:0.85em; font-weight:700; color:#64748B; margin-bottom:10px;">2. Drawdown{b2}</div>'), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("2. Drawdown", b2, u2, "고점 대비 하락률. -10%는 1차 지지선, -20% 약세장 의미.")), unsafe_allow_html=True)
             fig2=go.Figure(); fig2.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_DD'],fill='tozeroy',line=dict(color=dash_c,width=2.5)))
             fig2.update_layout(**radar_layout,yaxis=dict(tickformat='.0%'),showlegend=False)
             st.plotly_chart(fig2,use_container_width=True)
     with row1[2]:
         with st.container(border=True):
-            st.markdown(apply_theme(f'<div style="font-size:0.85em; font-weight:700; color:#64748B; margin-bottom:10px;">3. Fear & Greed{b3}</div>'), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("3. Fear & Greed", b3, u3, "시장 심리 종합. 극단적 공포는 종종 훌륭한 매수 기회.")), unsafe_allow_html=True)
             fig3=go.Figure(go.Indicator(mode="gauge+number",value=fg_score,domain={'x':[0,1],'y':[0,1]},
                 gauge={'axis':{'range':[0,100]},'bar':{'color':line_c},'steps':gauge_steps}))
             fig3.update_layout(height=200,margin=dict(l=15,r=15,t=10,b=10),paper_bgcolor=b_color,font=dict(family="Pretendard",color=t_color))
             st.plotly_chart(fig3,use_container_width=True)
     with row1[3]:
         with st.container(border=True):
-            st.markdown(apply_theme(f'<div style="font-size:0.85em; font-weight:700; color:#64748B; margin-bottom:10px;">4. Sector (1M){b4}</div>'), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("4. Sector (1M)", b4, u4, "자금 유입 주도 섹터 및 소외 섹터를 통한 흐름 파악.")), unsafe_allow_html=True)
             fig4=go.Figure(go.Bar(x=sec_df['수익률'],y=sec_df['섹터'],orientation='h', marker_color=[dash_c if v<0 else line_c for v in sec_df['수익률']]))
             fig4.update_layout(**radar_layout,showlegend=False)
             st.plotly_chart(fig4,use_container_width=True)
@@ -852,28 +857,28 @@ elif page == "🍫 8-Pack Radar":
     row2 = st.columns(4)
     with row2[0]:
         with st.container(border=True):
-            st.markdown(apply_theme(f'<div style="font-size:0.85em; font-weight:700; color:#64748B; margin-bottom:10px;">5. Credit Spread{b5}</div>'), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("5. Credit Spread", b5, u5, "하이일드/국채 비율. 하락 시 스마트머니 자금 이탈 암시.")), unsafe_allow_html=True)
             fig5=go.Figure(); fig5.add_trace(go.Scatter(x=df_view.index,y=df_view['HYG_IEF_Ratio'],line=dict(color=line_c,width=2.5)))
             fig5.add_trace(go.Scatter(x=df_view.index,y=df_view['HYG_IEF_MA50'],line=dict(color=dash_c,dash='dot')))
             fig5.update_layout(**radar_layout,showlegend=False)
             st.plotly_chart(fig5,use_container_width=True)
     with row2[1]:
         with st.container(border=True):
-            st.markdown(apply_theme(f'<div style="font-size:0.85em; font-weight:700; color:#64748B; margin-bottom:10px;">6. Market Breadth{b6}</div>'), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("6. Market Breadth", b6, u6, "가중/동일가중 비교. 소수 대형주만의 가짜 반등 판별.")), unsafe_allow_html=True)
             fig6=go.Figure(); fig6.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_20d_Ret'],name='QQQ',line=dict(color=line_c,width=2.5)))
             fig6.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQE_20d_Ret'],name='QQQE',line=dict(color=dash_c,dash='dot')))
             fig6.update_layout(**radar_layout,showlegend=False,yaxis=dict(tickformat='.0%'))
             st.plotly_chart(fig6,use_container_width=True)
     with row2[2]:
         with st.container(border=True):
-            st.markdown(apply_theme(f'<div style="font-size:0.85em; font-weight:700; color:#64748B; margin-bottom:10px;">7. Gold / Equity{b7}</div>'), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("7. Gold / Equity", b7, u7, "금/주식 상대 강도. 상승 시 안전 자산 선호도 증가.")), unsafe_allow_html=True)
             fig7=go.Figure(); fig7.add_trace(go.Scatter(x=df_view.index,y=df_view['GLD_SPY_Ratio'],line=dict(color=line_c,width=2.5)))
             fig7.add_trace(go.Scatter(x=df_view.index,y=df_view['GLD_SPY_MA50'],line=dict(color=dash_c,dash='dot')))
             fig7.update_layout(**radar_layout,showlegend=False)
             st.plotly_chart(fig7,use_container_width=True)
     with row2[3]:
         with st.container(border=True):
-            st.markdown(apply_theme(f'<div style="font-size:0.85em; font-weight:700; color:#64748B; margin-bottom:10px;">8. USD (UUP){b8}</div>'), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("8. USD (UUP)", b8, u8, "달러 강세 지표. 상승 시 유동성 축소 및 빅테크 악재.")), unsafe_allow_html=True)
             fig8=go.Figure(); fig8.add_trace(go.Scatter(x=df_view.index,y=df_view['UUP'],line=dict(color=line_c,width=2.5)))
             fig8.add_trace(go.Scatter(x=df_view.index,y=df_view['UUP_MA50'],line=dict(color=dash_c,dash='dot')))
             fig8.update_layout(**radar_layout,showlegend=False)
@@ -886,7 +891,7 @@ elif page == "📈 Backtest Lab":
         st.markdown("<div style='font-size: 0.9em; font-weight: 700; color: #64748B; margin-bottom: 12px; text-transform:uppercase;'>⚙️ 백테스트 환경 설정</div>", unsafe_allow_html=True)
         col_s, col_e, col_m = st.columns(3)
         with col_s:
-            bt_start = st.date_input("시작일 (Start Date)", datetime(2020, 1, 1)) # 기본값: 2020-01-01
+            bt_start = st.date_input("시작일 (Start Date)", datetime(2020, 1, 1))
         with col_e:
             bt_end = st.date_input("종료일 (End Date)", datetime.today())
         with col_m:
