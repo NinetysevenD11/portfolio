@@ -132,7 +132,7 @@ def apply_asymmetric_delay(targets):
         res.append(hist_curr)
     return pd.Series(res, index=targets.index).shift(1).bfill()
 
-# --- 🚀 백테스트 전용 데이터 로더 추가 ---
+# --- 🚀 백테스트 전용 데이터 로더 ---
 @st.cache_data(ttl=3600)
 def load_custom_backtest_data(start_date, end_date):
     fetch_start = pd.to_datetime(start_date) - timedelta(days=400) # 200일 이평선 계산을 위한 버퍼 확보
@@ -169,7 +169,6 @@ def load_custom_backtest_data(start_date, end_date):
     bt_df = bt_df.dropna()
     if bt_df.empty: return bt_df
     
-    # Target 및 Regime 계산 후 날짜 필터링 (과거 흐름이 반영된 정확한 상태 머신 유지)
     bt_df['Target'] = bt_df.apply(get_target_v45, axis=1)
     bt_df['Regime'] = apply_asymmetric_delay(bt_df['Target'])
     
@@ -266,7 +265,7 @@ radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15), paper_bgcolor=
 regime_info  = {1:("R1 BULL","풀 가동"),2:("R2 CORR","방어 진입"), 3:("R3 BEAR","대피"),4:("R4 PANIC","최대 방어")}
 
 # ==========================================
-# 2. V4.4 레트로 사이드바 + V4.5 입체 카드 통합 CSS
+# 2. CSS (사이드바 즐겨찾기 스타일 통일 + V4.5 입체 카드)
 # ==========================================
 css_block = f"""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -293,7 +292,7 @@ css_block = f"""<style>
     .main .block-container {{ max-width: 1400px; padding-top: 1rem; padding-bottom: 2rem; }}
 
     /* =========================================
-       🔥 사이드바: 레트로 스타일 완벽 이식 🔥
+       🔥 사이드바: 즐겨찾기 링크 스타일로 완벽 통일 🔥
        ========================================= */
     [data-testid="stSidebar"] {{
         background: #f0f0e8 !important; 
@@ -306,21 +305,22 @@ css_block = f"""<style>
     }}
     
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] {{ 
-        gap: 6px; 
-        padding: 10px 15px; 
+        gap: 0px; 
+        padding: 0px 15px; 
         background: transparent !important; 
     }}
     
+    /* 탭 메뉴 기본 상태 (sidebar-link 클래스와 완전히 동일) */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label {{
-        display: flex;
-        align-items: center;
+        display: flex !important;
+        align-items: center !important;
         background: rgba(0,0,0,0.03) !important;
         border: 2.5px solid transparent !important;
         border-radius: 10px !important;
         padding: 8px 12px !important;
         margin-bottom: 4px !important;
-        cursor: pointer; 
-        width: 100%; 
+        cursor: pointer !important; 
+        width: 100% !important; 
         transition: all 0.2s !important;
         box-shadow: none !important;
     }}
@@ -333,27 +333,21 @@ css_block = f"""<style>
         transform: none !important;
     }}
     
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover {{
-        border: 2.5px solid #1a1a1a !important;
-        background-color: #ffffff !important;
-        transform: translateX(3px) !important;
-        box-shadow: 2px 2px 0px #1a1a1a !important;
-    }}
-    
+    /* Hover 및 활성화(Checked) 상태 (튀어나오는 효과) */
+    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover,
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) {{
         border: 2.5px solid #1a1a1a !important;
         background-color: #ffffff !important;
         transform: translateX(3px) !important;
         box-shadow: 2px 2px 0px #1a1a1a !important;
-        width: 100% !important;
-        margin-right: 0 !important;
     }}
     
+    /* 활성화된 탭 글씨색 (커스텀 메인 컬러) */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) p {{
         color: var(--accent-mint) !important; 
     }}
 
-    /* 📌 하단 즐겨찾기 사이드바 링크 스타일 */
+    /* 하단 즐겨찾기 사이드바 링크 스타일 */
     .sidebar-link {{ 
         display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; 
         border-radius: 10px; border: 2.5px solid transparent; text-decoration: none !important; 
@@ -438,6 +432,7 @@ sidebar_top.markdown(apply_theme(f"""
     </div>
 </div>"""), unsafe_allow_html=True)
 
+# 탭 메뉴 아이콘 일체화
 page = st.sidebar.radio("MENU",
     ["📊 Dashboard", "💼 Portfolio", "🍫 8-Pack Radar", "📈 Backtest Lab", "📰 Macro News"],
     label_visibility="collapsed")
@@ -884,15 +879,17 @@ elif page == "🍫 8-Pack Radar":
 elif page == "📈 Backtest Lab":
     st.markdown("<h2 style='font-family:Outfit; font-size:1.8em; color:#0F172A;'>📈 Backtest Lab</h2>", unsafe_allow_html=True)
 
-    # 🚨 추가된 기간 설정 패널 🚨
+    # 🚨 추가된 기간 설정 및 월 적립금 패널 🚨
     st.markdown(apply_theme('<div class="glass-card" style="height:auto !important; padding: 20px !important; margin-bottom: 25px;">'), unsafe_allow_html=True)
-    st.markdown("<div style='font-size: 0.9em; font-weight: 700; color: #64748B; margin-bottom: 12px; text-transform:uppercase;'>⚙️ 백테스트 기간 설정</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size: 0.9em; font-weight: 700; color: #64748B; margin-bottom: 12px; text-transform:uppercase;'>⚙️ 백테스트 환경 설정</div>", unsafe_allow_html=True)
     
-    col_s, col_e = st.columns(2)
+    col_s, col_e, col_m = st.columns(3)
     with col_s:
         bt_start = st.date_input("시작일 (Start Date)", datetime.today() - timedelta(days=1095)) # 기본값 3년
     with col_e:
         bt_end = st.date_input("종료일 (End Date)", datetime.today())
+    with col_m:
+        monthly_cont = st.number_input("월 적립금 ($)", value=2000, step=500)
     st.markdown('</div>', unsafe_allow_html=True)
 
     with st.spinner("시뮬레이션 가동 중..."):
@@ -906,30 +903,48 @@ elif page == "📈 Backtest Lab":
             
             val_o, val_q, val_qld, val_tqqq = 10000, 10000, 10000, 10000
             hist_o, hist_q, hist_qld, hist_tqqq = [val_o], [val_q], [val_qld], [val_tqqq]
+            invested = [10000]
+            curr_inv = 10000
             
             for i in range(1, len(bt_df)):
+                today = bt_df.index[i]
+                yesterday = bt_df.index[i-1]
+
                 ret_o = sum(w_orig.get(t,0) * daily_ret[t].iloc[i] for t in w_orig if t in daily_ret.columns)
                 val_o *= (1 + ret_o); val_q *= (1 + daily_ret['QQQ'].iloc[i])
                 val_qld *= (1 + daily_ret['QLD'].iloc[i]); val_tqqq *= (1 + daily_ret['TQQQ'].iloc[i])
+                
+                # 월 적립금 투입 로직
+                if today.month != yesterday.month:
+                    val_o += monthly_cont
+                    val_q += monthly_cont
+                    val_qld += monthly_cont
+                    val_tqqq += monthly_cont
+                    curr_inv += monthly_cont
+
                 hist_o.append(val_o); hist_q.append(val_q); hist_qld.append(val_qld); hist_tqqq.append(val_tqqq)
+                invested.append(curr_inv)
                 
                 smh_cond_i = (bt_df['SMH'].iloc[i] > bt_df['SMH_MA50'].iloc[i]) and (bt_df['SMH_3M_Ret'].iloc[i] > 0.05) and (bt_df['SMH_RSI'].iloc[i] > 50)
                 w_orig = get_weights_v45(bt_df['Regime'].iloc[i], smh_cond_i)
                 
             res_df = pd.DataFrame(index=bt_df.index)
             res_df['V4.5'], res_df['QQQ'], res_df['QLD'], res_df['TQQQ'] = hist_o, hist_q, hist_qld, hist_tqqq
+            res_df['Invested'] = invested
             days = (res_df.index[-1] - res_df.index[0]).days
             
-            def calc_metrics(series):
-                ret = (series[-1]/series[0]) - 1
-                cagr = (series[-1]/series[0]) ** (365.25 / days) - 1 if days > 0 else 0
+            def calc_metrics(series, inv_series):
+                final_val = series.iloc[-1]
+                total_inv = inv_series.iloc[-1]
+                ret = (final_val / total_inv) - 1
+                cagr = (final_val / total_inv) ** (365.25 / days) - 1 if days > 0 else 0
                 mdd = ((series / series.cummax()) - 1).min()
                 return ret, cagr, mdd
                 
-            ret_o, cagr_o, mdd_o       = calc_metrics(res_df['V4.5'])
-            ret_q, cagr_q, mdd_q       = calc_metrics(res_df['QQQ'])
-            ret_qld, cagr_qld, mdd_qld = calc_metrics(res_df['QLD'])
-            ret_t, cagr_t, mdd_t       = calc_metrics(res_df['TQQQ'])
+            ret_o, cagr_o, mdd_o       = calc_metrics(res_df['V4.5'], res_df['Invested'])
+            ret_q, cagr_q, mdd_q       = calc_metrics(res_df['QQQ'], res_df['Invested'])
+            ret_qld, cagr_qld, mdd_qld = calc_metrics(res_df['QLD'], res_df['Invested'])
+            ret_t, cagr_t, mdd_t       = calc_metrics(res_df['TQQQ'], res_df['Invested'])
             
             mc1, mc2, mc3, mc4 = st.columns(4)
             def render_metric_card(title, ret, cagr, mdd, is_main=False):
