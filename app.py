@@ -276,98 +276,73 @@ st.markdown("""<style>
         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
     }
     
-    /* 4. 메뉴 텍스트 - 큼직하게 */
+    /* 4. 메뉴 텍스트 - 글씨 크기 대폭 확대 & 줌 애니메이션 준비 */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label p {
-        font-size: 1.15em !important; 
-        font-weight: 500 !important; 
+        font-size: 1.35em !important; /* 🔥 1.15em -> 1.35em 으로 텍스트 크기 상향 */
+        font-weight: 600 !important; 
         color: var(--text-muted) !important; 
         margin: 0 !important; 
         padding-left: 0 !important;
-        transition: all 0.2s ease !important;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+        transform-origin: left center; /* 🔥 왼쪽을 고정축으로 확대되도록 설정 */
     }
     
-    /* 5. Hover 효과 (글씨 확대 + 연한 핑크/민트 배경 스며들기) */
+    /* 5. Hover 효과 - 작게 튀어오르는 확대 효과 강화 */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover {
-        background: rgba(16, 185, 129, 0.05) !important; 
+        background: rgba(16, 185, 129, 0.08) !important; 
     }
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover p { 
         color: var(--text-main) !important; 
-        transform: scale(1.05) translateX(4px) !important; /* 글자 살짝 커지고 우측으로 밀림 */
-        font-weight: 600 !important;
+        transform: scale(1.1) translateX(4px) !important; /* 🔥 호버 시 글씨가 110% 커지면서 우측으로 살짝 이동 */
+        font-weight: 700 !important;
     }
     
-    /* 6. 🚨 Checked 상태 (오른쪽 메인화면과 하나로 연결되는 탭 디자인) 🚨 */
+    /* 6. 🚨 Checked 상태 (오른쪽 메인 대시보드와 완벽하게 연결되는 폴더 탭 효과) 🚨 */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) {
-        background: #FFFFFF !important; /* 메인 글래스 카드와 동일한 솔리드 컬러로 연결감 극대화 */
-        border-left: 5px solid var(--accent-mint) !important; /* 좌측에 강한 포인트 라인 */
-        border-top: 1px solid rgba(16, 185, 129, 0.3) !important;
-        border-bottom: 2px solid rgba(16, 185, 129, 0.6) !important;
-        box-shadow: -4px 4px 15px rgba(0,0,0,0.03) !important;
-        margin-right: -10px !important; /* 🌟 오른쪽 끝을 화면 바깥으로 확장시켜서 메인 화면과 잇는 트릭 🌟 */
-        padding-right: 30px !important;
+        background-color: var(--bg-main) !important; /* 🔥 메인 배경색인 #F8FAFC와 완벽 동일하게 맞춤 */
+        border-left: 6px solid var(--accent-mint) !important; /* 좌측에 두꺼운 포인트 라인 */
+        border-top: 1px solid rgba(255, 255, 255, 0.8) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.8) !important;
+        box-shadow: -4px 4px 15px rgba(0,0,0,0.04) !important; /* 바깥쪽 음영만 줘서 오른쪽은 그림자 없이 이어짐 */
+        
+        /* 🔥 오른쪽 영역을 바깥으로 밀어내어 대시보드와 합체시키는 트릭 🔥 */
+        width: calc(100% + 20px) !important; 
+        margin-right: -20px !important; 
+        padding-right: 40px !important;
+        
+        border-radius: 20px 0 0 20px !important; /* 왼쪽만 둥글게 */
+        position: relative;
+        z-index: 1; /* 위로 올라오게 해서 덮기 */
     }
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) p {
         color: var(--accent-dark) !important; 
         font-weight: 800 !important;
-        transform: scale(1.05) translateX(4px) !important;
+        transform: scale(1.1) translateX(4px) !important; /* 🔥 선택된 상태에서도 확대된 텍스트 크기 유지 */
     }
     /* ========================================= */
 
-    /* 🚨 변경된 카드 UI (완벽한 양각 Neumorphism + 뚜렷한 녹색 테두리) 🚨 */
     .glass-card {
-        background: #FFFFFF !important; /* 불투명하게 처리하여 입체감 극대화 */
-        
-        /* 뚜렷한 녹색 테두리: 빛이 오는 좌상단은 얇고 연하게, 우하단은 두껍고 진하게 주어 두께감(3D) 형성 */
-        border-top: 1px solid rgba(16, 185, 129, 0.3) !important;
-        border-left: 1px solid rgba(16, 185, 129, 0.3) !important;
-        border-bottom: 2.5px solid rgba(16, 185, 129, 0.6) !important;
-        border-right: 2.5px solid rgba(16, 185, 129, 0.6) !important;
-        
+        background: rgba(255, 255, 255, 0.65) !important;
+        backdrop-filter: blur(20px) saturate(150%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
+        border: 1px solid rgba(255, 255, 255, 1) !important;
         border-radius: 24px !important;
         padding: 24px !important;
-        
-        /* 🔥 강력한 양각(Emboss) 그림자 🔥 */
-        box-shadow: 
-            12px 12px 24px rgba(16, 185, 129, 0.15),   /* 우하단: 짙게 깔리는 녹색 베이스 음영 */
-            -12px -12px 24px rgba(255, 255, 255, 0.9) !important; /* 좌상단: 밝은 반사광 */
-            
-        height: 100%; 
-        display: flex; 
-        flex-direction: column; 
-        justify-content: space-between;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        box-shadow: 0 10px 30px rgba(16, 185, 129, 0.05), inset 0 2px 0 rgba(255, 255, 255, 1) !important;
+        height: 100%; display: flex; flex-direction: column; justify-content: space-between;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
-
     .glass-card:hover {
-        transform: translateY(-5px); /* 호버 시 위로 확 떠오르는 효과 */
-        border-bottom: 3.5px solid rgba(16, 185, 129, 0.8) !important; 
-        border-right: 3.5px solid rgba(16, 185, 129, 0.8) !important; 
-        box-shadow: 
-            16px 16px 32px rgba(16, 185, 129, 0.18),
-            -16px -16px 32px rgba(255, 255, 255, 1) !important;
+        transform: translateY(-3px);
+        box-shadow: 0 15px 40px rgba(16, 185, 129, 0.1), inset 0 2px 0 rgba(255, 255, 255, 1) !important;
     }
-
     .glass-card h3 { font-family: 'Outfit', sans-serif; font-size: 1.15em !important; font-weight: 800 !important; color: var(--text-main); margin-bottom: 15px !important; letter-spacing: -0.5px; border-bottom: 2px solid rgba(16, 185, 129, 0.1); padding-bottom: 8px; }
 
-    /* 🔥 카드 내부 박스는 푹 파인 느낌(음각, Deboss)으로 처리하여 양각 대비 극대화 🔥 */
     .glass-inset {
-        background: #F8FAFC !important; /* 바깥 카드(흰색)보다 약간 톤다운 */
-        
-        /* 역방향 테두리로 파인 질감 표현 */
-        border-top: 1px solid rgba(16, 185, 129, 0.4) !important;
-        border-left: 1px solid rgba(16, 185, 129, 0.4) !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 1) !important;
-        border-right: 1px solid rgba(255, 255, 255, 1) !important;
-        
-        border-radius: 16px !important; 
-        padding: 18px; 
-        text-align: center; 
-        margin-bottom: 16px;
-        
-        /* 안으로 파고드는 내부(inset) 그림자 */
-        box-shadow: 
-            inset 6px 6px 12px rgba(16, 185, 129, 0.12),
-            inset -6px -6px 12px rgba(255, 255, 255, 1) !important;
+        background: rgba(255, 255, 255, 0.8) !important;
+        border: 1px solid rgba(16, 185, 129, 0.15) !important;
+        border-radius: 16px !important; padding: 18px; text-align: center; margin-bottom: 16px;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
     }
     
     h1 { font-family: 'Outfit', sans-serif; font-size: 2.6em !important; font-weight: 800 !important; letter-spacing: -1px; margin: 0 !important; color: var(--text-main) !important; }
