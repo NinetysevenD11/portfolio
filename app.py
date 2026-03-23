@@ -232,7 +232,7 @@ radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15), paper_bgcolor=
 regime_info  = {1:("R1 BULL","풀 가동"),2:("R2 CORR","방어 진입"), 3:("R3 BEAR","대피"),4:("R4 PANIC","최대 방어")}
 
 # ==========================================
-# 2. Light Mint Glass UI CSS (+ 탭 연결형 사이드바)
+# 2. Light Mint Glass UI CSS (사이드바 원복 및 최적화)
 # ==========================================
 st.markdown("""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -261,80 +261,75 @@ st.markdown("""<style>
     .main .block-container { max-width: 1400px; padding-top: 1rem; padding-bottom: 2rem; }
 
     /* =========================================
-       🔥 사이드바 집중 개편: 탭(Tab) 연결형 UI 🔥
+       🔥 사이드바 (가장 예뻤던 Hover Scale + Mint 형태 복구) 🔥
        ========================================= */
     [data-testid="stSidebar"] {
-        background: rgba(255, 255, 255, 0.5) !important;
-        backdrop-filter: blur(40px) saturate(150%) !important;
-        -webkit-backdrop-filter: blur(40px) saturate(150%) !important;
-        border-right: none !important; /* 오른쪽 경계선을 없애서 메인 화면과 연결되게 함 */
-        box-shadow: 2px 0 20px rgba(0,0,0,0.03) !important; /* 미세한 그림자로 깊이감만 부여 */
+        background: rgba(255, 255, 255, 0.7) !important;
+        backdrop-filter: blur(30px) saturate(150%) !important;
+        -webkit-backdrop-filter: blur(30px) saturate(150%) !important;
+        border-right: 1px solid rgba(16, 185, 129, 0.15) !important;
     }
     
-    /* 1. 기본 라디오 버튼 동그라미 완전히 삭제 (무차별 폭격) */
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] label[data-baseweb="radio"] > div:first-child,
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] label[data-baseweb="radio"] svg,
-    [data-testid="stSidebar"] .stRadio [role="radiogroup"] label > div:first-child { 
+    /* 1. 🚨 확실한 동그라미(Bullet) 제거 (어떤 버전이든 숨기기) 🚨 */
+    [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"] > div:first-child,
+    [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"] input { 
         display: none !important; 
         opacity: 0 !important; 
         visibility: hidden !important; 
-        width: 0px !important; 
-        height: 0px !important; 
+        width: 0 !important; 
+        height: 0 !important; 
         margin: 0 !important; 
         padding: 0 !important; 
     }
     
-    /* 2. 메뉴 컨테이너 레이아웃 */
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] { 
-        gap: 8px; 
-        padding: 20px 0 20px 15px; /* 우측 여백을 0으로 해서 끝까지 닿게 함 */
+    /* 2. 메뉴 컨테이너 간격 및 패딩 */
+    [data-testid="stSidebar"] .stRadio [role="radiogroup"] { 
+        gap: 8px !important; 
+        padding: 10px 15px !important; 
         background: transparent !important; 
     }
     
-    /* 3. 메뉴 아이템 기본 상태 */
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label {
+    /* 3. 메뉴 아이템 레이아웃 (투명하고 깔끔하게) */
+    [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"] {
         background: transparent !important;
         border: none !important;
-        border-radius: 16px 0 0 16px !important; /* 우측 모서리 직각 (메인화면과 붙기 위함) */
+        border-radius: 12px !important;
         padding: 16px 20px !important;
-        cursor: pointer; 
-        width: 100%; 
+        cursor: pointer !important; 
+        width: 100% !important; 
         margin: 0 !important;
         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
     }
     
-    /* 4. 메뉴 텍스트 - 큼직하게 */
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label p {
-        font-size: 1.15em !important; 
+    /* 4. 메뉴 텍스트 - 큼직하게 1.25em */
+    [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"] p {
+        font-size: 1.25em !important; 
         font-weight: 500 !important; 
-        color: var(--text-muted) !important; 
+        color: #64748B !important; 
         margin: 0 !important; 
         padding-left: 0 !important;
-        transition: all 0.2s ease !important;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+        transform-origin: left center !important;
     }
     
-    /* 5. Hover 효과 (글씨 확대 + 연한 핑크/민트 배경 스며들기) */
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover {
-        background: rgba(16, 185, 129, 0.05) !important; 
+    /* 5. Hover 효과 (마우스 올렸을 때: 연한 민트 배경 + 부드러운 스케일업) */
+    [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"]:hover {
+        background: rgba(16, 185, 129, 0.08) !important; 
     }
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover p { 
-        color: var(--text-main) !important; 
-        transform: scale(1.05) translateX(4px) !important; /* 글자 살짝 커지고 우측으로 밀림 */
+    [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"]:hover p { 
+        color: #0F172A !important; 
+        transform: scale(1.05) translateX(4px) !important; 
         font-weight: 600 !important;
     }
     
-    /* 6. 🚨 Checked 상태 (오른쪽 메인화면과 하나로 연결되는 탭 디자인) 🚨 */
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) {
-        background: rgba(255, 255, 255, 0.65) !important; /* 메인 글래스 카드와 동일한 배경색 */
-        border-left: 4px solid var(--accent-mint) !important; /* 좌측에 강한 포인트 라인 */
-        border-top: 1px solid rgba(255, 255, 255, 1) !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 1) !important;
-        box-shadow: -4px 4px 15px rgba(0,0,0,0.03) !important;
-        margin-right: -10px !important; /* 🌟 오른쪽 끝을 화면 바깥으로 확장시켜서 메인 화면과 잇는 트릭 🌟 */
-        padding-right: 30px !important;
+    /* 6. Checked 상태 (선택된 메뉴: 좌측 포인트 엣지 라인) */
+    [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"]:has(input:checked) {
+        background: rgba(16, 185, 129, 0.15) !important;
+        box-shadow: inset 4px 0 0 #10B981 !important; 
+        border-radius: 8px !important;
     }
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) p {
-        color: var(--accent-dark) !important; 
+    [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"]:has(input:checked) p {
+        color: #047857 !important; 
         font-weight: 800 !important;
         transform: scale(1.05) translateX(4px) !important;
     }
@@ -695,7 +690,7 @@ elif page == "🍫 8-Pack Radar":
     sec_df    = pd.DataFrame(sec_data).sort_values(by='수익률', ascending=True)
     top_sec, bot_sec = sec_df.iloc[-1]['섹터'], sec_df.iloc[0]['섹터']
 
-    # 🚨 [새로운 기능] 레이더 종합 분석 판단 로직 🚨
+    # 🚨 [레이더망 종합 조언 로직] 🚨
     risk_cnt, warn_cnt, safe_cnt = 0, 0, 0
     
     if qqq_rsi < 40: safe_cnt+=1
@@ -740,7 +735,7 @@ elif page == "🍫 8-Pack Radar":
 
     st.markdown('<h2 style="font-family:Outfit; font-size:1.8em; color:#0F172A; margin-bottom:15px;">🍫 8-Pack Radar</h2>', unsafe_allow_html=True)
 
-    # 🚨 [새로운 기능] 종합 조언 패널 렌더링 🚨
+    # 🚨 종합 조언 패널 화면 상단에 렌더링 🚨
     st.markdown(f"""
     <div class="glass-card" style="height:auto !important; margin-bottom: 25px; padding: 25px !important; border-left: 5px solid {radar_color} !important; background: {bg_color} !important;">
       <h3 style="color:{radar_color}; margin-bottom: 8px; font-size: 1.4em;">{radar_status}</h3>
