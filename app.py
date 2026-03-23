@@ -232,7 +232,7 @@ radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15), paper_bgcolor=
 regime_info  = {1:("R1 BULL","풀 가동"),2:("R2 CORR","방어 진입"), 3:("R3 BEAR","대피"),4:("R4 PANIC","최대 방어")}
 
 # ==========================================
-# 2. Light Mint Glass UI CSS (사이드바 원복 및 최적화)
+# 2. Light Mint Glass UI CSS (상단 툴바 복원)
 # ==========================================
 st.markdown("""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -256,7 +256,9 @@ st.markdown("""<style>
         font-family: 'Pretendard', sans-serif;
     }
     
-    [data-testid="stHeader"] { background-color: transparent !important; }
+    /* 🚨 stHeader 숨김 속성 제거 🚨 (상단 테마변경, 즐겨찾기 바 노출) */
+    /* [data-testid="stHeader"] { background-color: transparent !important; } 주석 처리 또는 제거 */
+    
     #MainMenu { visibility: hidden; } footer { visibility: hidden; }
     .main .block-container { max-width: 1400px; padding-top: 1rem; padding-bottom: 2rem; }
 
@@ -735,7 +737,7 @@ elif page == "🍫 8-Pack Radar":
 
     st.markdown('<h2 style="font-family:Outfit; font-size:1.8em; color:#0F172A; margin-bottom:15px;">🍫 8-Pack Radar</h2>', unsafe_allow_html=True)
 
-    # 🚨 종합 조언 패널 화면 상단에 렌더링 🚨
+    # 🚨 종합 조언 패널 렌더링 🚨
     st.markdown(f"""
     <div class="glass-card" style="height:auto !important; margin-bottom: 25px; padding: 25px !important; border-left: 5px solid {radar_color} !important; background: {bg_color} !important;">
       <h3 style="color:{radar_color}; margin-bottom: 8px; font-size: 1.4em;">{radar_status}</h3>
