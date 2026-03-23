@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import yfinance as yf
 import pandas as pd
 import pandas_ta as ta
@@ -20,9 +19,8 @@ warnings.filterwarnings('ignore')
 # ==========================================
 st.set_page_config(page_title="AMLS V4.5 FINANCE STRATEGY", layout="wide", page_icon="🌿", initial_sidebar_state="expanded")
 
-# --- 🎨 테마 커스텀 시스템 추가 ---
 if 'main_color' not in st.session_state:
-    st.session_state.main_color = '#10B981' # 기본값: 민트
+    st.session_state.main_color = '#10B981'
 main_color = st.session_state.main_color
 
 def hex_to_rgb(hex_col):
@@ -66,7 +64,6 @@ if 'portfolio' not in st.session_state:
                 for k, v in loaded.items():
                     st.session_state.portfolio[k] = v
         except: pass
-
 sanitize_portfolio()
 
 def save_portfolio_to_disk():
@@ -79,8 +76,7 @@ def save_portfolio_to_disk():
 def load_data():
     end_date   = datetime.now()
     start_date = end_date - timedelta(days=900)
-    data = yf.download(TICKERS, start=start_date.strftime("%Y-%m-%d"),
-                       end=end_date.strftime("%Y-%m-%d"), progress=False, auto_adjust=True)['Close']
+    data = yf.download(TICKERS, start=start_date.strftime("%Y-%m-%d"), end=end_date.strftime("%Y-%m-%d"), progress=False, auto_adjust=True)['Close']
     df = pd.DataFrame(index=data.index)
     for t in TICKERS: df[t] = data[t]
     df = df.ffill().bfill()
@@ -125,7 +121,7 @@ def apply_asymmetric_delay(targets):
         if t > hist_curr: hist_curr = t; pend = None; cnt = 0
         elif t < hist_curr:
             if t == pend:
-                cnt += 1
+                cnt += 1; 
                 if cnt >= 5: hist_curr = t; pend = None; cnt = 0
             else: pend = t; cnt = 1
         else: pend = None; cnt = 0
@@ -137,12 +133,10 @@ def load_custom_backtest_data(start_date, end_date):
     fetch_start = pd.to_datetime(start_date) - timedelta(days=400) 
     f_start_str = fetch_start.strftime("%Y-%m-%d")
     f_end_str = (pd.to_datetime(end_date) + timedelta(days=1)).strftime("%Y-%m-%d")
-    
     data = yf.download(TICKERS, start=f_start_str, end=f_end_str, progress=False, auto_adjust=True)['Close']
     bt_df = pd.DataFrame(index=data.index)
     for t in TICKERS: bt_df[t] = data[t]
     bt_df = bt_df.ffill().bfill()
-    
     bt_df['QQQ_MA20']      = bt_df['QQQ'].rolling(20).mean()
     bt_df['QQQ_MA50']      = bt_df['QQQ'].rolling(50).mean()
     bt_df['QQQ_MA200']     = bt_df['QQQ'].rolling(200).mean()
@@ -164,13 +158,10 @@ def load_custom_backtest_data(start_date, end_date):
     bt_df['QQQ_High52']    = bt_df['QQQ'].rolling(252).max()
     bt_df['QQQ_DD']        = (bt_df['QQQ'] / bt_df['QQQ_High52']) - 1
     bt_df['UUP_MA50']      = bt_df['UUP'].rolling(50).mean()
-    
     bt_df = bt_df.dropna()
     if bt_df.empty: return bt_df
-    
     bt_df['Target'] = bt_df.apply(get_target_v45, axis=1)
     bt_df['Regime'] = apply_asymmetric_delay(bt_df['Target'])
-    
     bt_df = bt_df.loc[pd.to_datetime(start_date):pd.to_datetime(end_date)]
     return bt_df
 
@@ -185,27 +176,21 @@ def fetch_realtime_prices():
             price = info.get('last_price') or info.get('lastPrice')
             if price and price > 0: prices[ticker] = float(price)
         except: pass
-    
     now_utc = datetime.now(timezone.utc)
     now_kst = now_utc + timedelta(hours=9)
     fetch_time = now_kst.strftime("%Y-%m-%d %H:%M:%S")
     return prices, fetch_time
 
-# 🚨 CNN Fear & Greed Index API 직접 호출 (안정성 강화) 🚨
 @st.cache_data(ttl=1800)
 def fetch_fear_and_greed():
     try:
         url = "https://production.api.cnn.io/data/ext/fear_and_greed/latest"
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-            'Accept': 'application/json'
-        }
+        headers = {'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json'}
         req = urllib.request.Request(url, headers=headers)
         res = urllib.request.urlopen(req, timeout=5)
         data = json.loads(res.read().decode('utf-8'))
         return float(data['fear_and_greed']['score'])
-    except:
-        return None
+    except: return None
 
 @st.cache_data(ttl=900)
 def fetch_macro_news():
@@ -242,14 +227,12 @@ if 'HYG' in rt_injected and 'IEF' in rt_injected:
     df.at[last_index, 'HYG_IEF_Ratio'] = df.at[last_index, 'HYG'] / df.at[last_index, 'IEF']
 
 last_row = df.iloc[-1].copy()
-
 rt_ok    = len(rt_injected) >= 3
 rt_label = f"🟢 LIVE ({len(rt_injected)})" if rt_ok else "🟡 DELAYED"
 
 vix_close, vix_ma5, vix_ma20 = last_row['^VIX'], last_row['VIX_MA5'], last_row['VIX_MA20']
 qqq_close, qqq_ma50, qqq_ma200 = last_row['QQQ'], last_row['QQQ_MA50'], last_row['QQQ_MA200']
-smh_close, smh_ma50, smh_3m, smh_1m, smh_rsi = (last_row['SMH'], last_row['SMH_MA50'],
-    last_row['SMH_3M_Ret'], last_row['SMH_1M_Ret'], last_row['SMH_RSI'])
+smh_close, smh_ma50, smh_3m, smh_1m, smh_rsi = (last_row['SMH'], last_row['SMH_MA50'], last_row['SMH_3M_Ret'], last_row['SMH_1M_Ret'], last_row['SMH_RSI'])
 
 df['Target'] = df.apply(get_target_v45, axis=1)
 df['Regime'] = apply_asymmetric_delay(df['Target'])
@@ -288,7 +271,7 @@ radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15), paper_bgcolor=
 regime_info  = {1:("R1 BULL","풀 가동"),2:("R2 CORR","방어 진입"), 3:("R3 BEAR","대피"),4:("R4 PANIC","최대 방어")}
 
 # ==========================================
-# 2. CSS
+# 2. CSS 
 # ==========================================
 css_block = f"""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -513,7 +496,6 @@ with c_info:
             st.rerun()
 
 st.markdown(apply_theme(f'<div style="border-bottom: 2px solid rgba({r_c},{g_c},{b_c},0.1); padding-top: 10px; margin-bottom: 25px;"></div>'), unsafe_allow_html=True)
-
 
 # ==========================================
 # 5. 페이지 라우팅
@@ -784,7 +766,6 @@ elif page == "🍫 8-Pack Radar":
     df_view   = df.iloc[-120:]
     qqq_rsi   = last_row['QQQ_RSI']
     qqq_dd    = last_row['QQQ_DD']
-    # 🚨 CNN F&G 지수 사용 🚨
     cnn_fgi = fetch_fear_and_greed()
     if cnn_fgi is not None:
         fg_score = cnn_fgi
@@ -1098,12 +1079,17 @@ elif page == "📰 Macro News":
 
     if news_items:
         st.markdown("<div style='font-size: 1.4em; font-family: Outfit; font-weight: 800; color: #0F172A; margin-bottom: 20px;'>🖼️ LATEST HEADLINES</div>", unsafe_allow_html=True)
+        
+        # 🚨 수정됨: f-string HTML 파싱 에러를 완벽하게 방지하기 위한 분리 처리 🚨
         cols = st.columns(3)
-        for idx,item in enumerate(news_items):
-            with cols[idx%3]:
-                st.markdown(apply_theme(f"""<div class="glass-card" style="padding:20px !important; margin-bottom:15px; height:150px !important; display:flex; flex-direction:column; justify-content:space-between;">
+        for idx, item in enumerate(news_items):
+            with cols[idx % 3]:
+                html_snippet = f"""
+                <div class="glass-card" style="padding:20px !important; margin-bottom:15px; height:150px !important; display:flex; flex-direction:column; justify-content:space-between;">
                     <div style="font-weight:600; font-size:1em; line-height:1.4; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">
                         <a href="{item['link']}" target="_blank" style="color:#0F172A; text-decoration:none;">{item['title']}</a>
                     </div>
                     <div style="color:#10B981; font-family:Outfit; font-size:0.85em; font-weight:800; margin-top:10px;">{item['date']}</div>
-                </div>"""), unsafe_allow_html=True)
+                </div>
+                """
+                st.markdown(apply_theme(html_snippet), unsafe_allow_html=True)
