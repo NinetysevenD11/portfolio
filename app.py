@@ -193,19 +193,18 @@ if curr_regime == live_regime: regime_committee_msg = "🟢 조건 부합 (안�
 elif live_regime > curr_regime: regime_committee_msg = f"🔴 R{live_regime} 하향 즉시 반영"
 else: regime_committee_msg = f"🟡 R{live_regime} 승급 대기 (5일)"
 
-# 차트 전역 색상 변수 (Light Mint Theme)
+# 차트 전역 색상 변수
 b_color = 'rgba(0,0,0,0)'
 t_color = '#1E293B'
 line_c = '#10B981'
 dash_c = '#94A3B8'
 rsi_low_c = '#10B981'
-regime_colors={1:'rgba(0,0,0,0.0)', 2:'rgba(16, 185, 129, 0.05)', 3:'rgba(245, 158, 11, 0.08)', 4:'rgba(239, 68, 68, 0.1)'}
 chart_layout = dict(paper_bgcolor=b_color, plot_bgcolor=b_color, font=dict(family="Pretendard", color=t_color), margin=dict(l=0,r=0,t=40,b=0))
 radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15), paper_bgcolor=b_color, plot_bgcolor=b_color, font=dict(family="Pretendard", color=t_color))
 regime_info  = {1:("R1 BULL","풀 가동"),2:("R2 CORR","방어 진입"), 3:("R3 BEAR","대피"),4:("R4 PANIC","최대 방어")}
 
 # ==========================================
-# 2. Light Mint Glass UI CSS (+ 탭 완벽 연결 & 양각 카드)
+# 2. V4.4 레트로 사이드바 + V4.5 입체 카드 통합 CSS
 # ==========================================
 st.markdown("""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -215,10 +214,9 @@ st.markdown("""<style>
         --text-main: #0F172A; 
         --text-muted: #64748B; 
         --accent-mint: #10B981; 
-        --accent-dark: #047857;
     }
 
-    /* [배경] 밝고 깨끗한 화이트 & 민트 메쉬 그라데이션 */
+    /* 대시보드 메인 배경 */
     .stApp, [data-testid="stAppViewContainer"] {
         background-color: var(--bg-main) !important;
         background-image: 
@@ -233,92 +231,85 @@ st.markdown("""<style>
     .main .block-container { max-width: 1400px; padding-top: 1rem; padding-bottom: 2rem; }
 
     /* =========================================
-       🔥 사이드바 집중 개편: 탭(Tab) 완벽 연결 UI 🔥
+       🔥 사이드바: 전달해주신 레트로 스타일 완벽 이식 🔥
        ========================================= */
     [data-testid="stSidebar"] {
-        background: rgba(255, 255, 255, 0.7) !important;
-        backdrop-filter: blur(40px) saturate(150%) !important;
-        -webkit-backdrop-filter: blur(40px) saturate(150%) !important;
-        border-right: none !important; /* 오른쪽 선 삭제 */
-        box-shadow: 2px 0 20px rgba(0,0,0,0.03) !important;
-        
-        /* 🚨 핵심: 스트림릿 내부 컨테이너 제한 풀기 🚨 */
-        overflow: visible !important;
+        background: #f0f0e8 !important; /* 연한 베이지색 배경 */
+        border-right: 2.5px solid #1a1a1a !important; /* 굵은 까만 테두리 */
     }
     
-    [data-testid="stSidebar"] > div:first-child {
-        overflow: visible !important;
-    }
-    
-    /* 1. 기본 라디오 버튼 동그라미 삭제 */
+    /* 1. 라디오 버튼 동그라미 삭제 */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] label[data-baseweb="radio"] > div:first-child,
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] label[data-baseweb="radio"] svg { 
         display: none !important; opacity: 0 !important; width: 0px !important; height: 0px !important; margin: 0 !important; padding: 0 !important; 
     }
     
-    /* 2. 메뉴 컨테이너 레이아웃: 우측 여백 0으로 붙이기 */
+    /* 2. 메뉴 컨테이너 */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] { 
-        gap: 8px; 
-        padding: 20px 0 20px 15px !important; 
+        gap: 6px; 
+        padding: 10px 15px; 
         background: transparent !important; 
     }
     
-    /* 3. 메뉴 아이템 기본 상태 */
+    /* 3. 메뉴 아이템 기본 상태 (Brutalist Style) */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label {
-        background: transparent !important;
-        border: none !important;
-        border-radius: 20px 0 0 20px !important; 
-        padding: 16px 20px !important;
+        display: flex;
+        align-items: center;
+        background: rgba(0,0,0,0.03) !important;
+        border: 2.5px solid transparent !important;
+        border-radius: 10px !important;
+        padding: 8px 12px !important;
+        margin-bottom: 4px !important;
         cursor: pointer; 
         width: 100%; 
-        margin: 0 !important;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+        transition: all 0.2s !important;
+        box-shadow: none !important;
     }
     
-    /* 4. 텍스트 크기 확대 및 줌 준비 */
+    /* 4. 텍스트 디자인 */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label p {
-        font-size: 1.35em !important; 
-        font-weight: 600 !important; 
-        color: var(--text-muted) !important; 
+        color: #1a1a1a !important; 
+        font-weight: 800 !important;
+        font-size: 0.95rem !important; 
         margin: 0 !important; 
-        padding-left: 0 !important;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
-        transform-origin: left center;
+        transform: none !important;
     }
     
-    /* 5. Hover 효과 */
+    /* 5. Hover 효과 (호버 시 박스가 튀어나옴) */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover {
-        background: rgba(16, 185, 129, 0.08) !important; 
-    }
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover p { 
-        color: var(--text-main) !important; 
-        transform: scale(1.1) translateX(4px) !important; 
+        border: 2.5px solid #1a1a1a !important;
+        background-color: #ffffff !important;
+        transform: translateX(3px) !important;
+        box-shadow: 2px 2px 0px #1a1a1a !important;
     }
     
-    /* 6. 🚨 Checked 상태 (대시보드와 완벽 결합) 🚨 */
+    /* 6. 🚨 Checked 상태 🚨 */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) {
-        background: #F8FAFC !important; /* 메인 배경(var(--bg-main))과 동일한 색상 */
-        border-left: 6px solid var(--accent-mint) !important; 
-        border-top: 1px solid rgba(255, 255, 255, 0.8) !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.8) !important;
-        
-        /* 스트림릿 영역 바깥으로 강제 확장하여 겹치게 만듦 */
-        width: calc(100% + 20px) !important; 
-        margin-right: -20px !important; 
-        padding-right: 40px !important;
-        
-        box-shadow: -6px 4px 15px rgba(0,0,0,0.03) !important; 
-        position: relative;
-        z-index: 9999 !important;
+        border: 2.5px solid #1a1a1a !important;
+        background-color: #ffffff !important;
+        transform: translateX(3px) !important;
+        box-shadow: 2px 2px 0px #1a1a1a !important;
+        width: 100% !important;
+        margin-right: 0 !important;
     }
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) p {
-        color: var(--accent-dark) !important; 
-        font-weight: 800 !important;
-        transform: scale(1.1) translateX(4px) !important; 
+        color: var(--accent-mint) !important; /* 활성화 시 V4.5의 민트색 유지 */
+    }
+
+    /* 📌 추가: 하단 즐겨찾기 사이드바 링크 스타일 (주신 코드 동일 적용) */
+    .sidebar-link { 
+        display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; 
+        border-radius: 10px; border: 2.5px solid transparent; text-decoration: none !important; 
+        color: #1a1a1a !important; font-weight: 800; font-size: 0.95rem; 
+        transition: all 0.2s; background: rgba(0,0,0,0.03); 
+    }
+    .sidebar-link:hover { 
+        border: 2.5px solid #1a1a1a; background-color: #ffffff; 
+        transform: translateX(3px); box-shadow: 2px 2px 0px #1a1a1a; 
     }
     /* ========================================= */
 
-    /* 🚨 카드 UI (양각 Neumorphism + 뚜렷한 녹색 테두리) 🚨 */
+    /* 🚨 메인 대시보드 카드 UI (V4.5 입체 양각 디자인 유지) 🚨 */
     .glass-card {
         background: #FFFFFF !important; 
         border-top: 1px solid rgba(16, 185, 129, 0.3) !important;
@@ -373,18 +364,18 @@ st.markdown("""<style>
     .mint-table td:first-child { border-left: 1px solid rgba(16, 185, 129, 0.1); border-top-left-radius: 12px; border-bottom-left-radius: 12px; text-align: left; }
     .mint-table td:last-child { border-right: 1px solid rgba(16, 185, 129, 0.1); border-top-right-radius: 12px; border-bottom-right-radius: 12px; text-align: center; }
 
-    [data-testid="stNumberInput"] > div > div, [data-testid="stTextInput"] > div > div { background: rgba(255,255,255,0.8) !important; border: 1px solid var(--border-glass) !important; border-radius: 12px !important; color: var(--text-main) !important; }
+    [data-testid="stNumberInput"] > div > div, [data-testid="stTextInput"] > div > div { background: rgba(255,255,255,0.8) !important; border: 1px solid rgba(16,185,129,0.3) !important; border-radius: 12px !important; color: var(--text-main) !important; }
 </style>""", unsafe_allow_html=True)
 
 # ==========================================
-# 3. 사이드바 UI (Light Mint Theme)
+# 3. 사이드바 UI
 # ==========================================
 sidebar_top = st.sidebar.container()
 sidebar_top.markdown(f"""
-<div style="padding: 20px 15px;">
-    <div style="font-family: 'Outfit'; font-size: 1.8em; font-weight: 800; color: #10B981; letter-spacing: -0.5px;">AMLS <span style="color:#0F172A;">V4.5</span></div>
-    <div style="font-family: 'Outfit'; font-size: 0.85em; font-weight: 600; color: #64748B; margin-bottom: 15px;">QUANTITATIVE ENGINE</div>
-    <div style="font-size: 0.75em; color: #10B981; font-weight: 700; padding: 4px 10px; background: rgba(16,185,129,0.1); border-radius: 50px; display: inline-block; border: 1px solid rgba(16,185,129,0.3);">
+<div style="padding: 10px 15px;">
+    <div style="font-family: 'Outfit'; font-size: 1.8em; font-weight: 800; color: #1a1a1a; letter-spacing: -0.5px;">AMLS <span style="color:#10B981;">V4.5</span></div>
+    <div style="font-family: 'Outfit'; font-size: 0.85em; font-weight: 800; color: #444444; margin-bottom: 10px;">QUANTITATIVE ENGINE</div>
+    <div style="font-size: 0.75em; color: #1a1a1a; font-weight: 800; padding: 4px 10px; background: rgba(0,0,0,0.05); border-radius: 10px; display: inline-block; border: 2px solid #1a1a1a;">
         {rt_label}
     </div>
 </div>""", unsafe_allow_html=True)
@@ -393,11 +384,26 @@ page = st.sidebar.radio("MENU",
     ["📊 Dashboard", "💼 Portfolio", "🍫 8-Pack Radar", "📈 Backtest Lab", "📰 Macro News"],
     label_visibility="collapsed")
 
-st.sidebar.markdown(f"""
-<div style="margin-top: 40px; padding: 15px; border-top: 1px solid rgba(16,185,129,0.15);">
-    <div style="font-family:'Outfit'; font-size:0.75em; font-weight:800; color:#10B981; letter-spacing: 1px;">POWERED BY APEX</div>
-    <div style="font-size:0.75em; font-weight:500; color:#94A3B8; margin-top: 4px;">Mint Glass Edition v4.5<br>&copy; 2026 SEYOON.</div>
-</div>""", unsafe_allow_html=True)
+# 📌 추가된 즐겨찾기 섹션
+st.sidebar.markdown("---")
+st.sidebar.markdown("<div style='font-size:1.2rem; font-weight:900; color:#1a1a1a; margin-bottom:10px; padding: 0 15px;'>⭐ 즐겨찾기</div>", unsafe_allow_html=True)
+st.sidebar.markdown("""
+<div style="display:flex; flex-direction:column; gap:2px; padding: 0 15px;">
+    <div style="font-size:0.8rem; font-weight:bold; margin-top:5px; color:#444444;">유튜브</div>
+    <a href="https://www.youtube.com/@JB_Insight" target="_blank" class="sidebar-link"><span>📊</span> JB 인사이트</a>
+    <a href="https://www.youtube.com/@odokgod" target="_blank" class="sidebar-link"><span>📻</span> 오독</a>
+    <a href="https://www.youtube.com/@TQQQCRAZY" target="_blank" class="sidebar-link"><span>🔥</span> TQQQ 미친놈</a>
+    <a href="https://www.youtube.com/@developmong" target="_blank" class="sidebar-link"><span>🐒</span> 디벨롭몽</a>
+    <div style="font-size:0.8rem; font-weight:bold; margin-top:15px; color:#444444;">차트 분석</div>
+    <a href="https://kr.investing.com/" target="_blank" class="sidebar-link"><span>🌍</span> 인베스팅닷컴</a>
+    <a href="https://kr.tradingview.com/" target="_blank" class="sidebar-link"><span>📉</span> 트레이딩뷰</a>
+    <div style="font-size:0.8rem; font-weight:bold; margin-top:15px; color:#444444;">AI 도우미</div>
+    <a href="https://claude.ai/" target="_blank" class="sidebar-link"><span>🧠</span> 클로드</a>
+    <a href="https://gemini.google.com/" target="_blank" class="sidebar-link"><span>✨</span> 제미나이</a>
+</div>
+""", unsafe_allow_html=True)
+st.sidebar.markdown("---")
+
 
 # 메인 타이틀 영역
 st.markdown(f"""
