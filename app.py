@@ -232,7 +232,7 @@ radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15), paper_bgcolor=
 regime_info  = {1:("R1 BULL","풀 가동"),2:("R2 CORR","방어 진입"), 3:("R3 BEAR","대피"),4:("R4 PANIC","최대 방어")}
 
 # ==========================================
-# 2. Light Mint Glass UI CSS (상단 툴바 복원 및 사이드바 최적화)
+# 2. Light Mint Glass UI CSS (상단 툴바 완벽 복구!)
 # ==========================================
 st.markdown("""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -256,7 +256,8 @@ st.markdown("""<style>
         font-family: 'Pretendard', sans-serif;
     }
     
-    /* 🚨 상단 메뉴바(Settings, Favorites 등)를 가렸던 범인들 완전 삭제 🚨 */
+    /* 🚨 상단 메뉴바(Settings, Favorites 등) 노출을 위해 CSS 삭제! 🚨 */
+    /* stHeader, MainMenu, footer 가리지 않고 모두 살려둠 */
     .main .block-container { max-width: 1400px; padding-top: 1rem; padding-bottom: 2rem; }
 
     /* =========================================
@@ -311,7 +312,7 @@ st.markdown("""<style>
         transform-origin: left center !important;
     }
     
-    /* 5. Hover 효과 */
+    /* 5. Hover 효과 (마우스 올렸을 때: 연한 민트 배경 + 부드러운 스케일업) */
     [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"]:hover {
         background: rgba(16, 185, 129, 0.08) !important; 
     }
@@ -321,7 +322,7 @@ st.markdown("""<style>
         font-weight: 600 !important;
     }
     
-    /* 6. Checked 상태 */
+    /* 6. Checked 상태 (선택된 메뉴: 좌측 포인트 엣지 라인) */
     [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"]:has(input:checked) {
         background: rgba(16, 185, 129, 0.15) !important;
         box-shadow: inset 4px 0 0 #10B981 !important; 
