@@ -292,42 +292,41 @@ css_block = f"""<style>
     .main .block-container {{ max-width: 1400px; padding-top: 1rem; padding-bottom: 2rem; }}
 
     /* =========================================
-       🔥 사이드바: 즐겨찾기 링크 스타일로 100% 완벽 통일 🔥
+       🔥 사이드바: 즐겨찾기 링크 스타일과 100% 동일하게 구성 🔥
        ========================================= */
     [data-testid="stSidebar"] {{
         background: #f0f0e8 !important; 
         border-right: 2.5px solid #1a1a1a !important; 
     }}
     
-    /* 1. 기본 라디오 버튼 동그라미 완전히 삭제 */
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] label[data-baseweb="radio"] > div:first-child,
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] label[data-baseweb="radio"] svg {{ 
-        display: none !important; opacity: 0 !important; width: 0px !important; height: 0px !important; margin: 0 !important; padding: 0 !important; 
+    /* 라디오 버튼의 동그라미 완전히 삭제 */
+    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"] > div:first-child {{
+        display: none !important;
     }}
     
-    /* 2. 메뉴 컨테이너 패딩 조절 */
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] {{ 
+    /* 메뉴 컨테이너 레이아웃 설정 (여백 조절) */
+    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] {{ 
         gap: 0px !important; 
         padding: 0 15px !important; 
         background: transparent !important; 
     }}
     
-    /* 3. 탭 메뉴 기본 상태 (즐겨찾기 링크 박스와 100% 동일) */
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label {{
+    /* 📌 네비게이션 탭 메뉴 (즐겨찾기와 동일한 회색 네모 박스) 📌 */
+    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"] {{
         display: flex !important;
         align-items: center !important;
-        background: rgba(0,0,0,0.03) !important;
-        border: 2.5px solid transparent !important;
-        border-radius: 10px !important;
         padding: 8px 12px !important;
         margin-bottom: 6px !important;
-        cursor: pointer !important; 
-        width: 100% !important; 
+        border-radius: 10px !important;
+        border: 2.5px solid transparent !important;
+        background: rgba(0,0,0,0.04) !important; /* 이미지와 동일한 둥근 회색 박스 */
+        cursor: pointer !important;
+        width: 100% !important;
         transition: all 0.2s !important;
-        box-shadow: none !important;
     }}
     
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label p {{
+    /* 탭 메뉴 텍스트 설정 */
+    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"] p {{
         color: #1a1a1a !important; 
         font-weight: 800 !important;
         font-size: 0.95rem !important; 
@@ -335,21 +334,26 @@ css_block = f"""<style>
         transform: none !important;
     }}
     
-    /* 4. Hover 및 활성화(Checked) 상태 (튀어나오고 굵은 테두리 생성) */
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover,
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) {{
+    /* 📌 Hover 및 활성화(Checked) 상태 (튀어나옴 효과 + 까만 테두리) 📌 */
+    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"]:hover,
+    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
         border: 2.5px solid #1a1a1a !important;
         background-color: #ffffff !important;
         transform: translateX(3px) !important;
         box-shadow: 2px 2px 0px #1a1a1a !important;
     }}
+    
+    /* 활성화된 탭의 텍스트 색상 (사용자 지정 컬러 연동) */
+    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) p {{
+        color: var(--accent-mint) !important; 
+    }}
 
-    /* 하단 즐겨찾기 사이드바 링크 스타일 */
+    /* 하단 즐겨찾기 사이드바 링크 스타일 (위 탭메뉴와 동일) */
     .sidebar-link {{ 
         display: flex; align-items: center; padding: 8px 12px; margin-bottom: 6px; 
         border-radius: 10px; border: 2.5px solid transparent; text-decoration: none !important; 
         color: #1a1a1a !important; font-weight: 800; font-size: 0.95rem; 
-        transition: all 0.2s; background: rgba(0,0,0,0.03); 
+        transition: all 0.2s; background: rgba(0,0,0,0.04); 
     }}
     .sidebar-link:hover {{ 
         border: 2.5px solid #1a1a1a; background-color: #ffffff; 
@@ -429,7 +433,7 @@ sidebar_top.markdown(apply_theme(f"""
     </div>
 </div>"""), unsafe_allow_html=True)
 
-# 📌 사이드바 메뉴 탭 (즐겨찾기 링크와 동일한 UI)
+# 📌 사이드바 메뉴 탭 (이모지 포함하여 즐겨찾기와 텍스트 감성 통일)
 st.sidebar.markdown("<div style='font-size:1.2rem; font-weight:900; color:#1a1a1a; margin-bottom:5px; padding: 0 15px;'>🧭 네비게이션</div>", unsafe_allow_html=True)
 page = st.sidebar.radio("MENU",
     ["📊 Dashboard", "💼 Portfolio", "🍫 8-Pack Radar", "📈 Backtest Lab", "📰 Macro News"],
