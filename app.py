@@ -328,7 +328,7 @@ css_block = f"""<style>
 
     /* 🚨 8-Pack Radar 클릭 링크 스타일 🚨 */
     .radar-link {{ text-decoration: none !important; display: block; }}
-    .radar-link-title {{ font-size: 0.85em; font-weight: 700; color: #64748B; margin-bottom: 10px; transition: color 0.2s; }}
+    .radar-link-title {{ font-size: 0.85em; font-weight: 700; color: #64748B; transition: color 0.2s; }}
     .radar-link:hover .radar-link-title {{ color: var(--accent-mint) !important; }}
 
     /* 🚨 메인 대시보드 카드 UI (V4.5 입체 양각) 🚨 */
@@ -441,12 +441,15 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("<div style='font-size:1.2rem; font-weight:900; color:#1a1a1a; margin-bottom:10px; padding: 0 15px;'>⭐ 즐겨찾기</div>", unsafe_allow_html=True)
 st.sidebar.markdown("""
 <div style="display:flex; flex-direction:column; gap:2px; padding: 0 15px;">
+    <div style="font-size:0.8rem; font-weight:bold; margin-top:5px; color:#444444;">유튜브</div>
     <a href="https://www.youtube.com/@JB_Insight" target="_blank" class="sidebar-link"><span>📊</span> JB 인사이트</a>
     <a href="https://www.youtube.com/@odokgod" target="_blank" class="sidebar-link"><span>📻</span> 오독</a>
     <a href="https://www.youtube.com/@TQQQCRAZY" target="_blank" class="sidebar-link"><span>🔥</span> TQQQ 미친놈</a>
     <a href="https://www.youtube.com/@developmong" target="_blank" class="sidebar-link"><span>🐒</span> 디벨롭몽</a>
+    <div style="font-size:0.8rem; font-weight:bold; margin-top:15px; color:#444444;">차트 분석</div>
     <a href="https://kr.investing.com/" target="_blank" class="sidebar-link"><span>🌍</span> 인베스팅닷컴</a>
     <a href="https://kr.tradingview.com/" target="_blank" class="sidebar-link"><span>📉</span> 트레이딩뷰</a>
+    <div style="font-size:0.8rem; font-weight:bold; margin-top:15px; color:#444444;">AI 도우미</div>
     <a href="https://claude.ai/" target="_blank" class="sidebar-link"><span>🧠</span> 클로드</a>
     <a href="https://gemini.google.com/" target="_blank" class="sidebar-link"><span>✨</span> 제미나이</a>
 </div>
@@ -806,9 +809,9 @@ elif page == "🍫 8-Pack Radar":
                    {'range':[45,55],'color':"rgba(255,255,255,0.8)"},{'range':[55,75],'color':f"rgba({r_c},{g_c},{b_c},0.4)"},
                    {'range':[75,100],'color':f"rgba({r_c},{g_c},{b_c},0.6)"}]
 
-    # 🚨 클릭 시 이동할 URL을 매핑하여 제목 함수 변경 🚨
-    def r_head(title, badge, url):
-        return f'<a href="{url}" target="_blank" class="radar-link"><div class="radar-link-title">{title} 🔗{badge}</div></a>'
+    # 🚨 클릭 URL + 지표 시사점(설명) 함수 🚨
+    def r_head(title, badge, url, desc):
+        return f'<a href="{url}" target="_blank" class="radar-link"><div class="radar-link-title" style="margin-bottom:4px;">{title} 🔗{badge}</div></a><div style="font-size:0.78em; color:var(--text-muted); margin-bottom:12px; line-height:1.3; letter-spacing:-0.3px;">{desc}</div>'
 
     u1 = "https://kr.tradingview.com/chart/?symbol=NASDAQ:QQQ"
     u2 = "https://kr.tradingview.com/chart/?symbol=NASDAQ:QQQ"
@@ -822,27 +825,27 @@ elif page == "🍫 8-Pack Radar":
     row1 = st.columns(4)
     with row1[0]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("1. DCA (RSI)", b1, u1)), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("1. DCA (RSI)", b1, u1, "QQQ 단기 과열/침체. 30 이하 매수, 70 이상 분할 매도.")), unsafe_allow_html=True)
             fig1=go.Figure(); fig1.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_RSI'],line=dict(color=line_c,width=2.5)))
             fig1.add_hline(y=70,line_dash='dash',line_color=dash_c); fig1.add_hline(y=30,line_dash='dash',line_color=rsi_low_c)
             fig1.update_layout(**radar_layout,yaxis=dict(range=[10,90]),showlegend=False)
             st.plotly_chart(fig1,use_container_width=True)
     with row1[1]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("2. Drawdown", b2, u2)), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("2. Drawdown", b2, u2, "고점 대비 하락률. -10%는 1차 지지선, -20% 약세장 의미.")), unsafe_allow_html=True)
             fig2=go.Figure(); fig2.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_DD'],fill='tozeroy',line=dict(color=dash_c,width=2.5)))
             fig2.update_layout(**radar_layout,yaxis=dict(tickformat='.0%'),showlegend=False)
             st.plotly_chart(fig2,use_container_width=True)
     with row1[2]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("3. Fear & Greed", b3, u3)), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("3. Fear & Greed", b3, u3, "시장 심리 종합. 극단적 공포는 종종 훌륭한 매수 기회.")), unsafe_allow_html=True)
             fig3=go.Figure(go.Indicator(mode="gauge+number",value=fg_score,domain={'x':[0,1],'y':[0,1]},
                 gauge={'axis':{'range':[0,100]},'bar':{'color':line_c},'steps':gauge_steps}))
             fig3.update_layout(height=200,margin=dict(l=15,r=15,t=10,b=10),paper_bgcolor=b_color,font=dict(family="Pretendard",color=t_color))
             st.plotly_chart(fig3,use_container_width=True)
     with row1[3]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("4. Sector (1M)", b4, u4)), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("4. Sector (1M)", b4, u4, "자금 유입 주도 섹터 및 소외 섹터를 통한 흐름 파악.")), unsafe_allow_html=True)
             fig4=go.Figure(go.Bar(x=sec_df['수익률'],y=sec_df['섹터'],orientation='h', marker_color=[dash_c if v<0 else line_c for v in sec_df['수익률']]))
             fig4.update_layout(**radar_layout,showlegend=False)
             st.plotly_chart(fig4,use_container_width=True)
@@ -850,28 +853,28 @@ elif page == "🍫 8-Pack Radar":
     row2 = st.columns(4)
     with row2[0]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("5. Credit Spread", b5, u5)), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("5. Credit Spread", b5, u5, "하이일드/국채 비율. 하락 시 스마트머니 자금 이탈 암시.")), unsafe_allow_html=True)
             fig5=go.Figure(); fig5.add_trace(go.Scatter(x=df_view.index,y=df_view['HYG_IEF_Ratio'],line=dict(color=line_c,width=2.5)))
             fig5.add_trace(go.Scatter(x=df_view.index,y=df_view['HYG_IEF_MA50'],line=dict(color=dash_c,dash='dot')))
             fig5.update_layout(**radar_layout,showlegend=False)
             st.plotly_chart(fig5,use_container_width=True)
     with row2[1]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("6. Market Breadth", b6, u6)), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("6. Market Breadth", b6, u6, "가중/동일가중 비교. 소수 대형주만의 가짜 반등 판별.")), unsafe_allow_html=True)
             fig6=go.Figure(); fig6.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_20d_Ret'],name='QQQ',line=dict(color=line_c,width=2.5)))
             fig6.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQE_20d_Ret'],name='QQQE',line=dict(color=dash_c,dash='dot')))
             fig6.update_layout(**radar_layout,showlegend=False,yaxis=dict(tickformat='.0%'))
             st.plotly_chart(fig6,use_container_width=True)
     with row2[2]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("7. Gold / Equity", b7, u7)), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("7. Gold / Equity", b7, u7, "금/주식 상대 강도. 상승 시 안전 자산 선호도 증가.")), unsafe_allow_html=True)
             fig7=go.Figure(); fig7.add_trace(go.Scatter(x=df_view.index,y=df_view['GLD_SPY_Ratio'],line=dict(color=line_c,width=2.5)))
             fig7.add_trace(go.Scatter(x=df_view.index,y=df_view['GLD_SPY_MA50'],line=dict(color=dash_c,dash='dot')))
             fig7.update_layout(**radar_layout,showlegend=False)
             st.plotly_chart(fig7,use_container_width=True)
     with row2[3]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("8. USD (UUP)", b8, u8)), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("8. USD (UUP)", b8, u8, "달러 강세 지표. 상승 시 유동성 축소 및 빅테크 악재.")), unsafe_allow_html=True)
             fig8=go.Figure(); fig8.add_trace(go.Scatter(x=df_view.index,y=df_view['UUP'],line=dict(color=line_c,width=2.5)))
             fig8.add_trace(go.Scatter(x=df_view.index,y=df_view['UUP_MA50'],line=dict(color=dash_c,dash='dot')))
             fig8.update_layout(**radar_layout,showlegend=False)
