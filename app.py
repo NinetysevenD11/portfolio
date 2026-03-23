@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import yfinance as yf
 import pandas as pd
 import pandas_ta as ta
@@ -19,8 +20,9 @@ warnings.filterwarnings('ignore')
 # ==========================================
 st.set_page_config(page_title="AMLS V4.5 FINANCE STRATEGY", layout="wide", page_icon="🌿", initial_sidebar_state="expanded")
 
+# --- 🎨 테마 커스텀 시스템 추가 ---
 if 'main_color' not in st.session_state:
-    st.session_state.main_color = '#10B981'
+    st.session_state.main_color = '#10B981' # 기본값: 민트
 main_color = st.session_state.main_color
 
 def hex_to_rgb(hex_col):
@@ -37,7 +39,8 @@ def apply_theme(text):
     return text
 
 SECTOR_TICKERS = ['XLK','XLV','XLF','XLY','XLC','XLI','XLP','XLE','XLU','XLRE','XLB']
-CORE_TICKERS   = ['QQQ','TQQQ','SOXL','USD','QLD','SSO','SPY','SMH','GLD','^VIX','HYG','IEF','QQQE','UUP']
+# 🚨 12-Pack을 위한 신규 지표 티커 추가 (^TNX, BTC-USD, IWM)
+CORE_TICKERS   = ['QQQ','TQQQ','SOXL','USD','QLD','SSO','SPY','SMH','GLD','^VIX','HYG','IEF','QQQE','UUP','^TNX','BTC-USD','IWM']
 TICKERS        = CORE_TICKERS + SECTOR_TICKERS
 ASSET_LIST     = ['TQQQ','SOXL','USD','QLD','SSO','SPY','QQQ','GLD','CASH']
 
@@ -64,6 +67,7 @@ if 'portfolio' not in st.session_state:
                 for k, v in loaded.items():
                     st.session_state.portfolio[k] = v
         except: pass
+
 sanitize_portfolio()
 
 def save_portfolio_to_disk():
@@ -76,7 +80,8 @@ def save_portfolio_to_disk():
 def load_data():
     end_date   = datetime.now()
     start_date = end_date - timedelta(days=900)
-    data = yf.download(TICKERS, start=start_date.strftime("%Y-%m-%d"), end=end_date.strftime("%Y-%m-%d"), progress=False, auto_adjust=True)['Close']
+    data = yf.download(TICKERS, start=start_date.strftime("%Y-%m-%d"),
+                       end=end_date.strftime("%Y-%m-%d"), progress=False, auto_adjust=True)['Close']
     df = pd.DataFrame(index=data.index)
     for t in TICKERS: df[t] = data[t]
     df = df.ffill().bfill()
@@ -87,6 +92,7 @@ def load_data():
     df['SMH_MA50']      = df['SMH'].rolling(50).mean()
     df['VIX_MA5']       = df['^VIX'].rolling(5).mean()
     df['VIX_MA20']      = df['^VIX'].rolling(20).mean()
+    df['VIX_MA50']      = df['^VIX'].rolling(50).mean() # 신규
     df['SMH_3M_Ret']    = df['SMH'].pct_change(63)
     df['SMH_1M_Ret']    = df['SMH'].pct_change(21)
     df['SMH_RSI']       = ta.rsi(df['SMH'], length=14)
@@ -101,6 +107,12 @@ def load_data():
     df['QQQ_High52']    = df['QQQ'].rolling(252).max()
     df['QQQ_DD']        = (df['QQQ'] / df['QQQ_High52']) - 1
     df['UUP_MA50']      = df['UUP'].rolling(50).mean()
+    # 🚨 신규 지표 MA 계산
+    df['TNX_MA50']      = df['^TNX'].rolling(50).mean()
+    df['BTC_MA50']      = df['BTC-USD'].rolling(50).mean()
+    df['IWM_SPY_Ratio'] = df['IWM'] / df['SPY']
+    df['IWM_SPY_MA50']  = df['IWM_SPY_Ratio'].rolling(50).mean()
+    
     for sec in SECTOR_TICKERS: df[f'{sec}_1M'] = df[sec].pct_change(21)
     return df.dropna()
 
@@ -121,7 +133,7 @@ def apply_asymmetric_delay(targets):
         if t > hist_curr: hist_curr = t; pend = None; cnt = 0
         elif t < hist_curr:
             if t == pend:
-                cnt += 1; 
+                cnt += 1
                 if cnt >= 5: hist_curr = t; pend = None; cnt = 0
             else: pend = t; cnt = 1
         else: pend = None; cnt = 0
@@ -133,10 +145,12 @@ def load_custom_backtest_data(start_date, end_date):
     fetch_start = pd.to_datetime(start_date) - timedelta(days=400) 
     f_start_str = fetch_start.strftime("%Y-%m-%d")
     f_end_str = (pd.to_datetime(end_date) + timedelta(days=1)).strftime("%Y-%m-%d")
+    
     data = yf.download(TICKERS, start=f_start_str, end=f_end_str, progress=False, auto_adjust=True)['Close']
     bt_df = pd.DataFrame(index=data.index)
     for t in TICKERS: bt_df[t] = data[t]
     bt_df = bt_df.ffill().bfill()
+    
     bt_df['QQQ_MA20']      = bt_df['QQQ'].rolling(20).mean()
     bt_df['QQQ_MA50']      = bt_df['QQQ'].rolling(50).mean()
     bt_df['QQQ_MA200']     = bt_df['QQQ'].rolling(200).mean()
@@ -144,6 +158,7 @@ def load_custom_backtest_data(start_date, end_date):
     bt_df['SMH_MA50']      = bt_df['SMH'].rolling(50).mean()
     bt_df['VIX_MA5']       = bt_df['^VIX'].rolling(5).mean()
     bt_df['VIX_MA20']      = bt_df['^VIX'].rolling(20).mean()
+    bt_df['VIX_MA50']      = bt_df['^VIX'].rolling(50).mean()
     bt_df['SMH_3M_Ret']    = bt_df['SMH'].pct_change(63)
     bt_df['SMH_1M_Ret']    = bt_df['SMH'].pct_change(21)
     bt_df['SMH_RSI']       = ta.rsi(bt_df['SMH'], length=14)
@@ -158,15 +173,21 @@ def load_custom_backtest_data(start_date, end_date):
     bt_df['QQQ_High52']    = bt_df['QQQ'].rolling(252).max()
     bt_df['QQQ_DD']        = (bt_df['QQQ'] / bt_df['QQQ_High52']) - 1
     bt_df['UUP_MA50']      = bt_df['UUP'].rolling(50).mean()
+    bt_df['TNX_MA50']      = bt_df['^TNX'].rolling(50).mean()
+    bt_df['BTC_MA50']      = bt_df['BTC-USD'].rolling(50).mean()
+    bt_df['IWM_SPY_Ratio'] = bt_df['IWM'] / bt_df['SPY']
+    bt_df['IWM_SPY_MA50']  = bt_df['IWM_SPY_Ratio'].rolling(50).mean()
+    
     bt_df = bt_df.dropna()
     if bt_df.empty: return bt_df
+    
     bt_df['Target'] = bt_df.apply(get_target_v45, axis=1)
     bt_df['Regime'] = apply_asymmetric_delay(bt_df['Target'])
+    
     bt_df = bt_df.loc[pd.to_datetime(start_date):pd.to_datetime(end_date)]
     return bt_df
 
-REALTIME_TICKERS = ['QQQ','TQQQ','SMH','^VIX','HYG','IEF','UUP','GLD','SPY','SOXL','USD','QLD','SSO','USDKRW=X']
-
+REALTIME_TICKERS = ['QQQ','TQQQ','SMH','^VIX','HYG','IEF','UUP','GLD','SPY','SOXL','USD','QLD','SSO','USDKRW=X', '^TNX', 'BTC-USD', 'IWM']
 @st.cache_data(ttl=60)
 def fetch_realtime_prices():
     prices = {}
@@ -176,6 +197,7 @@ def fetch_realtime_prices():
             price = info.get('last_price') or info.get('lastPrice')
             if price and price > 0: prices[ticker] = float(price)
         except: pass
+    
     now_utc = datetime.now(timezone.utc)
     now_kst = now_utc + timedelta(hours=9)
     fetch_time = now_kst.strftime("%Y-%m-%d %H:%M:%S")
@@ -225,14 +247,18 @@ if 'QQQ' in rt_injected:
     df.at[last_index, 'QQQ_DD'] = (df.at[last_index, 'QQQ'] / df['QQQ_High52'].iloc[-1]) - 1
 if 'HYG' in rt_injected and 'IEF' in rt_injected:
     df.at[last_index, 'HYG_IEF_Ratio'] = df.at[last_index, 'HYG'] / df.at[last_index, 'IEF']
+if 'IWM' in rt_injected and 'SPY' in rt_injected:
+    df.at[last_index, 'IWM_SPY_Ratio'] = df.at[last_index, 'IWM'] / df.at[last_index, 'SPY']
 
 last_row = df.iloc[-1].copy()
+
 rt_ok    = len(rt_injected) >= 3
 rt_label = f"🟢 LIVE ({len(rt_injected)})" if rt_ok else "🟡 DELAYED"
 
 vix_close, vix_ma5, vix_ma20 = last_row['^VIX'], last_row['VIX_MA5'], last_row['VIX_MA20']
 qqq_close, qqq_ma50, qqq_ma200 = last_row['QQQ'], last_row['QQQ_MA50'], last_row['QQQ_MA200']
-smh_close, smh_ma50, smh_3m, smh_1m, smh_rsi = (last_row['SMH'], last_row['SMH_MA50'], last_row['SMH_3M_Ret'], last_row['SMH_1M_Ret'], last_row['SMH_RSI'])
+smh_close, smh_ma50, smh_3m, smh_1m, smh_rsi = (last_row['SMH'], last_row['SMH_MA50'],
+    last_row['SMH_3M_Ret'], last_row['SMH_1M_Ret'], last_row['SMH_RSI'])
 
 df['Target'] = df.apply(get_target_v45, axis=1)
 df['Regime'] = apply_asymmetric_delay(df['Target'])
@@ -271,7 +297,7 @@ radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15), paper_bgcolor=
 regime_info  = {1:("R1 BULL","풀 가동"),2:("R2 CORR","방어 진입"), 3:("R3 BEAR","대피"),4:("R4 PANIC","최대 방어")}
 
 # ==========================================
-# 2. CSS 
+# 2. CSS
 # ==========================================
 css_block = f"""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -447,7 +473,7 @@ sidebar_top.markdown(apply_theme(f"""
 
 st.sidebar.markdown("<div style='font-size:1.2rem; font-weight:900; color:#1a1a1a; margin-bottom:5px; padding: 0 15px;'>🧭 네비게이션</div>", unsafe_allow_html=True)
 page = st.sidebar.radio("MENU",
-    ["📊 Dashboard", "💼 Portfolio", "🍫 8-Pack Radar", "📈 Backtest Lab", "📰 Macro News"],
+    ["📊 Dashboard", "💼 Portfolio", "🍫 12-Pack Radar", "📈 Backtest Lab", "📰 Macro News"],
     label_visibility="collapsed")
 
 st.sidebar.markdown("---")
@@ -496,6 +522,7 @@ with c_info:
             st.rerun()
 
 st.markdown(apply_theme(f'<div style="border-bottom: 2px solid rgba({r_c},{g_c},{b_c},0.1); padding-top: 10px; margin-bottom: 25px;"></div>'), unsafe_allow_html=True)
+
 
 # ==========================================
 # 5. 페이지 라우팅
@@ -761,7 +788,7 @@ elif page == "💼 Portfolio":
         with st.container(border=True):
             st.markdown(apply_theme(rebal_html), unsafe_allow_html=True)
 
-elif page == "🍫 8-Pack Radar":
+elif page == "🍫 12-Pack Radar":
 
     df_view   = df.iloc[-120:]
     qqq_rsi   = last_row['QQQ_RSI']
@@ -781,38 +808,56 @@ elif page == "🍫 8-Pack Radar":
     sec_df    = pd.DataFrame(sec_data).sort_values(by='수익률', ascending=True)
     top_sec, bot_sec = sec_df.iloc[-1]['섹터'], sec_df.iloc[0]['섹터']
 
+    # 🚨 12-Pack 레이더 종합 분석 판단 로직 🚨
     risk_cnt, warn_cnt, safe_cnt = 0, 0, 0
     
+    # 1. DCA (RSI)
     if qqq_rsi < 40: safe_cnt+=1
     elif qqq_rsi > 70: warn_cnt+=1
     else: safe_cnt+=1
-        
+    # 2. Drawdown    
     if qqq_dd < -0.20: risk_cnt+=1
     elif qqq_dd < -0.10: warn_cnt+=1
     else: safe_cnt+=1
-        
+    # 3. Fear & Greed    
     if fg_score < 30: safe_cnt+=1
     elif fg_score > 70: warn_cnt+=1
     else: safe_cnt+=1
-        
+    # 4. Credit Spread    
     if last_row['HYG_IEF_Ratio'] < last_row['HYG_IEF_MA50']: risk_cnt+=1
     else: safe_cnt+=1
-        
+    # 5. Market Breadth    
     if (last_row['QQQ_20d_Ret']>0 and last_row['QQQE_20d_Ret']<0): warn_cnt+=1
     else: safe_cnt+=1
-        
+    # 6. Gold / Equity    
     if last_row['GLD_SPY_Ratio'] > last_row['GLD_SPY_MA50']: warn_cnt+=1
     else: safe_cnt+=1
-        
+    # 7. USD (UUP)    
     if last_row['UUP'] > last_row['UUP_MA50']: risk_cnt+=1
     else: safe_cnt+=1
+    # 8. US 10Y Yield (TNX)
+    if last_row['^TNX'] > last_row['TNX_MA50']: warn_cnt+=1
+    else: safe_cnt+=1
+    # 9. Bitcoin (BTC)
+    if last_row['BTC-USD'] < last_row['BTC_MA50']: warn_cnt+=1
+    else: safe_cnt+=1
+    # 10. Small Cap vs Large Cap (IWM/SPY)
+    if last_row['IWM_SPY_Ratio'] < last_row['IWM_SPY_MA50']: warn_cnt+=1
+    else: safe_cnt+=1
+    # 11. VIX Trend
+    if last_row['^VIX'] > last_row['VIX_MA50']: risk_cnt+=1
+    else: safe_cnt+=1
+    # 12. Sector Momentum -> Safe if top sector is not defensive
+    if top_sec not in ['UTIL', 'STAPLE', 'HEALTH']: safe_cnt+=1
+    else: warn_cnt+=1
 
-    if risk_cnt >= 2:
+    # 12-Pack 임계값 조정
+    if risk_cnt >= 3:
         radar_status = "🔴 극단적 위험 구간 (Risk-Off)"
         radar_msg = "복수의 매크로 지표에서 강력한 하락 경고가 발생했습니다. 레버리지 비중을 축소하고 현금 및 달러/금 비중을 늘려 방어적으로 대응할 시기입니다."
         radar_color = "#EF4444"
         bg_color = "rgba(239,68,68,0.1)"
-    elif warn_cnt >= 3 or risk_cnt == 1:
+    elif warn_cnt >= 4 or risk_cnt >= 1:
         radar_status = "🟡 변동성 주의 (Warning)"
         radar_msg = "시장의 균열 조짐이 감지되었습니다. 신규 매수를 보류하고 추세를 관망하며 포트폴리오 밸런스를 점검하십시오."
         radar_color = "#F59E0B"
@@ -823,7 +868,7 @@ elif page == "🍫 8-Pack Radar":
         radar_color = main_color
         bg_color = f"rgba({r_c},{g_c},{b_c},0.1)"
 
-    st.markdown('<h2 style="font-family:Outfit; font-size:1.8em; color:#0F172A; margin-bottom:15px;">🍫 8-Pack Radar</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 style="font-family:Outfit; font-size:1.8em; color:#0F172A; margin-bottom:15px;">🍫 12-Pack Radar</h2>', unsafe_allow_html=True)
 
     st.markdown(f"""
     <div class="glass-card" style="height:auto !important; margin-bottom: 25px; padding: 25px !important; border-left: 5px solid {radar_color} !important; background: {bg_color} !important;">
@@ -847,6 +892,12 @@ elif page == "🍫 8-Pack Radar":
     b6 = _badge("NARROW","orange","⚠️") if (last_row['QQQ_20d_Ret']>0 and last_row['QQQE_20d_Ret']<0) else _badge("BROAD","green","✅")
     b7 = _badge("GOLD","orange","⚠️") if last_row['GLD_SPY_Ratio']>last_row['GLD_SPY_MA50'] else _badge("EQUITY","green","✅")
     b8 = _badge("STRONG USD","red","🚨") if last_row['UUP']>last_row['UUP_MA50'] else _badge("WEAK USD","green","✅")
+    
+    # 🚨 신규 4종 배지 🚨
+    b9 = _badge("YIELD UP","red","🚨") if last_row['^TNX'] > last_row['TNX_MA50'] else _badge("YIELD DOWN","green","✅")
+    b10 = _badge("RISK OFF","red","🚨") if last_row['BTC-USD'] < last_row['BTC_MA50'] else _badge("RISK ON","green","✅")
+    b11 = _badge("NARROW","orange","⚠️") if last_row['IWM_SPY_Ratio'] < last_row['IWM_SPY_MA50'] else _badge("BROAD","green","✅")
+    b12 = _badge("EXPAND","red","🚨") if last_row['^VIX'] > last_row['VIX_MA50'] else _badge("SHRINK","green","✅")
 
     gauge_steps = [{'range':[0,25],'color':"rgba(239,68,68,0.5)"},{'range':[25,45],'color':"rgba(245,158,11,0.4)"},
                    {'range':[45,55],'color':"rgba(255,255,255,0.8)"},{'range':[55,75],'color':f"rgba({r_c},{g_c},{b_c},0.4)"},
@@ -863,6 +914,10 @@ elif page == "🍫 8-Pack Radar":
     u6 = "https://kr.tradingview.com/chart/?symbol=NASDAQ:QQQE"
     u7 = "https://kr.tradingview.com/chart/?symbol=AMEX:GLD"
     u8 = "https://kr.tradingview.com/chart/?symbol=AMEX:UUP"
+    u9 = "https://kr.tradingview.com/chart/?symbol=TVC:US10Y"
+    u10 = "https://kr.tradingview.com/chart/?symbol=BINANCE:BTCUSD"
+    u11 = "https://kr.tradingview.com/chart/?symbol=AMEX:IWM"
+    u12 = "https://kr.tradingview.com/chart/?symbol=CBOE:VIX"
 
     row1 = st.columns(4)
     with row1[0]:
@@ -922,12 +977,44 @@ elif page == "🍫 8-Pack Radar":
             fig8.add_trace(go.Scatter(x=df_view.index,y=df_view['UUP_MA50'],line=dict(color=dash_c,dash='dot')))
             fig8.update_layout(**radar_layout,showlegend=False)
             st.plotly_chart(fig8,use_container_width=True)
+            
+    # 🚨 신규 Row 3 (9 ~ 12 지표) 🚨
+    row3 = st.columns(4)
+    with row3[0]:
+        with st.container(border=True):
+            st.markdown(apply_theme(r_head("9. US 10Y Yield", b9, u9, "미 10년물 국채금리. 상승 시 기술주 밸류에이션 압박 및 투심 악화.")), unsafe_allow_html=True)
+            fig9=go.Figure(); fig9.add_trace(go.Scatter(x=df_view.index,y=df_view['^TNX'],line=dict(color=line_c,width=2.5)))
+            fig9.add_trace(go.Scatter(x=df_view.index,y=df_view['TNX_MA50'],line=dict(color=dash_c,dash='dot')))
+            fig9.update_layout(**radar_layout,showlegend=False)
+            st.plotly_chart(fig9,use_container_width=True)
+    with row3[1]:
+        with st.container(border=True):
+            st.markdown(apply_theme(r_head("10. Bitcoin Trend", b10, u10, "글로벌 유동성 및 윟험 자산 선호도 척도. 이탈 시 리스크 오프 경계.")), unsafe_allow_html=True)
+            fig10=go.Figure(); fig10.add_trace(go.Scatter(x=df_view.index,y=df_view['BTC-USD'],line=dict(color=line_c,width=2.5)))
+            fig10.add_trace(go.Scatter(x=df_view.index,y=df_view['BTC_MA50'],line=dict(color=dash_c,dash='dot')))
+            fig10.update_layout(**radar_layout,showlegend=False)
+            st.plotly_chart(fig10,use_container_width=True)
+    with row3[2]:
+        with st.container(border=True):
+            st.markdown(apply_theme(r_head("11. Russell / S&P 500", b11, u11, "소형주 대비 대형주 강도. 이탈 시 상승 피로도 누적 (TZA 숏 고려).")), unsafe_allow_html=True)
+            fig11=go.Figure(); fig11.add_trace(go.Scatter(x=df_view.index,y=df_view['IWM_SPY_Ratio'],line=dict(color=line_c,width=2.5)))
+            fig11.add_trace(go.Scatter(x=df_view.index,y=df_view['IWM_SPY_MA50'],line=dict(color=dash_c,dash='dot')))
+            fig11.update_layout(**radar_layout,showlegend=False)
+            st.plotly_chart(fig11,use_container_width=True)
+    with row3[3]:
+        with st.container(border=True):
+            st.markdown(apply_theme(r_head("12. VIX Trend", b12, u12, "VIX 50일선 추세. 유동성 흡수 부재 시 안정이나 돌파 시 하락장 경고.")), unsafe_allow_html=True)
+            fig12=go.Figure(); fig12.add_trace(go.Scatter(x=df_view.index,y=df_view['^VIX'],line=dict(color=line_c,width=2.5)))
+            fig12.add_trace(go.Scatter(x=df_view.index,y=df_view['VIX_MA50'],line=dict(color=dash_c,dash='dot')))
+            fig12.update_layout(**radar_layout,showlegend=False)
+            st.plotly_chart(fig12,use_container_width=True)
 
 elif page == "📈 Backtest Lab":
     st.markdown("<h2 style='font-family:Outfit; font-size:1.8em; color:#0F172A;'>📈 Backtest Lab</h2>", unsafe_allow_html=True)
 
     with st.container(border=True):
         st.markdown("<div style='font-size: 0.9em; font-weight: 700; color: #64748B; margin-bottom: 12px; text-transform:uppercase;'>⚙️ 백테스트 환경 설정</div>", unsafe_allow_html=True)
+        
         col_s, col_e, col_m = st.columns(3)
         with col_s:
             bt_start = st.date_input("시작일 (Start Date)", datetime(2020, 1, 1))
@@ -1080,7 +1167,6 @@ elif page == "📰 Macro News":
     if news_items:
         st.markdown("<div style='font-size: 1.4em; font-family: Outfit; font-weight: 800; color: #0F172A; margin-bottom: 20px;'>🖼️ LATEST HEADLINES</div>", unsafe_allow_html=True)
         
-        # 🚨 수정됨: f-string HTML 파싱 에러를 완벽하게 방지하기 위한 분리 처리 🚨
         cols = st.columns(3)
         for idx, item in enumerate(news_items):
             with cols[idx % 3]:
