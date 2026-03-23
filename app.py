@@ -232,7 +232,7 @@ radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15), paper_bgcolor=
 regime_info  = {1:("R1 BULL","풀 가동"),2:("R2 CORR","방어 진입"), 3:("R3 BEAR","대피"),4:("R4 PANIC","최대 방어")}
 
 # ==========================================
-# 2. Light Mint Glass UI CSS (상단 툴바 복원)
+# 2. Light Mint Glass UI CSS (상단 툴바 복원 및 사이드바 최적화)
 # ==========================================
 st.markdown("""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -256,14 +256,11 @@ st.markdown("""<style>
         font-family: 'Pretendard', sans-serif;
     }
     
-    /* 🚨 stHeader 숨김 속성 제거 🚨 (상단 테마변경, 즐겨찾기 바 노출) */
-    /* [data-testid="stHeader"] { background-color: transparent !important; } 주석 처리 또는 제거 */
-    
-    #MainMenu { visibility: hidden; } footer { visibility: hidden; }
+    /* 🚨 상단 메뉴바(Settings, Favorites 등)를 가렸던 범인들 완전 삭제 🚨 */
     .main .block-container { max-width: 1400px; padding-top: 1rem; padding-bottom: 2rem; }
 
     /* =========================================
-       🔥 사이드바 (가장 예뻤던 Hover Scale + Mint 형태 복구) 🔥
+       🔥 사이드바 (Hover Scale + Mint 형태) 🔥
        ========================================= */
     [data-testid="stSidebar"] {
         background: rgba(255, 255, 255, 0.7) !important;
@@ -272,7 +269,7 @@ st.markdown("""<style>
         border-right: 1px solid rgba(16, 185, 129, 0.15) !important;
     }
     
-    /* 1. 🚨 확실한 동그라미(Bullet) 제거 (어떤 버전이든 숨기기) 🚨 */
+    /* 1. 확실한 동그라미(Bullet) 제거 */
     [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"] > div:first-child,
     [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"] input { 
         display: none !important; 
@@ -314,7 +311,7 @@ st.markdown("""<style>
         transform-origin: left center !important;
     }
     
-    /* 5. Hover 효과 (마우스 올렸을 때: 연한 민트 배경 + 부드러운 스케일업) */
+    /* 5. Hover 효과 */
     [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"]:hover {
         background: rgba(16, 185, 129, 0.08) !important; 
     }
@@ -324,7 +321,7 @@ st.markdown("""<style>
         font-weight: 600 !important;
     }
     
-    /* 6. Checked 상태 (선택된 메뉴: 좌측 포인트 엣지 라인) */
+    /* 6. Checked 상태 */
     [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"]:has(input:checked) {
         background: rgba(16, 185, 129, 0.15) !important;
         box-shadow: inset 4px 0 0 #10B981 !important; 
@@ -737,7 +734,7 @@ elif page == "🍫 8-Pack Radar":
 
     st.markdown('<h2 style="font-family:Outfit; font-size:1.8em; color:#0F172A; margin-bottom:15px;">🍫 8-Pack Radar</h2>', unsafe_allow_html=True)
 
-    # 🚨 종합 조언 패널 렌더링 🚨
+    # 🚨 종합 조언 패널 화면 상단에 렌더링 🚨
     st.markdown(f"""
     <div class="glass-card" style="height:auto !important; margin-bottom: 25px; padding: 25px !important; border-left: 5px solid {radar_color} !important; background: {bg_color} !important;">
       <h3 style="color:{radar_color}; margin-bottom: 8px; font-size: 1.4em;">{radar_status}</h3>
