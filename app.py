@@ -1105,4 +1105,5 @@ elif page == "📰 Macro News":
                     <div style="font-weight:600; font-size:1em; line-height:1.4; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">
                         <a href="{item['link']}" target="_blank" style="color:#0F172A; text-decoration:none;">{item['title']}</a>
                     </div>
-                    <div style="color:#10B981; font-family:Outfit; font-size:
+                    <div style="color:#10B981; font-family:Outfit; font-size:0.85em; font-weight:800; margin-top:10px;">{item['date']}</div>
+                </div>"""), unsafe_allow_html=True)
