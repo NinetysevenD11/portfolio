@@ -186,6 +186,7 @@ def load_custom_backtest_data(start_date, end_date):
     return bt_df
 
 REALTIME_TICKERS = ['QQQ','TQQQ','SMH','^VIX','HYG','IEF','UUP','GLD','SPY','SOXL','USD','QLD','SSO','USDKRW=X', '^TNX', 'BTC-USD', 'IWM']
+
 @st.cache_data(ttl=60)
 def fetch_realtime_prices():
     prices = {}
@@ -478,7 +479,7 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("<div style='font-size:1.2rem; font-weight:900; color:#1a1a1a; margin-bottom:5px; padding: 0 15px;'>🎨 테마 색상 설정</div>", unsafe_allow_html=True)
 col1, col2, col3 = st.sidebar.columns([0.1, 1, 0.1])
 with col2:
-    new_color = st.color_picker("메인 컬러를 지정하세요", st.session_state.main_color, label_visibility="collapsed")
+    new_color = st.color_picker("메인 컬러를 지정하세요", st.session_state.main_color, label_visibility="collapsed", key="cp_theme")
     if new_color != st.session_state.main_color:
         st.session_state.main_color = new_color
         st.rerun()
@@ -520,7 +521,6 @@ with c_info:
             st.rerun()
 
 st.markdown(apply_theme(f'<div style="border-bottom: 2px solid rgba({r_c},{g_c},{b_c},0.1); padding-top: 10px; margin-bottom: 25px;"></div>'), unsafe_allow_html=True)
-
 
 # ==========================================
 # 5. 페이지 라우팅
@@ -624,6 +624,7 @@ elif page == "💼 Portfolio":
                 sanitize_portfolio() 
                 save_portfolio_to_disk()
                 st.success("포트폴리오 복구 완료")
+                st.rerun()
             except:
                 st.error("파일 형식 오류")
     with col_down:
@@ -645,11 +646,13 @@ elif page == "💼 Portfolio":
     df_editor = pd.DataFrame(editor_data)
     
     with st.container(border=True):
+        # 🚨 [버그 수정 구역] 고유 키 부여 🚨
         edited_df = st.data_editor(
             df_editor,
             disabled=["Asset"],
             hide_index=True,
             use_container_width=True,
+            key="pf_editor", 
             column_config={
                 "Shares": st.column_config.NumberColumn("Shares", format="%.6f"),
                 "Avg Price($)": st.column_config.NumberColumn("Avg Price($)", format="%.4f"),
@@ -657,14 +660,17 @@ elif page == "💼 Portfolio":
             }
         )
     
-    for _, row in edited_df.iterrows():
-        asset = row["Asset"]
-        st.session_state.portfolio[asset] = {
-            'shares': float(row["Shares"]),
-            'avg_price': float(row["Avg Price($)"]),
-            'fx': float(row["FX Rate(₩)"])
-        }
-    save_portfolio_to_disk()
+    # 🚨 [버그 수정 구역] 변경점이 있을 때만 세션 업데이트 후 1회 강제 동기화 🚨
+    if not edited_df.equals(df_editor):
+        for _, row in edited_df.iterrows():
+            asset = row["Asset"]
+            st.session_state.portfolio[asset] = {
+                'shares': float(row["Shares"]),
+                'avg_price': float(row["Avg Price($)"]),
+                'fx': float(row["FX Rate(₩)"])
+            }
+        save_portfolio_to_disk()
+        st.rerun()
     
     st.markdown("<br><h3 style='font-family:Outfit; color:#0F172A;'>⚖️ Action Plan</h3>", unsafe_allow_html=True)
     
@@ -1027,11 +1033,11 @@ elif page == "📈 Backtest Lab":
         
         col_s, col_e, col_m = st.columns(3)
         with col_s:
-            bt_start = st.date_input("시작일 (Start Date)", datetime(2020, 1, 1))
+            bt_start = st.date_input("시작일 (Start Date)", datetime(2020, 1, 1), key="bt_start_input")
         with col_e:
-            bt_end = st.date_input("종료일 (End Date)", datetime.today())
+            bt_end = st.date_input("종료일 (End Date)", datetime.today(), key="bt_end_input")
         with col_m:
-            monthly_cont = st.number_input("월 적립금 ($)", value=2000, step=500)
+            monthly_cont = st.number_input("월 적립금 ($)", value=2000, step=500, key="bt_monthly_input")
 
     with st.spinner("시뮬레이션 가동 중..."):
         bt_df = load_custom_backtest_data(bt_start, bt_end)
@@ -1055,7 +1061,6 @@ elif page == "📈 Backtest Lab":
                 val_o *= (1 + ret_o); val_q *= (1 + daily_ret['QQQ'].iloc[i])
                 val_qld *= (1 + daily_ret['QLD'].iloc[i]); val_tqqq *= (1 + daily_ret['TQQQ'].iloc[i])
                 
-                # 월 적립금 투입 로직
                 if today.month != yesterday.month:
                     val_o += monthly_cont
                     val_q += monthly_cont
@@ -1176,6 +1181,7 @@ elif page == "📰 Macro News":
 
     if news_items:
         st.markdown("<div style='font-size: 1.4em; font-family: Outfit; font-weight: 800; color: #0F172A; margin-bottom: 20px;'>🖼️ LATEST HEADLINES</div>", unsafe_allow_html=True)
+        
         cols = st.columns(3)
         for idx, item in enumerate(news_items):
             with cols[idx % 3]:
