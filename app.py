@@ -39,7 +39,6 @@ def apply_theme(text):
     return text
 
 SECTOR_TICKERS = ['XLK','XLV','XLF','XLY','XLC','XLI','XLP','XLE','XLU','XLRE','XLB']
-# 🚨 12-Pack을 위한 신규 지표 티커 추가 (^TNX, BTC-USD, IWM)
 CORE_TICKERS   = ['QQQ','TQQQ','SOXL','USD','QLD','SSO','SPY','SMH','GLD','^VIX','HYG','IEF','QQQE','UUP','^TNX','BTC-USD','IWM']
 TICKERS        = CORE_TICKERS + SECTOR_TICKERS
 ASSET_LIST     = ['TQQQ','SOXL','USD','QLD','SSO','SPY','QQQ','GLD','CASH']
@@ -92,7 +91,7 @@ def load_data():
     df['SMH_MA50']      = df['SMH'].rolling(50).mean()
     df['VIX_MA5']       = df['^VIX'].rolling(5).mean()
     df['VIX_MA20']      = df['^VIX'].rolling(20).mean()
-    df['VIX_MA50']      = df['^VIX'].rolling(50).mean() # 신규
+    df['VIX_MA50']      = df['^VIX'].rolling(50).mean()
     df['SMH_3M_Ret']    = df['SMH'].pct_change(63)
     df['SMH_1M_Ret']    = df['SMH'].pct_change(21)
     df['SMH_RSI']       = ta.rsi(df['SMH'], length=14)
@@ -107,7 +106,6 @@ def load_data():
     df['QQQ_High52']    = df['QQQ'].rolling(252).max()
     df['QQQ_DD']        = (df['QQQ'] / df['QQQ_High52']) - 1
     df['UUP_MA50']      = df['UUP'].rolling(50).mean()
-    # 🚨 신규 지표 MA 계산
     df['TNX_MA50']      = df['^TNX'].rolling(50).mean()
     df['BTC_MA50']      = df['BTC-USD'].rolling(50).mean()
     df['IWM_SPY_Ratio'] = df['IWM'] / df['SPY']
@@ -651,7 +649,12 @@ elif page == "💼 Portfolio":
             df_editor,
             disabled=["Asset"],
             hide_index=True,
-            use_container_width=True
+            use_container_width=True,
+            column_config={
+                "Shares": st.column_config.NumberColumn("Shares", format="%.6f"),
+                "Avg Price($)": st.column_config.NumberColumn("Avg Price($)", format="%.4f"),
+                "FX Rate(₩)": st.column_config.NumberColumn("FX Rate(₩)", format="%.2f")
+            }
         )
     
     for _, row in edited_df.iterrows():
@@ -808,63 +811,60 @@ elif page == "🍫 12-Pack Radar":
     sec_df    = pd.DataFrame(sec_data).sort_values(by='수익률', ascending=True)
     top_sec, bot_sec = sec_df.iloc[-1]['섹터'], sec_df.iloc[0]['섹터']
 
-    # 🚨 12-Pack 레이더 종합 분석 판단 로직 🚨
     risk_cnt, warn_cnt, safe_cnt = 0, 0, 0
     
-    # 1. DCA (RSI)
     if qqq_rsi < 40: safe_cnt+=1
     elif qqq_rsi > 70: warn_cnt+=1
     else: safe_cnt+=1
-    # 2. Drawdown    
+        
     if qqq_dd < -0.20: risk_cnt+=1
     elif qqq_dd < -0.10: warn_cnt+=1
     else: safe_cnt+=1
-    # 3. Fear & Greed    
+        
     if fg_score < 30: safe_cnt+=1
     elif fg_score > 70: warn_cnt+=1
     else: safe_cnt+=1
-    # 4. Credit Spread    
+        
     if last_row['HYG_IEF_Ratio'] < last_row['HYG_IEF_MA50']: risk_cnt+=1
     else: safe_cnt+=1
-    # 5. Market Breadth    
+        
     if (last_row['QQQ_20d_Ret']>0 and last_row['QQQE_20d_Ret']<0): warn_cnt+=1
     else: safe_cnt+=1
-    # 6. Gold / Equity    
+        
     if last_row['GLD_SPY_Ratio'] > last_row['GLD_SPY_MA50']: warn_cnt+=1
     else: safe_cnt+=1
-    # 7. USD (UUP)    
+        
     if last_row['UUP'] > last_row['UUP_MA50']: risk_cnt+=1
     else: safe_cnt+=1
-    # 8. US 10Y Yield (TNX)
+    
     if last_row['^TNX'] > last_row['TNX_MA50']: warn_cnt+=1
     else: safe_cnt+=1
-    # 9. Bitcoin (BTC)
+    
     if last_row['BTC-USD'] < last_row['BTC_MA50']: warn_cnt+=1
     else: safe_cnt+=1
-    # 10. Small Cap vs Large Cap (IWM/SPY)
+    
     if last_row['IWM_SPY_Ratio'] < last_row['IWM_SPY_MA50']: warn_cnt+=1
     else: safe_cnt+=1
-    # 11. VIX Trend
+    
     if last_row['^VIX'] > last_row['VIX_MA50']: risk_cnt+=1
     else: safe_cnt+=1
-    # 12. Sector Momentum -> Safe if top sector is not defensive
+    
     if top_sec not in ['UTIL', 'STAPLE', 'HEALTH']: safe_cnt+=1
     else: warn_cnt+=1
 
-    # 12-Pack 임계값 조정
     if risk_cnt >= 3:
         radar_status = "🔴 극단적 위험 구간 (Risk-Off)"
-        radar_msg = "복수의 매크로 지표에서 강력한 하락 경고가 발생했습니다. 레버리지 비중을 축소하고 현금 및 달러/금 비중을 늘려 방어적으로 대응할 시기입니다."
+        radar_msg = "시장에 극단적인 공포가 덮쳤습니다. 현재 복수의 매크로 지표가 시스템 리스크를 강하게 경고하고 있습니다. 단순한 조정을 넘어선 투매 구간일 확률이 높으니, 모든 레버리지 포지션을 해제하고 현금과 달러, 금 등 안전 자산 비중을 최대로 늘려 폭풍우가 지나가기를 기다리셔야 합니다."
         radar_color = "#EF4444"
         bg_color = "rgba(239,68,68,0.1)"
     elif warn_cnt >= 4 or risk_cnt >= 1:
         radar_status = "🟡 변동성 주의 (Warning)"
-        radar_msg = "시장의 균열 조짐이 감지되었습니다. 신규 매수를 보류하고 추세를 관망하며 포트폴리오 밸런스를 점검하십시오."
+        radar_msg = "시장 곳곳에서 균열의 조짐이 감지되고 있습니다. 표면적인 지수는 버티고 있을지 몰라도 내부 자금 흐름이나 심리 지표가 점차 악화되고 있습니다. 신규 매수는 철저히 보류하시고, 포트폴리오의 리스크 노출도를 점검하며 보수적인 관망 자세를 유지하는 것이 좋습니다."
         radar_color = "#F59E0B"
         bg_color = "rgba(245,158,11,0.1)"
     else:
         radar_status = "🟢 안정적 순항 (Safe)"
-        radar_msg = "매크로 지표들이 안정적인 추세를 지지하고 있습니다. 시스템 알고리즘이 제시하는 비중에 맞춰 추세 추종 전략을 전개하십시오."
+        radar_msg = "현재 글로벌 매크로 지표와 시장 심리가 모두 안정적인 궤도에 올라와 있습니다. 추세를 꺾을 만한 시스템 리스크가 보이지 않으니, AMLS 알고리즘이 제시하는 비중에 맞춰 자신감 있게 추세 추종 전략을 전개하시기 바랍니다. 수익을 극대화할 수 있는 구간입니다."
         radar_color = main_color
         bg_color = f"rgba({r_c},{g_c},{b_c},0.1)"
 
@@ -892,8 +892,6 @@ elif page == "🍫 12-Pack Radar":
     b6 = _badge("NARROW","orange","⚠️") if (last_row['QQQ_20d_Ret']>0 and last_row['QQQE_20d_Ret']<0) else _badge("BROAD","green","✅")
     b7 = _badge("GOLD","orange","⚠️") if last_row['GLD_SPY_Ratio']>last_row['GLD_SPY_MA50'] else _badge("EQUITY","green","✅")
     b8 = _badge("STRONG USD","red","🚨") if last_row['UUP']>last_row['UUP_MA50'] else _badge("WEAK USD","green","✅")
-    
-    # 🚨 신규 4종 배지 🚨
     b9 = _badge("YIELD UP","red","🚨") if last_row['^TNX'] > last_row['TNX_MA50'] else _badge("YIELD DOWN","green","✅")
     b10 = _badge("RISK OFF","red","🚨") if last_row['BTC-USD'] < last_row['BTC_MA50'] else _badge("RISK ON","green","✅")
     b11 = _badge("NARROW","orange","⚠️") if last_row['IWM_SPY_Ratio'] < last_row['IWM_SPY_MA50'] else _badge("BROAD","green","✅")
@@ -903,8 +901,21 @@ elif page == "🍫 12-Pack Radar":
                    {'range':[45,55],'color':"rgba(255,255,255,0.8)"},{'range':[55,75],'color':f"rgba({r_c},{g_c},{b_c},0.4)"},
                    {'range':[75,100],'color':f"rgba({r_c},{g_c},{b_c},0.6)"}]
 
+    desc1 = "나스닥 100(QQQ)의 단기 과열 및 침체를 나타내는 RSI 지표입니다. 30 밑으로 떨어지면 비이성적 투매가 진행 중이라는 뜻이니 훌륭한 분할 매수 기회로 삼고, 70을 넘어가면 환희에 취한 상태이니 신규 진입을 멈추고 현금을 확보하는 것이 좋습니다."
+    desc2 = "QQQ의 52주 고점 대비 하락률을 보여줍니다. -10%는 통상적인 건전한 조정의 하단 지지선 역할을 하지만, -20%를 깨고 내려간다면 이는 단순 조정을 넘어선 본격적인 약세장(Bear Market) 진입을 의미하므로 즉각적인 방어 태세가 필요합니다."
+    desc3 = "CNN에서 제공하는 시장 심리 종합 지표입니다. 대중이 극단적 공포(Extreme Fear)에 질려 주식을 집어 던질 때가 역사적으로 훌륭한 진입 시점이었습니다. 반대로 극단적 탐욕 구간에서는 수익을 실현하며 보수적으로 접근해야 합니다."
+    desc4 = "최근 1개월간 글로벌 스마트머니가 어느 섹터로 흘러갔는지 보여줍니다. 유틸리티나 필수소비재 같은 방어주가 상위권을 차지한다면 시장이 경기 침체를 대비하고 있다는 시그널이므로 포트폴리오 경계감을 한 단계 높여야 합니다."
+    desc5 = "안전한 국채 대신 위험한 하이일드 채권에 투자자들이 얼마나 자금을 넣고 있는지를 보여주는 척도입니다. 이 비율이 50일선 아래로 꺾인다면, 눈치 빠른 채권 시장의 스마트머니가 주식 시장보다 먼저 자금을 빼고 있다는 강력한 경고입니다."
+    desc6 = "나스닥 시총 가중 지수(QQQ)와 동일 가중 지수(QQQE)를 비교합니다. 지수는 오르는데 QQQE가 하락한다면, 소수의 대형 기술주들만 지수를 멱살 잡고 끌어올리는 '가짜 상승'일 확률이 높으므로 곧 조정이 올 수 있음을 암시합니다."
+    desc7 = "대표적 안전 자산인 금(GLD)과 위험 자산인 주식(SPY)의 상대 강도입니다. 이 비율이 50일선을 돌파해 상승 랠리를 펼친다면, 기관 투자자들이 주식 시장의 불확실성을 피해 금으로 대거 피신하고 있다는 구조적 리스크 오프 시그널입니다."
+    desc8 = "미국 달러의 강세를 보여주는 지수입니다. 달러가 50일선을 뚫고 강세로 전환되면 글로벌 유동성이 미국으로 빨려 들어가며 기술주에 큰 하방 압력을 가하게 됩니다. 강달러 국면에서는 주식 비중을 줄이는 것이 정석입니다."
+    desc9 = "모든 자산 밸류에이션의 중력 역할을 하는 미 10년물 국채금리입니다. 금리가 50일선을 뚫고 급등하면, 미래 실적을 당겨쓰는 나스닥 성장주들에게는 쥐약과도 같습니다. 금리 상승기에는 기술주 레버리지 투자를 극도로 조심해야 합니다."
+    desc10 = "제도권에 편입된 비트코인은 글로벌 잉여 유동성과 위험 감수 의지를 가장 예민하게 반영하는 선행 지표입니다. 비트코인이 50일선을 깨고 무너진다면 주식 시장에도 곧 유동성 가뭄이 닥칠 수 있다는 경고벨로 받아들여야 합니다."
+    desc11 = "대형주(SPY) 대비 중소형주(IWM)의 상대 강도입니다. 시장에 큰 호재 없이 러셀지수가 필요 이상으로 상승하고 채권시장을 살릴만한 뚜렷한 재료가 없을 때, 이 지표의 괴리를 활용해 러셀 숏 상품(TZA 등) 매수를 전략적으로 고려해 볼 수 있습니다."
+    desc12 = "공포지수(VIX)의 추세입니다. 시장에서 유동성이 충분히 흡수되지 않으면 VIX 지수는 안정적인 하방 경직성을 가지게 됩니다. 반대로 이 선을 강하게 뚫고 올라온다면 평온했던 시장에 폭풍우가 몰아치기 시작했다는 시스템 패닉 시그널입니다."
+
     def r_head(title, badge, url, desc):
-        return f'<a href="{url}" target="_blank" class="radar-link"><div class="radar-link-title" style="margin-bottom:4px;">{title} 🔗{badge}</div></a><div style="font-size:0.78em; color:var(--text-muted); margin-bottom:12px; line-height:1.3; letter-spacing:-0.3px;">{desc}</div>'
+        return f'<a href="{url}" target="_blank" class="radar-link"><div class="radar-link-title" style="margin-bottom:4px;">{title} 🔗{badge}</div></a><div style="font-size:0.78em; color:var(--text-muted); margin-bottom:12px; line-height:1.4; letter-spacing:-0.3px; word-break: keep-all;">{desc}</div>'
 
     u1 = "https://kr.tradingview.com/chart/?symbol=NASDAQ:QQQ"
     u2 = "https://kr.tradingview.com/chart/?symbol=NASDAQ:QQQ"
@@ -922,28 +933,28 @@ elif page == "🍫 12-Pack Radar":
     row1 = st.columns(4)
     with row1[0]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("1. DCA (RSI)", b1, u1, "QQQ 단기 과열/침체. 30 이하 매수, 70 이상 분할 매도.")), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("1. DCA (RSI)", b1, u1, desc1)), unsafe_allow_html=True)
             fig1=go.Figure(); fig1.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_RSI'],line=dict(color=line_c,width=2.5)))
             fig1.add_hline(y=70,line_dash='dash',line_color=dash_c); fig1.add_hline(y=30,line_dash='dash',line_color=rsi_low_c)
             fig1.update_layout(**radar_layout,yaxis=dict(range=[10,90]),showlegend=False)
             st.plotly_chart(fig1,use_container_width=True)
     with row1[1]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("2. Drawdown", b2, u2, "고점 대비 하락률. -10%는 1차 지지선, -20% 약세장 의미.")), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("2. Drawdown", b2, u2, desc2)), unsafe_allow_html=True)
             fig2=go.Figure(); fig2.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_DD'],fill='tozeroy',line=dict(color=dash_c,width=2.5)))
             fig2.update_layout(**radar_layout,yaxis=dict(tickformat='.0%'),showlegend=False)
             st.plotly_chart(fig2,use_container_width=True)
     with row1[2]:
         with st.container(border=True):
-            fg_title = "3. Fear & Greed (CNN)" if cnn_fgi is not None else "3. Fear & Greed (자체)"
-            st.markdown(apply_theme(r_head(fg_title, b3, u3, "시장 심리 종합. 극단적 공포는 종종 훌륭한 매수 기회.")), unsafe_allow_html=True)
+            fg_title = "3. Fear & Greed"
+            st.markdown(apply_theme(r_head(fg_title, b3, u3, desc3)), unsafe_allow_html=True)
             fig3=go.Figure(go.Indicator(mode="gauge+number",value=fg_score,domain={'x':[0,1],'y':[0,1]},
                 gauge={'axis':{'range':[0,100]},'bar':{'color':line_c},'steps':gauge_steps}))
             fig3.update_layout(height=200,margin=dict(l=15,r=15,t=10,b=10),paper_bgcolor=b_color,font=dict(family="Pretendard",color=t_color))
             st.plotly_chart(fig3,use_container_width=True)
     with row1[3]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("4. Sector (1M)", b4, u4, "자금 유입 주도 섹터 및 소외 섹터를 통한 흐름 파악.")), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("4. Sector (1M)", b4, u4, desc4)), unsafe_allow_html=True)
             fig4=go.Figure(go.Bar(x=sec_df['수익률'],y=sec_df['섹터'],orientation='h', marker_color=[dash_c if v<0 else line_c for v in sec_df['수익률']]))
             fig4.update_layout(**radar_layout,showlegend=False)
             st.plotly_chart(fig4,use_container_width=True)
@@ -951,59 +962,58 @@ elif page == "🍫 12-Pack Radar":
     row2 = st.columns(4)
     with row2[0]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("5. Credit Spread", b5, u5, "하이일드/국채 비율. 하락 시 스마트머니 자금 이탈 암시.")), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("5. Credit Spread", b5, u5, desc5)), unsafe_allow_html=True)
             fig5=go.Figure(); fig5.add_trace(go.Scatter(x=df_view.index,y=df_view['HYG_IEF_Ratio'],line=dict(color=line_c,width=2.5)))
             fig5.add_trace(go.Scatter(x=df_view.index,y=df_view['HYG_IEF_MA50'],line=dict(color=dash_c,dash='dot')))
             fig5.update_layout(**radar_layout,showlegend=False)
             st.plotly_chart(fig5,use_container_width=True)
     with row2[1]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("6. Market Breadth", b6, u6, "가중/동일가중 비교. 소수 대형주만의 가짜 반등 판별.")), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("6. Market Breadth", b6, u6, desc6)), unsafe_allow_html=True)
             fig6=go.Figure(); fig6.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQ_20d_Ret'],name='QQQ',line=dict(color=line_c,width=2.5)))
             fig6.add_trace(go.Scatter(x=df_view.index,y=df_view['QQQE_20d_Ret'],name='QQQE',line=dict(color=dash_c,dash='dot')))
             fig6.update_layout(**radar_layout,showlegend=False,yaxis=dict(tickformat='.0%'))
             st.plotly_chart(fig6,use_container_width=True)
     with row2[2]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("7. Gold / Equity", b7, u7, "금/주식 상대 강도. 상승 시 안전 자산 선호도 증가.")), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("7. Gold / Equity", b7, u7, desc7)), unsafe_allow_html=True)
             fig7=go.Figure(); fig7.add_trace(go.Scatter(x=df_view.index,y=df_view['GLD_SPY_Ratio'],line=dict(color=line_c,width=2.5)))
             fig7.add_trace(go.Scatter(x=df_view.index,y=df_view['GLD_SPY_MA50'],line=dict(color=dash_c,dash='dot')))
             fig7.update_layout(**radar_layout,showlegend=False)
             st.plotly_chart(fig7,use_container_width=True)
     with row2[3]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("8. USD (UUP)", b8, u8, "달러 강세 지표. 상승 시 유동성 축소 및 빅테크 악재.")), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("8. USD (UUP)", b8, u8, desc8)), unsafe_allow_html=True)
             fig8=go.Figure(); fig8.add_trace(go.Scatter(x=df_view.index,y=df_view['UUP'],line=dict(color=line_c,width=2.5)))
             fig8.add_trace(go.Scatter(x=df_view.index,y=df_view['UUP_MA50'],line=dict(color=dash_c,dash='dot')))
             fig8.update_layout(**radar_layout,showlegend=False)
             st.plotly_chart(fig8,use_container_width=True)
             
-    # 🚨 신규 Row 3 (9 ~ 12 지표) 🚨
     row3 = st.columns(4)
     with row3[0]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("9. US 10Y Yield", b9, u9, "미 10년물 국채금리. 상승 시 기술주 밸류에이션 압박 및 투심 악화.")), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("9. US 10Y Yield", b9, u9, desc9)), unsafe_allow_html=True)
             fig9=go.Figure(); fig9.add_trace(go.Scatter(x=df_view.index,y=df_view['^TNX'],line=dict(color=line_c,width=2.5)))
             fig9.add_trace(go.Scatter(x=df_view.index,y=df_view['TNX_MA50'],line=dict(color=dash_c,dash='dot')))
             fig9.update_layout(**radar_layout,showlegend=False)
             st.plotly_chart(fig9,use_container_width=True)
     with row3[1]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("10. Bitcoin Trend", b10, u10, "글로벌 유동성 및 윟험 자산 선호도 척도. 이탈 시 리스크 오프 경계.")), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("10. Bitcoin Trend", b10, u10, desc10)), unsafe_allow_html=True)
             fig10=go.Figure(); fig10.add_trace(go.Scatter(x=df_view.index,y=df_view['BTC-USD'],line=dict(color=line_c,width=2.5)))
             fig10.add_trace(go.Scatter(x=df_view.index,y=df_view['BTC_MA50'],line=dict(color=dash_c,dash='dot')))
             fig10.update_layout(**radar_layout,showlegend=False)
             st.plotly_chart(fig10,use_container_width=True)
     with row3[2]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("11. Russell / S&P 500", b11, u11, "소형주 대비 대형주 강도. 이탈 시 상승 피로도 누적 (TZA 숏 고려).")), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("11. Russell / S&P 500", b11, u11, desc11)), unsafe_allow_html=True)
             fig11=go.Figure(); fig11.add_trace(go.Scatter(x=df_view.index,y=df_view['IWM_SPY_Ratio'],line=dict(color=line_c,width=2.5)))
             fig11.add_trace(go.Scatter(x=df_view.index,y=df_view['IWM_SPY_MA50'],line=dict(color=dash_c,dash='dot')))
             fig11.update_layout(**radar_layout,showlegend=False)
             st.plotly_chart(fig11,use_container_width=True)
     with row3[3]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("12. VIX Trend", b12, u12, "VIX 50일선 추세. 유동성 흡수 부재 시 안정이나 돌파 시 하락장 경고.")), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head("12. VIX Trend", b12, u12, desc12)), unsafe_allow_html=True)
             fig12=go.Figure(); fig12.add_trace(go.Scatter(x=df_view.index,y=df_view['^VIX'],line=dict(color=line_c,width=2.5)))
             fig12.add_trace(go.Scatter(x=df_view.index,y=df_view['VIX_MA50'],line=dict(color=dash_c,dash='dot')))
             fig12.update_layout(**radar_layout,showlegend=False)
@@ -1166,7 +1176,6 @@ elif page == "📰 Macro News":
 
     if news_items:
         st.markdown("<div style='font-size: 1.4em; font-family: Outfit; font-weight: 800; color: #0F172A; margin-bottom: 20px;'>🖼️ LATEST HEADLINES</div>", unsafe_allow_html=True)
-        
         cols = st.columns(3)
         for idx, item in enumerate(news_items):
             with cols[idx % 3]:
