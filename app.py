@@ -135,7 +135,7 @@ def apply_asymmetric_delay(targets):
 # --- 🚀 백테스트 전용 데이터 로더 ---
 @st.cache_data(ttl=3600)
 def load_custom_backtest_data(start_date, end_date):
-    fetch_start = pd.to_datetime(start_date) - timedelta(days=400) # 200일 이평선 계산을 위한 버퍼 확보
+    fetch_start = pd.to_datetime(start_date) - timedelta(days=400) # 200일 이평선 계산 버퍼
     f_start_str = fetch_start.strftime("%Y-%m-%d")
     f_end_str = (pd.to_datetime(end_date) + timedelta(days=1)).strftime("%Y-%m-%d")
     
@@ -254,7 +254,7 @@ if curr_regime == live_regime: regime_committee_msg = "🟢 조건 부합 (안�
 elif live_regime > curr_regime: regime_committee_msg = f"🔴 R{live_regime} 하향 즉시 반영"
 else: regime_committee_msg = f"🟡 R{live_regime} 승급 대기 (5일)"
 
-# 차트 전역 색상 변수 (사용자 정의 색상 연동)
+# 차트 전역 색상
 b_color = 'rgba(0,0,0,0)'
 t_color = '#1E293B'
 line_c = main_color
@@ -265,7 +265,7 @@ radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15), paper_bgcolor=
 regime_info  = {1:("R1 BULL","풀 가동"),2:("R2 CORR","방어 진입"), 3:("R3 BEAR","대피"),4:("R4 PANIC","최대 방어")}
 
 # ==========================================
-# 2. CSS (사이드바 즐겨찾기 스타일 통일 + V4.5 입체 카드)
+# 2. CSS (사이드바 완벽 통일 + V4.5 입체 카드)
 # ==========================================
 css_block = f"""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -292,25 +292,27 @@ css_block = f"""<style>
     .main .block-container {{ max-width: 1400px; padding-top: 1rem; padding-bottom: 2rem; }}
 
     /* =========================================
-       🔥 사이드바: 즐겨찾기 링크 스타일로 완벽 통일 🔥
+       🔥 사이드바: 즐겨찾기 링크 스타일로 100% 완벽 통일 🔥
        ========================================= */
     [data-testid="stSidebar"] {{
         background: #f0f0e8 !important; 
         border-right: 2.5px solid #1a1a1a !important; 
     }}
     
+    /* 1. 기본 라디오 버튼 동그라미 완전히 삭제 */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] label[data-baseweb="radio"] > div:first-child,
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] label[data-baseweb="radio"] svg {{ 
         display: none !important; opacity: 0 !important; width: 0px !important; height: 0px !important; margin: 0 !important; padding: 0 !important; 
     }}
     
+    /* 2. 메뉴 컨테이너 패딩 조절 */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] {{ 
-        gap: 0px; 
-        padding: 0px 15px; 
+        gap: 0px !important; 
+        padding: 0 15px !important; 
         background: transparent !important; 
     }}
     
-    /* 탭 메뉴 기본 상태 (sidebar-link 클래스와 완전히 동일) */
+    /* 3. 탭 메뉴 기본 상태 (즐겨찾기 링크 박스와 100% 동일) */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label {{
         display: flex !important;
         align-items: center !important;
@@ -318,7 +320,7 @@ css_block = f"""<style>
         border: 2.5px solid transparent !important;
         border-radius: 10px !important;
         padding: 8px 12px !important;
-        margin-bottom: 4px !important;
+        margin-bottom: 6px !important;
         cursor: pointer !important; 
         width: 100% !important; 
         transition: all 0.2s !important;
@@ -333,7 +335,7 @@ css_block = f"""<style>
         transform: none !important;
     }}
     
-    /* Hover 및 활성화(Checked) 상태 (튀어나오는 효과) */
+    /* 4. Hover 및 활성화(Checked) 상태 (튀어나오고 굵은 테두리 생성) */
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label:hover,
     [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) {{
         border: 2.5px solid #1a1a1a !important;
@@ -341,15 +343,10 @@ css_block = f"""<style>
         transform: translateX(3px) !important;
         box-shadow: 2px 2px 0px #1a1a1a !important;
     }}
-    
-    /* 활성화된 탭 글씨색 (커스텀 메인 컬러) */
-    [data-testid="stSidebar"] div.row-widget.stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) p {{
-        color: var(--accent-mint) !important; 
-    }}
 
     /* 하단 즐겨찾기 사이드바 링크 스타일 */
     .sidebar-link {{ 
-        display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; 
+        display: flex; align-items: center; padding: 8px 12px; margin-bottom: 6px; 
         border-radius: 10px; border: 2.5px solid transparent; text-decoration: none !important; 
         color: #1a1a1a !important; font-weight: 800; font-size: 0.95rem; 
         transition: all 0.2s; background: rgba(0,0,0,0.03); 
@@ -432,7 +429,8 @@ sidebar_top.markdown(apply_theme(f"""
     </div>
 </div>"""), unsafe_allow_html=True)
 
-# 탭 메뉴 아이콘 일체화
+# 📌 사이드바 메뉴 탭 (즐겨찾기 링크와 동일한 UI)
+st.sidebar.markdown("<div style='font-size:1.2rem; font-weight:900; color:#1a1a1a; margin-bottom:5px; padding: 0 15px;'>🧭 네비게이션</div>", unsafe_allow_html=True)
 page = st.sidebar.radio("MENU",
     ["📊 Dashboard", "💼 Portfolio", "🍫 8-Pack Radar", "📈 Backtest Lab", "📰 Macro News"],
     label_visibility="collapsed")
