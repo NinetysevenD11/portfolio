@@ -30,7 +30,6 @@ def hex_to_rgb(hex_col):
     return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
 r_c, g_c, b_c = hex_to_rgb(main_color)
 
-# 대시보드 전체의 하드코딩된 민트색을 사용자가 선택한 색상으로 동기화하는 도우미 함수
 def apply_theme(text):
     if not isinstance(text, str): return text
     text = text.replace("#10B981", main_color)
@@ -109,6 +108,74 @@ def load_data():
     for sec in SECTOR_TICKERS: df[f'{sec}_1M'] = df[sec].pct_change(21)
     return df.dropna()
 
+def get_target_v45(row):
+    if row['^VIX'] > 40: return 4
+    credit_stress = row['HYG_IEF_Ratio'] < row['HYG_IEF_MA20']
+    if row['QQQ'] < row['QQQ_MA200']: return 3
+    if row['QQQ_DD'] < -0.10 and credit_stress: return 3
+    bull_trend = row['QQQ'] >= row['QQQ_MA200'] and row['QQQ_MA50'] >= row['QQQ_MA200']
+    low_vix    = row['VIX_MA20'] < 22
+    credit_ok  = row['HYG_IEF_Ratio'] >= row['HYG_IEF_MA50']
+    if bull_trend and low_vix and credit_ok: return 1
+    return 2
+
+def apply_asymmetric_delay(targets):
+    res = []; hist_curr = 3; pend = None; cnt = 0
+    for t in targets:
+        if t > hist_curr: hist_curr = t; pend = None; cnt = 0
+        elif t < hist_curr:
+            if t == pend:
+                cnt += 1
+                if cnt >= 5: hist_curr = t; pend = None; cnt = 0
+            else: pend = t; cnt = 1
+        else: pend = None; cnt = 0
+        res.append(hist_curr)
+    return pd.Series(res, index=targets.index).shift(1).bfill()
+
+# --- 🚀 백테스트 전용 데이터 로더 추가 ---
+@st.cache_data(ttl=3600)
+def load_custom_backtest_data(start_date, end_date):
+    fetch_start = pd.to_datetime(start_date) - timedelta(days=400) # 200일 이평선 계산을 위한 버퍼 확보
+    f_start_str = fetch_start.strftime("%Y-%m-%d")
+    f_end_str = (pd.to_datetime(end_date) + timedelta(days=1)).strftime("%Y-%m-%d")
+    
+    data = yf.download(TICKERS, start=f_start_str, end=f_end_str, progress=False, auto_adjust=True)['Close']
+    bt_df = pd.DataFrame(index=data.index)
+    for t in TICKERS: bt_df[t] = data[t]
+    bt_df = bt_df.ffill().bfill()
+    
+    bt_df['QQQ_MA20']      = bt_df['QQQ'].rolling(20).mean()
+    bt_df['QQQ_MA50']      = bt_df['QQQ'].rolling(50).mean()
+    bt_df['QQQ_MA200']     = bt_df['QQQ'].rolling(200).mean()
+    bt_df['TQQQ_MA200']    = bt_df['TQQQ'].rolling(200).mean()
+    bt_df['SMH_MA50']      = bt_df['SMH'].rolling(50).mean()
+    bt_df['VIX_MA5']       = bt_df['^VIX'].rolling(5).mean()
+    bt_df['VIX_MA20']      = bt_df['^VIX'].rolling(20).mean()
+    bt_df['SMH_3M_Ret']    = bt_df['SMH'].pct_change(63)
+    bt_df['SMH_1M_Ret']    = bt_df['SMH'].pct_change(21)
+    bt_df['SMH_RSI']       = ta.rsi(bt_df['SMH'], length=14)
+    bt_df['HYG_IEF_Ratio'] = bt_df['HYG'] / bt_df['IEF']
+    bt_df['HYG_IEF_MA20']  = bt_df['HYG_IEF_Ratio'].rolling(20).mean()
+    bt_df['HYG_IEF_MA50']  = bt_df['HYG_IEF_Ratio'].rolling(50).mean()
+    bt_df['QQQ_20d_Ret']   = bt_df['QQQ'].pct_change(20)
+    bt_df['QQQE_20d_Ret']  = bt_df['QQQE'].pct_change(20)
+    bt_df['QQQ_RSI']       = ta.rsi(bt_df['QQQ'], length=14)
+    bt_df['GLD_SPY_Ratio'] = bt_df['GLD'] / bt_df['SPY']
+    bt_df['GLD_SPY_MA50']  = bt_df['GLD_SPY_Ratio'].rolling(50).mean()
+    bt_df['QQQ_High52']    = bt_df['QQQ'].rolling(252).max()
+    bt_df['QQQ_DD']        = (bt_df['QQQ'] / bt_df['QQQ_High52']) - 1
+    bt_df['UUP_MA50']      = bt_df['UUP'].rolling(50).mean()
+    
+    bt_df = bt_df.dropna()
+    if bt_df.empty: return bt_df
+    
+    # Target 및 Regime 계산 후 날짜 필터링 (과거 흐름이 반영된 정확한 상태 머신 유지)
+    bt_df['Target'] = bt_df.apply(get_target_v45, axis=1)
+    bt_df['Regime'] = apply_asymmetric_delay(bt_df['Target'])
+    
+    bt_df = bt_df.loc[pd.to_datetime(start_date):pd.to_datetime(end_date)]
+    return bt_df
+
 REALTIME_TICKERS = ['QQQ','TQQQ','SMH','^VIX','HYG','IEF','UUP','GLD','SPY','SOXL','USD','QLD','SSO','USDKRW=X']
 @st.cache_data(ttl=60)
 def fetch_realtime_prices():
@@ -160,30 +227,6 @@ qqq_close, qqq_ma50, qqq_ma200 = last_row['QQQ'], last_row['QQQ_MA50'], last_row
 smh_close, smh_ma50, smh_3m, smh_1m, smh_rsi = (last_row['SMH'], last_row['SMH_MA50'],
     last_row['SMH_3M_Ret'], last_row['SMH_1M_Ret'], last_row['SMH_RSI'])
 
-def apply_asymmetric_delay(targets):
-    res = []; hist_curr = 3; pend = None; cnt = 0
-    for t in targets:
-        if t > hist_curr: hist_curr = t; pend = None; cnt = 0
-        elif t < hist_curr:
-            if t == pend:
-                cnt += 1
-                if cnt >= 5: hist_curr = t; pend = None; cnt = 0
-            else: pend = t; cnt = 1
-        else: pend = None; cnt = 0
-        res.append(hist_curr)
-    return pd.Series(res, index=targets.index).shift(1).bfill()
-
-def get_target_v45(row):
-    if row['^VIX'] > 40: return 4
-    credit_stress = row['HYG_IEF_Ratio'] < row['HYG_IEF_MA20']
-    if row['QQQ'] < row['QQQ_MA200']: return 3
-    if row['QQQ_DD'] < -0.10 and credit_stress: return 3
-    bull_trend = row['QQQ'] >= row['QQQ_MA200'] and row['QQQ_MA50'] >= row['QQQ_MA200']
-    low_vix    = row['VIX_MA20'] < 22
-    credit_ok  = row['HYG_IEF_Ratio'] >= row['HYG_IEF_MA50']
-    if bull_trend and low_vix and credit_ok: return 1
-    return 2
-
 df['Target'] = df.apply(get_target_v45, axis=1)
 df['Regime'] = apply_asymmetric_delay(df['Target'])
 
@@ -192,6 +235,7 @@ hist_regime   = int(df.iloc[-1]['Regime'])
 curr_regime   = live_regime if live_regime > hist_regime else hist_regime
 target_regime = live_regime
 
+# 반도체 진입 조건
 smh_c1 = smh_close > smh_ma50
 smh_c2 = (smh_3m > 0.05 or smh_1m > 0.10)
 smh_c3 = smh_rsi > 50
@@ -840,90 +884,106 @@ elif page == "🍫 8-Pack Radar":
 elif page == "📈 Backtest Lab":
     st.markdown("<h2 style='font-family:Outfit; font-size:1.8em; color:#0F172A;'>📈 Backtest Lab</h2>", unsafe_allow_html=True)
 
+    # 🚨 추가된 기간 설정 패널 🚨
+    st.markdown(apply_theme('<div class="glass-card" style="height:auto !important; padding: 20px !important; margin-bottom: 25px;">'), unsafe_allow_html=True)
+    st.markdown("<div style='font-size: 0.9em; font-weight: 700; color: #64748B; margin-bottom: 12px; text-transform:uppercase;'>⚙️ 백테스트 기간 설정</div>", unsafe_allow_html=True)
+    
+    col_s, col_e = st.columns(2)
+    with col_s:
+        bt_start = st.date_input("시작일 (Start Date)", datetime.today() - timedelta(days=1095)) # 기본값 3년
+    with col_e:
+        bt_end = st.date_input("종료일 (End Date)", datetime.today())
+    st.markdown('</div>', unsafe_allow_html=True)
+
     with st.spinner("시뮬레이션 가동 중..."):
-        daily_ret = df[['QQQ','TQQQ','SOXL','USD','QLD','SSO','SPY','SMH','GLD']].pct_change().fillna(0)
-        w_orig = get_weights_v45(df['Regime'].iloc[0], False)
+        bt_df = load_custom_backtest_data(bt_start, bt_end)
         
-        val_o, val_q, val_qld, val_tqqq = 10000, 10000, 10000, 10000
-        hist_o, hist_q, hist_qld, hist_tqqq = [val_o], [val_q], [val_qld], [val_tqqq]
-        
-        for i in range(1, len(df)):
-            ret_o = sum(w_orig.get(t,0) * daily_ret[t].iloc[i] for t in w_orig if t in daily_ret.columns)
-            val_o *= (1 + ret_o); val_q *= (1 + daily_ret['QQQ'].iloc[i])
-            val_qld *= (1 + daily_ret['QLD'].iloc[i]); val_tqqq *= (1 + daily_ret['TQQQ'].iloc[i])
-            hist_o.append(val_o); hist_q.append(val_q); hist_qld.append(val_qld); hist_tqqq.append(val_tqqq)
+        if bt_df.empty:
+            st.error("해당 기간의 데이터가 존재하지 않거나 부족합니다. 기간을 조정해주세요.")
+        else:
+            daily_ret = bt_df[['QQQ','TQQQ','SOXL','USD','QLD','SSO','SPY','SMH','GLD']].pct_change().fillna(0)
+            w_orig = get_weights_v45(bt_df['Regime'].iloc[0], False)
             
-            smh_cond_i = (df['SMH'].iloc[i] > df['SMH_MA50'].iloc[i]) and (df['SMH_3M_Ret'].iloc[i] > 0.05) and (df['SMH_RSI'].iloc[i] > 50)
-            w_orig = get_weights_v45(df['Regime'].iloc[i], smh_cond_i)
+            val_o, val_q, val_qld, val_tqqq = 10000, 10000, 10000, 10000
+            hist_o, hist_q, hist_qld, hist_tqqq = [val_o], [val_q], [val_qld], [val_tqqq]
             
-        res_df = pd.DataFrame(index=df.index)
-        res_df['V4.5'], res_df['QQQ'], res_df['QLD'], res_df['TQQQ'] = hist_o, hist_q, hist_qld, hist_tqqq
-        days = (res_df.index[-1] - res_df.index[0]).days
-        
-        def calc_metrics(series):
-            ret = (series[-1]/series[0]) - 1
-            cagr = (series[-1]/series[0]) ** (365.25 / days) - 1 if days > 0 else 0
-            mdd = ((series / series.cummax()) - 1).min()
-            return ret, cagr, mdd
+            for i in range(1, len(bt_df)):
+                ret_o = sum(w_orig.get(t,0) * daily_ret[t].iloc[i] for t in w_orig if t in daily_ret.columns)
+                val_o *= (1 + ret_o); val_q *= (1 + daily_ret['QQQ'].iloc[i])
+                val_qld *= (1 + daily_ret['QLD'].iloc[i]); val_tqqq *= (1 + daily_ret['TQQQ'].iloc[i])
+                hist_o.append(val_o); hist_q.append(val_q); hist_qld.append(val_qld); hist_tqqq.append(val_tqqq)
+                
+                smh_cond_i = (bt_df['SMH'].iloc[i] > bt_df['SMH_MA50'].iloc[i]) and (bt_df['SMH_3M_Ret'].iloc[i] > 0.05) and (bt_df['SMH_RSI'].iloc[i] > 50)
+                w_orig = get_weights_v45(bt_df['Regime'].iloc[i], smh_cond_i)
+                
+            res_df = pd.DataFrame(index=bt_df.index)
+            res_df['V4.5'], res_df['QQQ'], res_df['QLD'], res_df['TQQQ'] = hist_o, hist_q, hist_qld, hist_tqqq
+            days = (res_df.index[-1] - res_df.index[0]).days
             
-        ret_o, cagr_o, mdd_o       = calc_metrics(res_df['V4.5'])
-        ret_q, cagr_q, mdd_q       = calc_metrics(res_df['QQQ'])
-        ret_qld, cagr_qld, mdd_qld = calc_metrics(res_df['QLD'])
-        ret_t, cagr_t, mdd_t       = calc_metrics(res_df['TQQQ'])
-        
-        mc1, mc2, mc3, mc4 = st.columns(4)
-        def render_metric_card(title, ret, cagr, mdd, is_main=False):
-            bg = f"background: rgba(16, 185, 129, 0.1);" if is_main else ""
-            bdr = f"border: 2px solid #10B981;" if is_main else ""
-            return f"""<div class="glass-card" style="{bg} {bdr} height: auto !important; padding: 20px !important;">
-<div style="font-size: 0.9em; font-weight: 700; color: #64748B; margin-bottom: 8px;">{title}</div>
-<div style="font-family: 'Outfit'; font-size: 1.8em; font-weight: 800; color: #0F172A; margin-bottom: 10px;">CAGR {cagr*100:.1f}%</div>
-<div style="font-size: 0.9em; color: #64748B; font-weight:600;">누적: <span style="color: #10B981;">{ret*100:.1f}%</span> | MDD: <span style="color: #EF4444;">{mdd*100:.1f}%</span></div></div>"""
+            def calc_metrics(series):
+                ret = (series[-1]/series[0]) - 1
+                cagr = (series[-1]/series[0]) ** (365.25 / days) - 1 if days > 0 else 0
+                mdd = ((series / series.cummax()) - 1).min()
+                return ret, cagr, mdd
+                
+            ret_o, cagr_o, mdd_o       = calc_metrics(res_df['V4.5'])
+            ret_q, cagr_q, mdd_q       = calc_metrics(res_df['QQQ'])
+            ret_qld, cagr_qld, mdd_qld = calc_metrics(res_df['QLD'])
+            ret_t, cagr_t, mdd_t       = calc_metrics(res_df['TQQQ'])
             
-        mc1.markdown(apply_theme(render_metric_card("✨ AMLS V4.5", ret_o, cagr_o, mdd_o, True)), unsafe_allow_html=True)
-        mc2.markdown(apply_theme(render_metric_card("QQQ", ret_q, cagr_q, mdd_q)), unsafe_allow_html=True)
-        mc3.markdown(apply_theme(render_metric_card("QLD", ret_qld, cagr_qld, mdd_qld)), unsafe_allow_html=True)
-        mc4.markdown(apply_theme(render_metric_card("TQQQ", ret_t, cagr_t, mdd_t)), unsafe_allow_html=True)
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        fig_eq = go.Figure()
-        fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['QQQ'], name='QQQ', line=dict(color='#94A3B8', width=1.5, dash='dot')))
-        fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['QLD'], name='QLD', line=dict(color='#3B82F6', width=1.5, dash='dash')))
-        fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['TQQQ'], name='TQQQ', line=dict(color='#EF4444', width=1.5, dash='dash')))
-        fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['V4.5'], name='AMLS', line=dict(color=main_color, width=3.5)))
-        fig_eq.update_layout(title=dict(text="Equity Curve (Log)", font=dict(family='Outfit', size=16, color="#0F172A")), height=400, yaxis_type='log', **chart_layout)
-        st.markdown(apply_theme('<div class="glass-card" style="height:auto !important; padding:15px !important;">'), unsafe_allow_html=True)
-        st.plotly_chart(fig_eq, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        def get_dd_series(series): return (series / series.cummax()) - 1
-        fig_dd = go.Figure()
-        fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['QQQ']), name='QQQ', line=dict(color='#94A3B8', width=1)))
-        fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['QLD']), name='QLD', line=dict(color='#3B82F6', width=1)))
-        fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['TQQQ']), name='TQQQ', line=dict(color='#EF4444', width=1)))
-        fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['V4.5']), name='AMLS', fill='tozeroy', line=dict(color=main_color, width=2.5)))
-        fig_dd.update_layout(title=dict(text="Drawdown Curve", font=dict(family='Outfit', size=16, color="#0F172A")), height=300, yaxis=dict(tickformat='.0%'), **chart_layout)
-        st.markdown(apply_theme('<div class="glass-card" style="height:auto !important; padding:15px !important;">'), unsafe_allow_html=True)
-        st.plotly_chart(fig_dd, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.divider()
-        if st.button("✨ AI 추론 요약 실행", use_container_width=True):
-            try:
-                import google.generativeai as genai
-                api_key = st.secrets["GEMINI_API_KEY"]
-                genai.configure(api_key=api_key)
-                models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-                model = genai.GenerativeModel(models[0].replace('models/',''))
-                prompt = f"""너는 최고 퀀트 애널리스트야. AMLS V4.5 전략 백테스트 결과를 분석해.
-                [AMLS] 누적수익률: {ret_o*100:.1f}%, CAGR: {cagr_o*100:.1f}%, MDD: {mdd_o*100:.1f}%
-                [TQQQ] 누적수익률: {ret_t*100:.1f}%, CAGR: {cagr_t*100:.1f}%, MDD: {mdd_t*100:.1f}%
-                AMLS 전략이 레버리지 MDD를 어떻게 회피하면서 수익을 냈는지 3단락으로 분석해."""
-                with st.spinner("AI 분석 중..."):
-                    response = model.generate_content(prompt)
-                    st.markdown(apply_theme(f"""<div class="glass-card" style="height: auto !important; padding: 30px !important; color:#0F172A; font-weight:500;">{response.text}</div>"""), unsafe_allow_html=True)
-            except KeyError: st.error("🚨 GEMINI_API_KEY 누락")
+            mc1, mc2, mc3, mc4 = st.columns(4)
+            def render_metric_card(title, ret, cagr, mdd, is_main=False):
+                bg = f"background: rgba({r_c}, {g_c}, {b_c}, 0.1);" if is_main else ""
+                bdr = f"border: 2px solid {main_color};" if is_main else ""
+                return f"""<div class="glass-card" style="{bg} {bdr} height: auto !important; padding: 20px !important;">
+    <div style="font-size: 0.9em; font-weight: 700; color: #64748B; margin-bottom: 8px;">{title}</div>
+    <div style="font-family: 'Outfit'; font-size: 1.8em; font-weight: 800; color: #0F172A; margin-bottom: 10px;">CAGR {cagr*100:.1f}%</div>
+    <div style="font-size: 0.9em; color: #64748B; font-weight:600;">누적: <span style="color: {main_color};">{ret*100:.1f}%</span> | MDD: <span style="color: #EF4444;">{mdd*100:.1f}%</span></div></div>"""
+                
+            mc1.markdown(apply_theme(render_metric_card("✨ AMLS V4.5", ret_o, cagr_o, mdd_o, True)), unsafe_allow_html=True)
+            mc2.markdown(apply_theme(render_metric_card("QQQ", ret_q, cagr_q, mdd_q)), unsafe_allow_html=True)
+            mc3.markdown(apply_theme(render_metric_card("QLD", ret_qld, cagr_qld, mdd_qld)), unsafe_allow_html=True)
+            mc4.markdown(apply_theme(render_metric_card("TQQQ", ret_t, cagr_t, mdd_t)), unsafe_allow_html=True)
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            fig_eq = go.Figure()
+            fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['QQQ'], name='QQQ', line=dict(color='#94A3B8', width=1.5, dash='dot')))
+            fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['QLD'], name='QLD', line=dict(color='#3B82F6', width=1.5, dash='dash')))
+            fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['TQQQ'], name='TQQQ', line=dict(color='#EF4444', width=1.5, dash='dash')))
+            fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['V4.5'], name='AMLS', line=dict(color=main_color, width=3.5)))
+            fig_eq.update_layout(title=dict(text="Equity Curve (Log)", font=dict(family='Outfit', size=16, color="#0F172A")), height=400, yaxis_type='log', **chart_layout)
+            st.markdown(apply_theme('<div class="glass-card" style="height:auto !important; padding:15px !important;">'), unsafe_allow_html=True)
+            st.plotly_chart(fig_eq, use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            def get_dd_series(series): return (series / series.cummax()) - 1
+            fig_dd = go.Figure()
+            fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['QQQ']), name='QQQ', line=dict(color='#94A3B8', width=1)))
+            fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['QLD']), name='QLD', line=dict(color='#3B82F6', width=1)))
+            fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['TQQQ']), name='TQQQ', line=dict(color='#EF4444', width=1)))
+            fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['V4.5']), name='AMLS', fill='tozeroy', line=dict(color=main_color, width=2.5)))
+            fig_dd.update_layout(title=dict(text="Drawdown Curve", font=dict(family='Outfit', size=16, color="#0F172A")), height=300, yaxis=dict(tickformat='.0%'), **chart_layout)
+            st.markdown(apply_theme('<div class="glass-card" style="height:auto !important; padding:15px !important;">'), unsafe_allow_html=True)
+            st.plotly_chart(fig_dd, use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            st.divider()
+            if st.button("✨ AI 추론 요약 실행", use_container_width=True):
+                try:
+                    import google.generativeai as genai
+                    api_key = st.secrets["GEMINI_API_KEY"]
+                    genai.configure(api_key=api_key)
+                    models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+                    model = genai.GenerativeModel(models[0].replace('models/',''))
+                    prompt = f"""너는 최고 퀀트 애널리스트야. AMLS V4.5 전략 백테스트 결과를 분석해.
+                    [AMLS] 누적수익률: {ret_o*100:.1f}%, CAGR: {cagr_o*100:.1f}%, MDD: {mdd_o*100:.1f}%
+                    [TQQQ] 누적수익률: {ret_t*100:.1f}%, CAGR: {cagr_t*100:.1f}%, MDD: {mdd_t*100:.1f}%
+                    AMLS 전략이 레버리지 MDD를 어떻게 회피하면서 수익을 냈는지 3단락으로 분석해."""
+                    with st.spinner("AI 분석 중..."):
+                        response = model.generate_content(prompt)
+                        st.markdown(apply_theme(f"""<div class="glass-card" style="height: auto !important; padding: 30px !important; color:#0F172A; font-weight:500;">{response.text}</div>"""), unsafe_allow_html=True)
+                except KeyError: st.error("🚨 GEMINI_API_KEY 누락")
 
 elif page == "📰 Macro News":
     headlines_for_ai, news_items = fetch_macro_news()
