@@ -265,7 +265,7 @@ radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15), paper_bgcolor=
 regime_info  = {1:("R1 BULL","풀 가동"),2:("R2 CORR","방어 진입"), 3:("R3 BEAR","대피"),4:("R4 PANIC","최대 방어")}
 
 # ==========================================
-# 2. CSS (사이드바 완벽 통일 + V4.5 입체 카드)
+# 2. CSS (사이드바 완벽 통일 + V4.5 입체 카드 + 제목 줄바꿈 해결)
 # ==========================================
 css_block = f"""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -386,14 +386,16 @@ css_block = f"""<style>
     }}
     .glass-card h3 {{ font-family: 'Outfit', sans-serif; font-size: 1.15em !important; font-weight: 800 !important; color: var(--text-main); margin-bottom: 15px !important; letter-spacing: -0.5px; border-bottom: 2px solid rgba(16, 185, 129, 0.1); padding-bottom: 8px; }}
 
-    /* 내부 박스 음각 처리 */
+    /* 🚨 내부 박스 음각 처리 (제목 줄바꿈 해결을 위한 패딩 수정) 🚨 */
     .glass-inset {{
         background: #F8FAFC !important; 
         border-top: 1px solid rgba(16, 185, 129, 0.4) !important;
         border-left: 1px solid rgba(16, 185, 129, 0.4) !important;
         border-bottom: 1px solid rgba(255, 255, 255, 1) !important;
         border-right: 1px solid rgba(255, 255, 255, 1) !important;
-        border-radius: 16px !important; padding: 18px; text-align: center; margin-bottom: 16px;
+        border-radius: 16px !important;
+        padding: 20px 10px 18px !important; /* 위쪽 패딩 늘리고 양옆 줄여 제목과 값 사이 간격 확보 */
+        text-align: center; margin-bottom: 16px;
         box-shadow: inset 6px 6px 12px rgba(16, 185, 129, 0.12), inset -6px -6px 12px rgba(255, 255, 255, 1) !important;
     }}
     
