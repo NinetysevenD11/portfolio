@@ -191,6 +191,22 @@ def fetch_realtime_prices():
     fetch_time = now_kst.strftime("%Y-%m-%d %H:%M:%S")
     return prices, fetch_time
 
+# 🚨 CNN Fear & Greed Index API 직접 호출 (안정성 강화) 🚨
+@st.cache_data(ttl=1800)
+def fetch_fear_and_greed():
+    try:
+        url = "https://production.api.cnn.io/data/ext/fear_and_greed/latest"
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+            'Accept': 'application/json'
+        }
+        req = urllib.request.Request(url, headers=headers)
+        res = urllib.request.urlopen(req, timeout=5)
+        data = json.loads(res.read().decode('utf-8'))
+        return float(data['fear_and_greed']['score'])
+    except:
+        return None
+
 @st.cache_data(ttl=900)
 def fetch_macro_news():
     headlines_for_ai, news_items = [], []
@@ -262,7 +278,6 @@ if curr_regime == live_regime: regime_committee_msg = "🟢 조건 부합 (안�
 elif live_regime > curr_regime: regime_committee_msg = f"🔴 R{live_regime} 하향 즉시 반영"
 else: regime_committee_msg = f"🟡 R{live_regime} 승급 대기 (5일)"
 
-# 차트 전역 색상
 b_color = 'rgba(0,0,0,0)'
 t_color = '#1E293B'
 line_c = main_color
@@ -273,7 +288,7 @@ radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15), paper_bgcolor=
 regime_info  = {1:("R1 BULL","풀 가동"),2:("R2 CORR","방어 진입"), 3:("R3 BEAR","대피"),4:("R4 PANIC","최대 방어")}
 
 # ==========================================
-# 2. CSS 
+# 2. CSS
 # ==========================================
 css_block = f"""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -499,6 +514,7 @@ with c_info:
 
 st.markdown(apply_theme(f'<div style="border-bottom: 2px solid rgba({r_c},{g_c},{b_c},0.1); padding-top: 10px; margin-bottom: 25px;"></div>'), unsafe_allow_html=True)
 
+
 # ==========================================
 # 5. 페이지 라우팅
 # ==========================================
@@ -507,7 +523,6 @@ if page == "📊 Dashboard":
     def _lg_row(label, val, passed):
         icon = "🟢" if passed else "🔴"
         color = main_color if passed else "#EF4444"
-        # 🚨 QQQ와 SMH 가격 및 MA 값을 소수점 둘째 자리(.2f)까지 나오도록 일괄 수정 🚨
         if isinstance(val, (int, float)):
             val_str = f"${val:.2f}"
         elif isinstance(val, str) and '$' in val:
@@ -769,10 +784,15 @@ elif page == "🍫 8-Pack Radar":
     df_view   = df.iloc[-120:]
     qqq_rsi   = last_row['QQQ_RSI']
     qqq_dd    = last_row['QQQ_DD']
-    vix_score = max(0, min(100, 100-(last_row['^VIX']-12)/28*100))
-    dd_score  = max(0, min(100, (qqq_dd+0.20)/0.20*100))
-    rsi_score = max(0, min(100, qqq_rsi))
-    fg_score  = (vix_score+dd_score+rsi_score)/3
+    # 🚨 CNN F&G 지수 사용 🚨
+    cnn_fgi = fetch_fear_and_greed()
+    if cnn_fgi is not None:
+        fg_score = cnn_fgi
+    else:
+        vix_score = max(0, min(100, 100-(last_row['^VIX']-12)/28*100))
+        dd_score  = max(0, min(100, (qqq_dd+0.20)/0.20*100))
+        rsi_score = max(0, min(100, qqq_rsi))
+        fg_score  = (vix_score+dd_score+rsi_score)/3
     
     sec_names = {'XLK':'TECH','XLV':'HEALTH','XLF':'FIN','XLY':'CONS','XLC':'COMM',
                  'XLI':'IND','XLP':'STAPLE','XLE':'ENGY','XLU':'UTIL','XLRE':'REAL','XLB':'MAT'}
@@ -780,7 +800,6 @@ elif page == "🍫 8-Pack Radar":
     sec_df    = pd.DataFrame(sec_data).sort_values(by='수익률', ascending=True)
     top_sec, bot_sec = sec_df.iloc[-1]['섹터'], sec_df.iloc[0]['섹터']
 
-    # 🚨 [새로운 기능] 레이더 종합 분석 판단 로직 🚨
     risk_cnt, warn_cnt, safe_cnt = 0, 0, 0
     
     if qqq_rsi < 40: safe_cnt+=1
@@ -880,7 +899,8 @@ elif page == "🍫 8-Pack Radar":
             st.plotly_chart(fig2,use_container_width=True)
     with row1[2]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("3. Fear & Greed", b3, u3, "시장 심리 종합. 극단적 공포는 종종 훌륭한 매수 기회.")), unsafe_allow_html=True)
+            fg_title = "3. Fear & Greed (CNN)" if cnn_fgi is not None else "3. Fear & Greed (자체)"
+            st.markdown(apply_theme(r_head(fg_title, b3, u3, "시장 심리 종합. 극단적 공포는 종종 훌륭한 매수 기회.")), unsafe_allow_html=True)
             fig3=go.Figure(go.Indicator(mode="gauge+number",value=fg_score,domain={'x':[0,1],'y':[0,1]},
                 gauge={'axis':{'range':[0,100]},'bar':{'color':line_c},'steps':gauge_steps}))
             fig3.update_layout(height=200,margin=dict(l=15,r=15,t=10,b=10),paper_bgcolor=b_color,font=dict(family="Pretendard",color=t_color))
@@ -1085,5 +1105,4 @@ elif page == "📰 Macro News":
                     <div style="font-weight:600; font-size:1em; line-height:1.4; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">
                         <a href="{item['link']}" target="_blank" style="color:#0F172A; text-decoration:none;">{item['title']}</a>
                     </div>
-                    <div style="color:#10B981; font-family:Outfit; font-size:0.85em; font-weight:800; margin-top:10px;">{item['date']}</div>
-                </div>"""), unsafe_allow_html=True)
+                    <div style="color:#10B981; font-family:Outfit; font-size:
