@@ -208,15 +208,24 @@ if df is None or df.empty:
     st.error("🚨 야후 파이낸스(Yahoo Finance) 통신 지연. 잠시 후 새로고침 해주세요.")
     st.stop()
 
-last_row    = df.iloc[-1].copy()
+# 🚨 [핵심 변경 1] 실시간 가격을 원본 df의 가장 마지막 행에 덮어쓰기 (실시간 지표 계산용) 🚨
+last_index = df.index[-1]
 rt_injected = []
 for ticker, price in rt_prices.items():
-    if ticker in last_row.index and price > 0:
-        last_row[ticker] = price; rt_injected.append(ticker)
+    if ticker in df.columns and price > 0:
+        df.at[last_index, ticker] = price
+        rt_injected.append(ticker)
+
+# 🚨 [핵심 변경 2] 실시간 가격이 반영된 상태에서, 마지막 행의 파생 지표들을 다시 계산 🚨
+# 이렇게 해야 오늘 장중의 가격 변화로 인해 이탈/돌파하는 이평선을 정확히 잡아냅니다.
 if 'QQQ' in rt_injected:
-    last_row['QQQ_DD'] = (last_row['QQQ'] / last_row['QQQ_High52']) - 1
+    df.at[last_index, 'QQQ_DD'] = (df.at[last_index, 'QQQ'] / df['QQQ_High52'].iloc[-1]) - 1
 if 'HYG' in rt_injected and 'IEF' in rt_injected:
-    last_row['HYG_IEF_Ratio'] = last_row['HYG'] / last_row['IEF']
+    df.at[last_index, 'HYG_IEF_Ratio'] = df.at[last_index, 'HYG'] / df.at[last_index, 'IEF']
+
+# 이제 last_row는 실시간 가격과 재계산된 지표가 모두 담긴 완벽한 최신 상태가 됩니다.
+last_row = df.iloc[-1].copy()
+
 rt_ok    = len(rt_injected) >= 3
 rt_label = f"🟢 LIVE ({len(rt_injected)})" if rt_ok else "🟡 DELAYED"
 
@@ -228,12 +237,13 @@ smh_close, smh_ma50, smh_3m, smh_1m, smh_rsi = (last_row['SMH'], last_row['SMH_M
 df['Target'] = df.apply(get_target_v45, axis=1)
 df['Regime'] = apply_asymmetric_delay(df['Target'])
 
+# 실시간 Regime 판별
 live_regime   = get_target_v45(last_row)            
-hist_regime   = int(df.iloc[-1]['Regime'])            
+hist_regime   = int(df.iloc[-2]['Regime']) # 어제까지의 확정 국면
 curr_regime   = live_regime if live_regime > hist_regime else hist_regime
 target_regime = live_regime
 
-# 반도체 진입 조건
+# 반도체 진입 조건 (실시간 가격 반영)
 smh_c1 = smh_close > smh_ma50
 smh_c2 = (smh_3m > 0.05 or smh_1m > 0.10)
 smh_c3 = smh_rsi > 50
@@ -542,7 +552,6 @@ if page == "📊 Dashboard":
     fig_tqqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['TQQQ_MA200'], name='200MA', line=dict(color=dash_c, width=1.5, dash='dash')))
     fig_tqqq.update_layout(title=dict(text="TQQQ vs 200MA", font=dict(family='Outfit', size=16, color="#0F172A")), height=350, **chart_layout)
 
-    # 🚨 수정됨: 에러를 발생시키던 HTML 래퍼를 걷어내고 st.container 적용 🚨
     with chart_col1:
         with st.container(border=True):
             st.plotly_chart(fig_qqq, use_container_width=True)
@@ -583,7 +592,6 @@ elif page == "💼 Portfolio":
         })
     df_editor = pd.DataFrame(editor_data)
     
-    # 🚨 수정됨: HTML 래퍼 제거 및 st.container 사용 🚨
     with st.container(border=True):
         edited_df = st.data_editor(
             df_editor,
@@ -627,7 +635,7 @@ elif page == "💼 Portfolio":
         labels_cur = [a for a in ASSET_LIST if curr_vals[a] > 0]
         vals_cur = [curr_vals[a] for a in labels_cur]
         if sum(vals_cur) > 0:
-            fig_cur = go.Figure(data=[go.Pie(labels=labels_cur, values=vals_cur, hole=.4, textinfo='label+percent', marker=dict(colors=[line_c, dash_c, '#34D399', '#6EE7B7']))])
+            fig_cur = go.Figure(data=[go.Pie(labels=labels_cur, values=vals_cur, hole=.4, textinfo='label+percent')])
             fig_cur.update_layout(title=dict(text="Current", font=dict(family="Outfit", size=16, color="#0F172A")), **pie_layout)
             with chart_c1:
                 with st.container(border=True):
@@ -635,7 +643,7 @@ elif page == "💼 Portfolio":
         
         labels_tgt = [a for a in ASSET_LIST if target_weights.get(a, 0) > 0]
         vals_tgt = [target_weights.get(a, 0) for a in labels_tgt]
-        fig_tgt = go.Figure(data=[go.Pie(labels=labels_tgt, values=vals_tgt, hole=.4, textinfo='label+percent', marker=dict(colors=[line_c, dash_c, '#34D399', '#6EE7B7']))])
+        fig_tgt = go.Figure(data=[go.Pie(labels=labels_tgt, values=vals_tgt, hole=.4, textinfo='label+percent')])
         fig_tgt.update_layout(title=dict(text=f"Target (R{curr_regime})", font=dict(family="Outfit", size=16, color="#0F172A")), **pie_layout)
         with chart_c2:
             with st.container(border=True):
@@ -742,7 +750,6 @@ elif page == "🍫 8-Pack Radar":
     sec_df    = pd.DataFrame(sec_data).sort_values(by='수익률', ascending=True)
     top_sec, bot_sec = sec_df.iloc[-1]['섹터'], sec_df.iloc[0]['섹터']
 
-    # 🚨 [새로운 기능] 레이더 종합 분석 판단 로직 🚨
     risk_cnt, warn_cnt, safe_cnt = 0, 0, 0
     
     if qqq_rsi < 40: safe_cnt+=1
@@ -875,7 +882,6 @@ elif page == "🍫 8-Pack Radar":
 elif page == "📈 Backtest Lab":
     st.markdown("<h2 style='font-family:Outfit; font-size:1.8em; color:#0F172A;'>📈 Backtest Lab</h2>", unsafe_allow_html=True)
 
-    # 🚨 수정됨: HTML 래퍼 대신 st.container 사용
     with st.container(border=True):
         st.markdown("<div style='font-size: 0.9em; font-weight: 700; color: #64748B; margin-bottom: 12px; text-transform:uppercase;'>⚙️ 백테스트 환경 설정</div>", unsafe_allow_html=True)
         col_s, col_e, col_m = st.columns(3)
