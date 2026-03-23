@@ -176,7 +176,6 @@ def load_custom_backtest_data(start_date, end_date):
 
 REALTIME_TICKERS = ['QQQ','TQQQ','SMH','^VIX','HYG','IEF','UUP','GLD','SPY','SOXL','USD','QLD','SSO','USDKRW=X']
 
-# 🚨 [수정사항] KST(한국 시간) 기반으로 타임스탬프 강제 보정 🚨
 @st.cache_data(ttl=60)
 def fetch_realtime_prices():
     prices = {}
@@ -274,7 +273,7 @@ radar_layout = dict(height=200, margin=dict(l=10,r=10,t=15,b=15), paper_bgcolor=
 regime_info  = {1:("R1 BULL","풀 가동"),2:("R2 CORR","방어 진입"), 3:("R3 BEAR","대피"),4:("R4 PANIC","최대 방어")}
 
 # ==========================================
-# 2. CSS (사이드바 완벽 통일 + 버튼 디자인)
+# 2. CSS 
 # ==========================================
 css_block = f"""<style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap');
@@ -401,7 +400,6 @@ css_block = f"""<style>
     [data-testid="stMetricValue"] > div {{ font-family: 'Outfit', sans-serif; font-size: 1.6em !important; font-weight: 800; color: var(--text-main) !important; }}
     div[data-testid="stMetricDelta"] > div {{ font-size: 0.9em !important; font-weight: 700; }}
     
-    /* 🚨 새고로침 버튼 스타일 🚨 */
     [data-testid="stButton"] > button {{
         background-color: var(--bg-main) !important;
         border: 2px solid rgba(16, 185, 129, 0.8) !important;
@@ -479,7 +477,6 @@ st.sidebar.markdown("""
 """, unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
-# 🚨 [핵심 변경] 수동 새로고침 UI가 추가된 메인 타이틀 영역 🚨
 c_title, c_info = st.columns([1.5, 1])
 with c_title:
     st.markdown(apply_theme(f"""
@@ -502,7 +499,6 @@ with c_info:
 
 st.markdown(apply_theme(f'<div style="border-bottom: 2px solid rgba({r_c},{g_c},{b_c},0.1); padding-top: 10px; margin-bottom: 25px;"></div>'), unsafe_allow_html=True)
 
-
 # ==========================================
 # 5. 페이지 라우팅
 # ==========================================
@@ -511,7 +507,19 @@ if page == "📊 Dashboard":
     def _lg_row(label, val, passed):
         icon = "🟢" if passed else "🔴"
         color = main_color if passed else "#EF4444"
-        return f'<div class="crow"><span class="clabel">{label}</span><span class="cval" style="color:{color};">{val} {icon}</span></div>'
+        # 🚨 QQQ와 SMH 가격 및 MA 값을 소수점 둘째 자리(.2f)까지 나오도록 일괄 수정 🚨
+        if isinstance(val, (int, float)):
+            val_str = f"${val:.2f}"
+        elif isinstance(val, str) and '$' in val:
+            try:
+                num = float(val.replace('$', '').replace('%','').strip())
+                val_str = f"${num:.2f}"
+            except:
+                val_str = val
+        else:
+            val_str = val
+            
+        return f'<div class="crow"><span class="clabel">{label}</span><span class="cval" style="color:{color};">{val_str} {icon}</span></div>'
 
     soxl_title  = "SOXL 진입 승인" if smh_cond else "USD 방어 진입"
     soxl_strat  = "3x Leverage" if smh_cond else "2x Defense"
@@ -529,8 +537,8 @@ if page == "📊 Dashboard":
                 <div style="font-weight:600; color:#64748B; font-size:0.95em; margin-top:4px;">{regime_info[curr_regime][1]}</div>
             </div>
             {_lg_row('VIX < 40', f'{vix_close:.2f}', vix_close<=40)}
-            {_lg_row('QQQ > 200MA', f'${qqq_close:.0f}', qqq_close>=qqq_ma200)}
-            {_lg_row('50MA ≥ 200MA', f'${qqq_ma50:.0f}', qqq_ma50>=qqq_ma200)}
+            {_lg_row('QQQ > 200MA', qqq_close, qqq_close>=qqq_ma200)}
+            {_lg_row('50MA ≥ 200MA', qqq_ma50, qqq_ma50>=qqq_ma200)}
             <div style="margin-top:auto; padding:12px; font-size:0.85em; text-align:center; border-radius:8px; background:rgba(16,185,129,0.1); color:#047857; font-weight:700;">{regime_committee_msg}</div>
         </div>"""), unsafe_allow_html=True)
     with c2:
@@ -540,7 +548,7 @@ if page == "📊 Dashboard":
                 <div style="color:{soxl_color}; font-family:'Outfit'; font-size:2em; font-weight:800;">{soxl_title}</div>
                 <div style="font-weight:600; color:#64748B; font-size:0.95em; margin-top:4px;">{soxl_strat}</div>
             </div>
-            {_lg_row('SMH > 50MA', f'${smh_close:.1f}', smh_c1)}
+            {_lg_row('SMH > 50MA', smh_close, smh_c1)}
             {_lg_row('Mom (1M>10%)', f'{smh_1m*100:.1f}%', smh_c2)}
             {_lg_row('RSI > 50', f'{smh_rsi:.1f}', smh_c3)}
             <div style="margin-top:auto; padding:12px; font-size:0.85em; text-align:center; color:#64748B; font-weight:600; border-top:1px dashed rgba(16,185,129,0.3);">※ 3 filters required for SOXL</div>
@@ -917,10 +925,8 @@ elif page == "🍫 8-Pack Radar":
 elif page == "📈 Backtest Lab":
     st.markdown("<h2 style='font-family:Outfit; font-size:1.8em; color:#0F172A;'>📈 Backtest Lab</h2>", unsafe_allow_html=True)
 
-    # 🚨 추가된 기간 설정 및 월 적립금 패널 🚨
     with st.container(border=True):
         st.markdown("<div style='font-size: 0.9em; font-weight: 700; color: #64748B; margin-bottom: 12px; text-transform:uppercase;'>⚙️ 백테스트 환경 설정</div>", unsafe_allow_html=True)
-        
         col_s, col_e, col_m = st.columns(3)
         with col_s:
             bt_start = st.date_input("시작일 (Start Date)", datetime(2020, 1, 1))
