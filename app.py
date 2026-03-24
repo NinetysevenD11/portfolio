@@ -280,21 +280,20 @@ elif live_regime > curr_regime: regime_committee_msg = f"🔴 R{live_regime} 하
 else: regime_committee_msg = f"🟡 R{live_regime} 승급 대기 (5일)"
 
 # ==========================================
-# 2. 다크 테마 색상 변수 (차트용)
+# 2. 라이트 테마 색상 변수 (차트용)
 # ==========================================
-b_color = 'rgba(0,0,0,0)'
-t_color = '#94A3B8'          # 다크 배경 위의 밝은 뮤트 텍스트
-line_c  = main_color
-dash_c  = '#334155'
+b_color   = 'rgba(0,0,0,0)'
+t_color   = '#475569'        # 라이트 배경 위 뮤트 텍스트
+line_c    = main_color
+dash_c    = '#CBD5E1'
 rsi_low_c = main_color
 
+# ⚠️ xaxis/yaxis를 여기서 제외 → 각 차트에서 개별 지정 (중복 키 TypeError 방지)
 chart_layout = dict(
     paper_bgcolor=b_color,
     plot_bgcolor=b_color,
     font=dict(family="DM Mono, DM Sans, monospace", color=t_color),
     margin=dict(l=0, r=0, t=40, b=0),
-    xaxis=dict(gridcolor='rgba(255,255,255,0.04)', linecolor='rgba(255,255,255,0.05)', showgrid=True, zeroline=False),
-    yaxis=dict(gridcolor='rgba(255,255,255,0.04)', linecolor='rgba(255,255,255,0.05)', showgrid=True, zeroline=False)
 )
 radar_layout = dict(
     height=200,
@@ -302,56 +301,58 @@ radar_layout = dict(
     paper_bgcolor=b_color,
     plot_bgcolor=b_color,
     font=dict(family="DM Mono, DM Sans, monospace", color=t_color),
-    xaxis=dict(gridcolor='rgba(255,255,255,0.04)', zeroline=False, showgrid=True),
-    yaxis=dict(gridcolor='rgba(255,255,255,0.04)', zeroline=False, showgrid=True)
 )
+
+# 공통 축 스타일 (라이트 테마)
+_ax = dict(gridcolor='rgba(0,0,0,0.05)', linecolor='rgba(0,0,0,0.08)', showgrid=True, zeroline=False)
+_ax_r = dict(gridcolor='rgba(0,0,0,0.05)', zeroline=False, showgrid=True)  # radar용
 
 regime_info = {1:("R1  BULL","풀 가동"),2:("R2  CORR","방어 진입"), 3:("R3  BEAR","대피"),4:("R4  PANIC","최대 방어")}
 
 # ==========================================
-# 3. CSS  —  2026 Dark Fintech Bloomberg 2.0
+# 3. CSS  —  2026 Light Fintech  (Syne + DM Mono)
 # ==========================================
 css_block = f"""<style>
     @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap');
 
-    /* ── ROOT TOKENS ────────────────────────────────── */
+    /* ── ROOT TOKENS  (Light) ───────────────────────── */
     :root {{
-        --void:       #04070D;
-        --base:       #080C17;
-        --surface:    #0C1120;
-        --card:       #0F1525;
-        --elevated:   #131B2E;
-        --rim:        #1A2440;
-        --border-dim: rgba(255,255,255,0.05);
-        --border-acc: rgba(16,185,129,0.25);
-        --border-glow:rgba(16,185,129,0.45);
-        --t-prime:    #EEF2FF;
-        --t-sec:      #CBD5E1;
+        --bg-root:    #F4F7F5;
+        --bg-base:    #F8FAF8;
+        --surface:    #FFFFFF;
+        --card:       #FFFFFF;
+        --elevated:   #F1F5F3;
+        --border-dim: rgba(0,0,0,0.07);
+        --border-acc: rgba(16,185,129,0.28);
+        --border-glow:rgba(16,185,129,0.5);
+        --t-prime:    #0F172A;
+        --t-sec:      #1E293B;
         --t-muted:    #64748B;
         --t-sub:      #94A3B8;
         --acc:        #10B981;
-        --acc-dim:    rgba(16,185,129,0.12);
-        --acc-glow:   rgba(16,185,129,0.18);
+        --acc-dim:    rgba(16,185,129,0.08);
+        --acc-glow:   rgba(16,185,129,0.15);
         --red:        #EF4444;
         --amber:      #F59E0B;
-        --shadow-lg:  0 24px 64px rgba(0,0,0,0.55);
-        --shadow-xl:  0 40px 100px rgba(0,0,0,0.65);
+        --shadow-sm:  0 2px 12px rgba(0,0,0,0.06);
+        --shadow-md:  0 8px 32px rgba(0,0,0,0.09);
+        --shadow-lg:  0 20px 56px rgba(0,0,0,0.10);
+        --shadow-xl:  0 32px 80px rgba(0,0,0,0.12);
     }}
 
     /* ── BASE ───────────────────────────────────────── */
     .stApp, [data-testid="stAppViewContainer"] {{
-        background-color: var(--void) !important;
+        background-color: var(--bg-root) !important;
         background-image:
-            radial-gradient(ellipse 90% 55% at 15% -5%,  rgba(16,185,129,0.08) 0%, transparent 55%),
-            radial-gradient(ellipse 70% 45% at 85% 105%, rgba(16,185,129,0.06) 0%, transparent 55%),
-            url("data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.8' fill='%23ffffff' fill-opacity='0.025'/%3E%3C/svg%3E") !important;
+            radial-gradient(ellipse 80% 50% at 10% 0%,   rgba(16,185,129,0.07) 0%, transparent 55%),
+            radial-gradient(ellipse 60% 40% at 90% 100%, rgba(16,185,129,0.05) 0%, transparent 55%) !important;
         color: var(--t-prime) !important;
         font-family: 'DM Sans', sans-serif;
     }}
 
     [data-testid="stHeader"] {{
-        background: rgba(4,7,13,0.7) !important;
-        backdrop-filter: blur(20px);
+        background: rgba(244,247,245,0.85) !important;
+        backdrop-filter: blur(16px);
         border-bottom: 1px solid var(--border-dim);
     }}
     #MainMenu {{ visibility: hidden; }} footer {{ visibility: hidden; }}
@@ -359,16 +360,16 @@ css_block = f"""<style>
 
     /* ── SIDEBAR ────────────────────────────────────── */
     [data-testid="stSidebar"] {{
-        background: linear-gradient(180deg, #0B1020 0%, #090E1C 100%) !important;
-        border-right: 1px solid var(--border-acc) !important;
-        box-shadow: 6px 0 48px rgba(0,0,0,0.4) !important;
+        background: linear-gradient(180deg, #EEF4F1 0%, #EBF2EE 100%) !important;
+        border-right: 1px solid rgba(16,185,129,0.2) !important;
+        box-shadow: 4px 0 28px rgba(0,0,0,0.05) !important;
     }}
     [data-testid="stSidebar"]::after {{
         content: '';
         position: absolute;
         top: 0; right: -1px;
         width: 1px; height: 100%;
-        background: linear-gradient(180deg, transparent 0%, rgba(16,185,129,0.6) 30%, rgba(16,185,129,0.3) 70%, transparent 100%);
+        background: linear-gradient(180deg, transparent 0%, rgba(16,185,129,0.55) 35%, rgba(16,185,129,0.25) 70%, transparent 100%);
     }}
 
     /* Sidebar radio → nav buttons */
@@ -380,7 +381,7 @@ css_block = f"""<style>
         display: flex !important; align-items: center !important;
         padding: 9px 14px !important; margin-bottom: 2px !important;
         border-radius: 10px !important; border: 1px solid transparent !important;
-        background: rgba(255,255,255,0.02) !important;
+        background: rgba(255,255,255,0.45) !important;
         cursor: pointer !important; width: 100% !important;
         transition: all 0.2s ease !important;
     }}
@@ -391,15 +392,16 @@ css_block = f"""<style>
     }}
     [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"]:hover {{
         border-color: var(--border-acc) !important;
-        background: var(--acc-dim) !important;
+        background: rgba(255,255,255,0.8) !important;
+        box-shadow: var(--shadow-sm) !important;
     }}
     [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
         border-color: var(--border-glow) !important;
-        background: rgba(16,185,129,0.1) !important;
-        box-shadow: 0 0 20px rgba(16,185,129,0.12), inset 0 0 12px rgba(16,185,129,0.04) !important;
+        background: #FFFFFF !important;
+        box-shadow: var(--shadow-md), 0 0 0 3px rgba(16,185,129,0.08) !important;
     }}
     [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) p {{
-        color: #10B981 !important; font-weight: 700 !important;
+        color: #059669 !important; font-weight: 700 !important;
     }}
 
     .sidebar-link {{
@@ -409,98 +411,98 @@ css_block = f"""<style>
         text-decoration: none !important;
         color: var(--t-muted) !important;
         font-weight: 500; font-size: 0.87rem;
-        transition: all 0.2s ease; background: rgba(255,255,255,0.02);
+        transition: all 0.2s ease;
+        background: rgba(255,255,255,0.45);
         font-family: 'DM Sans';
     }}
     .sidebar-link:hover {{
         border-color: var(--border-acc);
-        background: var(--acc-dim) !important;
-        color: #10B981 !important;
-        box-shadow: 0 0 16px rgba(16,185,129,0.08);
+        background: #FFFFFF !important;
+        color: #059669 !important;
+        box-shadow: var(--shadow-sm);
     }}
 
     /* ── GLASS CARDS ────────────────────────────────── */
     .glass-card {{
         background: var(--card) !important;
         border: 1px solid var(--border-dim) !important;
-        border-top: 1px solid rgba(16,185,129,0.2) !important;
-        border-radius: 16px !important;
+        border-top: 2px solid rgba(16,185,129,0.35) !important;
+        border-radius: 18px !important;
         padding: 22px !important;
-        box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.02) inset, 0 0 40px rgba(16,185,129,0.05) !important;
+        box-shadow: var(--shadow-md), 0 0 0 1px rgba(255,255,255,0.8) inset !important;
         height: 100%; display: flex; flex-direction: column; justify-content: space-between;
-        transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
         position: relative; overflow: hidden;
     }}
     .glass-card::before {{
         content: '';
-        position: absolute; top: 0; left: 20%; right: 20%; height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(16,185,129,0.5), transparent);
+        position: absolute; top: 0; left: 15%; right: 15%; height: 2px;
+        background: linear-gradient(90deg, transparent, rgba(16,185,129,0.6), transparent);
         pointer-events: none;
     }}
     .glass-card:hover {{
         transform: translateY(-5px);
-        border-top-color: rgba(16,185,129,0.5) !important;
-        box-shadow: var(--shadow-xl), 0 0 60px rgba(16,185,129,0.1) !important;
+        box-shadow: var(--shadow-lg), 0 0 0 1px rgba(16,185,129,0.12) !important;
     }}
     .glass-card h3 {{
         font-family: 'DM Mono', monospace !important;
-        font-size: 0.7em !important; font-weight: 400 !important;
+        font-size: 0.68em !important; font-weight: 400 !important;
         color: var(--t-muted) !important;
         margin-bottom: 16px !important;
         letter-spacing: 0.18em; text-transform: uppercase;
-        border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;
+        border-bottom: 1px solid rgba(0,0,0,0.06); padding-bottom: 10px;
     }}
 
     .glass-inset {{
-        background: rgba(16,185,129,0.05) !important;
-        border: 1px solid rgba(16,185,129,0.15) !important;
+        background: linear-gradient(135deg, rgba(16,185,129,0.06) 0%, rgba(16,185,129,0.02) 100%) !important;
+        border: 1px solid rgba(16,185,129,0.2) !important;
         border-radius: 12px !important; padding: 20px 10px 18px !important;
         text-align: center; margin-bottom: 16px;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.04) !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.9) !important;
     }}
 
     /* Streamlit container(border=True) */
     div[data-testid="stVerticalBlockBorderWrapper"] > div {{
         background: var(--card) !important;
         border: 1px solid var(--border-dim) !important;
-        border-top: 1px solid rgba(16,185,129,0.2) !important;
-        border-radius: 16px !important;
+        border-top: 2px solid rgba(16,185,129,0.3) !important;
+        border-radius: 18px !important;
         padding: 22px !important;
-        box-shadow: var(--shadow-lg), 0 0 40px rgba(16,185,129,0.05) !important;
+        box-shadow: var(--shadow-md) !important;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         position: relative; overflow: hidden;
     }}
     div[data-testid="stVerticalBlockBorderWrapper"] > div::before {{
         content: '';
-        position: absolute; top: 0; left: 20%; right: 20%; height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(16,185,129,0.45), transparent);
+        position: absolute; top: 0; left: 15%; right: 15%; height: 2px;
+        background: linear-gradient(90deg, transparent, rgba(16,185,129,0.5), transparent);
         pointer-events: none;
     }}
     div[data-testid="stVerticalBlockBorderWrapper"] > div:hover {{
         transform: translateY(-4px);
-        box-shadow: var(--shadow-xl), 0 0 55px rgba(16,185,129,0.09) !important;
+        box-shadow: var(--shadow-lg) !important;
     }}
 
     /* ── METRIC CARDS ───────────────────────────────── */
     [data-testid="stMetric"] {{
-        background: var(--elevated) !important;
+        background: #FFFFFF !important;
         border: 1px solid var(--border-dim) !important;
-        border-top: 1px solid rgba(16,185,129,0.2) !important;
+        border-top: 2px solid rgba(16,185,129,0.3) !important;
         border-radius: 14px !important;
         padding: 18px 20px !important;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.35) !important;
+        box-shadow: var(--shadow-sm) !important;
         margin-bottom: 10px;
         transition: all 0.25s ease;
         position: relative; overflow: hidden;
     }}
     [data-testid="stMetric"]::before {{
         content: '';
-        position: absolute; top: 0; left: 0; right: 0; height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(16,185,129,0.4), transparent);
+        position: absolute; top: 0; left: 0; right: 0; height: 2px;
+        background: linear-gradient(90deg, transparent, rgba(16,185,129,0.5), transparent);
     }}
     [data-testid="stMetric"]:hover {{
         transform: translateY(-3px);
-        box-shadow: 0 16px 48px rgba(0,0,0,0.45), 0 0 24px rgba(16,185,129,0.1) !important;
+        box-shadow: var(--shadow-md), 0 0 0 3px rgba(16,185,129,0.08) !important;
     }}
     [data-testid="stMetricLabel"] > div > div > p {{
         font-size: 0.68em !important; font-weight: 500; color: var(--t-muted) !important;
@@ -518,9 +520,9 @@ css_block = f"""<style>
 
     /* ── BUTTONS ────────────────────────────────────── */
     [data-testid="stButton"] > button {{
-        background: rgba(16,185,129,0.08) !important;
-        border: 1px solid rgba(16,185,129,0.35) !important;
-        color: #10B981 !important;
+        background: rgba(16,185,129,0.06) !important;
+        border: 1px solid rgba(16,185,129,0.4) !important;
+        color: #059669 !important;
         border-radius: 10px !important;
         padding: 6px 16px !important;
         font-weight: 500 !important; font-size: 0.82em !important;
@@ -529,9 +531,9 @@ css_block = f"""<style>
         letter-spacing: 0.04em;
     }}
     [data-testid="stButton"] > button:hover {{
-        background: rgba(16,185,129,0.15) !important;
+        background: rgba(16,185,129,0.12) !important;
         border-color: rgba(16,185,129,0.7) !important;
-        box-shadow: 0 0 24px rgba(16,185,129,0.25) !important;
+        box-shadow: 0 4px 16px rgba(16,185,129,0.2) !important;
         transform: translateY(-2px) !important;
     }}
 
@@ -540,19 +542,17 @@ css_block = f"""<style>
         font-family: 'Syne', sans-serif !important;
         font-size: 2.3em !important; font-weight: 800 !important;
         letter-spacing: -1.5px; margin: 0 !important;
-        background: linear-gradient(135deg, #EEF2FF 30%, #10B981 100%);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        background-clip: text;
+        color: var(--t-prime) !important;
     }}
     h2 {{ font-family: 'Syne', sans-serif !important; color: var(--t-prime) !important; font-weight: 700 !important; }}
-    h3 {{ font-family: 'Syne', sans-serif !important; }}
-    p, li {{ color: var(--t-sec) !important; }}
+    h3 {{ font-family: 'Syne', sans-serif !important; color: var(--t-sec) !important; }}
+    p {{ color: var(--t-sec) !important; }}
     strong {{ color: var(--t-prime) !important; }}
 
     /* ── DATA ROWS ──────────────────────────────────── */
     .crow {{
         display: flex; justify-content: space-between;
-        padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+        padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.04);
         font-size: 0.87em; align-items: center;
     }}
     .crow:last-child {{ border-bottom: none; }}
@@ -569,7 +569,7 @@ css_block = f"""<style>
         transition: color 0.2s; font-family: 'DM Mono', monospace;
         letter-spacing: 0.14em; text-transform: uppercase;
     }}
-    .radar-link:hover .radar-link-title {{ color: #10B981 !important; }}
+    .radar-link:hover .radar-link-title {{ color: #059669 !important; }}
 
     /* ── TABLES ─────────────────────────────────────── */
     .mint-table {{
@@ -583,21 +583,21 @@ css_block = f"""<style>
     }}
     .mint-table td {{
         padding: 13px 14px;
-        background: rgba(255,255,255,0.015);
+        background: #FAFCFB;
         color: var(--t-sec); text-align: right;
-        border-top: 1px solid rgba(255,255,255,0.04);
-        border-bottom: 1px solid rgba(255,255,255,0.04);
+        border-top: 1px solid rgba(0,0,0,0.04);
+        border-bottom: 1px solid rgba(0,0,0,0.04);
         font-size: 0.83em;
         transition: background 0.2s;
     }}
     .mint-table tr:hover td {{ background: rgba(16,185,129,0.05); }}
     .mint-table td:first-child {{
-        border-left: 1px solid rgba(255,255,255,0.04);
+        border-left: 1px solid rgba(0,0,0,0.04);
         border-top-left-radius: 10px; border-bottom-left-radius: 10px;
-        text-align: left; font-family: 'DM Sans'; font-weight: 700; color: #10B981;
+        text-align: left; font-family: 'DM Sans'; font-weight: 700; color: #059669;
     }}
     .mint-table td:last-child {{
-        border-right: 1px solid rgba(255,255,255,0.04);
+        border-right: 1px solid rgba(0,0,0,0.04);
         border-top-right-radius: 10px; border-bottom-right-radius: 10px;
         text-align: center;
     }}
@@ -606,43 +606,41 @@ css_block = f"""<style>
     /* ── INPUTS ─────────────────────────────────────── */
     [data-testid="stNumberInput"] > div > div,
     [data-testid="stTextInput"] > div > div {{
-        background: var(--elevated) !important;
-        border: 1px solid rgba(16,185,129,0.2) !important;
+        background: #FFFFFF !important;
+        border: 1px solid rgba(16,185,129,0.25) !important;
         border-radius: 10px !important; color: var(--t-prime) !important;
     }}
-    input {{ color: var(--t-prime) !important; background: transparent !important; }}
     [data-testid="stDateInput"] > div > div {{
-        background: var(--elevated) !important;
-        border-color: rgba(16,185,129,0.2) !important;
+        background: #FFFFFF !important;
+        border-color: rgba(16,185,129,0.25) !important;
         border-radius: 10px !important; color: var(--t-prime) !important;
     }}
     [data-baseweb="select"] > div {{
-        background: var(--elevated) !important;
-        border-color: rgba(16,185,129,0.2) !important;
+        background: #FFFFFF !important;
+        border-color: rgba(16,185,129,0.25) !important;
         border-radius: 10px !important;
     }}
-    [data-baseweb="select"] * {{ color: var(--t-prime) !important; }}
 
     /* ── FILE UPLOADER ──────────────────────────────── */
     [data-testid="stFileUploader"] {{
-        background: var(--elevated) !important;
-        border: 1px dashed rgba(16,185,129,0.3) !important;
+        background: #FAFCFB !important;
+        border: 1px dashed rgba(16,185,129,0.35) !important;
         border-radius: 12px !important;
     }}
 
     /* ── EXPANDERS ──────────────────────────────────── */
     [data-testid="stExpander"] {{
-        background: var(--elevated) !important;
-        border: 1px solid rgba(16,185,129,0.15) !important;
+        background: #FFFFFF !important;
+        border: 1px solid rgba(16,185,129,0.2) !important;
         border-radius: 12px !important;
     }}
 
     /* ── DIVIDERS ───────────────────────────────────── */
-    hr {{ border-color: rgba(255,255,255,0.06) !important; }}
+    hr {{ border-color: rgba(0,0,0,0.07) !important; }}
 
     /* ── SCROLLBAR ──────────────────────────────────── */
     ::-webkit-scrollbar {{ width: 4px; height: 4px; }}
-    ::-webkit-scrollbar-track {{ background: var(--base); }}
+    ::-webkit-scrollbar-track {{ background: var(--bg-root); }}
     ::-webkit-scrollbar-thumb {{ background: rgba(16,185,129,0.3); border-radius: 4px; }}
     ::-webkit-scrollbar-thumb:hover {{ background: rgba(16,185,129,0.55); }}
 
@@ -651,21 +649,17 @@ css_block = f"""<style>
 
     /* ── ANIMATIONS ─────────────────────────────────── */
     @keyframes pulseGlow {{
-        0%, 100% {{ opacity: 1; box-shadow: 0 0 6px rgba(16,185,129,0.4); }}
-        50% {{ opacity: 0.85; box-shadow: 0 0 18px rgba(16,185,129,0.7), 0 0 40px rgba(16,185,129,0.25); }}
+        0%, 100% {{ opacity: 1; box-shadow: 0 0 8px rgba(16,185,129,0.3); }}
+        50% {{ opacity: 0.9; box-shadow: 0 0 20px rgba(16,185,129,0.55), 0 0 40px rgba(16,185,129,0.15); }}
     }}
     @keyframes fadeUp {{
         from {{ opacity: 0; transform: translateY(14px); }}
         to   {{ opacity: 1; transform: translateY(0); }}
     }}
-    @keyframes borderPulse {{
-        0%, 100% {{ border-top-color: rgba(16,185,129,0.2); }}
-        50%        {{ border-top-color: rgba(16,185,129,0.5); }}
-    }}
 
     .live-pulse {{ animation: pulseGlow 2.4s ease-in-out infinite; }}
 
-    /* Stagger entrance for main blocks */
+    /* Stagger entrance */
     .main .block-container > div > div:nth-child(1) {{ animation: fadeUp 0.4s ease 0.05s both; }}
     .main .block-container > div > div:nth-child(2) {{ animation: fadeUp 0.4s ease 0.10s both; }}
     .main .block-container > div > div:nth-child(3) {{ animation: fadeUp 0.4s ease 0.15s both; }}
@@ -686,23 +680,23 @@ sidebar_top = st.sidebar.container()
 sidebar_top.markdown(apply_theme(f"""
 <div style="padding: 16px 15px 10px;">
     <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:4px;">
-        <span style="font-family:'Syne'; font-size:1.6em; font-weight:800; color:#EEF2FF; letter-spacing:-0.5px;">AMLS</span>
+        <span style="font-family:'Syne'; font-size:1.6em; font-weight:800; color:#0F172A; letter-spacing:-0.5px;">AMLS</span>
         <span style="font-family:'Syne'; font-size:1.6em; font-weight:800; color:#10B981; letter-spacing:-0.5px;">V4.5</span>
     </div>
-    <div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#475569; letter-spacing:0.22em; text-transform:uppercase; margin-bottom:14px;">QUANTITATIVE ENGINE</div>
-    <div class="live-pulse" style="display:inline-flex; align-items:center; gap:6px; font-family:'DM Mono'; font-size:0.68em; color:#10B981; font-weight:400; padding:5px 12px; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); border-radius:8px; letter-spacing:0.06em;">
+    <div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#94A3B8; letter-spacing:0.22em; text-transform:uppercase; margin-bottom:14px;">QUANTITATIVE ENGINE</div>
+    <div class="live-pulse" style="display:inline-flex; align-items:center; gap:6px; font-family:'DM Mono'; font-size:0.68em; color:#059669; font-weight:500; padding:5px 12px; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:8px; letter-spacing:0.06em;">
         {rt_label}
     </div>
 </div>
 """), unsafe_allow_html=True)
 
-st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#334155; letter-spacing:0.2em; text-transform:uppercase; padding:14px 15px 6px;">Navigation</div>""", unsafe_allow_html=True)
+st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#94A3B8; letter-spacing:0.2em; text-transform:uppercase; padding:14px 15px 6px;">Navigation</div>""", unsafe_allow_html=True)
 page = st.sidebar.radio("MENU",
     ["📊 Dashboard", "💼 Portfolio", "🍫 12-Pack Radar", "📈 Backtest Lab", "📰 Macro News"],
     label_visibility="collapsed")
 
-st.sidebar.markdown("""<div style="border-top:1px solid rgba(255,255,255,0.05); margin:10px 15px;"></div>""", unsafe_allow_html=True)
-st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#334155; letter-spacing:0.2em; text-transform:uppercase; padding:6px 15px;">Theme Color</div>""", unsafe_allow_html=True)
+st.sidebar.markdown("""<div style="border-top:1px solid rgba(0,0,0,0.07); margin:10px 15px;"></div>""", unsafe_allow_html=True)
+st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#94A3B8; letter-spacing:0.2em; text-transform:uppercase; padding:6px 15px;">Theme Color</div>""", unsafe_allow_html=True)
 col1, col2, col3 = st.sidebar.columns([0.1, 1, 0.1])
 with col2:
     new_color = st.color_picker("메인 컬러", st.session_state.main_color, label_visibility="collapsed", key="cp_theme")
@@ -710,8 +704,8 @@ with col2:
         st.session_state.main_color = new_color
         st.rerun()
 
-st.sidebar.markdown("""<div style="border-top:1px solid rgba(255,255,255,0.05); margin:10px 15px;"></div>""", unsafe_allow_html=True)
-st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#334155; letter-spacing:0.2em; text-transform:uppercase; padding:6px 15px;">Bookmarks</div>""", unsafe_allow_html=True)
+st.sidebar.markdown("""<div style="border-top:1px solid rgba(0,0,0,0.07); margin:10px 15px;"></div>""", unsafe_allow_html=True)
+st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#94A3B8; letter-spacing:0.2em; text-transform:uppercase; padding:6px 15px;">Bookmarks</div>""", unsafe_allow_html=True)
 st.sidebar.markdown("""
 <div style="display:flex; flex-direction:column; gap:0px; padding:0 12px;">
     <a href="https://www.youtube.com/@JB_Insight" target="_blank" class="sidebar-link">📊 JB 인사이트</a>
@@ -724,7 +718,7 @@ st.sidebar.markdown("""
     <a href="https://gemini.google.com/" target="_blank" class="sidebar-link">✨ 제미나이</a>
 </div>
 """, unsafe_allow_html=True)
-st.sidebar.markdown("""<div style="border-top:1px solid rgba(255,255,255,0.05); margin:10px 15px;"></div>""", unsafe_allow_html=True)
+st.sidebar.markdown("""<div style="border-top:1px solid rgba(0,0,0,0.07); margin:10px 15px;"></div>""", unsafe_allow_html=True)
 
 # ==========================================
 # 5. 메인 헤더
@@ -734,15 +728,15 @@ with c_title:
     st.markdown(apply_theme(f"""
     <div style="padding:4px 0 0;">
         <h1>AMLS V4.5 ENGINE</h1>
-        <p style="font-family:'DM Mono'; font-size:0.75em; margin:6px 0 0 2px; font-weight:400; color:#10B981; letter-spacing:0.22em; text-transform:uppercase;">The Wall Street Quantitative Strategy</p>
+        <p style="font-family:'DM Mono'; font-size:0.75em; margin:6px 0 0 2px; font-weight:500; color:#059669; letter-spacing:0.22em; text-transform:uppercase;">The Wall Street Quantitative Strategy</p>
     </div>
     """), unsafe_allow_html=True)
 
 with c_info:
-    st.markdown(f"""<div style="text-align:right; font-family:'DM Mono'; font-size:0.72em; font-weight:400; color:#334155; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:10px; margin-top:4px;">Custom Theme Edition</div>""", unsafe_allow_html=True)
+    st.markdown(f"""<div style="text-align:right; font-family:'DM Mono'; font-size:0.72em; font-weight:400; color:#94A3B8; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:10px; margin-top:4px;">Custom Theme Edition</div>""", unsafe_allow_html=True)
     i1, i2 = st.columns([1.5, 1])
     with i1:
-        st.markdown(f"""<div style="text-align:right; font-family:'DM Mono'; font-size:0.72em; color:#334155; margin-top:8px; letter-spacing:0.05em;">⏱ {last_update_time}</div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="text-align:right; font-family:'DM Mono'; font-size:0.72em; color:#94A3B8; margin-top:8px; letter-spacing:0.05em;">⏱ {last_update_time}</div>""", unsafe_allow_html=True)
     with i2:
         if st.button("↺ 동기화", use_container_width=True):
             fetch_realtime_prices.clear()
@@ -750,7 +744,7 @@ with c_info:
             st.rerun()
 
 st.markdown(apply_theme(f"""
-<div style="position:relative; margin:16px 0 28px; height:1px; background:rgba(255,255,255,0.05);">
+<div style="position:relative; margin:16px 0 28px; height:1px; background:rgba(0,0,0,0.07);">
     <div style="position:absolute; left:0; top:0; width:180px; height:1px; background:linear-gradient(90deg, rgba({r_c},{g_c},{b_c},0.8), transparent);"></div>
     <div style="position:absolute; right:0; top:0; width:80px; height:1px; background:linear-gradient(270deg, rgba({r_c},{g_c},{b_c},0.3), transparent);"></div>
 </div>
@@ -811,13 +805,13 @@ if page == "📊 Dashboard":
             {_lg_row('SMH > 50MA', f'${smh_close:.2f}', smh_c1)}
             {_lg_row('Momentum 1M >10%', f'{smh_1m*100:.1f}%', smh_c2)}
             {_lg_row('RSI > 50', f'{smh_rsi:.1f}', smh_c3)}
-            <div style="margin-top:auto; padding:10px 14px; font-size:0.78em; text-align:center; color:#475569; font-weight:400; border-top:1px solid rgba(255,255,255,0.05); font-family:'DM Mono'; letter-spacing:0.04em;">※ 3 filters required for SOXL</div>
+            <div style="margin-top:auto; padding:10px 14px; font-size:0.78em; text-align:center; color:#475569; font-weight:400; border-top:1px solid rgba(0,0,0,0.06); font-family:'DM Mono'; letter-spacing:0.04em;">※ 3 filters required for SOXL</div>
         </div>"""), unsafe_allow_html=True)
 
     with c3:
         st.markdown(apply_theme(f"""<div class="glass-card">
             <h3>Target Weights · R{curr_regime}</h3>
-            <div style="display:flex; justify-content:space-between; font-family:'DM Mono'; font-size:0.65em; color:#334155; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:8px; margin-bottom:4px; letter-spacing:0.15em; text-transform:uppercase;">
+            <div style="display:flex; justify-content:space-between; font-family:'DM Mono'; font-size:0.65em; color:#94A3B8; border-bottom:1px solid rgba(0,0,0,0.06); padding-bottom:8px; margin-bottom:4px; letter-spacing:0.15em; text-transform:uppercase;">
                 <span>Asset</span><span>Weight</span>
             </div>
             {weight_rows}
@@ -841,11 +835,15 @@ if page == "📊 Dashboard":
     fig_qqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['QQQ'], name='QQQ', line=dict(color=line_c, width=2.5)))
     fig_qqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['QQQ_MA200'], name='200MA', line=dict(color=dash_c, width=1.5, dash='dash')))
     fig_qqq.update_layout(title=dict(text="QQQ  vs  200MA", font=dict(family='DM Mono', size=13, color=t_color)), height=350, **chart_layout)
+    fig_qqq.update_xaxes(**_ax)
+    fig_qqq.update_yaxes(**_ax)
 
     fig_tqqq = go.Figure()
     fig_tqqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['TQQQ'], name='TQQQ', line=dict(color=line_c, width=2.5)))
     fig_tqqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['TQQQ_MA200'], name='200MA', line=dict(color=dash_c, width=1.5, dash='dash')))
     fig_tqqq.update_layout(title=dict(text="TQQQ  vs  200MA", font=dict(family='DM Mono', size=13, color=t_color)), height=350, **chart_layout)
+    fig_tqqq.update_xaxes(**_ax)
+    fig_tqqq.update_yaxes(**_ax)
 
     with chart_col1:
         with st.container(border=True):
@@ -975,8 +973,8 @@ elif page == "💼 Portfolio":
                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                 font=dict(color=t_color, family="DM Mono"),
                 margin=dict(t=40, b=20, l=20, r=20),
-                xaxis=dict(gridcolor='rgba(255,255,255,0.04)', zeroline=False),
-                yaxis=dict(gridcolor='rgba(255,255,255,0.04)', zeroline=False)
+                xaxis=dict(gridcolor='rgba(0,0,0,0.05)', zeroline=False),
+                yaxis=dict(gridcolor='rgba(0,0,0,0.05)', zeroline=False)
             )
             with chart_c3:
                 with st.container(border=True):
@@ -1035,9 +1033,9 @@ elif page == "💼 Portfolio":
             ret_usd_str   = f"{ret_usd:+.2f}%" if asset != 'CASH' else "—"
 
             if abs(diff) < cur_p * 0.05 and asset != 'CASH':
-                action, diff_str = "<span style='color:#334155; font-weight:500;'>HOLD</span>", "—"
+                action, diff_str = "<span style='color:#94A3B8; font-weight:500;'>HOLD</span>", "—"
             elif abs(diff) < 1.0 and asset == 'CASH':
-                action, diff_str = "<span style='color:#334155; font-weight:500;'>HOLD</span>", "—"
+                action, diff_str = "<span style='color:#94A3B8; font-weight:500;'>HOLD</span>", "—"
             elif diff > 0:
                 action   = f"<span style='color:#10B981; font-weight:600; background:rgba(16,185,129,0.1); padding:3px 10px; border-radius:6px; border:1px solid rgba(16,185,129,0.2);'>BUY</span>"
                 diff_str = f"<span style='color:#10B981; font-weight:500;'>+${diff:,.0f}</span>"
@@ -1132,7 +1130,7 @@ elif page == "🍫 12-Pack Radar":
     <div class="glass-card" style="height:auto !important; margin-bottom:24px; padding:24px !important; border-left:3px solid {radar_color} !important; flex-direction:column; gap:10px;">
         <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
             <span style="font-family:'Syne'; font-size:1.25em; font-weight:700; color:{radar_color};">{radar_status}</span>
-            <span style="font-family:'DM Mono'; font-size:0.72em; color:#475569; background:rgba(255,255,255,0.04); padding:4px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.06); letter-spacing:0.1em;">
+            <span style="font-family:'DM Mono'; font-size:0.72em; color:#475569; background:rgba(0,0,0,0.04); padding:4px 12px; border-radius:6px; border:1px solid rgba(0,0,0,0.08); letter-spacing:0.1em;">
                 RISK {risk_cnt}  ·  WARN {warn_cnt}  ·  SAFE {safe_cnt}
             </span>
         </div>
@@ -1168,7 +1166,7 @@ elif page == "🍫 12-Pack Radar":
     gauge_steps = [
         {'range':[0,25],  'color':"rgba(239,68,68,0.45)"},
         {'range':[25,45], 'color':"rgba(245,158,11,0.35)"},
-        {'range':[45,55], 'color':"rgba(255,255,255,0.06)"},
+        {'range':[45,55], 'color':"rgba(0,0,0,0.04)"},
         {'range':[55,75], 'color':f"rgba({r_c},{g_c},{b_c},0.35)"},
         {'range':[75,100],'color':f"rgba({r_c},{g_c},{b_c},0.55)"}
     ]
@@ -1190,7 +1188,7 @@ elif page == "🍫 12-Pack Radar":
         return (f'<a href="{url}" target="_blank" class="radar-link">'
                 f'<div class="radar-link-title" style="margin-bottom:5px;">{title} ↗{badge}</div>'
                 f'</a>'
-                f'<div style="font-size:0.76em; color:#475569; margin-bottom:12px; line-height:1.45; letter-spacing:-0.2px; word-break:keep-all;">{desc}</div>')
+                f'<div style="font-size:0.76em; color:#64748B; margin-bottom:12px; line-height:1.45; letter-spacing:-0.2px; word-break:keep-all;">{desc}</div>')
 
     u1  = "https://kr.tradingview.com/chart/?symbol=NASDAQ:QQQ"
     u2  = "https://kr.tradingview.com/chart/?symbol=NASDAQ:QQQ"
@@ -1211,16 +1209,20 @@ elif page == "🍫 12-Pack Radar":
             st.markdown(apply_theme(r_head("1. DCA  ·  RSI", b1, u1, desc1)), unsafe_allow_html=True)
             fig1=go.Figure()
             fig1.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQ_RSI'], line=dict(color=line_c, width=2)))
-            fig1.add_hline(y=70, line_dash='dot', line_color='#475569', line_width=1)
+            fig1.add_hline(y=70, line_dash='dot', line_color='#CBD5E1', line_width=1)
             fig1.add_hline(y=30, line_dash='dot', line_color=rsi_low_c, line_width=1)
-            fig1.update_layout(**radar_layout, yaxis=dict(range=[10,90], gridcolor='rgba(255,255,255,0.04)', zeroline=False), showlegend=False)
+            fig1.update_layout(**radar_layout, showlegend=False)
+            fig1.update_xaxes(**_ax_r)
+            fig1.update_yaxes(range=[10,90], **_ax_r)
             st.plotly_chart(fig1, use_container_width=True)
     with row1[1]:
         with st.container(border=True):
             st.markdown(apply_theme(r_head("2. Drawdown", b2, u2, desc2)), unsafe_allow_html=True)
             fig2=go.Figure()
-            fig2.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQ_DD'], fill='tozeroy', fillcolor='rgba(239,68,68,0.08)', line=dict(color='#EF4444', width=1.8)))
-            fig2.update_layout(**radar_layout, yaxis=dict(tickformat='.0%', gridcolor='rgba(255,255,255,0.04)', zeroline=False), showlegend=False)
+            fig2.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQ_DD'], fill='tozeroy', fillcolor='rgba(239,68,68,0.07)', line=dict(color='#EF4444', width=1.8)))
+            fig2.update_layout(**radar_layout, showlegend=False)
+            fig2.update_xaxes(**_ax_r)
+            fig2.update_yaxes(tickformat='.0%', **_ax_r)
             st.plotly_chart(fig2, use_container_width=True)
     with row1[2]:
         with st.container(border=True):
@@ -1240,6 +1242,8 @@ elif page == "🍫 12-Pack Radar":
                 marker_line_width=0
             ))
             fig4.update_layout(**radar_layout, showlegend=False)
+            fig4.update_xaxes(**_ax_r)
+            fig4.update_yaxes(**_ax_r)
             st.plotly_chart(fig4, use_container_width=True)
 
     row2 = st.columns(4)
@@ -1250,6 +1254,7 @@ elif page == "🍫 12-Pack Radar":
             fig5.add_trace(go.Scatter(x=df_view.index, y=df_view['HYG_IEF_Ratio'], line=dict(color=line_c, width=2)))
             fig5.add_trace(go.Scatter(x=df_view.index, y=df_view['HYG_IEF_MA50'],  line=dict(color=dash_c, dash='dot', width=1.2)))
             fig5.update_layout(**radar_layout, showlegend=False)
+            fig5.update_xaxes(**_ax_r); fig5.update_yaxes(**_ax_r)
             st.plotly_chart(fig5, use_container_width=True)
     with row2[1]:
         with st.container(border=True):
@@ -1257,7 +1262,9 @@ elif page == "🍫 12-Pack Radar":
             fig6=go.Figure()
             fig6.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQ_20d_Ret'],  name='QQQ',  line=dict(color=line_c, width=2)))
             fig6.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQE_20d_Ret'], name='QQQE', line=dict(color=dash_c, dash='dot', width=1.2)))
-            fig6.update_layout(**radar_layout, showlegend=False, yaxis=dict(tickformat='.0%', gridcolor='rgba(255,255,255,0.04)', zeroline=False))
+            fig6.update_layout(**radar_layout, showlegend=False)
+            fig6.update_xaxes(**_ax_r)
+            fig6.update_yaxes(tickformat='.0%', **_ax_r)
             st.plotly_chart(fig6, use_container_width=True)
     with row2[2]:
         with st.container(border=True):
@@ -1266,6 +1273,7 @@ elif page == "🍫 12-Pack Radar":
             fig7.add_trace(go.Scatter(x=df_view.index, y=df_view['GLD_SPY_Ratio'], line=dict(color=line_c, width=2)))
             fig7.add_trace(go.Scatter(x=df_view.index, y=df_view['GLD_SPY_MA50'],  line=dict(color=dash_c, dash='dot', width=1.2)))
             fig7.update_layout(**radar_layout, showlegend=False)
+            fig7.update_xaxes(**_ax_r); fig7.update_yaxes(**_ax_r)
             st.plotly_chart(fig7, use_container_width=True)
     with row2[3]:
         with st.container(border=True):
@@ -1274,6 +1282,7 @@ elif page == "🍫 12-Pack Radar":
             fig8.add_trace(go.Scatter(x=df_view.index, y=df_view['UUP'],       line=dict(color=line_c, width=2)))
             fig8.add_trace(go.Scatter(x=df_view.index, y=df_view['UUP_MA50'],  line=dict(color=dash_c, dash='dot', width=1.2)))
             fig8.update_layout(**radar_layout, showlegend=False)
+            fig8.update_xaxes(**_ax_r); fig8.update_yaxes(**_ax_r)
             st.plotly_chart(fig8, use_container_width=True)
 
     row3 = st.columns(4)
@@ -1284,6 +1293,7 @@ elif page == "🍫 12-Pack Radar":
             fig9.add_trace(go.Scatter(x=df_view.index, y=df_view['^TNX'],      line=dict(color=line_c, width=2)))
             fig9.add_trace(go.Scatter(x=df_view.index, y=df_view['TNX_MA50'],  line=dict(color=dash_c, dash='dot', width=1.2)))
             fig9.update_layout(**radar_layout, showlegend=False)
+            fig9.update_xaxes(**_ax_r); fig9.update_yaxes(**_ax_r)
             st.plotly_chart(fig9, use_container_width=True)
     with row3[1]:
         with st.container(border=True):
@@ -1292,6 +1302,7 @@ elif page == "🍫 12-Pack Radar":
             fig10.add_trace(go.Scatter(x=df_view.index, y=df_view['BTC-USD'],  line=dict(color=line_c, width=2)))
             fig10.add_trace(go.Scatter(x=df_view.index, y=df_view['BTC_MA50'], line=dict(color=dash_c, dash='dot', width=1.2)))
             fig10.update_layout(**radar_layout, showlegend=False)
+            fig10.update_xaxes(**_ax_r); fig10.update_yaxes(**_ax_r)
             st.plotly_chart(fig10, use_container_width=True)
     with row3[2]:
         with st.container(border=True):
@@ -1300,6 +1311,7 @@ elif page == "🍫 12-Pack Radar":
             fig11.add_trace(go.Scatter(x=df_view.index, y=df_view['IWM_SPY_Ratio'], line=dict(color=line_c, width=2)))
             fig11.add_trace(go.Scatter(x=df_view.index, y=df_view['IWM_SPY_MA50'],  line=dict(color=dash_c, dash='dot', width=1.2)))
             fig11.update_layout(**radar_layout, showlegend=False)
+            fig11.update_xaxes(**_ax_r); fig11.update_yaxes(**_ax_r)
             st.plotly_chart(fig11, use_container_width=True)
     with row3[3]:
         with st.container(border=True):
@@ -1308,6 +1320,7 @@ elif page == "🍫 12-Pack Radar":
             fig12.add_trace(go.Scatter(x=df_view.index, y=df_view['^VIX'],      line=dict(color=line_c, width=2)))
             fig12.add_trace(go.Scatter(x=df_view.index, y=df_view['VIX_MA50'],  line=dict(color=dash_c, dash='dot', width=1.2)))
             fig12.update_layout(**radar_layout, showlegend=False)
+            fig12.update_xaxes(**_ax_r); fig12.update_yaxes(**_ax_r)
             st.plotly_chart(fig12, use_container_width=True)
 
 # ──────────────────────────────────────────
@@ -1315,7 +1328,7 @@ elif page == "📈 Backtest Lab":
     st.markdown("<h2 style='font-family:Syne; font-size:1.7em; color:#EEF2FF; margin-bottom:20px;'>📈 Backtest Lab</h2>", unsafe_allow_html=True)
 
     with st.container(border=True):
-        st.markdown("""<div style="font-family:'DM Mono'; font-size:0.65em; font-weight:400; color:#334155; margin-bottom:14px; letter-spacing:0.2em; text-transform:uppercase;">⚙ Simulation Config</div>""", unsafe_allow_html=True)
+        st.markdown("""<div style="font-family:'DM Mono'; font-size:0.65em; font-weight:400; color:#94A3B8; margin-bottom:14px; letter-spacing:0.2em; text-transform:uppercase;">⚙ Simulation Config</div>""", unsafe_allow_html=True)
         col_s, col_e, col_m = st.columns(3)
         with col_s:
             bt_start = st.date_input("Start Date", datetime(2020, 1, 1), key="bt_start_input")
@@ -1395,7 +1408,7 @@ elif page == "📈 Backtest Lab":
             st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
             fig_eq = go.Figure()
-            fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['QQQ'],  name='QQQ',  line=dict(color='#334155', width=1.2, dash='dot')))
+            fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['QQQ'],  name='QQQ',  line=dict(color='#CBD5E1', width=1.2, dash='dot')))
             fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['QLD'],  name='QLD',  line=dict(color='#3B82F6', width=1.2, dash='dash')))
             fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['TQQQ'], name='TQQQ', line=dict(color='#EF4444', width=1.2, dash='dash')))
             fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['V4.5'], name='AMLS', line=dict(color=main_color, width=3)))
@@ -1403,6 +1416,8 @@ elif page == "📈 Backtest Lab":
                 title=dict(text="Equity Curve  ·  Log Scale", font=dict(family='DM Mono', size=13, color=t_color)),
                 height=420, yaxis_type='log', **chart_layout
             )
+            fig_eq.update_xaxes(**_ax)
+            fig_eq.update_yaxes(**_ax)
 
             with st.container(border=True):
                 st.plotly_chart(fig_eq, use_container_width=True)
@@ -1411,7 +1426,7 @@ elif page == "📈 Backtest Lab":
 
             def get_dd_series(s): return (s / s.cummax()) - 1
             fig_dd = go.Figure()
-            fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['QQQ']),  name='QQQ',  line=dict(color='#334155', width=1)))
+            fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['QQQ']),  name='QQQ',  line=dict(color='#CBD5E1', width=1)))
             fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['QLD']),  name='QLD',  line=dict(color='#3B82F6', width=1)))
             fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['TQQQ']), name='TQQQ', line=dict(color='#EF4444', width=1)))
             fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['V4.5']), name='AMLS',
@@ -1419,8 +1434,10 @@ elif page == "📈 Backtest Lab":
                                          line=dict(color=main_color, width=2.2)))
             fig_dd.update_layout(
                 title=dict(text="Drawdown Curve", font=dict(family='DM Mono', size=13, color=t_color)),
-                height=300, yaxis=dict(tickformat='.0%', gridcolor='rgba(255,255,255,0.04)', zeroline=False), **chart_layout
+                height=300, **chart_layout
             )
+            fig_dd.update_xaxes(**_ax)
+            fig_dd.update_yaxes(tickformat='.0%', **_ax)
 
             with st.container(border=True):
                 st.plotly_chart(fig_dd, use_container_width=True)
@@ -1488,7 +1505,7 @@ elif page == "📰 Macro News":
                     <div style="font-family:'DM Sans'; font-weight:400; font-size:0.9em; line-height:1.5; color:#94A3B8; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">
                         <a href="{item['link']}" target="_blank" style="color:#94A3B8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#10B981'" onmouseout="this.style.color='#94A3B8'">{item['title']}</a>
                     </div>
-                    <div style="font-family:'DM Mono'; font-size:0.68em; color:#334155; margin-top:8px; letter-spacing:0.06em;">{item['date']}</div>
+                    <div style="font-family:'DM Mono'; font-size:0.68em; color:#94A3B8; margin-top:8px; letter-spacing:0.06em;">{item['date']}</div>
                 </div>
                 """)
                 st.markdown(html_snippet, unsafe_allow_html=True)
