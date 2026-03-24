@@ -1052,75 +1052,8 @@ if page == "📊 Dashboard":
 
 # ──────────────────────────────────────────
 elif page == "💼 Portfolio":
-    st.markdown("""
-    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
-        <div>
-            <h2 style="font-family:'Syne';font-size:1.7em;color:#0F172A;margin:0;">💼 Portfolio  &amp;  Rebalancing</h2>
-            <div style="font-family:'DM Mono';font-size:0.65em;color:#4A5568;letter-spacing:0.16em;text-transform:uppercase;margin-top:3px;">Position Tracker  ·  Rebalancing Engine</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
 
-    col_up, col_down = st.columns(2)
-    with col_up:
-        uploaded_file = st.file_uploader("📂 Restore from JSON", type="json")
-        if uploaded_file is not None:
-            try:
-                data = json.load(uploaded_file)
-                st.session_state.portfolio.update(data)
-                sanitize_portfolio()
-                save_portfolio_to_disk()
-                st.success("포트폴리오 복구 완료")
-                st.rerun()
-            except:
-                st.error("파일 형식 오류")
-    with col_down:
-        st.markdown("<br>", unsafe_allow_html=True)
-        json_str = json.dumps(st.session_state.portfolio)
-        st.download_button("💾 Backup to JSON", data=json_str, file_name="portfolio.json", mime="application/json", use_container_width=True)
-
-    st.divider()
-
-    editor_data = []
-    for asset in ASSET_LIST:
-        val = st.session_state.portfolio.get(asset, {})
-        editor_data.append({
-            "Asset": asset,
-            "Shares": float(val.get('shares', 0.0)),
-            "Avg Price($)": float(val.get('avg_price', 1.0 if asset == 'CASH' else 0.0)),
-            "FX Rate(₩)": float(val.get('fx', 1350.0))
-        })
-    df_editor = pd.DataFrame(editor_data)
-
-    with st.container(border=True):
-        edited_df = st.data_editor(
-            df_editor,
-            disabled=["Asset"],
-            hide_index=True,
-            use_container_width=True,
-            key="pf_editor",
-            column_config={
-                "Shares": st.column_config.NumberColumn("Shares", format="%.6f"),
-                "Avg Price($)": st.column_config.NumberColumn("Avg Price($)", format="%.4f"),
-                "FX Rate(₩)": st.column_config.NumberColumn("FX Rate(₩)", format="%.2f")
-            }
-        )
-
-    if not edited_df.equals(df_editor):
-        for _, row in edited_df.iterrows():
-            asset = row["Asset"]
-            st.session_state.portfolio[asset] = {
-                'shares': float(row["Shares"]),
-                'avg_price': float(row["Avg Price($)"]),
-                'fx': float(row["FX Rate(₩)"])
-            }
-        save_portfolio_to_disk()
-        st.rerun()
-
-    st.markdown("""
-    <div style="font-family:'DM Mono';font-size:0.62em;color:#4A5568;letter-spacing:0.2em;text-transform:uppercase;margin:16px 0 6px;">⚖  Action Plan</div>
-    """, unsafe_allow_html=True)
-
+    # ── 상단 티커 바 (포트폴리오 전용) ─────────────────────────
     current_prices = {}
     for t in ASSET_LIST:
         if t == 'CASH': current_prices[t] = 1.0
@@ -1128,176 +1061,298 @@ elif page == "💼 Portfolio":
         elif t in df.columns: current_prices[t] = df[t].iloc[-1]
         else: current_prices[t] = 0.0
 
-    cur_fx = rt_prices.get('USDKRW=X', 1350.0)
+    cur_fx    = rt_prices.get('USDKRW=X', 1350.0)
     curr_vals = {a: st.session_state.portfolio[a]['shares'] * current_prices[a] for a in ASSET_LIST}
     total_val_usd = sum(curr_vals.values())
-
-    _nav_html = (
-        f'<div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">'
-        f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);border-top:2px solid #111118;'
-        f'border-radius:0;padding:12px 20px;">'
-        f'<div style="font-family:DM Mono,monospace;font-size:0.58em;color:#9494A0;'
-        f'letter-spacing:0.16em;text-transform:uppercase;margin-bottom:4px;">Total NAV</div>'
-        f'<div style="font-family:DM Mono,monospace;font-size:1.55em;font-weight:400;'
-        f'color:#111118;font-variant-numeric:tabular-nums;">${total_val_usd:,.2f}</div>'
-        f'</div>'
-        f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);border-top:2px solid rgba(0,0,0,0.25);'
-        f'border-radius:0;padding:12px 20px;">'
-        f'<div style="font-family:DM Mono,monospace;font-size:0.58em;color:#9494A0;'
-        f'letter-spacing:0.16em;text-transform:uppercase;margin-bottom:4px;">USD/KRW</div>'
-        f'<div style="font-family:DM Mono,monospace;font-size:1.55em;font-weight:400;'
-        f'color:#111118;font-variant-numeric:tabular-nums;">₩{cur_fx:,.2f}</div>'
-        f'</div>'
-        f'</div>'
+    total_val_krw = total_val_usd * cur_fx
+    invested_cost = sum(
+        st.session_state.portfolio[a]['shares'] * st.session_state.portfolio[a]['avg_price']
+        for a in ASSET_LIST if a != 'CASH'
     )
-    st.markdown(_nav_html, unsafe_allow_html=True)
+    pnl_pct = (total_val_usd / invested_cost - 1) * 100 if invested_cost > 0 else 0.0
+    pnl_color = "#059669" if pnl_pct >= 0 else "#DC2626"
+    pnl_arrow = "▲" if pnl_pct >= 0 else "▼"
 
-    if total_val_usd > 0:
-        c_green, c_red = main_color, "#EF4444"
-        pie_layout = dict(
-            margin=dict(l=20, r=20, t=40, b=20),
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(family="DM Mono, DM Sans", color=t_color)
+    def _stat(label, val, sub="", sub_color="#9494A0"):
+        return (
+            f'<div style="display:inline-flex;flex-direction:column;padding:0 18px;'
+            f'border-right:1px solid rgba(0,0,0,0.09);min-width:110px;">' 
+            f'<span style="font-family:DM Mono,monospace;font-size:0.57em;color:#9494A0;'
+            f'letter-spacing:0.14em;text-transform:uppercase;">{label}</span>'
+            f'<span style="font-family:DM Mono,monospace;font-size:0.92em;color:#111118;'
+            f'font-variant-numeric:tabular-nums;">{val}</span>'
+            f'<span style="font-family:DM Mono,monospace;font-size:0.66em;color:{sub_color};">'
+            f'{sub}</span></div>'
         )
 
-        diff_vals = {a: (total_val_usd * target_weights.get(a, 0.0)) - curr_vals[a] for a in ASSET_LIST}
-        chart_c1, chart_c2, chart_c3 = st.columns([1, 1, 1.5])
+    stat_bar = (
+        _stat("Total NAV", f"${total_val_usd:,.2f}", f"₩{total_val_krw:,.0f}") +
+        _stat("USD/KRW", f"₩{cur_fx:,.2f}", "환율") +
+        _stat("P&L", f"{pnl_pct:+.2f}%", f"{pnl_arrow} 평가손익", pnl_color) +
+        _stat("Regime", f"R{curr_regime}", regime_info[curr_regime][1])
+    )
 
-        labels_cur = [a for a in ASSET_LIST if curr_vals[a] > 0]
-        vals_cur   = [curr_vals[a] for a in labels_cur]
-        if sum(vals_cur) > 0:
-            fig_cur = go.Figure(data=[go.Pie(labels=labels_cur, values=vals_cur, hole=.45, textinfo='label+percent',
-                                              marker=dict(colors=[line_c, dash_c, '#34D399', '#6EE7B7', '#A7F3D0', '#059669', '#047857', '#065F46', '#D1FAE5']))])
-            fig_cur.update_layout(title=dict(text="Current", font=dict(family="DM Mono", size=13, color=t_color)), **pie_layout)
-            with chart_c1:
-                with st.container(border=True):
-                    st.plotly_chart(fig_cur, use_container_width=True)
+    st.markdown(
+        f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);'
+        f'border-left:3px solid #111118;padding:9px 0 9px 16px;'
+        f'margin-bottom:14px;display:flex;align-items:center;overflow-x:auto;">' 
+        f'<span style="font-family:DM Mono,monospace;font-size:0.57em;color:#9494A0;'
+        f'letter-spacing:0.18em;text-transform:uppercase;white-space:nowrap;'
+        f'padding-right:16px;border-right:1px solid rgba(0,0,0,0.09);">Portfolio</span>'
+        f'{stat_bar}'
+        f'<div style="margin-left:auto;padding:0 14px;display:flex;gap:8px;align-items:center;">' ,
+        unsafe_allow_html=True
+    )
+    # 동기화 버튼을 티커바 오른쪽에 배치
+    _btn_col1, _btn_col2, _btn_col3 = st.columns([6, 1, 1])
+    with _btn_col2:
+        uploaded_file = st.file_uploader("📂", type="json", label_visibility="collapsed")
+        if uploaded_file is not None:
+            try:
+                data = json.load(uploaded_file)
+                st.session_state.portfolio.update(data)
+                sanitize_portfolio()
+                save_portfolio_to_disk()
+                st.success("복구 완료")
+                st.rerun()
+            except:
+                st.error("오류")
+    with _btn_col3:
+        json_str = json.dumps(st.session_state.portfolio)
+        st.download_button("💾", data=json_str, file_name="portfolio.json",
+                           mime="application/json", use_container_width=True)
 
-        labels_tgt = [a for a in ASSET_LIST if target_weights.get(a, 0) > 0]
-        vals_tgt   = [target_weights.get(a, 0) for a in labels_tgt]
-        fig_tgt = go.Figure(data=[go.Pie(labels=labels_tgt, values=vals_tgt, hole=.45, textinfo='label+percent',
-                                          marker=dict(colors=[line_c, dash_c, '#34D399', '#6EE7B7', '#A7F3D0', '#059669', '#047857', '#065F46', '#D1FAE5']))])
-        fig_tgt.update_layout(title=dict(text=f"Target  ·  R{curr_regime}", font=dict(family="DM Mono", size=13, color=t_color)), **pie_layout)
-        with chart_c2:
-            with st.container(border=True):
-                st.plotly_chart(fig_tgt, use_container_width=True)
+    st.markdown("</div></div>", unsafe_allow_html=True)
 
-        diff_labels = [a for a in ASSET_LIST if abs(diff_vals[a]) >= 1.0]
-        diff_values = [diff_vals[a] for a in diff_labels]
-        diff_colors = [c_green if v > 0 else c_red for v in diff_values]
-        if diff_labels:
-            fig_bar = go.Figure(data=[go.Bar(
-                x=diff_labels, y=diff_values,
-                marker_color=diff_colors,
-                text=[f"${v:,.0f}" for v in diff_values],
-                textposition='auto',
-                marker_line_width=0
-            )])
-            fig_bar.update_layout(
-                title=dict(text="Rebalancing  Δ($)", font=dict(family="DM Mono", size=13, color=t_color)),
-                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(color=t_color, family="DM Mono"),
-                margin=dict(t=40, b=20, l=20, r=20),
-                xaxis=dict(gridcolor='rgba(0,0,0,0.05)', zeroline=False),
-                yaxis=dict(gridcolor='rgba(0,0,0,0.05)', zeroline=False)
-            )
-            with chart_c3:
-                with st.container(border=True):
-                    st.plotly_chart(fig_bar, use_container_width=True)
+    # ── 메인 2패널: 좌(포지션 입력+Quick Orders) + 우(차트+리밸런싱) ─
+    left_pf, right_pf = st.columns([1.1, 2])
 
-        # ── Quick Orders ─────────────────────────────────────────
-        st.markdown("""<div style="font-family:'DM Mono';font-size:0.6em;font-weight:500;color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid #111118;">📝  Quick Orders</div>""", unsafe_allow_html=True)
-
-        sell_items, buy_items = [], []
+    with left_pf:
+        # 섹션 라벨
+        st.markdown(
+            '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
+            'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
+            'padding-bottom:6px;border-bottom:2px solid #111118;margin-bottom:10px;">'
+            'Position Input</div>',
+            unsafe_allow_html=True
+        )
+        editor_data = []
         for asset in ASSET_LIST:
-            cur_p = current_prices[asset] if current_prices[asset] > 0 else 1.0
-            diff  = diff_vals[asset]
-            if asset != 'CASH' and diff < -cur_p * 0.05:
-                sell_items.append((asset, f"{abs(diff)/cur_p:,.2f} 주 매도", "#EF4444"))
-            elif asset == 'CASH' and diff < -1.0:
-                sell_items.append(("CASH", f"${abs(diff):,.0f} 사용", "#EF4444"))
-            if asset != 'CASH' and diff > cur_p * 0.05:
-                buy_items.append((asset, f"{diff/cur_p:,.2f} 주 매수", "#059669"))
-            elif asset == 'CASH' and diff > 1.0:
-                buy_items.append(("CASH", f"${diff:,.0f} 확보", "#059669"))
+            val = st.session_state.portfolio.get(asset, {})
+            editor_data.append({
+                "Asset": asset,
+                "Shares": float(val.get('shares', 0.0)),
+                "Avg Price($)": float(val.get('avg_price', 1.0 if asset == 'CASH' else 0.0)),
+                "FX Rate(₩)": float(val.get('fx', 1350.0))
+            })
+        df_editor = pd.DataFrame(editor_data)
 
-        qo_col1, qo_col2 = st.columns(2)
+        with st.container(border=True):
+            edited_df = st.data_editor(
+                df_editor, disabled=["Asset"], hide_index=True,
+                use_container_width=True, key="pf_editor",
+                column_config={
+                    "Shares": st.column_config.NumberColumn("Shares", format="%.4f"),
+                    "Avg Price($)": st.column_config.NumberColumn("Avg($)", format="%.2f"),
+                    "FX Rate(₩)": st.column_config.NumberColumn("FX(₩)", format="%.0f")
+                }
+            )
 
-        def _order_card(title, items, accent, col):
-            rows_html = "".join([
-                f'<div style="display:flex;justify-content:space-between;align-items:center;'
-                f'padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.06);">'
-                f'<span style="font-family:DM Mono,monospace;font-size:0.82em;font-weight:600;color:#111118;">{a}</span>'
-                f'<span style="font-family:DM Mono,monospace;font-size:0.82em;color:{c};font-variant-numeric:tabular-nums;">{v}</span>'
-                f'</div>'
-                for a, v, c in items
-            ]) or f'<div style="font-family:DM Mono,monospace;font-size:0.78em;color:#9494A0;padding:8px 0;">— 해당 없음</div>'
-            col.markdown(
-                f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);'
-                f'border-top:3px solid {accent};padding:16px 18px;">'
-                f'<div style="font-family:DM Sans,sans-serif;font-size:0.88em;font-weight:700;'
-                f'color:{accent};letter-spacing:0.02em;margin-bottom:10px;">{title}</div>'
-                f'{rows_html}</div>',
+        if not edited_df.equals(df_editor):
+            for _, row in edited_df.iterrows():
+                asset = row["Asset"]
+                st.session_state.portfolio[asset] = {
+                    'shares': float(row["Shares"]),
+                    'avg_price': float(row["Avg Price($)"]),
+                    'fx': float(row["FX Rate(₩)"])
+                }
+            save_portfolio_to_disk()
+            st.rerun()
+
+        if total_val_usd > 0:
+            diff_vals = {a: (total_val_usd * target_weights.get(a, 0.0)) - curr_vals[a] for a in ASSET_LIST}
+
+            st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+            st.markdown(
+                '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
+                'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
+                'padding-bottom:6px;border-bottom:2px solid #111118;margin-bottom:10px;">'
+                'Quick Orders</div>',
                 unsafe_allow_html=True
             )
 
-        _order_card("🔴  SELL", sell_items, "#EF4444", qo_col1)
-        _order_card("🟢  BUY",  buy_items,  "#059669", qo_col2)
+            sell_items, buy_items = [], []
+            for asset in ASSET_LIST:
+                cur_p = current_prices[asset] if current_prices[asset] > 0 else 1.0
+                diff  = diff_vals[asset]
+                if asset != 'CASH' and diff < -cur_p * 0.05:
+                    sell_items.append((asset, f"{abs(diff)/cur_p:,.2f} 주 매도", "#DC2626"))
+                elif asset == 'CASH' and diff < -1.0:
+                    sell_items.append(("CASH", f"${abs(diff):,.0f} 사용", "#DC2626"))
+                if asset != 'CASH' and diff > cur_p * 0.05:
+                    buy_items.append((asset, f"{diff/cur_p:,.2f} 주 매수", "#059669"))
+                elif asset == 'CASH' and diff > 1.0:
+                    buy_items.append(("CASH", f"${diff:,.0f} 확보", "#059669"))
 
-        rebal_html = f"""<div style="overflow-x:auto; padding:10px 0;">
-<table class="mint-table">
-<thead><tr>
-<th>Asset</th><th>Avg → Cur</th><th>Ret (KRW)</th><th>Value ($)</th><th>Target %</th><th>Target ($)</th><th>Δ ($)</th><th style="text-align:center;">Action</th>
-</tr></thead><tbody>"""
+            qo_col1, qo_col2 = st.columns(2)
 
-        for asset in ASSET_LIST:
-            shares = st.session_state.portfolio[asset]['shares']
-            avg_p  = st.session_state.portfolio[asset]['avg_price']
-            pur_fx = st.session_state.portfolio[asset]['fx']
-            cur_p  = current_prices[asset] if current_prices[asset] > 0 else 1.0
-            curr_v = curr_vals[asset]
-            tgt_w  = target_weights.get(asset, 0.0)
-            tgt_v  = total_val_usd * tgt_w
-            diff   = diff_vals[asset]
+            def _order_card(title, items, accent, col):
+                rows_html = "".join([
+                    f'<div style="display:flex;justify-content:space-between;'
+                    f'padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.05);">'
+                    f'<span style="font-family:DM Mono,monospace;font-size:0.78em;'
+                    f'font-weight:600;color:#111118;">{a}</span>'
+                    f'<span style="font-family:DM Mono,monospace;font-size:0.78em;'
+                    f'color:{c};font-variant-numeric:tabular-nums;">{v}</span></div>'
+                    for a, v, c in items
+                ]) or f'<div style="font-family:DM Mono,monospace;font-size:0.74em;color:#9494A0;padding:6px 0;">— 없음</div>'
+                col.markdown(
+                    f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.10);'
+                    f'border-top:2px solid {accent};padding:12px 14px;">'
+                    f'<div style="font-family:DM Sans,sans-serif;font-size:0.8em;'
+                    f'font-weight:700;color:{accent};margin-bottom:8px;">{title}</div>'
+                    f'{rows_html}</div>',
+                    unsafe_allow_html=True
+                )
 
-            if asset == 'CASH':
-                avg_p_str = "—"
-                ret_usd, ret_krw = 0.0, ((cur_fx / pur_fx) - 1) * 100 if pur_fx > 0 else 0.0
-            else:
-                avg_p_str = f"${avg_p:,.2f} → ${cur_p:,.2f}"
-                ret_usd   = (cur_p / avg_p - 1) * 100 if avg_p > 0 else 0.0
-                ret_krw   = ((cur_p * cur_fx) / (avg_p * pur_fx) - 1) * 100 if (avg_p > 0 and pur_fx > 0) else 0.0
+            _order_card("🔴 SELL", sell_items, "#DC2626", qo_col1)
+            _order_card("🟢 BUY",  buy_items,  "#059669", qo_col2)
 
-            ret_usd_color = c_green if ret_usd >= 0 else c_red
-            ret_usd_str   = f"{ret_usd:+.2f}%" if asset != 'CASH' else "—"
+    with right_pf:
+        if total_val_usd > 0:
+            # 차트 행: 2개 파이 + 1개 바
+            st.markdown(
+                '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
+                'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
+                'padding-bottom:6px;border-bottom:2px solid #111118;margin-bottom:10px;">'
+                'Allocation  ·  Visual</div>',
+                unsafe_allow_html=True
+            )
+            c_green, c_red = main_color, "#DC2626"
+            pie_colors = [line_c, '#B0B0BE', '#34D399', '#6EE7B7', '#A7F3D0',
+                          '#059669', '#047857', '#065F46', '#D1FAE5']
+            pie_layout = dict(
+                margin=dict(l=10, r=10, t=30, b=10),
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(family="DM Mono, DM Sans", color=t_color),
+                showlegend=False
+            )
 
-            if abs(diff) < cur_p * 0.05 and asset != 'CASH':
-                action, diff_str = "<span style='color:#4A5568; font-weight:500;'>HOLD</span>", "—"
-            elif abs(diff) < 1.0 and asset == 'CASH':
-                action, diff_str = "<span style='color:#4A5568; font-weight:500;'>HOLD</span>", "—"
-            elif diff > 0:
-                action   = f"<span style='color:#10B981; font-weight:600; background:rgba(16,185,129,0.1); padding:3px 10px; border-radius:6px; border:1px solid rgba(16,185,129,0.2);'>BUY</span>"
-                diff_str = f"<span style='color:#10B981; font-weight:500;'>+${diff:,.0f}</span>"
-            else:
-                action   = f"<span style='color:#EF4444; font-weight:600; background:rgba(239,68,68,0.1); padding:3px 10px; border-radius:6px; border:1px solid rgba(239,68,68,0.2);'>SELL</span>"
-                diff_str = f"<span style='color:#EF4444; font-weight:500;'>-${abs(diff):,.0f}</span>"
+            chart_c1, chart_c2, chart_c3 = st.columns([1, 1, 1.5])
 
-            if tgt_w > 0 or curr_v > 0 or shares > 0:
-                rebal_html += f"""<tr>
-<td style="font-weight:700; font-family:'DM Sans'; color:#10B981;">{asset}</td>
-<td style="color:#2D3A4A;">{avg_p_str}</td>
-<td><span style="color:{ret_usd_color}; font-weight:500;">{ret_usd_str}</span></td>
-<td>{curr_v:,.0f}</td>
-<td style="color:#10B981;">{tgt_w*100:.0f}%</td>
-<td>{tgt_v:,.0f}</td>
-<td>{diff_str}</td>
-<td style="text-align:center;">{action}</td></tr>"""
+            labels_cur = [a for a in ASSET_LIST if curr_vals[a] > 0]
+            vals_cur   = [curr_vals[a] for a in labels_cur]
+            if sum(vals_cur) > 0:
+                fig_cur = go.Figure(data=[go.Pie(
+                    labels=labels_cur, values=vals_cur, hole=.5,
+                    textinfo='label+percent', textfont=dict(size=10),
+                    marker=dict(colors=pie_colors, line=dict(color='#FAFAF7', width=1.5))
+                )])
+                fig_cur.update_layout(
+                    title=dict(text="Current", font=dict(family="DM Mono", size=11, color=t_color)),
+                    **pie_layout
+                )
+                with chart_c1:
+                    with st.container(border=True):
+                        st.plotly_chart(fig_cur, use_container_width=True)
 
-        rebal_html += "</tbody></table></div>"
-        with st.container(border=True):
-            st.markdown(apply_theme(rebal_html), unsafe_allow_html=True)
+            labels_tgt = [a for a in ASSET_LIST if target_weights.get(a, 0) > 0]
+            vals_tgt   = [target_weights.get(a, 0) for a in labels_tgt]
+            fig_tgt = go.Figure(data=[go.Pie(
+                labels=labels_tgt, values=vals_tgt, hole=.5,
+                textinfo='label+percent', textfont=dict(size=10),
+                marker=dict(colors=pie_colors, line=dict(color='#FAFAF7', width=1.5))
+            )])
+            fig_tgt.update_layout(
+                title=dict(text=f"Target  R{curr_regime}", font=dict(family="DM Mono", size=11, color=t_color)),
+                **pie_layout
+            )
+            with chart_c2:
+                with st.container(border=True):
+                    st.plotly_chart(fig_tgt, use_container_width=True)
 
-# ──────────────────────────────────────────
+            diff_labels = [a for a in ASSET_LIST if abs(diff_vals[a]) >= 1.0]
+            diff_values = [diff_vals[a] for a in diff_labels]
+            diff_colors = [c_green if v > 0 else c_red for v in diff_values]
+            if diff_labels:
+                fig_bar = go.Figure(data=[go.Bar(
+                    x=diff_labels, y=diff_values, marker_color=diff_colors,
+                    text=[f"${v:,.0f}" for v in diff_values],
+                    textposition='auto', textfont=dict(size=9), marker_line_width=0
+                )])
+                fig_bar.update_layout(
+                    title=dict(text="Rebalancing Δ($)", font=dict(family="DM Mono", size=11, color=t_color)),
+                    paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color=t_color, family="DM Mono", size=10),
+                    margin=dict(t=30, b=10, l=10, r=10),
+                    xaxis=dict(gridcolor='rgba(0,0,0,0.07)', zeroline=False),
+                    yaxis=dict(gridcolor='rgba(0,0,0,0.07)', zeroline=False)
+                )
+                with chart_c3:
+                    with st.container(border=True):
+                        st.plotly_chart(fig_bar, use_container_width=True)
+
+            # 리밸런싱 테이블
+            st.markdown(
+                '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
+                'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
+                'padding-bottom:6px;border-bottom:2px solid #111118;margin:14px 0 10px;">'
+                'Rebalancing  Matrix</div>',
+                unsafe_allow_html=True
+            )
+            rebal_html = '<div style="overflow-x:auto;">'
+            rebal_html += '<table class="mint-table"><thead><tr>'
+            rebal_html += '<th>Asset</th><th>Avg→Cur</th><th>Ret%</th><th>Value($)</th><th>Tgt%</th><th>Tgt($)</th><th>Δ($)</th><th style="text-align:center;">Action</th>'
+            rebal_html += '</tr></thead><tbody>'
+
+            for asset in ASSET_LIST:
+                shares = st.session_state.portfolio[asset]['shares']
+                avg_p  = st.session_state.portfolio[asset]['avg_price']
+                pur_fx = st.session_state.portfolio[asset]['fx']
+                cur_p  = current_prices[asset] if current_prices[asset] > 0 else 1.0
+                curr_v = curr_vals[asset]
+                tgt_w  = target_weights.get(asset, 0.0)
+                tgt_v  = total_val_usd * tgt_w
+                diff   = diff_vals[asset]
+
+                if asset == 'CASH':
+                    avg_p_str, ret_usd = "—", 0.0
+                else:
+                    avg_p_str = f"${avg_p:.1f}→${cur_p:.1f}"
+                    ret_usd   = (cur_p / avg_p - 1) * 100 if avg_p > 0 else 0.0
+
+                ret_c   = c_green if ret_usd >= 0 else c_red
+                ret_str = f"{ret_usd:+.1f}%" if asset != 'CASH' else "—"
+
+                if abs(diff) < cur_p * 0.05 and asset != 'CASH':
+                    action, diff_str = "<span style='color:#9494A0;'>HOLD</span>", "—"
+                elif abs(diff) < 1.0 and asset == 'CASH':
+                    action, diff_str = "<span style='color:#9494A0;'>HOLD</span>", "—"
+                elif diff > 0:
+                    action   = "<span style='color:#059669;font-weight:600;background:rgba(5,150,105,0.1);padding:2px 8px;border-left:2px solid #059669;'>BUY</span>"
+                    diff_str = f"<span style='color:#059669;font-weight:500;'>+${diff:,.0f}</span>"
+                else:
+                    action   = "<span style='color:#DC2626;font-weight:600;background:rgba(220,38,38,0.1);padding:2px 8px;border-left:2px solid #DC2626;'>SELL</span>"
+                    diff_str = f"<span style='color:#DC2626;font-weight:500;'>-${abs(diff):,.0f}</span>"
+
+                if tgt_w > 0 or curr_v > 0 or shares > 0:
+                    rebal_html += (
+                        f'<tr><td style="font-weight:700;font-family:DM Sans,sans-serif;'
+                        f'color:#059669;">{asset}</td>'
+                        f'<td style="color:#4A4A57;">{avg_p_str}</td>'
+                        f'<td><span style="color:{ret_c};font-weight:500;">{ret_str}</span></td>'
+                        f'<td>{curr_v:,.0f}</td>'
+                        f'<td style="color:#059669;">{tgt_w*100:.0f}%</td>'
+                        f'<td>{tgt_v:,.0f}</td>'
+                        f'<td>{diff_str}</td>'
+                        f'<td style="text-align:center;">{action}</td></tr>'
+                    )
+
+            rebal_html += "</tbody></table></div>"
+            with st.container(border=True):
+                st.markdown(apply_theme(rebal_html), unsafe_allow_html=True)
+
+
 elif page == "🍫 12-Pack Radar":
 
     df_view  = df.iloc[-120:]
@@ -1348,100 +1403,133 @@ elif page == "🍫 12-Pack Radar":
     else: warn_cnt+=1
 
     if risk_cnt >= 3:
-        radar_status = "🔴 극단적 위험 구간  (Risk-Off)"
+        radar_status = "극단적 위험 구간 (Risk-Off)"
         radar_msg    = "시장에 극단적인 공포가 덮쳤습니다. 현재 복수의 매크로 지표가 시스템 리스크를 강하게 경고하고 있습니다. 단순한 조정을 넘어선 투매 구간일 확률이 높으니, 모든 레버리지 포지션을 해제하고 현금과 달러, 금 등 안전 자산 비중을 최대로 늘려 폭풍우가 지나가기를 기다리셔야 합니다."
-        radar_color  = "#EF4444"
+        radar_color  = "#DC2626"
     elif warn_cnt >= 4 or risk_cnt >= 1:
-        radar_status = "🟡 변동성 주의  (Warning)"
+        radar_status = "변동성 주의 (Warning)"
         radar_msg    = "시장 곳곳에서 균열의 조짐이 감지되고 있습니다. 표면적인 지수는 버티고 있을지 몰라도 내부 자금 흐름이나 심리 지표가 점차 악화되고 있습니다. 신규 매수는 철저히 보류하시고, 포트폴리오의 리스크 노출도를 점검하며 보수적인 관망 자세를 유지하는 것이 좋습니다."
-        radar_color  = "#F59E0B"
+        radar_color  = "#D97706"
     else:
-        radar_status = "🟢 안정적 순항  (Safe)"
-        radar_msg    = "현재 글로벌 매크로 지표와 시장 심리가 모두 안정적인 궤도에 올라와 있습니다. 추세를 꺾을 만한 시스템 리스크가 보이지 않으니, AMLS 알고리즘이 제시하는 비중에 맞춰 자신감 있게 추세 추종 전략을 전개하시기 바랍니다. 수익을 극대화할 수 있는 구간입니다."
+        radar_status = "안정적 순항 (Safe)"
+        radar_msg    = "현재 글로벌 매크로 지표와 시장 심리가 모두 안정적인 궤도에 올라와 있습니다. 추세를 꺾을 만한 시스템 리스크가 보이지 않으니, AMLS 알고리즘이 제시하는 비중에 맞춰 자신감 있게 추세 추종 전략을 전개하시기 바랍니다."
         radar_color  = main_color
 
-    st.markdown(apply_theme(f"""
-    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
-        <div>
-            <h2 style="font-family:'Syne';font-size:1.7em;color:#0F172A;margin:0;">🍫 12-Pack Radar</h2>
-            <div style="font-family:'DM Mono';font-size:0.65em;color:#4A5568;letter-spacing:0.16em;text-transform:uppercase;margin-top:3px;">Global Macro Signal Dashboard</div>
-        </div>
-    </div>"""), unsafe_allow_html=True)
+    # ── 상단 상태 바 ───────────────────────────────────────────────
+    total_signals = risk_cnt + warn_cnt + safe_cnt
+    risk_pct  = int(risk_cnt  / total_signals * 100) if total_signals else 0
+    warn_pct  = int(warn_cnt  / total_signals * 100) if total_signals else 0
+    safe_pct  = int(safe_cnt  / total_signals * 100) if total_signals else 0
 
-    # 상태 배너 — 좌(텍스트) + 우(카운터 3칸)
-    _cnt_cards = ""
-    for _lbl, _val, _c in [("RISK", risk_cnt, "#EF4444"), ("WARN", warn_cnt, "#F59E0B"), ("SAFE", safe_cnt, main_color)]:
-        _cnt_cards += (f'<div style="flex:1;text-align:center;background:rgba(0,0,0,0.025);'
-                       f'border:1px solid rgba(0,0,0,0.07);border-top:2px solid {_c};border-radius:12px;padding:12px 8px;">'
-                       f'<div style="font-family:\'DM Mono\';font-size:1.8em;font-weight:400;color:{_c};">{_val}</div>'
-                       f'<div style="font-family:\'DM Mono\';font-size:0.6em;color:#4A5568;letter-spacing:0.16em;text-transform:uppercase;margin-top:2px;">{_lbl}</div>'
-                       f'</div>')
+    st.markdown(apply_theme(
+        f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);'
+        f'border-left:3px solid {radar_color};padding:14px 20px;margin-bottom:12px;">'
+        f'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;">'
 
-    st.markdown(apply_theme(f"""
-    <div style="display:flex;gap:16px;margin-bottom:24px;align-items:stretch;">
-        <div style="flex:3;background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);
-            border-left:4px solid {radar_color};border-radius:0;padding:20px 22px;
-            box-shadow:none;">
-            <div style="font-family:'Syne';font-size:1.2em;font-weight:700;color:{radar_color};margin-bottom:10px;">{radar_status}</div>
-            <p style="font-family:'DM Sans';color:#2D3A4A;font-size:0.92em;margin:0;line-height:1.75;">{radar_msg}</p>
-        </div>
-        <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:160px;">
-            {_cnt_cards}
-        </div>
-    </div>
-    """), unsafe_allow_html=True)
+        # 좌: 상태 텍스트
+        f'<div style="flex:3;min-width:260px;">'
+        f'<div style="font-family:DM Mono,monospace;font-size:0.57em;color:#9494A0;'
+        f'letter-spacing:0.18em;text-transform:uppercase;margin-bottom:4px;">Macro Signal Status</div>'
+        f'<div style="font-family:Instrument Serif,serif;font-size:1.4em;font-style:italic;'
+        f'color:{radar_color};line-height:1.1;margin-bottom:8px;">{radar_status}</div>'
+        f'<div style="font-family:DM Sans,sans-serif;font-size:0.82em;color:#4A4A57;line-height:1.6;">{radar_msg}</div>'
+        f'</div>'
 
+        # 우: 3개 숫자 카드 + 프로그레스
+        f'<div style="flex:1;min-width:180px;">'
+        f'<div style="display:flex;gap:6px;margin-bottom:8px;">'
+        f'<div style="flex:1;border-top:2px solid #DC2626;padding:8px 6px;background:rgba(220,38,38,0.04);">'
+        f'<div style="font-family:DM Mono,monospace;font-size:1.5em;color:#DC2626;line-height:1;">{risk_cnt}</div>'
+        f'<div style="font-family:DM Mono,monospace;font-size:0.57em;color:#9494A0;letter-spacing:0.14em;text-transform:uppercase;">Risk</div>'
+        f'</div>'
+        f'<div style="flex:1;border-top:2px solid #D97706;padding:8px 6px;background:rgba(217,119,6,0.04);">'
+        f'<div style="font-family:DM Mono,monospace;font-size:1.5em;color:#D97706;line-height:1;">{warn_cnt}</div>'
+        f'<div style="font-family:DM Mono,monospace;font-size:0.57em;color:#9494A0;letter-spacing:0.14em;text-transform:uppercase;">Warn</div>'
+        f'</div>'
+        f'<div style="flex:1;border-top:2px solid {main_color};padding:8px 6px;background:rgba({r_c},{g_c},{b_c},0.04);">'
+        f'<div style="font-family:DM Mono,monospace;font-size:1.5em;color:{main_color};line-height:1;">{safe_cnt}</div>'
+        f'<div style="font-family:DM Mono,monospace;font-size:0.57em;color:#9494A0;letter-spacing:0.14em;text-transform:uppercase;">Safe</div>'
+        f'</div>'
+        f'</div>'
+        # 누적 프로그레스 바
+        f'<div style="height:4px;background:rgba(0,0,0,0.07);display:flex;overflow:hidden;">'
+        f'<div style="width:{risk_pct}%;background:#DC2626;"></div>'
+        f'<div style="width:{warn_pct}%;background:#D97706;"></div>'
+        f'<div style="width:{safe_pct}%;background:{main_color};"></div>'
+        f'</div>'
+        f'<div style="display:flex;justify-content:space-between;font-family:DM Mono,monospace;'
+        f'font-size:0.58em;color:#9494A0;margin-top:3px;">'
+        f'<span>{risk_pct}% risk</span><span>{warn_pct}% warn</span><span>{safe_pct}% safe</span></div>'
+        f'</div>'
+
+        f'</div></div>'
+    ), unsafe_allow_html=True)
+
+    # ── badge / desc / url 정의 ────────────────────────────────────
     def _badge(label, color, icon):
         p = {
-            'green':  (f'rgba({r_c},{g_c},{b_c},0.1)',  main_color),
-            'orange': ('rgba(245,158,11,0.1)',           '#F59E0B'),
-            'red':    ('rgba(239,68,68,0.1)',            '#EF4444'),
-            'blue':   ('rgba(59,130,246,0.1)',           '#60A5FA')
+            'green':  (f'rgba({r_c},{g_c},{b_c},0.10)', main_color),
+            'orange': ('rgba(217,119,6,0.10)',           '#D97706'),
+            'red':    ('rgba(220,38,38,0.10)',           '#DC2626'),
+            'blue':   ('rgba(59,130,246,0.10)',          '#3B82F6')
         }
         bg, fg = p[color]
-        return (f'<span style="background:{bg}; color:{fg}; border:1px solid {fg}; border-radius:6px; '
-                f'padding:3px 9px; font-size:0.7em; font-weight:500; margin-left:6px; '
-                f'font-family:\'DM Mono\'; letter-spacing:0.06em;">{icon} {label}</span>')
+        return (f'<span style="background:{bg};color:{fg};border:1px solid {fg};'
+                f'padding:2px 7px;font-size:0.68em;font-weight:500;'
+                f'font-family:DM Mono,monospace;letter-spacing:0.05em;white-space:nowrap;">'
+                f'{icon} {label}</span>')
 
     b1  = _badge("BUY","green","▲") if qqq_rsi<40 else (_badge("OVER","red","▼") if qqq_rsi>70 else _badge("NEUTRAL","blue","—"))
-    b2  = _badge("BEAR −20%","red","▼") if qqq_dd<-0.20 else (_badge("CORR −10%","orange","▼") if qqq_dd<-0.10 else _badge("SAFE","green","▲"))
+    b2  = _badge("BEAR−20%","red","▼") if qqq_dd<-0.20 else (_badge("CORR−10%","orange","▼") if qqq_dd<-0.10 else _badge("SAFE","green","▲"))
     b3  = _badge("FEAR","green","▲") if fg_score<30 else (_badge("GREED","red","▼") if fg_score>70 else _badge("NEUTRAL","blue","—"))
-    b4  = f'<span style="background:rgba({r_c},{g_c},{b_c},0.1); color:{main_color}; border:1px solid {main_color}; border-radius:6px; padding:3px 9px; font-size:0.7em; font-weight:500; margin-left:6px; font-family:\'DM Mono\';">▲ {top_sec} / ▼ {bot_sec}</span>'
+    b4  = f'<span style="background:rgba({r_c},{g_c},{b_c},0.10);color:{main_color};border:1px solid {main_color};padding:2px 7px;font-size:0.68em;font-family:DM Mono,monospace;">▲{top_sec}/▼{bot_sec}</span>'
     b5  = _badge("RISK OFF","red","▼") if last_row['HYG_IEF_Ratio']<last_row['HYG_IEF_MA50'] else _badge("RISK ON","green","▲")
     b6  = _badge("NARROW","orange","⚠") if (last_row['QQQ_20d_Ret']>0 and last_row['QQQE_20d_Ret']<0) else _badge("BROAD","green","▲")
     b7  = _badge("GOLD","orange","▲") if last_row['GLD_SPY_Ratio']>last_row['GLD_SPY_MA50'] else _badge("EQUITY","green","▲")
-    b8  = _badge("USD STRONG","red","▼") if last_row['UUP']>last_row['UUP_MA50'] else _badge("USD WEAK","green","▲")
-    b9  = _badge("YIELD UP","red","▼") if last_row['^TNX'] > last_row['TNX_MA50'] else _badge("YIELD DOWN","green","▲")
+    b8  = _badge("USD STR","red","▼") if last_row['UUP']>last_row['UUP_MA50'] else _badge("USD WK","green","▲")
+    b9  = _badge("YIELD↑","red","▼") if last_row['^TNX'] > last_row['TNX_MA50'] else _badge("YIELD↓","green","▲")
     b10 = _badge("RISK OFF","red","▼") if last_row['BTC-USD'] < last_row['BTC_MA50'] else _badge("RISK ON","green","▲")
     b11 = _badge("NARROW","orange","⚠") if last_row['IWM_SPY_Ratio'] < last_row['IWM_SPY_MA50'] else _badge("BROAD","green","▲")
     b12 = _badge("EXPAND","red","▼") if last_row['^VIX'] > last_row['VIX_MA50'] else _badge("SHRINK","green","▲")
 
     gauge_steps = [
-        {'range':[0,25],  'color':"rgba(239,68,68,0.45)"},
-        {'range':[25,45], 'color':"rgba(245,158,11,0.35)"},
+        {'range':[0,25],  'color':"rgba(220,38,38,0.4)"},
+        {'range':[25,45], 'color':"rgba(217,119,6,0.3)"},
         {'range':[45,55], 'color':"rgba(0,0,0,0.04)"},
-        {'range':[55,75], 'color':f"rgba({r_c},{g_c},{b_c},0.35)"},
-        {'range':[75,100],'color':f"rgba({r_c},{g_c},{b_c},0.55)"}
+        {'range':[55,75], 'color':f"rgba({r_c},{g_c},{b_c},0.3)"},
+        {'range':[75,100],'color':f"rgba({r_c},{g_c},{b_c},0.5)"}
     ]
 
-    desc1  = "나스닥 100(QQQ)의 단기 과열 및 침체를 나타내는 RSI 지표입니다. 30 밑으로 떨어지면 비이성적 투매가 진행 중이라는 뜻이니 훌륭한 분할 매수 기회로 삼고, 70을 넘어가면 환희에 취한 상태이니 신규 진입을 멈추고 현금을 확보하는 것이 좋습니다."
-    desc2  = "QQQ의 52주 고점 대비 하락률을 보여줍니다. -10%는 통상적인 건전한 조정의 하단 지지선 역할을 하지만, -20%를 깨고 내려간다면 이는 단순 조정을 넘어선 본격적인 약세장(Bear Market) 진입을 의미하므로 즉각적인 방어 태세가 필요합니다."
-    desc3  = "CNN에서 제공하는 시장 심리 종합 지표입니다. 대중이 극단적 공포(Extreme Fear)에 질려 주식을 집어 던질 때가 역사적으로 훌륭한 진입 시점이었습니다. 반대로 극단적 탐욕 구간에서는 수익을 실현하며 보수적으로 접근해야 합니다."
-    desc4  = "최근 1개월간 글로벌 스마트머니가 어느 섹터로 흘러갔는지 보여줍니다. 유틸리티나 필수소비재 같은 방어주가 상위권을 차지한다면 시장이 경기 침체를 대비하고 있다는 시그널이므로 포트폴리오 경계감을 한 단계 높여야 합니다."
-    desc5  = "안전한 국채 대신 위험한 하이일드 채권에 투자자들이 얼마나 자금을 넣고 있는지를 보여주는 척도입니다. 이 비율이 50일선 아래로 꺾인다면, 눈치 빠른 채권 시장의 스마트머니가 주식 시장보다 먼저 자금을 빼고 있다는 강력한 경고입니다."
-    desc6  = "나스닥 시총 가중 지수(QQQ)와 동일 가중 지수(QQQE)를 비교합니다. 지수는 오르는데 QQQE가 하락한다면, 소수의 대형 기술주들만 지수를 멱살 잡고 끌어올리는 '가짜 상승'일 확률이 높으므로 곧 조정이 올 수 있음을 암시합니다."
-    desc7  = "대표적 안전 자산인 금(GLD)과 위험 자산인 주식(SPY)의 상대 강도입니다. 이 비율이 50일선을 돌파해 상승 랠리를 펼친다면, 기관 투자자들이 주식 시장의 불확실성을 피해 금으로 대거 피신하고 있다는 구조적 리스크 오프 시그널입니다."
-    desc8  = "미국 달러의 강세를 보여주는 지수입니다. 달러가 50일선을 뚫고 강세로 전환되면 글로벌 유동성이 미국으로 빨려 들어가며 기술주에 큰 하방 압력을 가하게 됩니다. 강달러 국면에서는 주식 비중을 줄이는 것이 정석입니다."
-    desc9  = "모든 자산 밸류에이션의 중력 역할을 하는 미 10년물 국채금리입니다. 금리가 50일선을 뚫고 급등하면, 미래 실적을 당겨쓰는 나스닥 성장주들에게는 쥐약과도 같습니다. 금리 상승기에는 기술주 레버리지 투자를 극도로 조심해야 합니다."
-    desc10 = "제도권에 편입된 비트코인은 글로벌 잉여 유동성과 위험 감수 의지를 가장 예민하게 반영하는 선행 지표입니다. 비트코인이 50일선을 깨고 무너진다면 주식 시장에도 곧 유동성 가뭄이 닥칠 수 있다는 경고벨로 받아들여야 합니다."
-    desc11 = "대형주(SPY) 대비 중소형주(IWM)의 상대 강도입니다. 시장에 큰 호재 없이 러셀지수가 필요 이상으로 상승하고 채권시장을 살릴만한 뚜렷한 재료가 없을 때, 이 지표의 괴리를 활용해 러셀 숏 상품(TZA 등) 매수를 전략적으로 고려해 볼 수 있습니다."
-    desc12 = "공포지수(VIX)의 추세입니다. 시장에서 유동성이 충분히 흡수되지 않으면 VIX 지수는 안정적인 하방 경직성을 가지게 됩니다. 반대로 이 선을 강하게 뚫고 올라온다면 평온했던 시장에 폭풍우가 몰아치기 시작했다는 시스템 패닉 시그널입니다."
+    desc1  = "나스닥 100(QQQ)의 단기 과열 및 침체를 나타내는 RSI 지표. 30↓ 투매→매수기회, 70↑ 과열→신규진입중단."
+    desc2  = "QQQ 52주 고점 대비 하락률. -10% 건전한 조정, -20% 돌파시 약세장 진입으로 즉각 방어 필요."
+    desc3  = "CNN Fear & Greed 지수. 극단적 공포 구간이 역사적 매수 기회, 극단적 탐욕 구간은 수익실현 시점."
+    desc4  = "월간 섹터 자금흐름. 방어주(유틸/필수소비/헬스) 강세시 경기침체 대비 시그널."
+    desc5  = "HYG/IEF 비율. 하이일드 채권이 국채 대비 약세면 스마트머니가 선제 이탈 중."
+    desc6  = "QQQ(시총가중) vs QQQE(동일가중). 괴리 발생시 소수 대형주만 끌어올리는 가짜 상승 경고."
+    desc7  = "GLD/SPY 비율. 금이 상대 강세면 기관의 Risk-Off 전환, 구조적 리스크 시그널."
+    desc8  = "달러지수(UUP). 50일선 상향 돌파시 기술주 강한 하방압력, 주식비중 축소 정석."
+    desc9  = "미 10년물 금리. 50일선 상향 돌파시 나스닥 성장주에 강한 역풍, 레버리지 주의."
+    desc10 = "비트코인 트렌드. 50일선 하향시 글로벌 유동성 가뭄 선행 경고."
+    desc11 = "IWM/SPY 비율. 중소형주 상대약세시 시장 내부 균열, TZA 전략 고려 가능."
+    desc12 = "VIX 추세. 50일선 상향 돌파시 변동성 확장 국면 진입, 시스템 패닉 시그널."
 
-    def r_head(title, badge, url, desc):
-        return (f'<a href="{url}" target="_blank" class="radar-link">'
-                f'<div class="radar-link-title" style="margin-bottom:5px;">{title} ↗{badge}</div>'
-                f'</a>'
-                f'<div style="font-size:0.76em; color:#344054; margin-bottom:12px; line-height:1.45; letter-spacing:-0.2px; word-break:keep-all;">{desc}</div>')
+    # 카드 헤더 생성 함수 — 번호 + 링크 + 배지 + 한줄 설명
+    def r_head(num, title, badge, url, desc):
+        return (
+            f'<div style="border-bottom:1px solid rgba(0,0,0,0.08);padding-bottom:8px;margin-bottom:8px;">'
+            f'<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">'
+            f'<span style="font-family:DM Mono,monospace;font-size:0.62em;color:#9494A0;'
+            f'min-width:18px;">{num:02d}</span>'
+            f'<a href="{url}" target="_blank" style="text-decoration:none;flex:1;">'
+            f'<span style="font-family:DM Mono,monospace;font-size:0.66em;font-weight:500;'
+            f'color:#2C2C35;letter-spacing:0.08em;text-transform:uppercase;">{title}&nbsp;↗</span>'
+            f'</a>'
+            f'{badge}'
+            f'</div>'
+            f'<div style="font-family:DM Sans,sans-serif;font-size:0.73em;color:#6B6B7A;'
+            f'line-height:1.4;letter-spacing:-0.1px;">{desc}</div>'
+            f'</div>'
+        )
 
     u1  = "https://kr.tradingview.com/chart/?symbol=NASDAQ:QQQ"
     u2  = "https://kr.tradingview.com/chart/?symbol=NASDAQ:QQQ"
@@ -1456,13 +1544,14 @@ elif page == "🍫 12-Pack Radar":
     u11 = "https://kr.tradingview.com/chart/?symbol=AMEX:IWM"
     u12 = "https://kr.tradingview.com/chart/?symbol=CBOE:VIX"
 
+    # ── 3×4 신호 그리드 ─────────────────────────────────────────
     row1 = st.columns(4)
     with row1[0]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("1. DCA  ·  RSI", b1, u1, desc1)), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head(1, "DCA · RSI", b1, u1, desc1)), unsafe_allow_html=True)
             fig1=go.Figure()
-            fig1.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQ_RSI'], line=dict(color=line_c, width=2)))
-            fig1.add_hline(y=70, line_dash='dot', line_color='#CBD5E1', line_width=1)
+            fig1.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQ_RSI'], line=dict(color=line_c, width=1.8)))
+            fig1.add_hline(y=70, line_dash='dot', line_color='#B0B0BE', line_width=1)
             fig1.add_hline(y=30, line_dash='dot', line_color=rsi_low_c, line_width=1)
             fig1.update_layout(**radar_layout, showlegend=False)
             fig1.update_xaxes(**_ax_r)
@@ -1470,25 +1559,25 @@ elif page == "🍫 12-Pack Radar":
             st.plotly_chart(fig1, use_container_width=True)
     with row1[1]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("2. Drawdown", b2, u2, desc2)), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head(2, "Drawdown", b2, u2, desc2)), unsafe_allow_html=True)
             fig2=go.Figure()
-            fig2.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQ_DD'], fill='tozeroy', fillcolor='rgba(239,68,68,0.07)', line=dict(color='#EF4444', width=1.8)))
+            fig2.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQ_DD'], fill='tozeroy', fillcolor='rgba(220,38,38,0.07)', line=dict(color='#DC2626', width=1.8)))
             fig2.update_layout(**radar_layout, showlegend=False)
             fig2.update_xaxes(**_ax_r)
             fig2.update_yaxes(tickformat='.0%', **_ax_r)
             st.plotly_chart(fig2, use_container_width=True)
     with row1[2]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("3. Fear & Greed", b3, u3, desc3)), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head(3, "Fear & Greed", b3, u3, desc3)), unsafe_allow_html=True)
             fig3=go.Figure(go.Indicator(
                 mode="gauge+number", value=fg_score, domain={'x':[0,1],'y':[0,1]},
-                gauge={'axis':{'range':[0,100], 'tickcolor':t_color},'bar':{'color':line_c,'thickness':0.25},'steps':gauge_steps,'borderwidth':0}
+                gauge={'axis':{'range':[0,100],'tickcolor':t_color},'bar':{'color':line_c,'thickness':0.2},'steps':gauge_steps,'borderwidth':0}
             ))
             fig3.update_layout(height=200, margin=dict(l=15,r=15,t=10,b=10), paper_bgcolor=b_color, font=dict(family="DM Mono", color=t_color))
             st.plotly_chart(fig3, use_container_width=True)
     with row1[3]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("4. Sector  1M", b4, u4, desc4)), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head(4, "Sector 1M", b4, u4, desc4)), unsafe_allow_html=True)
             fig4=go.Figure(go.Bar(
                 x=sec_df['수익률'], y=sec_df['섹터'], orientation='h',
                 marker_color=[dash_c if v<0 else line_c for v in sec_df['수익률']],
@@ -1502,38 +1591,38 @@ elif page == "🍫 12-Pack Radar":
     row2 = st.columns(4)
     with row2[0]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("5. Credit Spread", b5, u5, desc5)), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head(5, "Credit Spread", b5, u5, desc5)), unsafe_allow_html=True)
             fig5=go.Figure()
-            fig5.add_trace(go.Scatter(x=df_view.index, y=df_view['HYG_IEF_Ratio'], line=dict(color=line_c, width=2)))
-            fig5.add_trace(go.Scatter(x=df_view.index, y=df_view['HYG_IEF_MA50'],  line=dict(color=dash_c, dash='dot', width=1.2)))
+            fig5.add_trace(go.Scatter(x=df_view.index, y=df_view['HYG_IEF_Ratio'], line=dict(color=line_c, width=1.8)))
+            fig5.add_trace(go.Scatter(x=df_view.index, y=df_view['HYG_IEF_MA50'],  line=dict(color=dash_c, dash='dot', width=1.1)))
             fig5.update_layout(**radar_layout, showlegend=False)
             fig5.update_xaxes(**_ax_r); fig5.update_yaxes(**_ax_r)
             st.plotly_chart(fig5, use_container_width=True)
     with row2[1]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("6. Market Breadth", b6, u6, desc6)), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head(6, "Mkt Breadth", b6, u6, desc6)), unsafe_allow_html=True)
             fig6=go.Figure()
-            fig6.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQ_20d_Ret'],  name='QQQ',  line=dict(color=line_c, width=2)))
-            fig6.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQE_20d_Ret'], name='QQQE', line=dict(color=dash_c, dash='dot', width=1.2)))
+            fig6.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQ_20d_Ret'],  name='QQQ',  line=dict(color=line_c, width=1.8)))
+            fig6.add_trace(go.Scatter(x=df_view.index, y=df_view['QQQE_20d_Ret'], name='QQQE', line=dict(color=dash_c, dash='dot', width=1.1)))
             fig6.update_layout(**radar_layout, showlegend=False)
             fig6.update_xaxes(**_ax_r)
             fig6.update_yaxes(tickformat='.0%', **_ax_r)
             st.plotly_chart(fig6, use_container_width=True)
     with row2[2]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("7. Gold / Equity", b7, u7, desc7)), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head(7, "Gold / Equity", b7, u7, desc7)), unsafe_allow_html=True)
             fig7=go.Figure()
-            fig7.add_trace(go.Scatter(x=df_view.index, y=df_view['GLD_SPY_Ratio'], line=dict(color=line_c, width=2)))
-            fig7.add_trace(go.Scatter(x=df_view.index, y=df_view['GLD_SPY_MA50'],  line=dict(color=dash_c, dash='dot', width=1.2)))
+            fig7.add_trace(go.Scatter(x=df_view.index, y=df_view['GLD_SPY_Ratio'], line=dict(color=line_c, width=1.8)))
+            fig7.add_trace(go.Scatter(x=df_view.index, y=df_view['GLD_SPY_MA50'],  line=dict(color=dash_c, dash='dot', width=1.1)))
             fig7.update_layout(**radar_layout, showlegend=False)
             fig7.update_xaxes(**_ax_r); fig7.update_yaxes(**_ax_r)
             st.plotly_chart(fig7, use_container_width=True)
     with row2[3]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("8. USD  (UUP)", b8, u8, desc8)), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head(8, "USD (UUP)", b8, u8, desc8)), unsafe_allow_html=True)
             fig8=go.Figure()
-            fig8.add_trace(go.Scatter(x=df_view.index, y=df_view['UUP'],       line=dict(color=line_c, width=2)))
-            fig8.add_trace(go.Scatter(x=df_view.index, y=df_view['UUP_MA50'],  line=dict(color=dash_c, dash='dot', width=1.2)))
+            fig8.add_trace(go.Scatter(x=df_view.index, y=df_view['UUP'],       line=dict(color=line_c, width=1.8)))
+            fig8.add_trace(go.Scatter(x=df_view.index, y=df_view['UUP_MA50'],  line=dict(color=dash_c, dash='dot', width=1.1)))
             fig8.update_layout(**radar_layout, showlegend=False)
             fig8.update_xaxes(**_ax_r); fig8.update_yaxes(**_ax_r)
             st.plotly_chart(fig8, use_container_width=True)
@@ -1541,42 +1630,42 @@ elif page == "🍫 12-Pack Radar":
     row3 = st.columns(4)
     with row3[0]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("9. US 10Y Yield", b9, u9, desc9)), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head(9, "10Y Yield", b9, u9, desc9)), unsafe_allow_html=True)
             fig9=go.Figure()
-            fig9.add_trace(go.Scatter(x=df_view.index, y=df_view['^TNX'],      line=dict(color=line_c, width=2)))
-            fig9.add_trace(go.Scatter(x=df_view.index, y=df_view['TNX_MA50'],  line=dict(color=dash_c, dash='dot', width=1.2)))
+            fig9.add_trace(go.Scatter(x=df_view.index, y=df_view['^TNX'],      line=dict(color=line_c, width=1.8)))
+            fig9.add_trace(go.Scatter(x=df_view.index, y=df_view['TNX_MA50'],  line=dict(color=dash_c, dash='dot', width=1.1)))
             fig9.update_layout(**radar_layout, showlegend=False)
             fig9.update_xaxes(**_ax_r); fig9.update_yaxes(**_ax_r)
             st.plotly_chart(fig9, use_container_width=True)
     with row3[1]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("10. Bitcoin Trend", b10, u10, desc10)), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head(10, "Bitcoin", b10, u10, desc10)), unsafe_allow_html=True)
             fig10=go.Figure()
-            fig10.add_trace(go.Scatter(x=df_view.index, y=df_view['BTC-USD'],  line=dict(color=line_c, width=2)))
-            fig10.add_trace(go.Scatter(x=df_view.index, y=df_view['BTC_MA50'], line=dict(color=dash_c, dash='dot', width=1.2)))
+            fig10.add_trace(go.Scatter(x=df_view.index, y=df_view['BTC-USD'],  line=dict(color=line_c, width=1.8)))
+            fig10.add_trace(go.Scatter(x=df_view.index, y=df_view['BTC_MA50'], line=dict(color=dash_c, dash='dot', width=1.1)))
             fig10.update_layout(**radar_layout, showlegend=False)
             fig10.update_xaxes(**_ax_r); fig10.update_yaxes(**_ax_r)
             st.plotly_chart(fig10, use_container_width=True)
     with row3[2]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("11. Russell / S&P 500", b11, u11, desc11)), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head(11, "Russell/SP500", b11, u11, desc11)), unsafe_allow_html=True)
             fig11=go.Figure()
-            fig11.add_trace(go.Scatter(x=df_view.index, y=df_view['IWM_SPY_Ratio'], line=dict(color=line_c, width=2)))
-            fig11.add_trace(go.Scatter(x=df_view.index, y=df_view['IWM_SPY_MA50'],  line=dict(color=dash_c, dash='dot', width=1.2)))
+            fig11.add_trace(go.Scatter(x=df_view.index, y=df_view['IWM_SPY_Ratio'], line=dict(color=line_c, width=1.8)))
+            fig11.add_trace(go.Scatter(x=df_view.index, y=df_view['IWM_SPY_MA50'],  line=dict(color=dash_c, dash='dot', width=1.1)))
             fig11.update_layout(**radar_layout, showlegend=False)
             fig11.update_xaxes(**_ax_r); fig11.update_yaxes(**_ax_r)
             st.plotly_chart(fig11, use_container_width=True)
     with row3[3]:
         with st.container(border=True):
-            st.markdown(apply_theme(r_head("12. VIX Trend", b12, u12, desc12)), unsafe_allow_html=True)
+            st.markdown(apply_theme(r_head(12, "VIX Trend", b12, u12, desc12)), unsafe_allow_html=True)
             fig12=go.Figure()
-            fig12.add_trace(go.Scatter(x=df_view.index, y=df_view['^VIX'],      line=dict(color=line_c, width=2)))
-            fig12.add_trace(go.Scatter(x=df_view.index, y=df_view['VIX_MA50'],  line=dict(color=dash_c, dash='dot', width=1.2)))
+            fig12.add_trace(go.Scatter(x=df_view.index, y=df_view['^VIX'],      line=dict(color=line_c, width=1.8)))
+            fig12.add_trace(go.Scatter(x=df_view.index, y=df_view['VIX_MA50'],  line=dict(color=dash_c, dash='dot', width=1.1)))
             fig12.update_layout(**radar_layout, showlegend=False)
             fig12.update_xaxes(**_ax_r); fig12.update_yaxes(**_ax_r)
             st.plotly_chart(fig12, use_container_width=True)
 
-# ──────────────────────────────────────────
+
 elif page == "📈 Backtest Lab":
     st.markdown(apply_theme("""
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
