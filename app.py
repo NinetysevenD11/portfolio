@@ -821,7 +821,7 @@ if page == "📊 Dashboard":
 
     def _lg_row(label, val, passed):
         icon  = "●" if passed else "○"
-        color = main_color if passed else "#CBD5E1"
+        color = main_color if passed else "#B0B0BE"
         if isinstance(val, (int, float)):
             val_str = f"${val:.2f}" if val > 5 else f"{val:.2f}"
         elif isinstance(val, str) and '%' in val:
@@ -830,149 +830,223 @@ if page == "📊 Dashboard":
             val_str = str(val)
         return (f'<div class="crow">'
                 f'<span class="clabel">{label}</span>'
-                f'<span class="cval" style="color:{color};">{val_str} <span style="font-size:0.75em;">{icon}</span></span>'
+                f'<span class="cval" style="color:{color};">{val_str}&nbsp;'
+                f'<span style="font-size:0.7em;">{icon}</span></span>'
                 f'</div>')
 
     soxl_title = "SOXL  APPROVED" if smh_cond else "USD  DEFENSE"
     soxl_strat = "3× Leverage Active" if smh_cond else "2× Defense Mode"
-    soxl_color = main_color if smh_cond else "#94A3B8"
+    soxl_color = main_color if smh_cond else "#9494A0"
 
-    weight_rows = "".join([
-        f'<div class="crow">'
-        f'<span class="clabel" style="font-family:\'DM Mono\'; font-size:0.95em;">{k}</span>'
-        f'<span class="cval">{v*100:.0f}%</span>'
-        f'</div>'
-        for k, v in target_weights.items() if v > 0
-    ])
+    # ── ① 상단 Live Feed 티커 바 ───────────────────────────────
+    _qqq_vs  = (last_row['QQQ']  / last_row['QQQ_MA200']  - 1) * 100
+    _tqqq_vs = (last_row['TQQQ'] / last_row['TQQQ_MA200'] - 1) * 100
+    _smh_vs  = (last_row['SMH']  / last_row['SMH_MA50']   - 1) * 100
+    _vix_val = last_row['^VIX']
+    _rsi_val = last_row['SMH_RSI']
 
-    # ── ① Mission Control  풀너비 배너 ──────────────────────────
-    r_colors = {1: main_color, 2: "#F59E0B", 3: "#EF4444", 4: "#7C3AED"}
-    r_labels = {1: "R1  BULL", 2: "R2  CORR", 3: "R3  BEAR", 4: "R4  PANIC"}
-    regime_tabs_html = ""
-    for r in [1, 2, 3, 4]:
-        is_active = (r == curr_regime)
-        bg   = f"rgba({r_c},{g_c},{b_c},0.12)" if is_active else "rgba(0,0,0,0.03)"
-        bdr  = f"2px solid {r_colors[r]}" if is_active else "2px solid transparent"
-        ftxt = r_colors[r] if is_active else "#CBD5E1"
-        fw   = "700" if is_active else "400"
-        regime_tabs_html += (
-            f'<div style="flex:1;text-align:center;padding:10px 6px;border-radius:10px;'
-            f'background:{bg};border:{bdr};transition:all 0.2s;">'
-            f'<div style="font-family:\'Syne\';font-size:0.95em;font-weight:{fw};color:{ftxt};">{r_labels[r]}</div>'
-            f'<div style="font-family:\'DM Mono\';font-size:0.6em;color:#4A5568;margin-top:2px;letter-spacing:0.1em;">'
-            f'{regime_info[r][1]}</div></div>'
+    def _tick(label, val, sub, ok):
+        c   = "#059669" if ok else "#DC2626"
+        dot = "▲" if ok else "▼"
+        return (
+            f'<div style="display:inline-flex;flex-direction:column;'
+            f'padding:0 16px;border-right:1px solid rgba(0,0,0,0.09);min-width:96px;">'
+            f'<span style="font-family:DM Mono,monospace;font-size:0.57em;color:#9494A0;'
+            f'letter-spacing:0.14em;text-transform:uppercase;">{label}</span>'
+            f'<span style="font-family:DM Mono,monospace;font-size:0.92em;color:#111118;'
+            f'font-variant-numeric:tabular-nums;">{val}</span>'
+            f'<span style="font-family:DM Mono,monospace;font-size:0.66em;color:{c};">'
+            f'{dot} {sub}</span>'
+            f'</div>'
         )
 
-    st.markdown(apply_theme(f"""
-    <div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);border-top:2px solid #111118;
-        border-radius:0;padding:16px 20px;margin-bottom:14px;
-        box-shadow:none;">
-        <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
-            <span style="font-family:'DM Mono';font-size:0.62em;color:#4A5568;letter-spacing:0.2em;text-transform:uppercase;">Mission Control</span>
-            <div style="flex:1;height:1px;background:rgba(0,0,0,0.05);"></div>
-            <span style="font-family:'DM Mono';font-size:0.72em;padding:3px 10px;border-radius:6px;
-                background:rgba(16,185,129,0.08);color:#059669;border:1px solid rgba(16,185,129,0.25);font-size:0.65em;letter-spacing:0.08em;padding:3px 10px;">
-                {regime_committee_msg}
-            </span>
-        </div>
-        <div style="display:flex;gap:8px;">{regime_tabs_html}</div>
-    </div>
-    """), unsafe_allow_html=True)
-
-    # ── ② Bento Grid  비대칭 3칸 ────────────────────────────────
-    c1, c2, c3 = st.columns([1.6, 1.4, 1])
-    with c1:
-        st.markdown(apply_theme(f"""<div class="glass-card">
-            <h3>Market Regime  ·  Signal Conditions</h3>
-            <div class="glass-inset" style="text-align:left;padding:16px 20px;">
-                <div style="display:flex;align-items:baseline;gap:12px;">
-                    <span style="color:#10B981;font-family:'Syne';font-size:2em;font-weight:800;letter-spacing:-1px;">{regime_info[curr_regime][0]}</span>
-                    <span style="font-family:'DM Mono';font-size:0.72em;color:#344054;letter-spacing:0.12em;text-transform:uppercase;">{regime_info[curr_regime][1]}</span>
-                </div>
-            </div>
-            {_lg_row('VIX < 40', f'{vix_close:.2f}', vix_close<=40)}
-            {_lg_row('QQQ > 200MA', f'${qqq_close:.2f}', qqq_close>=qqq_ma200)}
-            {_lg_row('50MA ≥ 200MA', f'${qqq_ma50:.2f}', qqq_ma50>=qqq_ma200)}
-        </div>"""), unsafe_allow_html=True)
-
-    with c2:
-        st.markdown(apply_theme(f"""<div class="glass-card">
-            <h3>Semi-Conductor  ·  SOXL Gate</h3>
-            <div class="glass-inset" style="text-align:left;padding:16px 20px;">
-                <div style="display:flex;align-items:baseline;gap:10px;">
-                    <span style="color:{soxl_color};font-family:'Syne';font-size:1.3em;font-weight:800;">{soxl_title}</span>
-                </div>
-                <div style="font-family:'DM Mono';font-size:0.7em;color:#344054;margin-top:4px;letter-spacing:0.1em;text-transform:uppercase;">{soxl_strat}</div>
-            </div>
-            {_lg_row('SMH > 50MA', f'${smh_close:.2f}', smh_c1)}
-            {_lg_row('Momentum 1M >10%', f'{smh_1m*100:.1f}%', smh_c2)}
-            {_lg_row('RSI > 50', f'{smh_rsi:.1f}', smh_c3)}
-            <div style="margin-top:auto;padding:8px 12px;font-size:0.73em;text-align:center;
-                color:#4A5568;border-top:1px solid rgba(0,0,0,0.05);font-family:'DM Mono';">
-                ※ 3 filters required for SOXL</div>
-        </div>"""), unsafe_allow_html=True)
-
-    with c3:
-        st.markdown(apply_theme(f"""<div class="glass-card">
-            <h3>Target Weights  ·  R{curr_regime}</h3>
-            <div style="display:flex;justify-content:space-between;font-family:'DM Mono';
-                font-size:0.62em;color:#4A5568;border-bottom:1px solid rgba(0,0,0,0.06);
-                padding-bottom:8px;margin-bottom:4px;letter-spacing:0.15em;text-transform:uppercase;">
-                <span>Asset</span><span>Weight</span>
-            </div>
-            {weight_rows}
-        </div>"""), unsafe_allow_html=True)
-
-    # ── ③ 메트릭 필 스트립 (가로 스크롤 카드 행) ────────────────
-    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
-
-    def _metric_pill(label, main_val, sub_val, delta_positive=True):
-        sub_color = "#059669" if delta_positive else "#EF4444"
-        return apply_theme(f"""
-        <div style="flex:1;min-width:160px;background:#FFFFFF;border:1px solid rgba(0,0,0,0.07);
-            border-top:2px solid rgba({r_c},{g_c},{b_c},0.35);border-radius:14px;padding:14px 18px;
-            box-shadow:0 2px 12px rgba(0,0,0,0.05);transition:transform 0.2s;">
-            <div style="font-family:'DM Mono';font-size:0.62em;color:#4A5568;letter-spacing:0.14em;
-                text-transform:uppercase;margin-bottom:6px;">{label}</div>
-            <div style="font-family:'DM Mono';font-size:1.3em;font-weight:400;color:#0F172A;">{main_val}</div>
-            <div style="font-family:'DM Mono';font-size:0.72em;color:{sub_color};margin-top:3px;">{sub_val}</div>
-        </div>""")
-
-    _qqq_vs = (last_row['QQQ']/last_row['QQQ_MA200']-1)*100
-    _tqqq_vs = (last_row['TQQQ']/last_row['TQQQ_MA200']-1)*100
-    _smh_vs = (last_row['SMH']/last_row['SMH_MA50']-1)*100
-    pills_html = (
-        _metric_pill("QQQ vs 200MA",    f"${last_row['QQQ']:.2f}",              f"{_qqq_vs:+.2f}%",          _qqq_vs>=0) +
-        _metric_pill("TQQQ vs 200MA",   f"${last_row['TQQQ']:.2f}",             f"{_tqqq_vs:+.2f}%",         _tqqq_vs>=0) +
-        _metric_pill("VIX · 20D MA",    f"{last_row['VIX_MA20']:.2f}",          f"NOW: {last_row['^VIX']:.2f}", last_row['^VIX']<20) +
-        _metric_pill("SMH 1M Ret",      f"{last_row['SMH_1M_Ret']*100:+.1f}%",  f"vs 50MA: {_smh_vs:+.1f}%", last_row['SMH_1M_Ret']>=0) +
-        _metric_pill("SMH RSI",         f"{last_row['SMH_RSI']:.1f}",           "Target > 50",               last_row['SMH_RSI']>50)
+    tickers = (
+        _tick("QQQ",     f"${last_row['QQQ']:.2f}",            f"{_qqq_vs:+.2f}%",           _qqq_vs>=0)  +
+        _tick("TQQQ",    f"${last_row['TQQQ']:.2f}",           f"{_tqqq_vs:+.2f}%",          _tqqq_vs>=0) +
+        _tick("VIX",     f"{_vix_val:.2f}",                    f"MA20: {last_row['VIX_MA20']:.1f}", _vix_val<20) +
+        _tick("SMH 1M",  f"{last_row['SMH_1M_Ret']*100:+.1f}%",f"vs 50MA: {_smh_vs:+.1f}%", last_row['SMH_1M_Ret']>=0) +
+        _tick("SMH RSI", f"{_rsi_val:.1f}",                    "> 50 target",                _rsi_val>50)
     )
-    st.markdown(f'<div style="display:flex;gap:10px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;">{pills_html}</div>', unsafe_allow_html=True)
 
-    # ── ④ 차트  3:2 비대칭 분할 ─────────────────────────────────
-    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
-    chart_col1, chart_col2 = st.columns([3, 2])
-    df_recent = df.iloc[-500:]
+    st.markdown(
+        f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);'
+        f'border-left:3px solid #111118;padding:9px 0 9px 16px;'
+        f'margin-bottom:14px;display:flex;align-items:center;overflow-x:auto;">'
+        f'<span style="font-family:DM Mono,monospace;font-size:0.57em;color:#9494A0;'
+        f'letter-spacing:0.18em;text-transform:uppercase;white-space:nowrap;'
+        f'padding-right:16px;border-right:1px solid rgba(0,0,0,0.09);">Live&nbsp;Feed</span>'
+        f'{tickers}'
+        f'<div style="margin-left:auto;padding:0 14px;white-space:nowrap;">'
+        f'<span class="live-pulse" style="font-family:DM Mono,monospace;font-size:0.6em;'
+        f'color:#059669;letter-spacing:0.06em;">{rt_label}</span>'
+        f'</div></div>',
+        unsafe_allow_html=True
+    )
 
-    fig_qqq = go.Figure()
-    fig_qqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['QQQ'], name='QQQ', line=dict(color=line_c, width=2.5)))
-    fig_qqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['QQQ_MA200'], name='200MA', line=dict(color=dash_c, width=1.5, dash='dash')))
-    fig_qqq.update_layout(title=dict(text="QQQ  vs  200MA", font=dict(family='DM Mono', size=13, color=t_color)), height=360, **chart_layout)
-    fig_qqq.update_xaxes(**_ax)
-    fig_qqq.update_yaxes(**_ax)
+    # ── ② 메인 레이아웃: 좌(인스트루먼트 패널) + 우(차트 워크벤치) ─
+    left_col, right_col = st.columns([1, 2.4])
 
-    fig_tqqq = go.Figure()
-    fig_tqqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['TQQQ'], name='TQQQ', line=dict(color=line_c, width=2.5)))
-    fig_tqqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['TQQQ_MA200'], name='200MA', line=dict(color=dash_c, width=1.5, dash='dash')))
-    fig_tqqq.update_layout(title=dict(text="TQQQ  vs  200MA", font=dict(family='DM Mono', size=13, color=t_color)), height=360, **chart_layout)
-    fig_tqqq.update_xaxes(**_ax)
-    fig_tqqq.update_yaxes(**_ax)
+    with left_col:
+        r_colors = {1: main_color, 2: "#D97706", 3: "#DC2626", 4: "#7C3AED"}
+        regime_accent = r_colors[curr_regime]
 
-    with chart_col1:
+        # 레짐 카드 — 워터마크 숫자 포함
+        cond_rows = (
+            _lg_row('VIX < 40',     f'{vix_close:.2f}',  vix_close<=40)       +
+            _lg_row('QQQ > 200MA',  f'${qqq_close:.2f}', qqq_close>=qqq_ma200) +
+            _lg_row('50MA ≥ 200MA', f'${qqq_ma50:.2f}',  qqq_ma50>=qqq_ma200)
+        )
+        st.markdown(apply_theme(
+            f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);'
+            f'border-top:3px solid {regime_accent};'
+            f'padding:16px 16px 12px;margin-bottom:8px;position:relative;overflow:hidden;">'
+            f'<div style="position:absolute;right:-4px;bottom:-16px;'
+            f'font-family:Instrument Serif,serif;font-size:7.5em;font-weight:400;'
+            f'color:rgba(0,0,0,0.04);line-height:1;pointer-events:none;user-select:none;">'
+            f'{curr_regime}</div>'
+            f'<div style="font-family:DM Mono,monospace;font-size:0.57em;color:#9494A0;'
+            f'letter-spacing:0.18em;text-transform:uppercase;margin-bottom:8px;">Market Regime</div>'
+            f'<div style="font-family:Instrument Serif,serif;font-size:2em;'
+            f'font-weight:400;font-style:italic;color:{regime_accent};'
+            f'letter-spacing:-0.5px;line-height:1;margin-bottom:2px;">'
+            f'{regime_info[curr_regime][0]}</div>'
+            f'<div style="font-family:DM Mono,monospace;font-size:0.62em;color:#6B6B7A;'
+            f'letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">'
+            f'{regime_info[curr_regime][1]}</div>'
+            f'{cond_rows}'
+            f'<div style="margin-top:8px;padding:6px 10px;'
+            f'background:rgba(16,185,129,0.07);border-left:2px solid {main_color};'
+            f'font-family:DM Mono,monospace;font-size:0.66em;color:#059669;">'
+            f'{regime_committee_msg}</div>'
+            f'</div>'
+        ), unsafe_allow_html=True)
+
+        # SOXL 게이트 카드
+        soxl_rows = (
+            _lg_row('SMH > 50MA',       f'${smh_close:.2f}', smh_c1) +
+            _lg_row('Momentum 1M >10%', f'{smh_1m*100:.1f}%', smh_c2) +
+            _lg_row('RSI > 50',         f'{smh_rsi:.1f}',    smh_c3)
+        )
+        st.markdown(apply_theme(
+            f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);'
+            f'border-top:3px solid {soxl_color};'
+            f'padding:14px 16px 10px;margin-bottom:8px;">'
+            f'<div style="font-family:DM Mono,monospace;font-size:0.57em;color:#9494A0;'
+            f'letter-spacing:0.18em;text-transform:uppercase;margin-bottom:6px;">Semi-Conductor Gate</div>'
+            f'<div style="font-family:Instrument Serif,serif;font-size:1.3em;'
+            f'font-weight:400;font-style:italic;color:{soxl_color};margin-bottom:2px;">'
+            f'{soxl_title}</div>'
+            f'<div style="font-family:DM Mono,monospace;font-size:0.6em;color:#6B6B7A;'
+            f'letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">{soxl_strat}</div>'
+            f'{soxl_rows}'
+            f'</div>'
+        ), unsafe_allow_html=True)
+
+        # 타겟 웨이트 — 프로그레스 바 형식
+        weight_bar_rows = ""
+        for k, v in target_weights.items():
+            if v <= 0:
+                continue
+            pct   = v * 100
+            bar_w = int(pct * 2.5)
+            weight_bar_rows += (
+                f'<div style="display:flex;align-items:center;'
+                f'justify-content:space-between;padding:5px 0;'
+                f'border-bottom:1px solid rgba(0,0,0,0.05);">'
+                f'<span style="font-family:DM Mono,monospace;font-size:0.74em;'
+                f'color:#2C2C35;min-width:44px;">{k}</span>'
+                f'<div style="flex:1;margin:0 9px;height:3px;'
+                f'background:rgba(0,0,0,0.07);overflow:hidden;">'
+                f'<div style="height:3px;width:{bar_w}%;background:{main_color};"></div>'
+                f'</div>'
+                f'<span style="font-family:DM Mono,monospace;font-size:0.74em;'
+                f'color:{main_color};font-variant-numeric:tabular-nums;'
+                f'min-width:32px;text-align:right;">{pct:.0f}%</span>'
+                f'</div>'
+            )
+        st.markdown(apply_theme(
+            f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);'
+            f'border-top:3px solid #111118;padding:14px 16px 12px;">'
+            f'<div style="font-family:DM Mono,monospace;font-size:0.57em;color:#9494A0;'
+            f'letter-spacing:0.18em;text-transform:uppercase;margin-bottom:10px;">'
+            f'Target Weights  ·  R{curr_regime}</div>'
+            f'{weight_bar_rows}'
+            f'</div>'
+        ), unsafe_allow_html=True)
+
+    with right_col:
+        # 레짐 탭 바 (우측 상단)
+        r_labels = {1:"R1  BULL", 2:"R2  CORR", 3:"R3  BEAR", 4:"R4  PANIC"}
+        r_clrs   = {1: main_color, 2:"#D97706", 3:"#DC2626", 4:"#7C3AED"}
+        tabs_html = ""
+        for r in [1, 2, 3, 4]:
+            active   = (r == curr_regime)
+            bg_t     = r_clrs[r] if active else "transparent"
+            ft_t     = "#FFFFFF" if active else "#9494A0"
+            bdr_t    = f"1px solid {r_clrs[r]}" if active else "1px solid rgba(0,0,0,0.08)"
+            tabs_html += (
+                f'<div style="padding:5px 12px;border:{bdr_t};background:{bg_t};">'
+                f'<span style="font-family:DM Mono,monospace;font-size:0.66em;'
+                f'font-weight:500;color:{ft_t};letter-spacing:0.05em;">{r_labels[r]}</span>'
+                f'</div>'
+            )
+        st.markdown(
+            f'<div style="display:flex;gap:4px;margin-bottom:10px;align-items:center;">'
+            f'{tabs_html}'
+            f'<div style="margin-left:auto;font-family:DM Mono,monospace;font-size:0.6em;'
+            f'color:#9494A0;">⏱ {last_update_time}</div>'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+
+        # 차트 2개 세로 스택 (fill 포함)
+        df_recent = df.iloc[-500:]
+
+        fig_qqq = go.Figure()
+        fig_qqq.add_trace(go.Scatter(
+            x=df_recent.index, y=df_recent['QQQ'], name='QQQ',
+            line=dict(color=line_c, width=2),
+            fill='tozeroy', fillcolor=f'rgba({r_c},{g_c},{b_c},0.06)'
+        ))
+        fig_qqq.add_trace(go.Scatter(
+            x=df_recent.index, y=df_recent['QQQ_MA200'], name='200MA',
+            line=dict(color=dash_c, width=1.2, dash='dot')
+        ))
+        fig_qqq.update_layout(
+            title=dict(text="QQQ  /  200-Day Moving Average",
+                       font=dict(family='DM Mono', size=12, color=t_color)),
+            height=295, **chart_layout,
+            legend=dict(orientation='h', yanchor='bottom', y=1.0,
+                        xanchor='right', x=1,
+                        font=dict(family='DM Mono', size=10, color=t_color))
+        )
+        fig_qqq.update_xaxes(**_ax)
+        fig_qqq.update_yaxes(**_ax)
+
+        fig_tqqq = go.Figure()
+        fig_tqqq.add_trace(go.Scatter(
+            x=df_recent.index, y=df_recent['TQQQ'], name='TQQQ',
+            line=dict(color=line_c, width=2),
+            fill='tozeroy', fillcolor=f'rgba({r_c},{g_c},{b_c},0.06)'
+        ))
+        fig_tqqq.add_trace(go.Scatter(
+            x=df_recent.index, y=df_recent['TQQQ_MA200'], name='200MA',
+            line=dict(color=dash_c, width=1.2, dash='dot')
+        ))
+        fig_tqqq.update_layout(
+            title=dict(text="TQQQ  /  200-Day Moving Average",
+                       font=dict(family='DM Mono', size=12, color=t_color)),
+            height=295, **chart_layout,
+            legend=dict(orientation='h', yanchor='bottom', y=1.0,
+                        xanchor='right', x=1,
+                        font=dict(family='DM Mono', size=10, color=t_color))
+        )
+        fig_tqqq.update_xaxes(**_ax)
+        fig_tqqq.update_yaxes(**_ax)
+
         with st.container(border=True):
             st.plotly_chart(fig_qqq, use_container_width=True)
-    with chart_col2:
+        st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
         with st.container(border=True):
             st.plotly_chart(fig_tqqq, use_container_width=True)
 
