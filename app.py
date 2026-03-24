@@ -570,9 +570,9 @@ css_block = f"""<style>
     /* ── DATA ROWS ──────────────────────────────────── */
     .crow {{
         display:flex; justify-content:space-between; align-items:center;
-        padding: 8px 0;
+        padding: 10px 0;
         border-bottom: 1px solid var(--rule);
-        font-size: 0.83em;
+        font-size: 0.9em;
     }}
     .crow:last-child {{ border-bottom:none; }}
     .clabel {{
@@ -748,6 +748,28 @@ st.sidebar.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# ── 사이드바 포트폴리오 백업/복구 ──────────────────
+st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#4A5568; letter-spacing:0.2em; text-transform:uppercase; padding:14px 20px 6px; border-top:1px solid rgba(0,0,0,0.08);">Portfolio Data</div>""", unsafe_allow_html=True)
+_sb_up_col, _sb_dl_col = st.sidebar.columns(2)
+with _sb_up_col:
+    _sidebar_upload = st.file_uploader("📂 Restore", type="json", label_visibility="collapsed", key="sb_uploader")
+    if _sidebar_upload is not None:
+        try:
+            import json as _json
+            _loaded = _json.load(_sidebar_upload)
+            st.session_state.portfolio.update(_loaded)
+            sanitize_portfolio()
+            save_portfolio_to_disk()
+            st.sidebar.success("복구 완료")
+            st.rerun()
+        except:
+            st.sidebar.error("파일 오류")
+with _sb_dl_col:
+    import json as _json2
+    _sb_json = _json2.dumps(st.session_state.portfolio)
+    st.sidebar.download_button("💾 Backup", data=_sb_json, file_name="portfolio.json",
+                                mime="application/json", use_container_width=True, key="sb_backup")
+
 # ==========================================
 # 5. 메인 헤더  —  Editorial Bento Style
 # ==========================================
@@ -850,12 +872,12 @@ if page == "📊 Dashboard":
         dot = "▲" if ok else "▼"
         return (
             f'<div style="display:inline-flex;flex-direction:column;'
-            f'padding:0 16px;border-right:1px solid rgba(0,0,0,0.09);min-width:96px;">'
-            f'<span style="font-family:DM Mono,monospace;font-size:0.57em;color:#9494A0;'
-            f'letter-spacing:0.14em;text-transform:uppercase;">{label}</span>'
-            f'<span style="font-family:DM Mono,monospace;font-size:0.92em;color:#111118;'
+            f'padding:0 20px;border-right:1px solid rgba(0,0,0,0.09);min-width:110px;">'
+            f'<span style="font-family:DM Mono,monospace;font-size:0.65em;color:#9494A0;'
+        f'letter-spacing:0.14em;text-transform:uppercase;">{label}</span>'
+            f'<span style="font-family:DM Mono,monospace;font-size:1.05em;color:#111118;'
             f'font-variant-numeric:tabular-nums;">{val}</span>'
-            f'<span style="font-family:DM Mono,monospace;font-size:0.66em;color:{c};">'
+            f'<span style="font-family:DM Mono,monospace;font-size:0.76em;color:{c};">'
             f'{dot} {sub}</span>'
             f'</div>'
         )
@@ -870,9 +892,9 @@ if page == "📊 Dashboard":
 
     st.markdown(
         f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);'
-        f'border-left:3px solid #111118;padding:9px 0 9px 16px;'
+        f'border-left:3px solid #111118;padding:12px 0 12px 18px;'
         f'margin-bottom:14px;display:flex;align-items:center;overflow-x:auto;">'
-        f'<span style="font-family:DM Mono,monospace;font-size:0.57em;color:#9494A0;'
+        f'<span style="font-family:DM Mono,monospace;font-size:0.65em;color:#9494A0;'
         f'letter-spacing:0.18em;text-transform:uppercase;white-space:nowrap;'
         f'padding-right:16px;border-right:1px solid rgba(0,0,0,0.09);">Live&nbsp;Feed</span>'
         f'{tickers}'
@@ -899,24 +921,24 @@ if page == "📊 Dashboard":
         st.markdown(apply_theme(
             f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);'
             f'border-top:3px solid {regime_accent};'
-            f'padding:16px 16px 12px;margin-bottom:8px;position:relative;overflow:hidden;">'
+            f'padding:20px 18px 16px;margin-bottom:10px;position:relative;overflow:hidden;">'
             f'<div style="position:absolute;right:-4px;bottom:-16px;'
             f'font-family:Instrument Serif,serif;font-size:7.5em;font-weight:400;'
             f'color:rgba(0,0,0,0.04);line-height:1;pointer-events:none;user-select:none;">'
             f'{curr_regime}</div>'
-            f'<div style="font-family:DM Mono,monospace;font-size:0.57em;color:#9494A0;'
-            f'letter-spacing:0.18em;text-transform:uppercase;margin-bottom:8px;">Market Regime</div>'
-            f'<div style="font-family:Instrument Serif,serif;font-size:2em;'
+            f'<div style="font-family:DM Mono,monospace;font-size:0.68em;color:#9494A0;'
+            f'letter-spacing:0.18em;text-transform:uppercase;margin-bottom:10px;">Market Regime</div>'
+            f'<div style="font-family:Instrument Serif,serif;font-size:2.5em;'
             f'font-weight:400;font-style:italic;color:{regime_accent};'
-            f'letter-spacing:-0.5px;line-height:1;margin-bottom:2px;">'
+            f'letter-spacing:-0.5px;line-height:1;margin-bottom:4px;">'
             f'{regime_info[curr_regime][0]}</div>'
-            f'<div style="font-family:DM Mono,monospace;font-size:0.62em;color:#6B6B7A;'
-            f'letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">'
+            f'<div style="font-family:DM Mono,monospace;font-size:0.72em;color:#6B6B7A;'
+            f'letter-spacing:0.1em;text-transform:uppercase;margin-bottom:14px;">'
             f'{regime_info[curr_regime][1]}</div>'
             f'{cond_rows}'
             f'<div style="margin-top:8px;padding:6px 10px;'
             f'background:rgba(16,185,129,0.07);border-left:2px solid {main_color};'
-            f'font-family:DM Mono,monospace;font-size:0.66em;color:#059669;">'
+            f'font-family:DM Mono,monospace;font-size:0.76em;color:#059669;">'
             f'{regime_committee_msg}</div>'
             f'</div>'
         ), unsafe_allow_html=True)
@@ -930,14 +952,14 @@ if page == "📊 Dashboard":
         st.markdown(apply_theme(
             f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);'
             f'border-top:3px solid {soxl_color};'
-            f'padding:14px 16px 10px;margin-bottom:8px;">'
-            f'<div style="font-family:DM Mono,monospace;font-size:0.57em;color:#9494A0;'
-            f'letter-spacing:0.18em;text-transform:uppercase;margin-bottom:6px;">Semi-Conductor Gate</div>'
-            f'<div style="font-family:Instrument Serif,serif;font-size:1.3em;'
-            f'font-weight:400;font-style:italic;color:{soxl_color};margin-bottom:2px;">'
+            f'padding:18px 18px 14px;margin-bottom:10px;">'
+            f'<div style="font-family:DM Mono,monospace;font-size:0.68em;color:#9494A0;'
+            f'letter-spacing:0.18em;text-transform:uppercase;margin-bottom:8px;">Semi-Conductor Gate</div>'
+            f'<div style="font-family:Instrument Serif,serif;font-size:1.6em;'
+            f'font-weight:400;font-style:italic;color:{soxl_color};margin-bottom:4px;">'
             f'{soxl_title}</div>'
-            f'<div style="font-family:DM Mono,monospace;font-size:0.6em;color:#6B6B7A;'
-            f'letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">{soxl_strat}</div>'
+            f'<div style="font-family:DM Mono,monospace;font-size:0.7em;color:#6B6B7A;'
+            f'letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">{soxl_strat}</div>'
             f'{soxl_rows}'
             f'</div>'
         ), unsafe_allow_html=True)
@@ -951,24 +973,24 @@ if page == "📊 Dashboard":
             bar_w = int(pct * 2.5)
             weight_bar_rows += (
                 f'<div style="display:flex;align-items:center;'
-                f'justify-content:space-between;padding:5px 0;'
+                f'justify-content:space-between;padding:7px 0;'
                 f'border-bottom:1px solid rgba(0,0,0,0.05);">'
-                f'<span style="font-family:DM Mono,monospace;font-size:0.74em;'
-                f'color:#2C2C35;min-width:44px;">{k}</span>'
-                f'<div style="flex:1;margin:0 9px;height:3px;'
+                f'<span style="font-family:DM Mono,monospace;font-size:0.84em;'
+                f'color:#2C2C35;min-width:48px;">{k}</span>'
+                f'<div style="flex:1;margin:0 9px;height:4px;'
                 f'background:rgba(0,0,0,0.07);overflow:hidden;">'
-                f'<div style="height:3px;width:{bar_w}%;background:{main_color};"></div>'
+                f'<div style="height:4px;width:{bar_w}%;background:{main_color};"></div>'
                 f'</div>'
-                f'<span style="font-family:DM Mono,monospace;font-size:0.74em;'
+                f'<span style="font-family:DM Mono,monospace;font-size:0.84em;'
                 f'color:{main_color};font-variant-numeric:tabular-nums;'
-                f'min-width:32px;text-align:right;">{pct:.0f}%</span>'
+                f'min-width:36px;text-align:right;">{pct:.0f}%</span>'
                 f'</div>'
             )
         st.markdown(apply_theme(
             f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);'
-            f'border-top:3px solid #111118;padding:14px 16px 12px;">'
-            f'<div style="font-family:DM Mono,monospace;font-size:0.57em;color:#9494A0;'
-            f'letter-spacing:0.18em;text-transform:uppercase;margin-bottom:10px;">'
+            f'border-top:3px solid #111118;padding:18px 18px 14px;">'
+            f'<div style="font-family:DM Mono,monospace;font-size:0.68em;color:#9494A0;'
+            f'letter-spacing:0.18em;text-transform:uppercase;margin-bottom:12px;">'
             f'Target Weights  ·  R{curr_regime}</div>'
             f'{weight_bar_rows}'
             f'</div>'
@@ -985,15 +1007,15 @@ if page == "📊 Dashboard":
             ft_t     = "#FFFFFF" if active else "#9494A0"
             bdr_t    = f"1px solid {r_clrs[r]}" if active else "1px solid rgba(0,0,0,0.08)"
             tabs_html += (
-                f'<div style="padding:5px 12px;border:{bdr_t};background:{bg_t};">'
-                f'<span style="font-family:DM Mono,monospace;font-size:0.66em;'
+                f'<div style="padding:7px 16px;border:{bdr_t};background:{bg_t};">'
+                f'<span style="font-family:DM Mono,monospace;font-size:0.76em;'
                 f'font-weight:500;color:{ft_t};letter-spacing:0.05em;">{r_labels[r]}</span>'
                 f'</div>'
             )
         st.markdown(
             f'<div style="display:flex;gap:4px;margin-bottom:10px;align-items:center;">'
             f'{tabs_html}'
-            f'<div style="margin-left:auto;font-family:DM Mono,monospace;font-size:0.6em;'
+            f'<div style="margin-left:auto;font-family:DM Mono,monospace;font-size:0.7em;'
             f'color:#9494A0;">⏱ {last_update_time}</div>'
             f'</div>',
             unsafe_allow_html=True
@@ -1014,11 +1036,11 @@ if page == "📊 Dashboard":
         ))
         fig_qqq.update_layout(
             title=dict(text="QQQ  /  200-Day Moving Average",
-                       font=dict(family='DM Mono', size=12, color=t_color)),
-            height=295, **chart_layout,
+                       font=dict(family='DM Mono', size=13, color=t_color)),
+            height=330, **chart_layout,
             legend=dict(orientation='h', yanchor='bottom', y=1.0,
                         xanchor='right', x=1,
-                        font=dict(family='DM Mono', size=10, color=t_color))
+                        font=dict(family='DM Mono', size=11, color=t_color))
         )
         fig_qqq.update_xaxes(**_ax)
         fig_qqq.update_yaxes(**_ax)
@@ -1035,11 +1057,11 @@ if page == "📊 Dashboard":
         ))
         fig_tqqq.update_layout(
             title=dict(text="TQQQ  /  200-Day Moving Average",
-                       font=dict(family='DM Mono', size=12, color=t_color)),
-            height=295, **chart_layout,
+                       font=dict(family='DM Mono', size=13, color=t_color)),
+            height=330, **chart_layout,
             legend=dict(orientation='h', yanchor='bottom', y=1.0,
                         xanchor='right', x=1,
-                        font=dict(family='DM Mono', size=10, color=t_color))
+                        font=dict(family='DM Mono', size=11, color=t_color))
         )
         fig_tqqq.update_xaxes(**_ax)
         fig_tqqq.update_yaxes(**_ax)
@@ -1077,9 +1099,9 @@ elif page == "💼 Portfolio":
         return (
             f'<div style="display:inline-flex;flex-direction:column;padding:0 18px;'
             f'border-right:1px solid rgba(0,0,0,0.09);min-width:110px;">' 
-            f'<span style="font-family:DM Mono,monospace;font-size:0.57em;color:#9494A0;'
+            f'<span style="font-family:DM Mono,monospace;font-size:0.65em;color:#9494A0;'
             f'letter-spacing:0.14em;text-transform:uppercase;">{label}</span>'
-            f'<span style="font-family:DM Mono,monospace;font-size:0.92em;color:#111118;'
+            f'<span style="font-family:DM Mono,monospace;font-size:1.05em;color:#111118;'
             f'font-variant-numeric:tabular-nums;">{val}</span>'
             f'<span style="font-family:DM Mono,monospace;font-size:0.66em;color:{sub_color};">'
             f'{sub}</span></div>'
@@ -1094,7 +1116,7 @@ elif page == "💼 Portfolio":
 
     st.markdown(
         f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);'
-        f'border-left:3px solid #111118;padding:9px 0 9px 16px;'
+        f'border-left:3px solid #111118;padding:12px 0 12px 18px;'
         f'margin-bottom:14px;display:flex;align-items:center;overflow-x:auto;">' 
         f'<span style="font-family:DM Mono,monospace;font-size:0.57em;color:#9494A0;'
         f'letter-spacing:0.18em;text-transform:uppercase;white-space:nowrap;'
@@ -1103,25 +1125,6 @@ elif page == "💼 Portfolio":
         f'<div style="margin-left:auto;padding:0 14px;display:flex;gap:8px;align-items:center;">' ,
         unsafe_allow_html=True
     )
-    # 동기화 버튼을 티커바 오른쪽에 배치
-    _btn_col1, _btn_col2, _btn_col3 = st.columns([6, 1, 1])
-    with _btn_col2:
-        uploaded_file = st.file_uploader("📂", type="json", label_visibility="collapsed")
-        if uploaded_file is not None:
-            try:
-                data = json.load(uploaded_file)
-                st.session_state.portfolio.update(data)
-                sanitize_portfolio()
-                save_portfolio_to_disk()
-                st.success("복구 완료")
-                st.rerun()
-            except:
-                st.error("오류")
-    with _btn_col3:
-        json_str = json.dumps(st.session_state.portfolio)
-        st.download_button("💾", data=json_str, file_name="portfolio.json",
-                           mime="application/json", use_container_width=True)
-
     st.markdown("</div></div>", unsafe_allow_html=True)
 
     # ── 메인 2패널: 좌(포지션 입력+Quick Orders) + 우(차트+리밸런싱) ─
