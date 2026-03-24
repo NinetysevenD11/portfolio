@@ -1527,27 +1527,39 @@ elif page == "📈 Backtest Lab":
 
                 mc1, mc2, mc3, mc4 = st.columns(4)
 
-                def render_metric_card(title, ret, cagr, mdd, is_main=False):
-                    accent_style = f"border:1px solid rgba({r_c},{g_c},{b_c},0.35) !important; background:rgba({r_c},{g_c},{b_c},0.06) !important;" if is_main else "background:#FFFFFF !important;"
-                    tag = f'<span style="font-family:\'DM Mono\'; font-size:0.62em; background:rgba({r_c},{g_c},{b_c},0.12); color:{main_color}; border-radius:5px; padding:2px 8px; letter-spacing:0.1em; border:1px solid rgba({r_c},{g_c},{b_c},0.25);">STRATEGY</span>' if is_main else ''
-                    # 수익률/MDD 는 테마색 무관한 의미적 색상
-                    ret_color = "#059669" if ret >= 0 else "#EF4444"
-                    return f"""<div class="glass-card" style="{accent_style} height:auto !important; padding:18px !important; gap:8px;">
-    <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-        <span style="font-family:'DM Mono'; font-size:0.65em; color:#64748B; letter-spacing:0.14em; text-transform:uppercase;">{title}</span>
-        {tag}
-    </div>
-    <div style="font-family:'DM Mono'; font-size:1.75em; font-weight:400; color:#0F172A; letter-spacing:-1px;">CAGR {cagr*100:.1f}%</div>
-    <div style="font-family:'DM Mono'; font-size:0.75em; color:#94A3B8; display:flex; gap:14px;">
-        <span>누적 <span style="color:{ret_color}; font-weight:600;">{ret*100:.1f}%</span></span>
-        <span>MDD <span style="color:#EF4444; font-weight:600;">{mdd*100:.1f}%</span></span>
-    </div>
-</div>"""
+                def _mc_html(title, ret, cagr, mdd, is_main=False):
+                    """HTML 메트릭 카드 문자열 생성 (unsafe_allow_html 전용)"""
+                    border_top = f"rgba({r_c},{g_c},{b_c},0.55)" if is_main else "rgba(0,0,0,0.12)"
+                    bg        = f"rgba({r_c},{g_c},{b_c},0.06)" if is_main else "#FFFFFF"
+                    tag_html  = (f'<span style="background:rgba({r_c},{g_c},{b_c},0.1);'
+                                 f'color:{main_color};border-radius:5px;padding:2px 8px;'
+                                 f'font-size:0.6em;font-family:DM Mono,monospace;'
+                                 f'border:1px solid rgba({r_c},{g_c},{b_c},0.25);'
+                                 f'letter-spacing:0.1em;">STRATEGY</span>') if is_main else ''
+                    ret_c     = "#059669" if ret >= 0 else "#EF4444"
+                    # display:flex을 쓰지 않고 inline-block으로 대체 (Streamlit 파서 안전)
+                    return (
+                        f'<div style="background:{bg};border:1px solid rgba(0,0,0,0.08);'
+                        f'border-top:2px solid {border_top};border-radius:14px;'
+                        f'padding:16px 18px;box-shadow:0 2px 12px rgba(0,0,0,0.05);'
+                        f'min-height:100px;">'
+                        f'<div style="font-family:DM Mono,monospace;font-size:0.62em;'
+                        f'color:#94A3B8;letter-spacing:0.14em;text-transform:uppercase;'
+                        f'margin-bottom:6px;">{title}&nbsp;&nbsp;{tag_html}</div>'
+                        f'<div style="font-family:DM Mono,monospace;font-size:1.6em;'
+                        f'font-weight:400;color:#0F172A;letter-spacing:-0.5px;'
+                        f'margin-bottom:6px;">CAGR {cagr*100:.1f}%</div>'
+                        f'<div style="font-family:DM Mono,monospace;font-size:0.72em;'
+                        f'color:#94A3B8;">'
+                        f'누적&nbsp;<b style="color:{ret_c};">{ret*100:.1f}%</b>'
+                        f'&nbsp;&nbsp;MDD&nbsp;<b style="color:#EF4444;">{mdd*100:.1f}%</b>'
+                        f'</div></div>'
+                    )
 
-                mc1.markdown(render_metric_card("✦ AMLS V4.5", ret_o, cagr_o, mdd_o, True),  unsafe_allow_html=True)
-                mc2.markdown(render_metric_card("QQQ",          ret_q, cagr_q, mdd_q),        unsafe_allow_html=True)
-                mc3.markdown(render_metric_card("QLD",          ret_qld, cagr_qld, mdd_qld),  unsafe_allow_html=True)
-                mc4.markdown(render_metric_card("TQQQ",         ret_t, cagr_t, mdd_t),        unsafe_allow_html=True)
+                with mc1: st.markdown(_mc_html("✦ AMLS V4.5", ret_o,   cagr_o,   mdd_o,   True), unsafe_allow_html=True)
+                with mc2: st.markdown(_mc_html("QQQ",          ret_q,   cagr_q,   mdd_q),         unsafe_allow_html=True)
+                with mc3: st.markdown(_mc_html("QLD",          ret_qld, cagr_qld, mdd_qld),        unsafe_allow_html=True)
+                with mc4: st.markdown(_mc_html("TQQQ",         ret_t,   cagr_t,   mdd_t),          unsafe_allow_html=True)
 
                 st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
