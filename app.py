@@ -1058,20 +1058,25 @@ elif page == "💼 Portfolio":
     curr_vals = {a: st.session_state.portfolio[a]['shares'] * current_prices[a] for a in ASSET_LIST}
     total_val_usd = sum(curr_vals.values())
 
-    st.markdown(f'''
-    <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
-        <div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);border-top:2px solid #111118;
-            border-radius:0;padding:12px 20px;box-shadow:none;">
-            <div style="font-family:'DM Mono';font-size:0.62em;color:#4A5568;letter-spacing:0.14em;text-transform:uppercase;">Total NAV</div>
-            <div style="font-family:'DM Mono';font-size:1.6em;font-weight:400;color:#0F172A;margin-top:4px;">${{total_val_usd:,.2f}}</div>
-        </div>
-        <div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);border-top:2px solid rgba(0,0,0,0.25);
-            border-radius:0;padding:12px 20px;box-shadow:none;">
-            <div style="font-family:'DM Mono';font-size:0.62em;color:#4A5568;letter-spacing:0.14em;text-transform:uppercase;">USD/KRW</div>
-            <div style="font-family:'DM Mono';font-size:1.6em;font-weight:400;color:#0F172A;margin-top:4px;">₩{{cur_fx:,.2f}}</div>
-        </div>
-    </div>
-    ''', unsafe_allow_html=True)
+    _nav_html = (
+        f'<div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">'
+        f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);border-top:2px solid #111118;'
+        f'border-radius:0;padding:12px 20px;">'
+        f'<div style="font-family:DM Mono,monospace;font-size:0.58em;color:#9494A0;'
+        f'letter-spacing:0.16em;text-transform:uppercase;margin-bottom:4px;">Total NAV</div>'
+        f'<div style="font-family:DM Mono,monospace;font-size:1.55em;font-weight:400;'
+        f'color:#111118;font-variant-numeric:tabular-nums;">${total_val_usd:,.2f}</div>'
+        f'</div>'
+        f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);border-top:2px solid rgba(0,0,0,0.25);'
+        f'border-radius:0;padding:12px 20px;">'
+        f'<div style="font-family:DM Mono,monospace;font-size:0.58em;color:#9494A0;'
+        f'letter-spacing:0.16em;text-transform:uppercase;margin-bottom:4px;">USD/KRW</div>'
+        f'<div style="font-family:DM Mono,monospace;font-size:1.55em;font-weight:400;'
+        f'color:#111118;font-variant-numeric:tabular-nums;">₩{cur_fx:,.2f}</div>'
+        f'</div>'
+        f'</div>'
+    )
+    st.markdown(_nav_html, unsafe_allow_html=True)
 
     if total_val_usd > 0:
         c_green, c_red = main_color, "#EF4444"
