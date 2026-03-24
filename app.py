@@ -283,7 +283,7 @@ else: regime_committee_msg = f"🟡 R{live_regime} 승급 대기 (5일)"
 # 2. 라이트 테마 색상 변수 (차트용)
 # ==========================================
 b_color   = 'rgba(0,0,0,0)'
-t_color   = '#475569'        # 라이트 배경 위 뮤트 텍스트
+t_color   = '#2D3748'        # 라이트 배경 위 텍스트
 line_c    = main_color
 dash_c    = '#CBD5E1'
 rsi_low_c = main_color
@@ -325,10 +325,10 @@ css_block = f"""<style>
         --border-dim: rgba(0,0,0,0.07);
         --border-acc: rgba(16,185,129,0.28);
         --border-glow:rgba(16,185,129,0.5);
-        --t-prime:    #0F172A;
-        --t-sec:      #1E293B;
-        --t-muted:    #64748B;
-        --t-sub:      #94A3B8;
+        --t-prime:    #0A0F1E;
+        --t-sec:      #1A2332;
+        --t-muted:    #3D4F63;
+        --t-sub:      #566577;
         --acc:        #10B981;
         --acc-dim:    rgba(16,185,129,0.08);
         --acc-glow:   rgba(16,185,129,0.15);
@@ -386,7 +386,7 @@ css_block = f"""<style>
         transition: all 0.2s ease !important;
     }}
     [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"] p {{
-        color: var(--t-muted) !important; font-weight: 500 !important;
+        color: #3D4F63 !important; font-weight: 500 !important;
         font-size: 0.88rem !important; margin: 0 !important;
         font-family: 'DM Sans' !important; transition: color 0.2s !important;
     }}
@@ -409,7 +409,7 @@ css_block = f"""<style>
         padding: 9px 14px; margin-bottom: 2px;
         border-radius: 10px; border: 1px solid transparent;
         text-decoration: none !important;
-        color: var(--t-muted) !important;
+        color: #3D4F63 !important;
         font-weight: 500; font-size: 0.87rem;
         transition: all 0.2s ease;
         background: rgba(255,255,255,0.45);
@@ -447,7 +447,7 @@ css_block = f"""<style>
     .glass-card h3 {{
         font-family: 'DM Mono', monospace !important;
         font-size: 0.68em !important; font-weight: 400 !important;
-        color: var(--t-muted) !important;
+        color: #3D4F63 !important;
         margin-bottom: 16px !important;
         letter-spacing: 0.18em; text-transform: uppercase;
         border-bottom: 1px solid rgba(0,0,0,0.06); padding-bottom: 10px;
@@ -505,7 +505,7 @@ css_block = f"""<style>
         box-shadow: var(--shadow-md), 0 0 0 3px rgba(16,185,129,0.08) !important;
     }}
     [data-testid="stMetricLabel"] > div > div > p {{
-        font-size: 0.68em !important; font-weight: 500; color: var(--t-muted) !important;
+        font-size: 0.68em !important; font-weight: 500; color: #3D4F63 !important;
         white-space: normal !important; letter-spacing: 0.12em; text-transform: uppercase;
         font-family: 'DM Mono', monospace !important;
     }}
@@ -545,8 +545,8 @@ css_block = f"""<style>
         color: var(--t-prime) !important;
     }}
     h2 {{ font-family: 'Syne', sans-serif !important; color: var(--t-prime) !important; font-weight: 700 !important; }}
-    h3 {{ font-family: 'Syne', sans-serif !important; color: var(--t-sec) !important; }}
-    p {{ color: var(--t-sec) !important; }}
+    h3 {{ font-family: 'Syne', sans-serif !important; color: #1A2332 !important; }}
+    p {{ color: #1A2332 !important; }}
     strong {{ color: var(--t-prime) !important; }}
 
     /* ── DATA ROWS ──────────────────────────────────── */
@@ -556,7 +556,7 @@ css_block = f"""<style>
         font-size: 0.87em; align-items: center;
     }}
     .crow:last-child {{ border-bottom: none; }}
-    .clabel {{ color: var(--t-muted); font-weight: 400; font-family: 'DM Sans'; font-size: 0.95em; }}
+    .clabel {{ color: #344054; font-weight: 500; font-family: 'DM Sans'; font-size: 0.95em; }}
     .cval {{
         font-family: 'DM Mono', monospace; font-weight: 500;
         color: #10B981; font-size: 0.92em; letter-spacing: 0.02em;
@@ -667,7 +667,7 @@ css_block = f"""<style>
     .main .block-container > div > div:nth-child(5) {{ animation: fadeUp 0.4s ease 0.25s both; }}
 
     /* Sidebar general text override */
-    [data-testid="stSidebar"] p {{ color: var(--t-muted) !important; }}
+    [data-testid="stSidebar"] p {{ color: #3D4F63 !important; }}
     [data-testid="stSidebar"] strong {{ color: var(--t-prime) !important; }}
 </style>"""
 
@@ -683,20 +683,20 @@ sidebar_top.markdown(apply_theme(f"""
         <span style="font-family:'Syne'; font-size:1.6em; font-weight:800; color:#0F172A; letter-spacing:-0.5px;">AMLS</span>
         <span style="font-family:'Syne'; font-size:1.6em; font-weight:800; color:#10B981; letter-spacing:-0.5px;">V4.5</span>
     </div>
-    <div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#94A3B8; letter-spacing:0.22em; text-transform:uppercase; margin-bottom:14px;">QUANTITATIVE ENGINE</div>
+    <div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#4A5568; letter-spacing:0.22em; text-transform:uppercase; margin-bottom:14px;">QUANTITATIVE ENGINE</div>
     <div class="live-pulse" style="display:inline-flex; align-items:center; gap:6px; font-family:'DM Mono'; font-size:0.68em; color:#059669; font-weight:500; padding:5px 12px; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:8px; letter-spacing:0.06em;">
         {rt_label}
     </div>
 </div>
 """), unsafe_allow_html=True)
 
-st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#94A3B8; letter-spacing:0.2em; text-transform:uppercase; padding:14px 15px 6px;">Navigation</div>""", unsafe_allow_html=True)
+st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#4A5568; letter-spacing:0.2em; text-transform:uppercase; padding:14px 15px 6px;">Navigation</div>""", unsafe_allow_html=True)
 page = st.sidebar.radio("MENU",
     ["📊 Dashboard", "💼 Portfolio", "🍫 12-Pack Radar", "📈 Backtest Lab", "📰 Macro News"],
     label_visibility="collapsed")
 
 st.sidebar.markdown("""<div style="border-top:1px solid rgba(0,0,0,0.07); margin:10px 15px;"></div>""", unsafe_allow_html=True)
-st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#94A3B8; letter-spacing:0.2em; text-transform:uppercase; padding:6px 15px;">Theme Color</div>""", unsafe_allow_html=True)
+st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#4A5568; letter-spacing:0.2em; text-transform:uppercase; padding:6px 15px;">Theme Color</div>""", unsafe_allow_html=True)
 col1, col2, col3 = st.sidebar.columns([0.1, 1, 0.1])
 with col2:
     new_color = st.color_picker("메인 컬러", st.session_state.main_color, label_visibility="collapsed", key="cp_theme")
@@ -705,7 +705,7 @@ with col2:
         st.rerun()
 
 st.sidebar.markdown("""<div style="border-top:1px solid rgba(0,0,0,0.07); margin:10px 15px;"></div>""", unsafe_allow_html=True)
-st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#94A3B8; letter-spacing:0.2em; text-transform:uppercase; padding:6px 15px;">Bookmarks</div>""", unsafe_allow_html=True)
+st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#4A5568; letter-spacing:0.2em; text-transform:uppercase; padding:6px 15px;">Bookmarks</div>""", unsafe_allow_html=True)
 st.sidebar.markdown("""
 <div style="display:flex; flex-direction:column; gap:0px; padding:0 12px;">
     <a href="https://www.youtube.com/@JB_Insight" target="_blank" class="sidebar-link">📊 JB 인사이트</a>
@@ -733,7 +733,7 @@ def _pill(label, value, color):
     return (f'<div style="display:flex;flex-direction:column;align-items:center;'
             f'padding:8px 18px;background:#FFFFFF;border:1px solid rgba(0,0,0,0.07);'
             f'border-top:2px solid {color};border-radius:12px;min-width:90px;">'
-            f'<span style="font-family:\'DM Mono\';font-size:0.6em;color:#94A3B8;letter-spacing:0.14em;text-transform:uppercase;">{label}</span>'
+            f'<span style="font-family:\'DM Mono\';font-size:0.6em;color:#4A5568;letter-spacing:0.14em;text-transform:uppercase;">{label}</span>'
             f'<span style="font-family:\'DM Mono\';font-size:1.05em;font-weight:500;color:#0F172A;margin-top:2px;">{value}</span>'
             f'</div>')
 
@@ -747,7 +747,7 @@ _hdr_left = apply_theme(f"""
     <div style="font-family:'Syne';font-size:2.5em;font-weight:800;letter-spacing:-2px;color:#0F172A;line-height:1;">
         AMLS <span style="color:#10B981;">V4.5</span>
     </div>
-    <div style="font-family:'DM Mono';font-size:0.65em;color:#94A3B8;letter-spacing:0.22em;text-transform:uppercase;margin-top:4px;">
+    <div style="font-family:'DM Mono';font-size:0.65em;color:#4A5568;letter-spacing:0.22em;text-transform:uppercase;margin-top:4px;">
         The Wall Street Quantitative Strategy
     </div>
 </div>
@@ -760,7 +760,7 @@ _hdr_right = apply_theme(f"""
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
         <div class="live-pulse" style="font-family:'DM Mono';font-size:0.68em;color:#059669;padding:4px 12px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);border-radius:6px;letter-spacing:0.06em;">{rt_label}</div>
-        <div style="font-family:'DM Mono';font-size:0.68em;color:#94A3B8;letter-spacing:0.04em;">⏱ {last_update_time}</div>
+        <div style="font-family:'DM Mono';font-size:0.68em;color:#4A5568;letter-spacing:0.04em;">⏱ {last_update_time}</div>
     </div>
 </div>
 """)
@@ -832,7 +832,7 @@ if page == "📊 Dashboard":
             f'<div style="flex:1;text-align:center;padding:10px 6px;border-radius:10px;'
             f'background:{bg};border:{bdr};transition:all 0.2s;">'
             f'<div style="font-family:\'Syne\';font-size:0.95em;font-weight:{fw};color:{ftxt};">{r_labels[r]}</div>'
-            f'<div style="font-family:\'DM Mono\';font-size:0.6em;color:#94A3B8;margin-top:2px;letter-spacing:0.1em;">'
+            f'<div style="font-family:\'DM Mono\';font-size:0.6em;color:#4A5568;margin-top:2px;letter-spacing:0.1em;">'
             f'{regime_info[r][1]}</div></div>'
         )
 
@@ -841,7 +841,7 @@ if page == "📊 Dashboard":
         border-radius:16px;padding:16px 20px;margin-bottom:14px;
         box-shadow:0 4px 20px rgba(0,0,0,0.06);">
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
-            <span style="font-family:'DM Mono';font-size:0.62em;color:#94A3B8;letter-spacing:0.2em;text-transform:uppercase;">Mission Control</span>
+            <span style="font-family:'DM Mono';font-size:0.62em;color:#4A5568;letter-spacing:0.2em;text-transform:uppercase;">Mission Control</span>
             <div style="flex:1;height:1px;background:rgba(0,0,0,0.05);"></div>
             <span style="font-family:'DM Mono';font-size:0.72em;padding:3px 10px;border-radius:6px;
                 background:rgba({r_c},{g_c},{b_c},0.08);color:#10B981;border:1px solid rgba({r_c},{g_c},{b_c},0.2);">
@@ -860,7 +860,7 @@ if page == "📊 Dashboard":
             <div class="glass-inset" style="text-align:left;padding:16px 20px;">
                 <div style="display:flex;align-items:baseline;gap:12px;">
                     <span style="color:#10B981;font-family:'Syne';font-size:2em;font-weight:800;letter-spacing:-1px;">{regime_info[curr_regime][0]}</span>
-                    <span style="font-family:'DM Mono';font-size:0.72em;color:#64748B;letter-spacing:0.12em;text-transform:uppercase;">{regime_info[curr_regime][1]}</span>
+                    <span style="font-family:'DM Mono';font-size:0.72em;color:#344054;letter-spacing:0.12em;text-transform:uppercase;">{regime_info[curr_regime][1]}</span>
                 </div>
             </div>
             {_lg_row('VIX < 40', f'{vix_close:.2f}', vix_close<=40)}
@@ -875,13 +875,13 @@ if page == "📊 Dashboard":
                 <div style="display:flex;align-items:baseline;gap:10px;">
                     <span style="color:{soxl_color};font-family:'Syne';font-size:1.3em;font-weight:800;">{soxl_title}</span>
                 </div>
-                <div style="font-family:'DM Mono';font-size:0.7em;color:#64748B;margin-top:4px;letter-spacing:0.1em;text-transform:uppercase;">{soxl_strat}</div>
+                <div style="font-family:'DM Mono';font-size:0.7em;color:#344054;margin-top:4px;letter-spacing:0.1em;text-transform:uppercase;">{soxl_strat}</div>
             </div>
             {_lg_row('SMH > 50MA', f'${smh_close:.2f}', smh_c1)}
             {_lg_row('Momentum 1M >10%', f'{smh_1m*100:.1f}%', smh_c2)}
             {_lg_row('RSI > 50', f'{smh_rsi:.1f}', smh_c3)}
             <div style="margin-top:auto;padding:8px 12px;font-size:0.73em;text-align:center;
-                color:#94A3B8;border-top:1px solid rgba(0,0,0,0.05);font-family:'DM Mono';">
+                color:#4A5568;border-top:1px solid rgba(0,0,0,0.05);font-family:'DM Mono';">
                 ※ 3 filters required for SOXL</div>
         </div>"""), unsafe_allow_html=True)
 
@@ -889,7 +889,7 @@ if page == "📊 Dashboard":
         st.markdown(apply_theme(f"""<div class="glass-card">
             <h3>Target Weights  ·  R{curr_regime}</h3>
             <div style="display:flex;justify-content:space-between;font-family:'DM Mono';
-                font-size:0.62em;color:#94A3B8;border-bottom:1px solid rgba(0,0,0,0.06);
+                font-size:0.62em;color:#4A5568;border-bottom:1px solid rgba(0,0,0,0.06);
                 padding-bottom:8px;margin-bottom:4px;letter-spacing:0.15em;text-transform:uppercase;">
                 <span>Asset</span><span>Weight</span>
             </div>
@@ -905,7 +905,7 @@ if page == "📊 Dashboard":
         <div style="flex:1;min-width:160px;background:#FFFFFF;border:1px solid rgba(0,0,0,0.07);
             border-top:2px solid rgba({r_c},{g_c},{b_c},0.35);border-radius:14px;padding:14px 18px;
             box-shadow:0 2px 12px rgba(0,0,0,0.05);transition:transform 0.2s;">
-            <div style="font-family:'DM Mono';font-size:0.62em;color:#94A3B8;letter-spacing:0.14em;
+            <div style="font-family:'DM Mono';font-size:0.62em;color:#4A5568;letter-spacing:0.14em;
                 text-transform:uppercase;margin-bottom:6px;">{label}</div>
             <div style="font-family:'DM Mono';font-size:1.3em;font-weight:400;color:#0F172A;">{main_val}</div>
             <div style="font-family:'DM Mono';font-size:0.72em;color:{sub_color};margin-top:3px;">{sub_val}</div>
@@ -955,7 +955,7 @@ elif page == "💼 Portfolio":
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
         <div>
             <h2 style="font-family:'Syne';font-size:1.7em;color:#0F172A;margin:0;">💼 Portfolio  &amp;  Rebalancing</h2>
-            <div style="font-family:'DM Mono';font-size:0.65em;color:#94A3B8;letter-spacing:0.16em;text-transform:uppercase;margin-top:3px;">Position Tracker  ·  Rebalancing Engine</div>
+            <div style="font-family:'DM Mono';font-size:0.65em;color:#4A5568;letter-spacing:0.16em;text-transform:uppercase;margin-top:3px;">Position Tracker  ·  Rebalancing Engine</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1017,7 +1017,7 @@ elif page == "💼 Portfolio":
         st.rerun()
 
     st.markdown("""
-    <div style="font-family:'DM Mono';font-size:0.62em;color:#94A3B8;letter-spacing:0.2em;text-transform:uppercase;margin:16px 0 6px;">⚖  Action Plan</div>
+    <div style="font-family:'DM Mono';font-size:0.62em;color:#4A5568;letter-spacing:0.2em;text-transform:uppercase;margin:16px 0 6px;">⚖  Action Plan</div>
     """, unsafe_allow_html=True)
 
     current_prices = {}
@@ -1035,12 +1035,12 @@ elif page == "💼 Portfolio":
     <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
         <div style="background:#FFFFFF;border:1px solid rgba(0,0,0,0.07);border-top:2px solid rgba({r_c},{g_c},{b_c},0.5);
             border-radius:14px;padding:14px 22px;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
-            <div style="font-family:'DM Mono';font-size:0.62em;color:#94A3B8;letter-spacing:0.14em;text-transform:uppercase;">Total NAV</div>
+            <div style="font-family:'DM Mono';font-size:0.62em;color:#4A5568;letter-spacing:0.14em;text-transform:uppercase;">Total NAV</div>
             <div style="font-family:'DM Mono';font-size:1.6em;font-weight:400;color:#0F172A;margin-top:4px;">${{total_val_usd:,.2f}}</div>
         </div>
         <div style="background:#FFFFFF;border:1px solid rgba(0,0,0,0.07);border-top:2px solid rgba(0,0,0,0.12);
             border-radius:14px;padding:14px 22px;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
-            <div style="font-family:'DM Mono';font-size:0.62em;color:#94A3B8;letter-spacing:0.14em;text-transform:uppercase;">USD/KRW</div>
+            <div style="font-family:'DM Mono';font-size:0.62em;color:#4A5568;letter-spacing:0.14em;text-transform:uppercase;">USD/KRW</div>
             <div style="font-family:'DM Mono';font-size:1.6em;font-weight:400;color:#0F172A;margin-top:4px;">₩{{cur_fx:,.2f}}</div>
         </div>
     </div>
@@ -1100,7 +1100,7 @@ elif page == "💼 Portfolio":
                     st.plotly_chart(fig_bar, use_container_width=True)
 
         st.markdown("""
-    <div style="font-family:'DM Mono';font-size:0.62em;color:#94A3B8;letter-spacing:0.2em;text-transform:uppercase;margin:20px 0 12px;">📝  Quick Orders</div>
+    <div style="font-family:'DM Mono';font-size:0.62em;color:#4A5568;letter-spacing:0.2em;text-transform:uppercase;margin:20px 0 12px;">📝  Quick Orders</div>
     """, unsafe_allow_html=True)
         summary_html = f"<div class='glass-card' style='height:auto !important; flex-direction:row; gap:24px; padding:20px !important; align-items:flex-start;'>"
 
@@ -1154,9 +1154,9 @@ elif page == "💼 Portfolio":
             ret_usd_str   = f"{ret_usd:+.2f}%" if asset != 'CASH' else "—"
 
             if abs(diff) < cur_p * 0.05 and asset != 'CASH':
-                action, diff_str = "<span style='color:#94A3B8; font-weight:500;'>HOLD</span>", "—"
+                action, diff_str = "<span style='color:#4A5568; font-weight:500;'>HOLD</span>", "—"
             elif abs(diff) < 1.0 and asset == 'CASH':
-                action, diff_str = "<span style='color:#94A3B8; font-weight:500;'>HOLD</span>", "—"
+                action, diff_str = "<span style='color:#4A5568; font-weight:500;'>HOLD</span>", "—"
             elif diff > 0:
                 action   = f"<span style='color:#10B981; font-weight:600; background:rgba(16,185,129,0.1); padding:3px 10px; border-radius:6px; border:1px solid rgba(16,185,129,0.2);'>BUY</span>"
                 diff_str = f"<span style='color:#10B981; font-weight:500;'>+${diff:,.0f}</span>"
@@ -1167,7 +1167,7 @@ elif page == "💼 Portfolio":
             if tgt_w > 0 or curr_v > 0 or shares > 0:
                 rebal_html += f"""<tr>
 <td style="font-weight:700; font-family:'DM Sans'; color:#10B981;">{asset}</td>
-<td style="color:#475569;">{avg_p_str}</td>
+<td style="color:#2D3A4A;">{avg_p_str}</td>
 <td><span style="color:{ret_usd_color}; font-weight:500;">{ret_usd_str}</span></td>
 <td>{curr_v:,.0f}</td>
 <td style="color:#10B981;">{tgt_w*100:.0f}%</td>
@@ -1246,7 +1246,7 @@ elif page == "🍫 12-Pack Radar":
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
         <div>
             <h2 style="font-family:'Syne';font-size:1.7em;color:#0F172A;margin:0;">🍫 12-Pack Radar</h2>
-            <div style="font-family:'DM Mono';font-size:0.65em;color:#94A3B8;letter-spacing:0.16em;text-transform:uppercase;margin-top:3px;">Global Macro Signal Dashboard</div>
+            <div style="font-family:'DM Mono';font-size:0.65em;color:#4A5568;letter-spacing:0.16em;text-transform:uppercase;margin-top:3px;">Global Macro Signal Dashboard</div>
         </div>
     </div>"""), unsafe_allow_html=True)
 
@@ -1256,7 +1256,7 @@ elif page == "🍫 12-Pack Radar":
         _cnt_cards += (f'<div style="flex:1;text-align:center;background:rgba(0,0,0,0.025);'
                        f'border:1px solid rgba(0,0,0,0.07);border-top:2px solid {_c};border-radius:12px;padding:12px 8px;">'
                        f'<div style="font-family:\'DM Mono\';font-size:1.8em;font-weight:400;color:{_c};">{_val}</div>'
-                       f'<div style="font-family:\'DM Mono\';font-size:0.6em;color:#94A3B8;letter-spacing:0.16em;text-transform:uppercase;margin-top:2px;">{_lbl}</div>'
+                       f'<div style="font-family:\'DM Mono\';font-size:0.6em;color:#4A5568;letter-spacing:0.16em;text-transform:uppercase;margin-top:2px;">{_lbl}</div>'
                        f'</div>')
 
     st.markdown(apply_theme(f"""
@@ -1265,7 +1265,7 @@ elif page == "🍫 12-Pack Radar":
             border-left:4px solid {radar_color};border-radius:16px;padding:22px 24px;
             box-shadow:0 4px 20px rgba(0,0,0,0.06);">
             <div style="font-family:'Syne';font-size:1.2em;font-weight:700;color:{radar_color};margin-bottom:10px;">{radar_status}</div>
-            <p style="font-family:'DM Sans';color:#475569;font-size:0.92em;margin:0;line-height:1.75;">{radar_msg}</p>
+            <p style="font-family:'DM Sans';color:#2D3A4A;font-size:0.92em;margin:0;line-height:1.75;">{radar_msg}</p>
         </div>
         <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:160px;">
             {_cnt_cards}
@@ -1323,7 +1323,7 @@ elif page == "🍫 12-Pack Radar":
         return (f'<a href="{url}" target="_blank" class="radar-link">'
                 f'<div class="radar-link-title" style="margin-bottom:5px;">{title} ↗{badge}</div>'
                 f'</a>'
-                f'<div style="font-size:0.76em; color:#64748B; margin-bottom:12px; line-height:1.45; letter-spacing:-0.2px; word-break:keep-all;">{desc}</div>')
+                f'<div style="font-size:0.76em; color:#344054; margin-bottom:12px; line-height:1.45; letter-spacing:-0.2px; word-break:keep-all;">{desc}</div>')
 
     u1  = "https://kr.tradingview.com/chart/?symbol=NASDAQ:QQQ"
     u2  = "https://kr.tradingview.com/chart/?symbol=NASDAQ:QQQ"
@@ -1464,7 +1464,7 @@ elif page == "📈 Backtest Lab":
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
         <div>
             <h2 style="font-family:'Syne';font-size:1.7em;color:#0F172A;margin:0;">📈 Backtest Lab</h2>
-            <div style="font-family:'DM Mono';font-size:0.65em;color:#94A3B8;letter-spacing:0.16em;text-transform:uppercase;margin-top:3px;">Strategy Simulator  ·  Historical Analysis</div>
+            <div style="font-family:'DM Mono';font-size:0.65em;color:#4A5568;letter-spacing:0.16em;text-transform:uppercase;margin-top:3px;">Strategy Simulator  ·  Historical Analysis</div>
         </div>
     </div>"""), unsafe_allow_html=True)
 
@@ -1473,7 +1473,7 @@ elif page == "📈 Backtest Lab":
 
     with panel_cfg:
         with st.container(border=True):
-            st.markdown("""<div style="font-family:'DM Mono';font-size:0.62em;color:#94A3B8;margin-bottom:14px;letter-spacing:0.2em;text-transform:uppercase;">⚙  Config</div>""", unsafe_allow_html=True)
+            st.markdown("""<div style="font-family:'DM Mono';font-size:0.62em;color:#4A5568;margin-bottom:14px;letter-spacing:0.2em;text-transform:uppercase;">⚙  Config</div>""", unsafe_allow_html=True)
             bt_start = st.date_input("Start Date", datetime(2020, 1, 1), key="bt_start_input")
             bt_end   = st.date_input("End Date",   datetime.today(),     key="bt_end_input")
             monthly_cont = st.number_input("월 적립금 ($)", value=2000, step=500, key="bt_monthly_input")
@@ -1544,13 +1544,13 @@ elif page == "📈 Backtest Lab":
                         f'padding:16px 18px;box-shadow:0 2px 12px rgba(0,0,0,0.05);'
                         f'min-height:100px;">'
                         f'<div style="font-family:DM Mono,monospace;font-size:0.62em;'
-                        f'color:#94A3B8;letter-spacing:0.14em;text-transform:uppercase;'
+                        f'color:#4A5568;letter-spacing:0.14em;text-transform:uppercase;'
                         f'margin-bottom:6px;">{title}&nbsp;&nbsp;{tag_html}</div>'
                         f'<div style="font-family:DM Mono,monospace;font-size:1.6em;'
                         f'font-weight:400;color:#0F172A;letter-spacing:-0.5px;'
                         f'margin-bottom:6px;">CAGR {cagr*100:.1f}%</div>'
                         f'<div style="font-family:DM Mono,monospace;font-size:0.72em;'
-                        f'color:#94A3B8;">'
+                        f'color:#4A5568;">'
                         f'누적&nbsp;<b style="color:{ret_c};">{ret*100:.1f}%</b>'
                         f'&nbsp;&nbsp;MDD&nbsp;<b style="color:#EF4444;">{mdd*100:.1f}%</b>'
                         f'</div></div>'
@@ -1656,10 +1656,10 @@ elif page == "📰 Macro News":
             with cols[idx % 3]:
                 html_snippet = apply_theme(f"""
                 <div class="glass-card" style="padding:18px !important; margin-bottom:12px; height:140px !important; gap:0; flex-direction:column; justify-content:space-between;">
-                    <div style="font-family:'DM Sans'; font-weight:400; font-size:0.9em; line-height:1.5; color:#94A3B8; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">
-                        <a href="{item['link']}" target="_blank" style="color:#94A3B8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#10B981'" onmouseout="this.style.color='#94A3B8'">{item['title']}</a>
+                    <div style="font-family:'DM Sans'; font-weight:400; font-size:0.9em; line-height:1.5; color:#4A5568; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">
+                        <a href="{item['link']}" target="_blank" style="color:#4A5568; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#10B981'" onmouseout="this.style.color='#94A3B8'">{item['title']}</a>
                     </div>
-                    <div style="font-family:'DM Mono'; font-size:0.68em; color:#94A3B8; margin-top:8px; letter-spacing:0.06em;">{item['date']}</div>
+                    <div style="font-family:'DM Mono'; font-size:0.68em; color:#4A5568; margin-top:8px; letter-spacing:0.06em;">{item['date']}</div>
                 </div>
                 """)
                 st.markdown(html_snippet, unsafe_allow_html=True)
