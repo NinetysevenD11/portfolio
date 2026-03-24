@@ -1,0 +1,28 @@
+name: Keep Streamlit Alive
+
+on:
+  schedule:
+    # 6시간마다 실행하라는 의미입니다. (크론탭 형식)
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # 우리가 직접 '실행' 버튼을 눌러서 테스트해 볼 수 있게 해주는 옵션입니다.
+
+jobs:
+  wake-up:
+    runs-on: ubuntu-latest # 깃허브가 제공하는 가상 리눅스 컴퓨터를 사용합니다.
+
+    steps:
+    - name: 레포지토리 코드 가져오기
+      uses: actions/checkout@v3
+
+    - name: 파이썬 환경 설정
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: 액션 전용 필요 패키지 설치
+      run: |
+        pip install -r requirements_action.txt
+
+    - name: 앱 깨우기 스크립트 실행
+      run: |
+        python keep_alive.py
