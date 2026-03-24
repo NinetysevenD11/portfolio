@@ -721,32 +721,69 @@ st.sidebar.markdown("""
 st.sidebar.markdown("""<div style="border-top:1px solid rgba(0,0,0,0.07); margin:10px 15px;"></div>""", unsafe_allow_html=True)
 
 # ==========================================
-# 5. 메인 헤더
+# 5. 메인 헤더  —  Editorial Bento Style
 # ==========================================
-c_title, c_info = st.columns([1.6, 1])
-with c_title:
-    st.markdown(apply_theme(f"""
-    <div style="padding:4px 0 0;">
-        <h1>AMLS V4.5 ENGINE</h1>
-        <p style="font-family:'DM Mono'; font-size:0.75em; margin:6px 0 0 2px; font-weight:500; color:#059669; letter-spacing:0.22em; text-transform:uppercase;">The Wall Street Quantitative Strategy</p>
-    </div>
-    """), unsafe_allow_html=True)
 
-with c_info:
-    st.markdown(f"""<div style="text-align:right; font-family:'DM Mono'; font-size:0.72em; font-weight:400; color:#94A3B8; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:10px; margin-top:4px;">Custom Theme Edition</div>""", unsafe_allow_html=True)
-    i1, i2 = st.columns([1.5, 1])
-    with i1:
-        st.markdown(f"""<div style="text-align:right; font-family:'DM Mono'; font-size:0.72em; color:#94A3B8; margin-top:8px; letter-spacing:0.05em;">⏱ {last_update_time}</div>""", unsafe_allow_html=True)
-    with i2:
+# ① 풀 너비 상단 인트로 스트립 (타이틀 + 컨트롤 인라인)
+_qqq_chg  = (last_row['QQQ'] / last_row['QQQ_MA200'] - 1) * 100
+_vix_now  = last_row['^VIX']
+_smh_chg  = last_row['SMH_1M_Ret'] * 100
+
+def _pill(label, value, color):
+    return (f'<div style="display:flex;flex-direction:column;align-items:center;'
+            f'padding:8px 18px;background:#FFFFFF;border:1px solid rgba(0,0,0,0.07);'
+            f'border-top:2px solid {color};border-radius:12px;min-width:90px;">'
+            f'<span style="font-family:\'DM Mono\';font-size:0.6em;color:#94A3B8;letter-spacing:0.14em;text-transform:uppercase;">{label}</span>'
+            f'<span style="font-family:\'DM Mono\';font-size:1.05em;font-weight:500;color:#0F172A;margin-top:2px;">{value}</span>'
+            f'</div>')
+
+_p_qqq  = _pill("QQQ/200MA", f"{_qqq_chg:+.1f}%", main_color if _qqq_chg >= 0 else "#EF4444")
+_p_vix  = _pill("VIX", f"{_vix_now:.1f}", main_color if _vix_now < 20 else ("#F59E0B" if _vix_now < 30 else "#EF4444"))
+_p_smh  = _pill("SMH 1M", f"{_smh_chg:+.1f}%", main_color if _smh_chg >= 0 else "#EF4444")
+_p_reg  = _pill("REGIME", f"R{curr_regime}", main_color)
+
+_hdr_left = apply_theme(f"""
+<div style="display:flex;flex-direction:column;justify-content:center;">
+    <div style="font-family:'Syne';font-size:2.5em;font-weight:800;letter-spacing:-2px;color:#0F172A;line-height:1;">
+        AMLS <span style="color:#10B981;">V4.5</span>
+    </div>
+    <div style="font-family:'DM Mono';font-size:0.65em;color:#94A3B8;letter-spacing:0.22em;text-transform:uppercase;margin-top:4px;">
+        The Wall Street Quantitative Strategy
+    </div>
+</div>
+""")
+
+_hdr_right = apply_theme(f"""
+<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+    <div style="display:flex;gap:6px;">
+        {_p_qqq}{_p_vix}{_p_smh}{_p_reg}
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+        <div class="live-pulse" style="font-family:'DM Mono';font-size:0.68em;color:#059669;padding:4px 12px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);border-radius:6px;letter-spacing:0.06em;">{rt_label}</div>
+        <div style="font-family:'DM Mono';font-size:0.68em;color:#94A3B8;letter-spacing:0.04em;">⏱ {last_update_time}</div>
+    </div>
+</div>
+""")
+
+hdr_c1, hdr_c2 = st.columns([1, 1.6])
+with hdr_c1:
+    st.markdown(_hdr_left, unsafe_allow_html=True)
+with hdr_c2:
+    c_sync1, c_sync2 = st.columns([4, 1])
+    with c_sync2:
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
         if st.button("↺ 동기화", use_container_width=True):
             fetch_realtime_prices.clear()
             load_data.clear()
             st.rerun()
+    with c_sync1:
+        st.markdown(_hdr_right, unsafe_allow_html=True)
 
 st.markdown(apply_theme(f"""
-<div style="position:relative; margin:16px 0 28px; height:1px; background:rgba(0,0,0,0.07);">
-    <div style="position:absolute; left:0; top:0; width:180px; height:1px; background:linear-gradient(90deg, rgba({r_c},{g_c},{b_c},0.8), transparent);"></div>
-    <div style="position:absolute; right:0; top:0; width:80px; height:1px; background:linear-gradient(270deg, rgba({r_c},{g_c},{b_c},0.3), transparent);"></div>
+<div style="position:relative;margin:14px 0 24px;height:1px;background:rgba(0,0,0,0.07);">
+    <div style="position:absolute;left:0;top:-1px;width:220px;height:3px;
+        background:linear-gradient(90deg,rgba({r_c},{g_c},{b_c},0.9),rgba({r_c},{g_c},{b_c},0.3),transparent);
+        border-radius:2px;"></div>
 </div>
 """), unsafe_allow_html=True)
 
@@ -757,7 +794,7 @@ if page == "📊 Dashboard":
 
     def _lg_row(label, val, passed):
         icon  = "●" if passed else "○"
-        color = main_color if passed else "#475569"
+        color = main_color if passed else "#CBD5E1"
         if isinstance(val, (int, float)):
             val_str = f"${val:.2f}" if val > 5 else f"{val:.2f}"
         elif isinstance(val, str) and '%' in val:
@@ -781,67 +818,127 @@ if page == "📊 Dashboard":
         for k, v in target_weights.items() if v > 0
     ])
 
-    c1, c2, c3 = st.columns([1.2, 1.2, 1])
+    # ── ① Mission Control  풀너비 배너 ──────────────────────────
+    r_colors = {1: main_color, 2: "#F59E0B", 3: "#EF4444", 4: "#7C3AED"}
+    r_labels = {1: "R1  BULL", 2: "R2  CORR", 3: "R3  BEAR", 4: "R4  PANIC"}
+    regime_tabs_html = ""
+    for r in [1, 2, 3, 4]:
+        is_active = (r == curr_regime)
+        bg   = f"rgba({r_c},{g_c},{b_c},0.12)" if is_active else "rgba(0,0,0,0.03)"
+        bdr  = f"2px solid {r_colors[r]}" if is_active else "2px solid transparent"
+        ftxt = r_colors[r] if is_active else "#CBD5E1"
+        fw   = "700" if is_active else "400"
+        regime_tabs_html += (
+            f'<div style="flex:1;text-align:center;padding:10px 6px;border-radius:10px;'
+            f'background:{bg};border:{bdr};transition:all 0.2s;">'
+            f'<div style="font-family:\'Syne\';font-size:0.95em;font-weight:{fw};color:{ftxt};">{r_labels[r]}</div>'
+            f'<div style="font-family:\'DM Mono\';font-size:0.6em;color:#94A3B8;margin-top:2px;letter-spacing:0.1em;">'
+            f'{regime_info[r][1]}</div></div>'
+        )
+
+    st.markdown(apply_theme(f"""
+    <div style="background:#FFFFFF;border:1px solid rgba(0,0,0,0.07);border-top:2px solid rgba({r_c},{g_c},{b_c},0.4);
+        border-radius:16px;padding:16px 20px;margin-bottom:14px;
+        box-shadow:0 4px 20px rgba(0,0,0,0.06);">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
+            <span style="font-family:'DM Mono';font-size:0.62em;color:#94A3B8;letter-spacing:0.2em;text-transform:uppercase;">Mission Control</span>
+            <div style="flex:1;height:1px;background:rgba(0,0,0,0.05);"></div>
+            <span style="font-family:'DM Mono';font-size:0.72em;padding:3px 10px;border-radius:6px;
+                background:rgba({r_c},{g_c},{b_c},0.08);color:#10B981;border:1px solid rgba({r_c},{g_c},{b_c},0.2);">
+                {regime_committee_msg}
+            </span>
+        </div>
+        <div style="display:flex;gap:8px;">{regime_tabs_html}</div>
+    </div>
+    """), unsafe_allow_html=True)
+
+    # ── ② Bento Grid  비대칭 3칸 ────────────────────────────────
+    c1, c2, c3 = st.columns([1.6, 1.4, 1])
     with c1:
         st.markdown(apply_theme(f"""<div class="glass-card">
-            <h3>Market Regime</h3>
-            <div class="glass-inset">
-                <div style="color:#10B981; font-family:'Syne'; font-size:1.7em; font-weight:800; letter-spacing:-0.5px;">{regime_info[curr_regime][0]}</div>
-                <div style="font-family:'DM Mono'; font-size:0.72em; color:#64748B; margin-top:6px; letter-spacing:0.12em; text-transform:uppercase;">{regime_info[curr_regime][1]}</div>
+            <h3>Market Regime  ·  Signal Conditions</h3>
+            <div class="glass-inset" style="text-align:left;padding:16px 20px;">
+                <div style="display:flex;align-items:baseline;gap:12px;">
+                    <span style="color:#10B981;font-family:'Syne';font-size:2em;font-weight:800;letter-spacing:-1px;">{regime_info[curr_regime][0]}</span>
+                    <span style="font-family:'DM Mono';font-size:0.72em;color:#64748B;letter-spacing:0.12em;text-transform:uppercase;">{regime_info[curr_regime][1]}</span>
+                </div>
             </div>
             {_lg_row('VIX < 40', f'{vix_close:.2f}', vix_close<=40)}
             {_lg_row('QQQ > 200MA', f'${qqq_close:.2f}', qqq_close>=qqq_ma200)}
             {_lg_row('50MA ≥ 200MA', f'${qqq_ma50:.2f}', qqq_ma50>=qqq_ma200)}
-            <div style="margin-top:auto; padding:10px 14px; font-size:0.78em; text-align:center; border-radius:8px; background:rgba(16,185,129,0.07); color:#10B981; font-weight:500; border:1px solid rgba(16,185,129,0.15); font-family:'DM Mono'; letter-spacing:0.05em;">{regime_committee_msg}</div>
         </div>"""), unsafe_allow_html=True)
 
     with c2:
         st.markdown(apply_theme(f"""<div class="glass-card">
-            <h3>Semi-Conductor · SOXL</h3>
-            <div class="glass-inset">
-                <div style="color:{soxl_color}; font-family:'Syne'; font-size:1.5em; font-weight:800; letter-spacing:-0.5px;">{soxl_title}</div>
-                <div style="font-family:'DM Mono'; font-size:0.72em; color:#64748B; margin-top:6px; letter-spacing:0.12em; text-transform:uppercase;">{soxl_strat}</div>
+            <h3>Semi-Conductor  ·  SOXL Gate</h3>
+            <div class="glass-inset" style="text-align:left;padding:16px 20px;">
+                <div style="display:flex;align-items:baseline;gap:10px;">
+                    <span style="color:{soxl_color};font-family:'Syne';font-size:1.3em;font-weight:800;">{soxl_title}</span>
+                </div>
+                <div style="font-family:'DM Mono';font-size:0.7em;color:#64748B;margin-top:4px;letter-spacing:0.1em;text-transform:uppercase;">{soxl_strat}</div>
             </div>
             {_lg_row('SMH > 50MA', f'${smh_close:.2f}', smh_c1)}
             {_lg_row('Momentum 1M >10%', f'{smh_1m*100:.1f}%', smh_c2)}
             {_lg_row('RSI > 50', f'{smh_rsi:.1f}', smh_c3)}
-            <div style="margin-top:auto; padding:10px 14px; font-size:0.78em; text-align:center; color:#475569; font-weight:400; border-top:1px solid rgba(0,0,0,0.06); font-family:'DM Mono'; letter-spacing:0.04em;">※ 3 filters required for SOXL</div>
+            <div style="margin-top:auto;padding:8px 12px;font-size:0.73em;text-align:center;
+                color:#94A3B8;border-top:1px solid rgba(0,0,0,0.05);font-family:'DM Mono';">
+                ※ 3 filters required for SOXL</div>
         </div>"""), unsafe_allow_html=True)
 
     with c3:
         st.markdown(apply_theme(f"""<div class="glass-card">
-            <h3>Target Weights · R{curr_regime}</h3>
-            <div style="display:flex; justify-content:space-between; font-family:'DM Mono'; font-size:0.65em; color:#94A3B8; border-bottom:1px solid rgba(0,0,0,0.06); padding-bottom:8px; margin-bottom:4px; letter-spacing:0.15em; text-transform:uppercase;">
+            <h3>Target Weights  ·  R{curr_regime}</h3>
+            <div style="display:flex;justify-content:space-between;font-family:'DM Mono';
+                font-size:0.62em;color:#94A3B8;border-bottom:1px solid rgba(0,0,0,0.06);
+                padding-bottom:8px;margin-bottom:4px;letter-spacing:0.15em;text-transform:uppercase;">
                 <span>Asset</span><span>Weight</span>
             </div>
             {weight_rows}
         </div>"""), unsafe_allow_html=True)
 
-    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+    # ── ③ 메트릭 필 스트립 (가로 스크롤 카드 행) ────────────────
+    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
-    m1,m2,m3,m4,m5 = st.columns(5)
-    m1.metric("QQQ  vs  200MA", f"${last_row['QQQ']:.2f}", f"{(last_row['QQQ']/last_row['QQQ_MA200']-1)*100:+.2f}%")
-    m2.metric("TQQQ  vs  200MA", f"${last_row['TQQQ']:.2f}", f"{(last_row['TQQQ']/last_row['TQQQ_MA200']-1)*100:+.2f}%", delta_color="inverse")
-    m3.metric("VIX  ·  20D MA", f"{last_row['VIX_MA20']:.2f}", f"NOW: {last_row['^VIX']:.2f}")
-    m4.metric("SMH  1M Ret", f"{last_row['SMH_1M_Ret']*100:+.1f}%", f"vs 50MA: {(last_row['SMH']/last_row['SMH_MA50']-1)*100:+.1f}%")
-    m5.metric("SMH  RSI", f"{last_row['SMH_RSI']:.1f}", "Target > 50")
+    def _metric_pill(label, main_val, sub_val, delta_positive=True):
+        sub_color = "#059669" if delta_positive else "#EF4444"
+        return apply_theme(f"""
+        <div style="flex:1;min-width:160px;background:#FFFFFF;border:1px solid rgba(0,0,0,0.07);
+            border-top:2px solid rgba({r_c},{g_c},{b_c},0.35);border-radius:14px;padding:14px 18px;
+            box-shadow:0 2px 12px rgba(0,0,0,0.05);transition:transform 0.2s;">
+            <div style="font-family:'DM Mono';font-size:0.62em;color:#94A3B8;letter-spacing:0.14em;
+                text-transform:uppercase;margin-bottom:6px;">{label}</div>
+            <div style="font-family:'DM Mono';font-size:1.3em;font-weight:400;color:#0F172A;">{main_val}</div>
+            <div style="font-family:'DM Mono';font-size:0.72em;color:{sub_color};margin-top:3px;">{sub_val}</div>
+        </div>""")
 
-    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+    _qqq_vs = (last_row['QQQ']/last_row['QQQ_MA200']-1)*100
+    _tqqq_vs = (last_row['TQQQ']/last_row['TQQQ_MA200']-1)*100
+    _smh_vs = (last_row['SMH']/last_row['SMH_MA50']-1)*100
+    pills_html = (
+        _metric_pill("QQQ vs 200MA",    f"${last_row['QQQ']:.2f}",              f"{_qqq_vs:+.2f}%",          _qqq_vs>=0) +
+        _metric_pill("TQQQ vs 200MA",   f"${last_row['TQQQ']:.2f}",             f"{_tqqq_vs:+.2f}%",         _tqqq_vs>=0) +
+        _metric_pill("VIX · 20D MA",    f"{last_row['VIX_MA20']:.2f}",          f"NOW: {last_row['^VIX']:.2f}", last_row['^VIX']<20) +
+        _metric_pill("SMH 1M Ret",      f"{last_row['SMH_1M_Ret']*100:+.1f}%",  f"vs 50MA: {_smh_vs:+.1f}%", last_row['SMH_1M_Ret']>=0) +
+        _metric_pill("SMH RSI",         f"{last_row['SMH_RSI']:.1f}",           "Target > 50",               last_row['SMH_RSI']>50)
+    )
+    st.markdown(f'<div style="display:flex;gap:10px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;">{pills_html}</div>', unsafe_allow_html=True)
 
-    chart_col1, chart_col2 = st.columns(2)
+    # ── ④ 차트  3:2 비대칭 분할 ─────────────────────────────────
+    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+    chart_col1, chart_col2 = st.columns([3, 2])
     df_recent = df.iloc[-500:]
 
     fig_qqq = go.Figure()
     fig_qqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['QQQ'], name='QQQ', line=dict(color=line_c, width=2.5)))
     fig_qqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['QQQ_MA200'], name='200MA', line=dict(color=dash_c, width=1.5, dash='dash')))
-    fig_qqq.update_layout(title=dict(text="QQQ  vs  200MA", font=dict(family='DM Mono', size=13, color=t_color)), height=350, **chart_layout)
+    fig_qqq.update_layout(title=dict(text="QQQ  vs  200MA", font=dict(family='DM Mono', size=13, color=t_color)), height=360, **chart_layout)
     fig_qqq.update_xaxes(**_ax)
     fig_qqq.update_yaxes(**_ax)
 
     fig_tqqq = go.Figure()
     fig_tqqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['TQQQ'], name='TQQQ', line=dict(color=line_c, width=2.5)))
     fig_tqqq.add_trace(go.Scatter(x=df_recent.index, y=df_recent['TQQQ_MA200'], name='200MA', line=dict(color=dash_c, width=1.5, dash='dash')))
-    fig_tqqq.update_layout(title=dict(text="TQQQ  vs  200MA", font=dict(family='DM Mono', size=13, color=t_color)), height=350, **chart_layout)
+    fig_tqqq.update_layout(title=dict(text="TQQQ  vs  200MA", font=dict(family='DM Mono', size=13, color=t_color)), height=360, **chart_layout)
     fig_tqqq.update_xaxes(**_ax)
     fig_tqqq.update_yaxes(**_ax)
 
@@ -854,7 +951,14 @@ if page == "📊 Dashboard":
 
 # ──────────────────────────────────────────
 elif page == "💼 Portfolio":
-    st.markdown("<h2 style='font-family:Syne; font-size:1.7em; color:#EEF2FF; margin-bottom:20px;'>💼 Portfolio  &  Rebalancing</h2>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+        <div>
+            <h2 style="font-family:'Syne';font-size:1.7em;color:#0F172A;margin:0;">💼 Portfolio  &amp;  Rebalancing</h2>
+            <div style="font-family:'DM Mono';font-size:0.65em;color:#94A3B8;letter-spacing:0.16em;text-transform:uppercase;margin-top:3px;">Position Tracker  ·  Rebalancing Engine</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     col_up, col_down = st.columns(2)
     with col_up:
@@ -912,7 +1016,9 @@ elif page == "💼 Portfolio":
         save_portfolio_to_disk()
         st.rerun()
 
-    st.markdown("<br><h3 style='font-family:Syne; color:#EEF2FF; font-size:1.3em;'>⚖️ Action Plan</h3>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style="font-family:'DM Mono';font-size:0.62em;color:#94A3B8;letter-spacing:0.2em;text-transform:uppercase;margin:16px 0 6px;">⚖  Action Plan</div>
+    """, unsafe_allow_html=True)
 
     current_prices = {}
     for t in ASSET_LIST:
@@ -925,7 +1031,20 @@ elif page == "💼 Portfolio":
     curr_vals = {a: st.session_state.portfolio[a]['shares'] * current_prices[a] for a in ASSET_LIST}
     total_val_usd = sum(curr_vals.values())
 
-    st.metric("Total NAV", f"${total_val_usd:,.2f}", f"FX: ₩{cur_fx:,.2f}")
+    st.markdown(f'''
+    <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
+        <div style="background:#FFFFFF;border:1px solid rgba(0,0,0,0.07);border-top:2px solid rgba({r_c},{g_c},{b_c},0.5);
+            border-radius:14px;padding:14px 22px;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
+            <div style="font-family:'DM Mono';font-size:0.62em;color:#94A3B8;letter-spacing:0.14em;text-transform:uppercase;">Total NAV</div>
+            <div style="font-family:'DM Mono';font-size:1.6em;font-weight:400;color:#0F172A;margin-top:4px;">${{total_val_usd:,.2f}}</div>
+        </div>
+        <div style="background:#FFFFFF;border:1px solid rgba(0,0,0,0.07);border-top:2px solid rgba(0,0,0,0.12);
+            border-radius:14px;padding:14px 22px;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
+            <div style="font-family:'DM Mono';font-size:0.62em;color:#94A3B8;letter-spacing:0.14em;text-transform:uppercase;">USD/KRW</div>
+            <div style="font-family:'DM Mono';font-size:1.6em;font-weight:400;color:#0F172A;margin-top:4px;">₩{{cur_fx:,.2f}}</div>
+        </div>
+    </div>
+    ''', unsafe_allow_html=True)
 
     if total_val_usd > 0:
         c_green, c_red = main_color, "#EF4444"
@@ -980,7 +1099,9 @@ elif page == "💼 Portfolio":
                 with st.container(border=True):
                     st.plotly_chart(fig_bar, use_container_width=True)
 
-        st.markdown(f"<h4 style='color:#EEF2FF; margin-top:20px; font-family:Syne; font-size:1.1em;'>📝 Quick Orders</h4>", unsafe_allow_html=True)
+        st.markdown("""
+    <div style="font-family:'DM Mono';font-size:0.62em;color:#94A3B8;letter-spacing:0.2em;text-transform:uppercase;margin:20px 0 12px;">📝  Quick Orders</div>
+    """, unsafe_allow_html=True)
         summary_html = f"<div class='glass-card' style='height:auto !important; flex-direction:row; gap:24px; padding:20px !important; align-items:flex-start;'>"
 
         sell_text = "<div style='flex:1;'><div style='color:#EF4444; font-family:Syne; font-size:1.05em; font-weight:700; letter-spacing:-0.3px; margin-bottom:14px;'>🔴  SELL</div>"
@@ -1121,20 +1242,34 @@ elif page == "🍫 12-Pack Radar":
         radar_msg    = "현재 글로벌 매크로 지표와 시장 심리가 모두 안정적인 궤도에 올라와 있습니다. 추세를 꺾을 만한 시스템 리스크가 보이지 않으니, AMLS 알고리즘이 제시하는 비중에 맞춰 자신감 있게 추세 추종 전략을 전개하시기 바랍니다. 수익을 극대화할 수 있는 구간입니다."
         radar_color  = main_color
 
-    st.markdown(f"""
-    <div style="display:flex; align-items:center; gap:14px; margin-bottom:20px;">
-        <h2 style="font-family:Syne; font-size:1.7em; color:#EEF2FF; margin:0;">🍫 12-Pack Radar</h2>
-    </div>""", unsafe_allow_html=True)
+    st.markdown(apply_theme(f"""
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+        <div>
+            <h2 style="font-family:'Syne';font-size:1.7em;color:#0F172A;margin:0;">🍫 12-Pack Radar</h2>
+            <div style="font-family:'DM Mono';font-size:0.65em;color:#94A3B8;letter-spacing:0.16em;text-transform:uppercase;margin-top:3px;">Global Macro Signal Dashboard</div>
+        </div>
+    </div>"""), unsafe_allow_html=True)
+
+    # 상태 배너 — 좌(텍스트) + 우(카운터 3칸)
+    _cnt_cards = ""
+    for _lbl, _val, _c in [("RISK", risk_cnt, "#EF4444"), ("WARN", warn_cnt, "#F59E0B"), ("SAFE", safe_cnt, main_color)]:
+        _cnt_cards += (f'<div style="flex:1;text-align:center;background:rgba(0,0,0,0.025);'
+                       f'border:1px solid rgba(0,0,0,0.07);border-top:2px solid {_c};border-radius:12px;padding:12px 8px;">'
+                       f'<div style="font-family:\'DM Mono\';font-size:1.8em;font-weight:400;color:{_c};">{_val}</div>'
+                       f'<div style="font-family:\'DM Mono\';font-size:0.6em;color:#94A3B8;letter-spacing:0.16em;text-transform:uppercase;margin-top:2px;">{_lbl}</div>'
+                       f'</div>')
 
     st.markdown(apply_theme(f"""
-    <div class="glass-card" style="height:auto !important; margin-bottom:24px; padding:24px !important; border-left:3px solid {radar_color} !important; flex-direction:column; gap:10px;">
-        <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
-            <span style="font-family:'Syne'; font-size:1.25em; font-weight:700; color:{radar_color};">{radar_status}</span>
-            <span style="font-family:'DM Mono'; font-size:0.72em; color:#475569; background:rgba(0,0,0,0.04); padding:4px 12px; border-radius:6px; border:1px solid rgba(0,0,0,0.08); letter-spacing:0.1em;">
-                RISK {risk_cnt}  ·  WARN {warn_cnt}  ·  SAFE {safe_cnt}
-            </span>
+    <div style="display:flex;gap:16px;margin-bottom:24px;align-items:stretch;">
+        <div style="flex:3;background:#FFFFFF;border:1px solid rgba(0,0,0,0.07);
+            border-left:4px solid {radar_color};border-radius:16px;padding:22px 24px;
+            box-shadow:0 4px 20px rgba(0,0,0,0.06);">
+            <div style="font-family:'Syne';font-size:1.2em;font-weight:700;color:{radar_color};margin-bottom:10px;">{radar_status}</div>
+            <p style="font-family:'DM Sans';color:#475569;font-size:0.92em;margin:0;line-height:1.75;">{radar_msg}</p>
         </div>
-        <p style="color:#94A3B8; font-weight:400; font-size:0.95em; margin:6px 0 0; line-height:1.75;">{radar_msg}</p>
+        <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:160px;">
+            {_cnt_cards}
+        </div>
     </div>
     """), unsafe_allow_html=True)
 
@@ -1325,124 +1460,129 @@ elif page == "🍫 12-Pack Radar":
 
 # ──────────────────────────────────────────
 elif page == "📈 Backtest Lab":
-    st.markdown("<h2 style='font-family:Syne; font-size:1.7em; color:#EEF2FF; margin-bottom:20px;'>📈 Backtest Lab</h2>", unsafe_allow_html=True)
+    st.markdown(apply_theme("""
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+        <div>
+            <h2 style="font-family:'Syne';font-size:1.7em;color:#0F172A;margin:0;">📈 Backtest Lab</h2>
+            <div style="font-family:'DM Mono';font-size:0.65em;color:#94A3B8;letter-spacing:0.16em;text-transform:uppercase;margin-top:3px;">Strategy Simulator  ·  Historical Analysis</div>
+        </div>
+    </div>"""), unsafe_allow_html=True)
 
-    with st.container(border=True):
-        st.markdown("""<div style="font-family:'DM Mono'; font-size:0.65em; font-weight:400; color:#94A3B8; margin-bottom:14px; letter-spacing:0.2em; text-transform:uppercase;">⚙ Simulation Config</div>""", unsafe_allow_html=True)
-        col_s, col_e, col_m = st.columns(3)
-        with col_s:
+    # ── 2패널: 좌(설정) + 우(결과) ────────────────────────────
+    panel_cfg, panel_res = st.columns([1, 2.8])
+
+    with panel_cfg:
+        with st.container(border=True):
+            st.markdown("""<div style="font-family:'DM Mono';font-size:0.62em;color:#94A3B8;margin-bottom:14px;letter-spacing:0.2em;text-transform:uppercase;">⚙  Config</div>""", unsafe_allow_html=True)
             bt_start = st.date_input("Start Date", datetime(2020, 1, 1), key="bt_start_input")
-        with col_e:
-            bt_end = st.date_input("End Date", datetime.today(), key="bt_end_input")
-        with col_m:
+            bt_end   = st.date_input("End Date",   datetime.today(),     key="bt_end_input")
             monthly_cont = st.number_input("월 적립금 ($)", value=2000, step=500, key="bt_monthly_input")
 
-    with st.spinner("시뮬레이션 가동 중..."):
-        bt_df = load_custom_backtest_data(bt_start, bt_end)
+    with panel_res:
+        with st.spinner("시뮬레이션 가동 중..."):
+            bt_df = load_custom_backtest_data(bt_start, bt_end)
 
-        if bt_df.empty:
-            st.error("해당 기간의 데이터가 존재하지 않거나 부족합니다. 기간을 조정해주세요.")
-        else:
-            daily_ret = bt_df[['QQQ','TQQQ','SOXL','USD','QLD','SSO','SPY','SMH','GLD']].pct_change().fillna(0)
-            w_orig = get_weights_v45(bt_df['Regime'].iloc[0], False)
+            if bt_df.empty:
+                st.error("해당 기간의 데이터가 존재하지 않거나 부족합니다. 기간을 조정해주세요.")
+            else:
+                daily_ret = bt_df[['QQQ','TQQQ','SOXL','USD','QLD','SSO','SPY','SMH','GLD']].pct_change().fillna(0)
+                w_orig = get_weights_v45(bt_df['Regime'].iloc[0], False)
 
-            val_o, val_q, val_qld, val_tqqq = 10000, 10000, 10000, 10000
-            hist_o, hist_q, hist_qld, hist_tqqq = [val_o], [val_q], [val_qld], [val_tqqq]
-            invested = [10000]; curr_inv = 10000
+                val_o, val_q, val_qld, val_tqqq = 10000, 10000, 10000, 10000
+                hist_o, hist_q, hist_qld, hist_tqqq = [val_o], [val_q], [val_qld], [val_tqqq]
+                invested = [10000]; curr_inv = 10000
 
-            for i in range(1, len(bt_df)):
-                today     = bt_df.index[i]
-                yesterday = bt_df.index[i-1]
-                ret_o = sum(w_orig.get(t,0) * daily_ret[t].iloc[i] for t in w_orig if t in daily_ret.columns)
-                val_o *= (1 + ret_o); val_q *= (1 + daily_ret['QQQ'].iloc[i])
-                val_qld *= (1 + daily_ret['QLD'].iloc[i]); val_tqqq *= (1 + daily_ret['TQQQ'].iloc[i])
-                if today.month != yesterday.month:
-                    val_o += monthly_cont; val_q += monthly_cont
-                    val_qld += monthly_cont; val_tqqq += monthly_cont
-                    curr_inv += monthly_cont
-                hist_o.append(val_o); hist_q.append(val_q)
-                hist_qld.append(val_qld); hist_tqqq.append(val_tqqq)
-                invested.append(curr_inv)
-                smh_cond_i = (bt_df['SMH'].iloc[i] > bt_df['SMH_MA50'].iloc[i]) and (bt_df['SMH_3M_Ret'].iloc[i] > 0.05) and (bt_df['SMH_RSI'].iloc[i] > 50)
-                w_orig = get_weights_v45(bt_df['Regime'].iloc[i], smh_cond_i)
+                for i in range(1, len(bt_df)):
+                    today     = bt_df.index[i]
+                    yesterday = bt_df.index[i-1]
+                    ret_o = sum(w_orig.get(t,0) * daily_ret[t].iloc[i] for t in w_orig if t in daily_ret.columns)
+                    val_o *= (1 + ret_o); val_q *= (1 + daily_ret['QQQ'].iloc[i])
+                    val_qld *= (1 + daily_ret['QLD'].iloc[i]); val_tqqq *= (1 + daily_ret['TQQQ'].iloc[i])
+                    if today.month != yesterday.month:
+                        val_o += monthly_cont; val_q += monthly_cont
+                        val_qld += monthly_cont; val_tqqq += monthly_cont
+                        curr_inv += monthly_cont
+                    hist_o.append(val_o); hist_q.append(val_q)
+                    hist_qld.append(val_qld); hist_tqqq.append(val_tqqq)
+                    invested.append(curr_inv)
+                    smh_cond_i = (bt_df['SMH'].iloc[i] > bt_df['SMH_MA50'].iloc[i]) and (bt_df['SMH_3M_Ret'].iloc[i] > 0.05) and (bt_df['SMH_RSI'].iloc[i] > 50)
+                    w_orig = get_weights_v45(bt_df['Regime'].iloc[i], smh_cond_i)
 
-            res_df = pd.DataFrame(index=bt_df.index)
-            res_df['V4.5'], res_df['QQQ'], res_df['QLD'], res_df['TQQQ'] = hist_o, hist_q, hist_qld, hist_tqqq
-            res_df['Invested'] = invested
-            days = (res_df.index[-1] - res_df.index[0]).days
+                res_df = pd.DataFrame(index=bt_df.index)
+                res_df['V4.5'], res_df['QQQ'], res_df['QLD'], res_df['TQQQ'] = hist_o, hist_q, hist_qld, hist_tqqq
+                res_df['Invested'] = invested
+                days = (res_df.index[-1] - res_df.index[0]).days
 
-            def calc_metrics(series, inv_series):
-                final_val = series.iloc[-1]; total_inv = inv_series.iloc[-1]
-                ret  = (final_val / total_inv) - 1
-                cagr = (final_val / total_inv) ** (365.25 / days) - 1 if days > 0 else 0
-                mdd  = ((series / series.cummax()) - 1).min()
-                return ret, cagr, mdd
+                def calc_metrics(series, inv_series):
+                    final_val = series.iloc[-1]; total_inv = inv_series.iloc[-1]
+                    ret  = (final_val / total_inv) - 1
+                    cagr = (final_val / total_inv) ** (365.25 / days) - 1 if days > 0 else 0
+                    mdd  = ((series / series.cummax()) - 1).min()
+                    return ret, cagr, mdd
 
-            ret_o, cagr_o, mdd_o       = calc_metrics(res_df['V4.5'], res_df['Invested'])
-            ret_q, cagr_q, mdd_q       = calc_metrics(res_df['QQQ'],  res_df['Invested'])
-            ret_qld, cagr_qld, mdd_qld = calc_metrics(res_df['QLD'],  res_df['Invested'])
-            ret_t, cagr_t, mdd_t       = calc_metrics(res_df['TQQQ'], res_df['Invested'])
+                ret_o, cagr_o, mdd_o       = calc_metrics(res_df['V4.5'], res_df['Invested'])
+                ret_q, cagr_q, mdd_q       = calc_metrics(res_df['QQQ'],  res_df['Invested'])
+                ret_qld, cagr_qld, mdd_qld = calc_metrics(res_df['QLD'],  res_df['Invested'])
+                ret_t, cagr_t, mdd_t       = calc_metrics(res_df['TQQQ'], res_df['Invested'])
 
-            mc1, mc2, mc3, mc4 = st.columns(4)
+                mc1, mc2, mc3, mc4 = st.columns(4)
 
-            def render_metric_card(title, ret, cagr, mdd, is_main=False):
-                accent_style = f"border:1px solid rgba({r_c},{g_c},{b_c},0.35) !important; background:rgba({r_c},{g_c},{b_c},0.07) !important;" if is_main else ""
-                tag = f'<span style="font-family:\'DM Mono\'; font-size:0.62em; background:rgba({r_c},{g_c},{b_c},0.15); color:{main_color}; border-radius:5px; padding:2px 8px; letter-spacing:0.1em; border:1px solid rgba({r_c},{g_c},{b_c},0.25);">STRATEGY</span>' if is_main else ''
-                return apply_theme(f"""<div class="glass-card" style="{accent_style} height:auto !important; padding:20px !important; gap:10px;">
+                def render_metric_card(title, ret, cagr, mdd, is_main=False):
+                    accent_style = f"border:1px solid rgba({r_c},{g_c},{b_c},0.35) !important; background:rgba({r_c},{g_c},{b_c},0.06) !important;" if is_main else ""
+                    tag = f'<span style="font-family:\'DM Mono\'; font-size:0.62em; background:rgba({r_c},{g_c},{b_c},0.12); color:{main_color}; border-radius:5px; padding:2px 8px; letter-spacing:0.1em; border:1px solid rgba({r_c},{g_c},{b_c},0.25);">STRATEGY</span>' if is_main else ''
+                    return apply_theme(f"""<div class="glass-card" style="{accent_style} height:auto !important; padding:18px !important; gap:8px;">
     <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-        <span style="font-family:'DM Mono'; font-size:0.68em; color:#475569; letter-spacing:0.14em; text-transform:uppercase;">{title}</span>
+        <span style="font-family:'DM Mono'; font-size:0.65em; color:#64748B; letter-spacing:0.14em; text-transform:uppercase;">{title}</span>
         {tag}
     </div>
-    <div style="font-family:'DM Mono'; font-size:1.9em; font-weight:400; color:#EEF2FF; letter-spacing:-1px;">CAGR {cagr*100:.1f}%</div>
-    <div style="font-family:'DM Mono'; font-size:0.78em; color:#475569; display:flex; gap:14px;">
+    <div style="font-family:'DM Mono'; font-size:1.75em; font-weight:400; color:#0F172A; letter-spacing:-1px;">CAGR {cagr*100:.1f}%</div>
+    <div style="font-family:'DM Mono'; font-size:0.75em; color:#94A3B8; display:flex; gap:14px;">
         <span>누적 <span style="color:{main_color};">{ret*100:.1f}%</span></span>
         <span>MDD <span style="color:#EF4444;">{mdd*100:.1f}%</span></span>
     </div>
 </div>""")
 
-            mc1.markdown(render_metric_card("✦ AMLS V4.5", ret_o, cagr_o, mdd_o, True),  unsafe_allow_html=True)
-            mc2.markdown(render_metric_card("QQQ",          ret_q, cagr_q, mdd_q),        unsafe_allow_html=True)
-            mc3.markdown(render_metric_card("QLD",          ret_qld, cagr_qld, mdd_qld),  unsafe_allow_html=True)
-            mc4.markdown(render_metric_card("TQQQ",         ret_t, cagr_t, mdd_t),        unsafe_allow_html=True)
+                mc1.markdown(render_metric_card("✦ AMLS V4.5", ret_o, cagr_o, mdd_o, True),  unsafe_allow_html=True)
+                mc2.markdown(render_metric_card("QQQ",          ret_q, cagr_q, mdd_q),        unsafe_allow_html=True)
+                mc3.markdown(render_metric_card("QLD",          ret_qld, cagr_qld, mdd_qld),  unsafe_allow_html=True)
+                mc4.markdown(render_metric_card("TQQQ",         ret_t, cagr_t, mdd_t),        unsafe_allow_html=True)
 
-            st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+                st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
-            fig_eq = go.Figure()
-            fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['QQQ'],  name='QQQ',  line=dict(color='#CBD5E1', width=1.2, dash='dot')))
-            fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['QLD'],  name='QLD',  line=dict(color='#3B82F6', width=1.2, dash='dash')))
-            fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['TQQQ'], name='TQQQ', line=dict(color='#EF4444', width=1.2, dash='dash')))
-            fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['V4.5'], name='AMLS', line=dict(color=main_color, width=3)))
-            fig_eq.update_layout(
-                title=dict(text="Equity Curve  ·  Log Scale", font=dict(family='DM Mono', size=13, color=t_color)),
-                height=420, yaxis_type='log', **chart_layout
-            )
-            fig_eq.update_xaxes(**_ax)
-            fig_eq.update_yaxes(**_ax)
+                fig_eq = go.Figure()
+                fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['QQQ'],  name='QQQ',  line=dict(color='#CBD5E1', width=1.2, dash='dot')))
+                fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['QLD'],  name='QLD',  line=dict(color='#3B82F6', width=1.2, dash='dash')))
+                fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['TQQQ'], name='TQQQ', line=dict(color='#EF4444', width=1.2, dash='dash')))
+                fig_eq.add_trace(go.Scatter(x=res_df.index, y=res_df['V4.5'], name='AMLS', line=dict(color=main_color, width=3)))
+                fig_eq.update_layout(
+                    title=dict(text="Equity Curve  ·  Log Scale", font=dict(family='DM Mono', size=13, color=t_color)),
+                    height=380, yaxis_type='log', **chart_layout
+                )
+                fig_eq.update_xaxes(**_ax)
+                fig_eq.update_yaxes(**_ax)
+                with st.container(border=True):
+                    st.plotly_chart(fig_eq, use_container_width=True)
 
-            with st.container(border=True):
-                st.plotly_chart(fig_eq, use_container_width=True)
+                st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-            st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+                def get_dd_series(s): return (s / s.cummax()) - 1
+                fig_dd = go.Figure()
+                fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['QQQ']),  name='QQQ',  line=dict(color='#CBD5E1', width=1)))
+                fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['QLD']),  name='QLD',  line=dict(color='#3B82F6', width=1)))
+                fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['TQQQ']), name='TQQQ', line=dict(color='#EF4444', width=1)))
+                fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['V4.5']), name='AMLS',
+                                             fill='tozeroy', fillcolor=f'rgba({r_c},{g_c},{b_c},0.1)',
+                                             line=dict(color=main_color, width=2.2)))
+                fig_dd.update_layout(
+                    title=dict(text="Drawdown Curve", font=dict(family='DM Mono', size=13, color=t_color)),
+                    height=260, **chart_layout
+                )
+                fig_dd.update_xaxes(**_ax)
+                fig_dd.update_yaxes(tickformat='.0%', **_ax)
+                with st.container(border=True):
+                    st.plotly_chart(fig_dd, use_container_width=True)
 
-            def get_dd_series(s): return (s / s.cummax()) - 1
-            fig_dd = go.Figure()
-            fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['QQQ']),  name='QQQ',  line=dict(color='#CBD5E1', width=1)))
-            fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['QLD']),  name='QLD',  line=dict(color='#3B82F6', width=1)))
-            fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['TQQQ']), name='TQQQ', line=dict(color='#EF4444', width=1)))
-            fig_dd.add_trace(go.Scatter(x=res_df.index, y=get_dd_series(res_df['V4.5']), name='AMLS',
-                                         fill='tozeroy', fillcolor=f'rgba({r_c},{g_c},{b_c},0.1)',
-                                         line=dict(color=main_color, width=2.2)))
-            fig_dd.update_layout(
-                title=dict(text="Drawdown Curve", font=dict(family='DM Mono', size=13, color=t_color)),
-                height=300, **chart_layout
-            )
-            fig_dd.update_xaxes(**_ax)
-            fig_dd.update_yaxes(tickformat='.0%', **_ax)
-
-            with st.container(border=True):
-                st.plotly_chart(fig_dd, use_container_width=True)
-
-            st.divider()
+                st.divider()
             if st.button("✦ AI 추론 요약 실행", use_container_width=True):
                 try:
                     import google.generativeai as genai
@@ -1468,7 +1608,7 @@ elif page == "📰 Macro News":
     <div class="glass-card" style="height:auto !important; display:flex; flex-direction:row; align-items:center; gap:20px; margin-bottom:28px; padding:24px 32px !important;">
         <div style="font-size:2.2em; line-height:1;">📰</div>
         <div>
-            <h2 style="margin:0; font-family:'Syne'; font-size:1.65em; font-weight:800; letter-spacing:-1px; color:#EEF2FF;">Global Macro  ·  AI Briefing</h2>
+            <h2 style="margin:0; font-family:'Syne'; font-size:1.65em; font-weight:800; letter-spacing:-1px; color:#0F172A;">Global Macro  ·  AI Briefing</h2>
             <p style="margin:5px 0 0; font-family:'DM Mono'; font-size:0.68em; color:#10B981; letter-spacing:0.18em; text-transform:uppercase;">Wall Street Analysis Engine</p>
         </div>
         <div style="margin-left:auto; background:rgba(16,185,129,0.1); padding:6px 18px; border-radius:50px; font-family:'DM Mono'; font-size:0.72em; font-weight:400; color:#10B981; border:1px solid rgba(16,185,129,0.3); letter-spacing:0.06em;">{rt_label}</div>
@@ -1496,7 +1636,7 @@ elif page == "📰 Macro News":
     st.divider()
 
     if news_items:
-        st.markdown("""<div style="font-family:'Syne'; font-size:1.15em; font-weight:700; color:#EEF2FF; margin-bottom:18px; letter-spacing:-0.3px;">Latest Headlines</div>""", unsafe_allow_html=True)
+        st.markdown("""<div style="font-family:'Syne'; font-size:1.15em; font-weight:700; color:#0F172A; margin-bottom:18px; letter-spacing:-0.3px;">Latest Headlines</div>""", unsafe_allow_html=True)
         cols = st.columns(3)
         for idx, item in enumerate(news_items):
             with cols[idx % 3]:
