@@ -1131,32 +1131,44 @@ elif page == "💼 Portfolio":
                 with st.container(border=True):
                     st.plotly_chart(fig_bar, use_container_width=True)
 
-        st.markdown("""
-    <div style="font-family:'DM Mono';font-size:0.62em;color:#4A5568;letter-spacing:0.2em;text-transform:uppercase;margin:20px 0 12px;">📝  Quick Orders</div>
-    """, unsafe_allow_html=True)
-        summary_html = f"<div class='glass-card' style='height:auto !important; flex-direction:row; gap:24px; padding:20px !important; align-items:flex-start;'>"
+        # ── Quick Orders ─────────────────────────────────────────
+        st.markdown("""<div style="font-family:'DM Mono';font-size:0.6em;font-weight:500;color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid #111118;">📝  Quick Orders</div>""", unsafe_allow_html=True)
 
-        sell_text = "<div style='flex:1;'><div style='color:#EF4444; font-family:Syne; font-size:1.05em; font-weight:700; letter-spacing:-0.3px; margin-bottom:14px;'>🔴  SELL</div>"
-        buy_text  = f"<div style='flex:1;'><div style='color:#10B981; font-family:Syne; font-size:1.05em; font-weight:700; letter-spacing:-0.3px; margin-bottom:14px;'>🟢  BUY</div>"
-
+        sell_items, buy_items = [], []
         for asset in ASSET_LIST:
             cur_p = current_prices[asset] if current_prices[asset] > 0 else 1.0
             diff  = diff_vals[asset]
             if asset != 'CASH' and diff < -cur_p * 0.05:
-                sell_text += f"<div style='margin-bottom:8px; font-size:0.9em; font-family:DM Mono;'><span style='color:#10B981; font-weight:500;'>{asset}</span>&nbsp;&nbsp;<span style='color:#EF4444;'>{abs(diff)/cur_p:,.2f} shs</span></div>"
+                sell_items.append((asset, f"{abs(diff)/cur_p:,.2f} 주 매도", "#EF4444"))
             elif asset == 'CASH' and diff < -1.0:
-                sell_text += f"<div style='margin-bottom:8px; font-size:0.9em; font-family:DM Mono;'><span style='color:#10B981; font-weight:500;'>CASH</span>&nbsp;&nbsp;<span style='color:#EF4444;'>${abs(diff):,.0f}</span></div>"
-
-        for asset in ASSET_LIST:
-            cur_p = current_prices[asset] if current_prices[asset] > 0 else 1.0
-            diff  = diff_vals[asset]
+                sell_items.append(("CASH", f"${abs(diff):,.0f} 사용", "#EF4444"))
             if asset != 'CASH' and diff > cur_p * 0.05:
-                buy_text += f"<div style='margin-bottom:8px; font-size:0.9em; font-family:DM Mono;'><span style='color:#10B981; font-weight:500;'>{asset}</span>&nbsp;&nbsp;<span style='color:#10B981;'>{diff/cur_p:,.2f} shs</span></div>"
+                buy_items.append((asset, f"{diff/cur_p:,.2f} 주 매수", "#059669"))
             elif asset == 'CASH' and diff > 1.0:
-                buy_text += f"<div style='margin-bottom:8px; font-size:0.9em; font-family:DM Mono;'><span style='color:#10B981; font-weight:500;'>CASH</span>&nbsp;&nbsp;<span style='color:#10B981;'>${diff:,.0f}</span></div>"
+                buy_items.append(("CASH", f"${diff:,.0f} 확보", "#059669"))
 
-        summary_html += sell_text + "</div>" + buy_text + "</div></div>"
-        st.markdown(apply_theme(summary_html), unsafe_allow_html=True)
+        qo_col1, qo_col2 = st.columns(2)
+
+        def _order_card(title, items, accent, col):
+            rows_html = "".join([
+                f'<div style="display:flex;justify-content:space-between;align-items:center;'
+                f'padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.06);">'
+                f'<span style="font-family:DM Mono,monospace;font-size:0.82em;font-weight:600;color:#111118;">{a}</span>'
+                f'<span style="font-family:DM Mono,monospace;font-size:0.82em;color:{c};font-variant-numeric:tabular-nums;">{v}</span>'
+                f'</div>'
+                for a, v, c in items
+            ]) or f'<div style="font-family:DM Mono,monospace;font-size:0.78em;color:#9494A0;padding:8px 0;">— 해당 없음</div>'
+            col.markdown(
+                f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);'
+                f'border-top:3px solid {accent};padding:16px 18px;">'
+                f'<div style="font-family:DM Sans,sans-serif;font-size:0.88em;font-weight:700;'
+                f'color:{accent};letter-spacing:0.02em;margin-bottom:10px;">{title}</div>'
+                f'{rows_html}</div>',
+                unsafe_allow_html=True
+            )
+
+        _order_card("🔴  SELL", sell_items, "#EF4444", qo_col1)
+        _order_card("🟢  BUY",  buy_items,  "#059669", qo_col2)
 
         rebal_html = f"""<div style="overflow-x:auto; padding:10px 0;">
 <table class="mint-table">
