@@ -283,9 +283,9 @@ else: regime_committee_msg = f"🟡 R{live_regime} 승급 대기 (5일)"
 # 2. 라이트 테마 색상 변수 (차트용)
 # ==========================================
 b_color   = 'rgba(0,0,0,0)'
-t_color   = '#2D3748'        # 라이트 배경 위 텍스트
+t_color   = '#4A4A57'        # 차트 축 텍스트
 line_c    = main_color
-dash_c    = '#CBD5E1'
+dash_c    = '#B0B0BE'
 rsi_low_c = main_color
 
 # ⚠️ xaxis/yaxis를 여기서 제외 → 각 차트에서 개별 지정 (중복 키 TypeError 방지)
@@ -304,372 +304,404 @@ radar_layout = dict(
 )
 
 # 공통 축 스타일 (라이트 테마)
-_ax = dict(gridcolor='rgba(0,0,0,0.05)', linecolor='rgba(0,0,0,0.08)', showgrid=True, zeroline=False)
-_ax_r = dict(gridcolor='rgba(0,0,0,0.05)', zeroline=False, showgrid=True)  # radar용
+_ax = dict(gridcolor='rgba(0,0,0,0.07)', linecolor='rgba(0,0,0,0.12)', showgrid=True, zeroline=False)
+_ax_r = dict(gridcolor='rgba(0,0,0,0.07)', zeroline=False, showgrid=True)
 
 regime_info = {1:("R1  BULL","풀 가동"),2:("R2  CORR","방어 진입"), 3:("R3  BEAR","대피"),4:("R4  PANIC","최대 방어")}
 
 # ==========================================
-# 3. CSS  —  2026 Light Fintech  (Syne + DM Mono)
+# 3. CSS  —  Refined Institutional  (2026)
+#    Concept: Bloomberg × Swiss Grid × Monocle
+#    → Ruled structure, tabular precision, zero decoration
 # ==========================================
 css_block = f"""<style>
-    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap');
 
-    /* ── ROOT TOKENS  (Light) ───────────────────────── */
+    /* ── DESIGN TOKENS ──────────────────────────────── */
     :root {{
-        --bg-root:    #F4F7F5;
-        --bg-base:    #F8FAF8;
-        --surface:    #FFFFFF;
-        --card:       #FFFFFF;
-        --elevated:   #F1F5F3;
-        --border-dim: rgba(0,0,0,0.07);
-        --border-acc: rgba(16,185,129,0.28);
-        --border-glow:rgba(16,185,129,0.5);
-        --t-prime:    #0A0F1E;
-        --t-sec:      #1A2332;
-        --t-muted:    #3D4F63;
-        --t-sub:      #566577;
+        /* Paper — warm ivory, not cold white */
+        --paper:      #F7F6F2;
+        --paper-2:    #EFEDE7;
+        --paper-3:    #E8E5DD;
+        --ink:        #111118;
+        --ink-2:      #2C2C35;
+        --ink-3:      #4A4A57;
+        --ink-4:      #6B6B7A;
+        --ink-5:      #9494A0;
+        /* Rule lines */
+        --rule:       rgba(0,0,0,0.10);
+        --rule-strong:rgba(0,0,0,0.18);
+        /* Accent — single color, surgical use */
         --acc:        #10B981;
-        --acc-dim:    rgba(16,185,129,0.08);
-        --acc-glow:   rgba(16,185,129,0.15);
-        --red:        #EF4444;
-        --amber:      #F59E0B;
-        --shadow-sm:  0 2px 12px rgba(0,0,0,0.06);
-        --shadow-md:  0 8px 32px rgba(0,0,0,0.09);
-        --shadow-lg:  0 20px 56px rgba(0,0,0,0.10);
-        --shadow-xl:  0 32px 80px rgba(0,0,0,0.12);
+        --acc-pale:   rgba(16,185,129,0.08);
+        --acc-mid:    rgba(16,185,129,0.18);
+        --acc-line:   rgba(16,185,129,0.40);
+        /* State colors */
+        --bull:       #059669;
+        --bear:       #DC2626;
+        --warn:       #D97706;
+        /* Spacing unit */
+        --u:          8px;
     }}
 
-    /* ── BASE ───────────────────────────────────────── */
+    /* ── RESET / BASE ───────────────────────────────── */
+    *, *::before, *::after {{ box-sizing: border-box; }}
+
     .stApp, [data-testid="stAppViewContainer"] {{
-        background-color: var(--bg-root) !important;
+        background-color: var(--paper) !important;
         background-image:
-            radial-gradient(ellipse 80% 50% at 10% 0%,   rgba(16,185,129,0.07) 0%, transparent 55%),
-            radial-gradient(ellipse 60% 40% at 90% 100%, rgba(16,185,129,0.05) 0%, transparent 55%) !important;
-        color: var(--t-prime) !important;
+            /* Subtle dot grid — institutional graph paper */
+            radial-gradient(circle, rgba(0,0,0,0.055) 1px, transparent 1px),
+            /* Accent corner wash */
+            radial-gradient(ellipse 70% 40% at 5% 0%, rgba(16,185,129,0.055) 0%, transparent 55%) !important;
+        background-size: 24px 24px, 100% 100% !important;
+        color: var(--ink) !important;
         font-family: 'DM Sans', sans-serif;
+        font-size: 14px;
     }}
 
     [data-testid="stHeader"] {{
-        background: rgba(244,247,245,0.85) !important;
-        backdrop-filter: blur(16px);
-        border-bottom: 1px solid var(--border-dim);
+        background: rgba(247,246,242,0.92) !important;
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--rule-strong);
     }}
-    #MainMenu {{ visibility: hidden; }} footer {{ visibility: hidden; }}
-    .main .block-container {{ max-width: 1520px; padding-top: 1.2rem; padding-bottom: 3rem; }}
+    #MainMenu {{ visibility:hidden; }} footer {{ visibility:hidden; }}
+    .main .block-container {{
+        max-width: 1540px;
+        padding-top: 1.5rem;
+        padding-bottom: 3rem;
+    }}
 
     /* ── SIDEBAR ────────────────────────────────────── */
     [data-testid="stSidebar"] {{
-        background: linear-gradient(180deg, #EEF4F1 0%, #EBF2EE 100%) !important;
-        border-right: 1px solid rgba(16,185,129,0.2) !important;
-        box-shadow: 4px 0 28px rgba(0,0,0,0.05) !important;
+        background: var(--paper-2) !important;
+        border-right: 1px solid var(--rule-strong) !important;
+        box-shadow: none !important;
     }}
+    /* Vertical accent rule on right edge */
     [data-testid="stSidebar"]::after {{
-        content: '';
-        position: absolute;
-        top: 0; right: -1px;
-        width: 1px; height: 100%;
-        background: linear-gradient(180deg, transparent 0%, rgba(16,185,129,0.55) 35%, rgba(16,185,129,0.25) 70%, transparent 100%);
+        content:'';
+        position:absolute; top:15%; right:0; width:2px; height:70%;
+        background:linear-gradient(180deg, transparent, var(--acc-line), transparent);
+        pointer-events:none;
     }}
 
-    /* Sidebar radio → nav buttons */
-    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"] > div:first-child {{ display: none !important; }}
+    /* Sidebar radio → ruled nav rows */
+    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"] > div:first-child {{ display:none !important; }}
     [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] {{
-        gap: 2px !important; padding: 0 12px !important; background: transparent !important;
+        gap:0px !important; padding:0 !important; background:transparent !important;
     }}
     [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"] {{
-        display: flex !important; align-items: center !important;
-        padding: 9px 14px !important; margin-bottom: 2px !important;
-        border-radius: 10px !important; border: 1px solid transparent !important;
-        background: rgba(255,255,255,0.45) !important;
-        cursor: pointer !important; width: 100% !important;
-        transition: all 0.2s ease !important;
+        display:flex !important; align-items:center !important;
+        padding:10px 20px !important; margin:0 !important;
+        border-radius:0 !important;
+        border:none !important;
+        border-bottom:1px solid var(--rule) !important;
+        background:transparent !important;
+        cursor:pointer !important; width:100% !important;
+        transition:background 0.15s ease !important;
+        position:relative;
     }}
     [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"] p {{
-        color: #3D4F63 !important; font-weight: 500 !important;
-        font-size: 0.88rem !important; margin: 0 !important;
-        font-family: 'DM Sans' !important; transition: color 0.2s !important;
+        color:var(--ink-3) !important; font-weight:500 !important;
+        font-size:0.82rem !important; margin:0 !important;
+        font-family:'DM Sans' !important; letter-spacing:0.01em !important;
     }}
     [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"]:hover {{
-        border-color: var(--border-acc) !important;
-        background: rgba(255,255,255,0.8) !important;
-        box-shadow: var(--shadow-sm) !important;
+        background:var(--paper-3) !important;
     }}
     [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
-        border-color: var(--border-glow) !important;
-        background: #FFFFFF !important;
-        box-shadow: var(--shadow-md), 0 0 0 3px rgba(16,185,129,0.08) !important;
+        background:var(--paper) !important;
+        border-bottom:1px solid var(--rule) !important;
+    }}
+    /* Active indicator — left border bar */
+    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"]:has(input:checked)::before {{
+        content:'';
+        position:absolute; left:0; top:0; bottom:0; width:3px;
+        background:var(--acc);
     }}
     [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) p {{
-        color: #059669 !important; font-weight: 700 !important;
+        color:var(--ink) !important; font-weight:700 !important;
     }}
 
     .sidebar-link {{
-        display: flex; align-items: center; gap: 8px;
-        padding: 9px 14px; margin-bottom: 2px;
-        border-radius: 10px; border: 1px solid transparent;
-        text-decoration: none !important;
-        color: #3D4F63 !important;
-        font-weight: 500; font-size: 0.87rem;
-        transition: all 0.2s ease;
-        background: rgba(255,255,255,0.45);
-        font-family: 'DM Sans';
+        display:flex; align-items:center; gap:10px;
+        padding:10px 20px; margin:0;
+        border-bottom:1px solid var(--rule);
+        text-decoration:none !important;
+        color:var(--ink-3) !important;
+        font-weight:500; font-size:0.82rem;
+        transition:background 0.15s; background:transparent;
+        font-family:'DM Sans';
+        position:relative;
     }}
     .sidebar-link:hover {{
-        border-color: var(--border-acc);
-        background: #FFFFFF !important;
-        color: #059669 !important;
-        box-shadow: var(--shadow-sm);
+        background:var(--paper-3) !important;
+        color:var(--ink) !important;
     }}
 
-    /* ── GLASS CARDS ────────────────────────────────── */
+    /* ── INSTITUTIONAL PANEL (replaces glass-card) ──── */
+    /* Ruled panels — no floating, no shadows, just structure */
     .glass-card {{
-        background: var(--card) !important;
-        border: 1px solid var(--border-dim) !important;
-        border-top: 2px solid rgba(16,185,129,0.35) !important;
-        border-radius: 18px !important;
-        padding: 22px !important;
-        box-shadow: var(--shadow-md), 0 0 0 1px rgba(255,255,255,0.8) inset !important;
-        height: 100%; display: flex; flex-direction: column; justify-content: space-between;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        position: relative; overflow: hidden;
-    }}
-    .glass-card::before {{
-        content: '';
-        position: absolute; top: 0; left: 15%; right: 15%; height: 2px;
-        background: linear-gradient(90deg, transparent, rgba(16,185,129,0.6), transparent);
-        pointer-events: none;
+        background: #FAFAF7 !important;
+        border: 1px solid var(--rule-strong) !important;
+        border-top: 2px solid var(--ink-2) !important;
+        border-radius: 0 !important;
+        padding: 20px 22px !important;
+        box-shadow: none !important;
+        height: 100%; display:flex; flex-direction:column;
+        justify-content:space-between;
+        transition: border-top-color 0.2s ease;
+        position:relative;
     }}
     .glass-card:hover {{
-        transform: translateY(-5px);
-        box-shadow: var(--shadow-lg), 0 0 0 1px rgba(16,185,129,0.12) !important;
+        border-top-color: var(--acc) !important;
+        transform: none !important;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.06) !important;
     }}
     .glass-card h3 {{
         font-family: 'DM Mono', monospace !important;
-        font-size: 0.68em !important; font-weight: 400 !important;
-        color: #3D4F63 !important;
-        margin-bottom: 16px !important;
-        letter-spacing: 0.18em; text-transform: uppercase;
-        border-bottom: 1px solid rgba(0,0,0,0.06); padding-bottom: 10px;
+        font-size: 0.6em !important; font-weight: 400 !important;
+        color: var(--ink-4) !important;
+        margin-bottom: 14px !important;
+        letter-spacing: 0.20em; text-transform: uppercase;
+        border-bottom: 1px solid var(--rule); padding-bottom: 9px;
     }}
 
+    /* Inset — subtle ruled box */
     .glass-inset {{
-        background: linear-gradient(135deg, rgba(16,185,129,0.06) 0%, rgba(16,185,129,0.02) 100%) !important;
-        border: 1px solid rgba(16,185,129,0.2) !important;
-        border-radius: 12px !important; padding: 20px 10px 18px !important;
-        text-align: center; margin-bottom: 16px;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.9) !important;
+        background: var(--paper-2) !important;
+        border: 1px solid var(--rule) !important;
+        border-left: 3px solid var(--acc) !important;
+        border-radius: 0 !important;
+        padding: 14px 16px 12px !important;
+        text-align: left; margin-bottom: 14px;
+        box-shadow: none !important;
     }}
 
     /* Streamlit container(border=True) */
     div[data-testid="stVerticalBlockBorderWrapper"] > div {{
-        background: var(--card) !important;
-        border: 1px solid var(--border-dim) !important;
-        border-top: 2px solid rgba(16,185,129,0.3) !important;
-        border-radius: 18px !important;
-        padding: 22px !important;
-        box-shadow: var(--shadow-md) !important;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        position: relative; overflow: hidden;
-    }}
-    div[data-testid="stVerticalBlockBorderWrapper"] > div::before {{
-        content: '';
-        position: absolute; top: 0; left: 15%; right: 15%; height: 2px;
-        background: linear-gradient(90deg, transparent, rgba(16,185,129,0.5), transparent);
-        pointer-events: none;
+        background: #FAFAF7 !important;
+        border: 1px solid var(--rule-strong) !important;
+        border-top: 2px solid var(--ink-2) !important;
+        border-radius: 0 !important;
+        padding: 20px 22px !important;
+        box-shadow: none !important;
+        transition: border-top-color 0.2s ease;
+        position:relative;
     }}
     div[data-testid="stVerticalBlockBorderWrapper"] > div:hover {{
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-lg) !important;
+        border-top-color: var(--acc) !important;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.06) !important;
+        transform: none !important;
     }}
 
     /* ── METRIC CARDS ───────────────────────────────── */
     [data-testid="stMetric"] {{
-        background: #FFFFFF !important;
-        border: 1px solid var(--border-dim) !important;
-        border-top: 2px solid rgba(16,185,129,0.3) !important;
-        border-radius: 14px !important;
-        padding: 18px 20px !important;
-        box-shadow: var(--shadow-sm) !important;
-        margin-bottom: 10px;
-        transition: all 0.25s ease;
-        position: relative; overflow: hidden;
-    }}
-    [data-testid="stMetric"]::before {{
-        content: '';
-        position: absolute; top: 0; left: 0; right: 0; height: 2px;
-        background: linear-gradient(90deg, transparent, rgba(16,185,129,0.5), transparent);
+        background: #FAFAF7 !important;
+        border: 1px solid var(--rule-strong) !important;
+        border-top: 2px solid var(--ink-2) !important;
+        border-radius: 0 !important;
+        padding: 16px 18px !important;
+        box-shadow: none !important;
+        margin-bottom: 8px;
+        transition: border-top-color 0.2s;
+        position:relative;
     }}
     [data-testid="stMetric"]:hover {{
-        transform: translateY(-3px);
-        box-shadow: var(--shadow-md), 0 0 0 3px rgba(16,185,129,0.08) !important;
+        border-top-color: var(--acc) !important;
+        transform: none !important;
     }}
     [data-testid="stMetricLabel"] > div > div > p {{
-        font-size: 0.68em !important; font-weight: 500; color: #3D4F63 !important;
-        white-space: normal !important; letter-spacing: 0.12em; text-transform: uppercase;
-        font-family: 'DM Mono', monospace !important;
+        font-size: 0.65em !important; font-weight: 500; color: var(--ink-4) !important;
+        white-space:normal !important; letter-spacing: 0.14em; text-transform:uppercase;
+        font-family:'DM Mono', monospace !important;
     }}
     [data-testid="stMetricValue"] > div {{
-        font-family: 'DM Mono', monospace !important; font-size: 1.45em !important;
-        font-weight: 400; color: var(--t-prime) !important;
+        font-family:'DM Mono', monospace !important;
+        font-size:1.4em !important; font-weight:400;
+        color:var(--ink) !important;
+        font-variant-numeric: tabular-nums;
     }}
     div[data-testid="stMetricDelta"] > div {{
-        font-size: 0.8em !important; font-weight: 500;
-        font-family: 'DM Mono', monospace !important;
+        font-size:0.8em !important; font-weight:500;
+        font-family:'DM Mono', monospace !important;
+        font-variant-numeric: tabular-nums;
     }}
 
     /* ── BUTTONS ────────────────────────────────────── */
     [data-testid="stButton"] > button {{
-        background: rgba(16,185,129,0.06) !important;
-        border: 1px solid rgba(16,185,129,0.4) !important;
-        color: #059669 !important;
-        border-radius: 10px !important;
-        padding: 6px 16px !important;
-        font-weight: 500 !important; font-size: 0.82em !important;
-        transition: all 0.2s ease !important;
-        font-family: 'DM Mono', monospace !important;
-        letter-spacing: 0.04em;
+        background: transparent !important;
+        border: 1px solid var(--rule-strong) !important;
+        color: var(--ink-2) !important;
+        border-radius: 0 !important;
+        padding: 7px 16px !important;
+        font-weight: 500 !important; font-size: 0.78em !important;
+        transition: all 0.15s ease !important;
+        font-family:'DM Mono', monospace !important;
+        letter-spacing: 0.06em; text-transform: uppercase;
     }}
     [data-testid="stButton"] > button:hover {{
-        background: rgba(16,185,129,0.12) !important;
-        border-color: rgba(16,185,129,0.7) !important;
-        box-shadow: 0 4px 16px rgba(16,185,129,0.2) !important;
-        transform: translateY(-2px) !important;
+        background: var(--acc-pale) !important;
+        border-color: var(--acc-line) !important;
+        color: var(--bull) !important;
     }}
 
     /* ── TYPOGRAPHY ─────────────────────────────────── */
     h1 {{
-        font-family: 'Syne', sans-serif !important;
-        font-size: 2.3em !important; font-weight: 800 !important;
-        letter-spacing: -1.5px; margin: 0 !important;
-        color: var(--t-prime) !important;
+        font-family: 'Instrument Serif', serif !important;
+        font-size: 2.4em !important; font-weight: 400 !important;
+        letter-spacing: -0.5px; margin: 0 !important;
+        color: var(--ink) !important; font-style: italic;
     }}
-    h2 {{ font-family: 'Syne', sans-serif !important; color: var(--t-prime) !important; font-weight: 700 !important; }}
-    h3 {{ font-family: 'Syne', sans-serif !important; color: #1A2332 !important; }}
-    p {{ color: #1A2332 !important; }}
-    strong {{ color: var(--t-prime) !important; }}
+    h2 {{
+        font-family: 'DM Sans', sans-serif !important;
+        color: var(--ink) !important; font-weight: 700 !important;
+        letter-spacing: -0.3px;
+    }}
+    h3 {{ font-family: 'DM Sans', sans-serif !important; color: var(--ink-2) !important; }}
+    p  {{ color: var(--ink-3) !important; line-height: 1.65; }}
+    strong {{ color: var(--ink) !important; }}
+
+    /* All numbers — tabular figures */
+    [data-testid="stMetricValue"],
+    .cval, .mint-table td {{ font-variant-numeric: tabular-nums; }}
 
     /* ── DATA ROWS ──────────────────────────────────── */
     .crow {{
-        display: flex; justify-content: space-between;
-        padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.04);
-        font-size: 0.87em; align-items: center;
+        display:flex; justify-content:space-between; align-items:center;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--rule);
+        font-size: 0.83em;
     }}
-    .crow:last-child {{ border-bottom: none; }}
-    .clabel {{ color: #344054; font-weight: 500; font-family: 'DM Sans'; font-size: 0.95em; }}
+    .crow:last-child {{ border-bottom:none; }}
+    .clabel {{
+        color: var(--ink-3); font-weight:500;
+        font-family:'DM Sans'; font-size:1em;
+    }}
     .cval {{
-        font-family: 'DM Mono', monospace; font-weight: 500;
-        color: #10B981; font-size: 0.92em; letter-spacing: 0.02em;
+        font-family:'DM Mono', monospace; font-weight:400;
+        color:#10B981; font-size:0.9em;
+        letter-spacing:0.02em; font-variant-numeric:tabular-nums;
     }}
 
-    /* ── LINKS (radar) ──────────────────────────────── */
-    .radar-link {{ text-decoration: none !important; display: block; }}
+    /* ── RADAR LINKS ────────────────────────────────── */
+    .radar-link {{ text-decoration:none !important; display:block; }}
     .radar-link-title {{
-        font-size: 0.68em; font-weight: 500; color: var(--t-muted);
-        transition: color 0.2s; font-family: 'DM Mono', monospace;
-        letter-spacing: 0.14em; text-transform: uppercase;
+        font-size:0.62em; font-weight:500; color:var(--ink-4);
+        transition:color 0.15s; font-family:'DM Mono', monospace;
+        letter-spacing:0.16em; text-transform:uppercase;
     }}
-    .radar-link:hover .radar-link-title {{ color: #059669 !important; }}
+    .radar-link:hover .radar-link-title {{ color:var(--acc) !important; }}
 
     /* ── TABLES ─────────────────────────────────────── */
     .mint-table {{
-        width: 100%; border-collapse: separate; border-spacing: 0 5px;
-        font-family: 'DM Mono', monospace;
+        width:100%; border-collapse:collapse;
+        font-family:'DM Mono', monospace;
     }}
     .mint-table th {{
-        padding: 10px 14px; font-weight: 400; color: var(--t-muted);
-        text-align: right; font-size: 0.72em;
-        letter-spacing: 0.14em; text-transform: uppercase;
+        padding:8px 12px; font-weight:400; color:var(--ink-4);
+        text-align:right; font-size:0.68em;
+        letter-spacing:0.16em; text-transform:uppercase;
+        border-bottom: 2px solid var(--ink-3);
+        background: var(--paper-2);
     }}
     .mint-table td {{
-        padding: 13px 14px;
-        background: #FAFCFB;
-        color: var(--t-sec); text-align: right;
-        border-top: 1px solid rgba(0,0,0,0.04);
-        border-bottom: 1px solid rgba(0,0,0,0.04);
-        font-size: 0.83em;
-        transition: background 0.2s;
+        padding:10px 12px;
+        background: #FAFAF7;
+        color:var(--ink-2); text-align:right;
+        border-bottom: 1px solid var(--rule);
+        font-size:0.8em;
+        font-variant-numeric:tabular-nums;
+        transition:background 0.12s;
     }}
-    .mint-table tr:hover td {{ background: rgba(16,185,129,0.05); }}
+    .mint-table tr:hover td {{ background:var(--acc-pale); }}
     .mint-table td:first-child {{
-        border-left: 1px solid rgba(0,0,0,0.04);
-        border-top-left-radius: 10px; border-bottom-left-radius: 10px;
-        text-align: left; font-family: 'DM Sans'; font-weight: 700; color: #059669;
+        border-left:3px solid transparent;
+        text-align:left; font-family:'DM Sans';
+        font-weight:700; color:var(--bull);
+        font-size:0.82em;
     }}
-    .mint-table td:last-child {{
-        border-right: 1px solid rgba(0,0,0,0.04);
-        border-top-right-radius: 10px; border-bottom-right-radius: 10px;
-        text-align: center;
-    }}
-    .mint-table th:first-child {{ text-align: left; }}
+    .mint-table tr:hover td:first-child {{ border-left-color:var(--acc); }}
+    .mint-table th:first-child {{ text-align:left; }}
 
     /* ── INPUTS ─────────────────────────────────────── */
     [data-testid="stNumberInput"] > div > div,
     [data-testid="stTextInput"] > div > div {{
-        background: #FFFFFF !important;
-        border: 1px solid rgba(16,185,129,0.25) !important;
-        border-radius: 10px !important; color: var(--t-prime) !important;
+        background:#FAFAF7 !important;
+        border:1px solid var(--rule-strong) !important;
+        border-radius:0 !important;
+        color:var(--ink) !important;
     }}
     [data-testid="stDateInput"] > div > div {{
-        background: #FFFFFF !important;
-        border-color: rgba(16,185,129,0.25) !important;
-        border-radius: 10px !important; color: var(--t-prime) !important;
+        background:#FAFAF7 !important;
+        border:1px solid var(--rule-strong) !important;
+        border-radius:0 !important;
+        color:var(--ink) !important;
     }}
     [data-baseweb="select"] > div {{
-        background: #FFFFFF !important;
-        border-color: rgba(16,185,129,0.25) !important;
-        border-radius: 10px !important;
+        background:#FAFAF7 !important;
+        border:1px solid var(--rule-strong) !important;
+        border-radius:0 !important;
     }}
 
     /* ── FILE UPLOADER ──────────────────────────────── */
     [data-testid="stFileUploader"] {{
-        background: #FAFCFB !important;
-        border: 1px dashed rgba(16,185,129,0.35) !important;
-        border-radius: 12px !important;
+        background:var(--paper-2) !important;
+        border:1px dashed var(--rule-strong) !important;
+        border-radius:0 !important;
     }}
 
     /* ── EXPANDERS ──────────────────────────────────── */
     [data-testid="stExpander"] {{
-        background: #FFFFFF !important;
-        border: 1px solid rgba(16,185,129,0.2) !important;
-        border-radius: 12px !important;
+        background:#FAFAF7 !important;
+        border:1px solid var(--rule-strong) !important;
+        border-radius:0 !important;
     }}
 
     /* ── DIVIDERS ───────────────────────────────────── */
-    hr {{ border-color: rgba(0,0,0,0.07) !important; }}
+    hr {{ border-color:var(--rule-strong) !important; }}
 
     /* ── SCROLLBAR ──────────────────────────────────── */
-    ::-webkit-scrollbar {{ width: 4px; height: 4px; }}
-    ::-webkit-scrollbar-track {{ background: var(--bg-root); }}
-    ::-webkit-scrollbar-thumb {{ background: rgba(16,185,129,0.3); border-radius: 4px; }}
-    ::-webkit-scrollbar-thumb:hover {{ background: rgba(16,185,129,0.55); }}
-
-    /* ── SPINNER ────────────────────────────────────── */
-    [data-testid="stSpinner"] {{ color: #10B981 !important; }}
+    ::-webkit-scrollbar {{ width:3px; height:3px; }}
+    ::-webkit-scrollbar-track {{ background:var(--paper-2); }}
+    ::-webkit-scrollbar-thumb {{ background:var(--ink-5); }}
+    ::-webkit-scrollbar-thumb:hover {{ background:var(--ink-3); }}
 
     /* ── ANIMATIONS ─────────────────────────────────── */
     @keyframes pulseGlow {{
-        0%, 100% {{ opacity: 1; box-shadow: 0 0 8px rgba(16,185,129,0.3); }}
-        50% {{ opacity: 0.9; box-shadow: 0 0 20px rgba(16,185,129,0.55), 0 0 40px rgba(16,185,129,0.15); }}
+        0%,100% {{ opacity:1; }}
+        50% {{ opacity:0.7; }}
     }}
     @keyframes fadeUp {{
-        from {{ opacity: 0; transform: translateY(14px); }}
-        to   {{ opacity: 1; transform: translateY(0); }}
+        from {{ opacity:0; transform:translateY(10px); }}
+        to   {{ opacity:1; transform:translateY(0); }}
+    }}
+    .live-pulse {{ animation:pulseGlow 2.8s ease-in-out infinite; }}
+
+    .main .block-container > div > div:nth-child(1) {{ animation:fadeUp 0.35s ease 0.05s both; }}
+    .main .block-container > div > div:nth-child(2) {{ animation:fadeUp 0.35s ease 0.10s both; }}
+    .main .block-container > div > div:nth-child(3) {{ animation:fadeUp 0.35s ease 0.15s both; }}
+    .main .block-container > div > div:nth-child(4) {{ animation:fadeUp 0.35s ease 0.20s both; }}
+    .main .block-container > div > div:nth-child(5) {{ animation:fadeUp 0.35s ease 0.25s both; }}
+
+    /* ── DATA EDITOR (portfolio table) ─────────────── */
+    [data-testid="stDataEditor"] {{
+        border:1px solid var(--rule-strong) !important;
+        border-radius:0 !important;
     }}
 
-    .live-pulse {{ animation: pulseGlow 2.4s ease-in-out infinite; }}
+    /* ── SIDEBAR TEXT OVERRIDES ─────────────────────── */
+    [data-testid="stSidebar"] p      {{ color:var(--ink-3) !important; }}
+    [data-testid="stSidebar"] strong {{ color:var(--ink)   !important; }}
 
-    /* Stagger entrance */
-    .main .block-container > div > div:nth-child(1) {{ animation: fadeUp 0.4s ease 0.05s both; }}
-    .main .block-container > div > div:nth-child(2) {{ animation: fadeUp 0.4s ease 0.10s both; }}
-    .main .block-container > div > div:nth-child(3) {{ animation: fadeUp 0.4s ease 0.15s both; }}
-    .main .block-container > div > div:nth-child(4) {{ animation: fadeUp 0.4s ease 0.20s both; }}
-    .main .block-container > div > div:nth-child(5) {{ animation: fadeUp 0.4s ease 0.25s both; }}
-
-    /* Sidebar general text override */
-    [data-testid="stSidebar"] p {{ color: #3D4F63 !important; }}
-    [data-testid="stSidebar"] strong {{ color: var(--t-prime) !important; }}
+    /* ── DATA TABLE (stDataFrame) ───────────────────── */
+    [data-testid="stDataFrame"] {{
+        border:1px solid var(--rule-strong) !important;
+        border-radius:0 !important;
+    }}
 </style>"""
+
 
 st.markdown(apply_theme(css_block), unsafe_allow_html=True)
 
@@ -678,13 +710,12 @@ st.markdown(apply_theme(css_block), unsafe_allow_html=True)
 # ==========================================
 sidebar_top = st.sidebar.container()
 sidebar_top.markdown(apply_theme(f"""
-<div style="padding: 16px 15px 10px;">
-    <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:4px;">
-        <span style="font-family:'Syne'; font-size:1.6em; font-weight:800; color:#0F172A; letter-spacing:-0.5px;">AMLS</span>
-        <span style="font-family:'Syne'; font-size:1.6em; font-weight:800; color:#10B981; letter-spacing:-0.5px;">V4.5</span>
+<div style="padding:20px 20px 14px; border-bottom:1px solid rgba(0,0,0,0.10);">
+    <div style="font-family:'DM Mono'; font-size:0.58em; color:#9494A0; letter-spacing:0.22em; text-transform:uppercase; margin-bottom:8px;">Quantitative Engine</div>
+    <div style="font-family:'Instrument Serif',serif; font-size:1.7em; font-weight:400; font-style:italic; color:#111118; letter-spacing:-0.3px; line-height:1.1; margin-bottom:12px;">
+        AMLS <span style="color:#10B981;">V4.5</span>
     </div>
-    <div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#4A5568; letter-spacing:0.22em; text-transform:uppercase; margin-bottom:14px;">QUANTITATIVE ENGINE</div>
-    <div class="live-pulse" style="display:inline-flex; align-items:center; gap:6px; font-family:'DM Mono'; font-size:0.68em; color:#059669; font-weight:500; padding:5px 12px; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:8px; letter-spacing:0.06em;">
+    <div class="live-pulse" style="display:inline-flex; align-items:center; gap:5px; font-family:'DM Mono'; font-size:0.65em; color:#059669; padding:4px 10px; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); letter-spacing:0.06em;">
         {rt_label}
     </div>
 </div>
@@ -695,7 +726,6 @@ page = st.sidebar.radio("MENU",
     ["📊 Dashboard", "💼 Portfolio", "🍫 12-Pack Radar", "📈 Backtest Lab", "📰 Macro News"],
     label_visibility="collapsed")
 
-st.sidebar.markdown("""<div style="border-top:1px solid rgba(0,0,0,0.07); margin:10px 15px;"></div>""", unsafe_allow_html=True)
 st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#4A5568; letter-spacing:0.2em; text-transform:uppercase; padding:6px 15px;">Theme Color</div>""", unsafe_allow_html=True)
 col1, col2, col3 = st.sidebar.columns([0.1, 1, 0.1])
 with col2:
@@ -704,7 +734,6 @@ with col2:
         st.session_state.main_color = new_color
         st.rerun()
 
-st.sidebar.markdown("""<div style="border-top:1px solid rgba(0,0,0,0.07); margin:10px 15px;"></div>""", unsafe_allow_html=True)
 st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#4A5568; letter-spacing:0.2em; text-transform:uppercase; padding:6px 15px;">Bookmarks</div>""", unsafe_allow_html=True)
 st.sidebar.markdown("""
 <div style="display:flex; flex-direction:column; gap:0px; padding:0 12px;">
@@ -718,7 +747,6 @@ st.sidebar.markdown("""
     <a href="https://gemini.google.com/" target="_blank" class="sidebar-link">✨ 제미나이</a>
 </div>
 """, unsafe_allow_html=True)
-st.sidebar.markdown("""<div style="border-top:1px solid rgba(0,0,0,0.07); margin:10px 15px;"></div>""", unsafe_allow_html=True)
 
 # ==========================================
 # 5. 메인 헤더  —  Editorial Bento Style
@@ -781,9 +809,8 @@ with hdr_c2:
 
 st.markdown(apply_theme(f"""
 <div style="position:relative;margin:14px 0 24px;height:1px;background:rgba(0,0,0,0.07);">
-    <div style="position:absolute;left:0;top:-1px;width:220px;height:3px;
-        background:linear-gradient(90deg,rgba({r_c},{g_c},{b_c},0.9),rgba({r_c},{g_c},{b_c},0.3),transparent);
-        border-radius:2px;"></div>
+    <div style="position:absolute;left:0;top:0;width:100%;height:1px;background:rgba(0,0,0,0.12);"></div>
+    <div style="position:absolute;left:0;top:-1px;width:80px;height:3px;background:var(--acc);"></div>
 </div>
 """), unsafe_allow_html=True)
 
@@ -837,14 +864,14 @@ if page == "📊 Dashboard":
         )
 
     st.markdown(apply_theme(f"""
-    <div style="background:#FFFFFF;border:1px solid rgba(0,0,0,0.07);border-top:2px solid rgba({r_c},{g_c},{b_c},0.4);
-        border-radius:16px;padding:16px 20px;margin-bottom:14px;
-        box-shadow:0 4px 20px rgba(0,0,0,0.06);">
+    <div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);border-top:2px solid #111118;
+        border-radius:0;padding:16px 20px;margin-bottom:14px;
+        box-shadow:none;">
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
             <span style="font-family:'DM Mono';font-size:0.62em;color:#4A5568;letter-spacing:0.2em;text-transform:uppercase;">Mission Control</span>
             <div style="flex:1;height:1px;background:rgba(0,0,0,0.05);"></div>
             <span style="font-family:'DM Mono';font-size:0.72em;padding:3px 10px;border-radius:6px;
-                background:rgba({r_c},{g_c},{b_c},0.08);color:#10B981;border:1px solid rgba({r_c},{g_c},{b_c},0.2);">
+                background:rgba(16,185,129,0.08);color:#059669;border:1px solid rgba(16,185,129,0.25);font-size:0.65em;letter-spacing:0.08em;padding:3px 10px;">
                 {regime_committee_msg}
             </span>
         </div>
@@ -1033,13 +1060,13 @@ elif page == "💼 Portfolio":
 
     st.markdown(f'''
     <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
-        <div style="background:#FFFFFF;border:1px solid rgba(0,0,0,0.07);border-top:2px solid rgba({r_c},{g_c},{b_c},0.5);
-            border-radius:14px;padding:14px 22px;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
+        <div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);border-top:2px solid #111118;
+            border-radius:0;padding:12px 20px;box-shadow:none;">
             <div style="font-family:'DM Mono';font-size:0.62em;color:#4A5568;letter-spacing:0.14em;text-transform:uppercase;">Total NAV</div>
             <div style="font-family:'DM Mono';font-size:1.6em;font-weight:400;color:#0F172A;margin-top:4px;">${{total_val_usd:,.2f}}</div>
         </div>
-        <div style="background:#FFFFFF;border:1px solid rgba(0,0,0,0.07);border-top:2px solid rgba(0,0,0,0.12);
-            border-radius:14px;padding:14px 22px;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
+        <div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);border-top:2px solid rgba(0,0,0,0.25);
+            border-radius:0;padding:12px 20px;box-shadow:none;">
             <div style="font-family:'DM Mono';font-size:0.62em;color:#4A5568;letter-spacing:0.14em;text-transform:uppercase;">USD/KRW</div>
             <div style="font-family:'DM Mono';font-size:1.6em;font-weight:400;color:#0F172A;margin-top:4px;">₩{{cur_fx:,.2f}}</div>
         </div>
@@ -1261,9 +1288,9 @@ elif page == "🍫 12-Pack Radar":
 
     st.markdown(apply_theme(f"""
     <div style="display:flex;gap:16px;margin-bottom:24px;align-items:stretch;">
-        <div style="flex:3;background:#FFFFFF;border:1px solid rgba(0,0,0,0.07);
-            border-left:4px solid {radar_color};border-radius:16px;padding:22px 24px;
-            box-shadow:0 4px 20px rgba(0,0,0,0.06);">
+        <div style="flex:3;background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);
+            border-left:4px solid {radar_color};border-radius:0;padding:20px 22px;
+            box-shadow:none;">
             <div style="font-family:'Syne';font-size:1.2em;font-weight:700;color:{radar_color};margin-bottom:10px;">{radar_status}</div>
             <p style="font-family:'DM Sans';color:#2D3A4A;font-size:0.92em;margin:0;line-height:1.75;">{radar_msg}</p>
         </div>
@@ -1619,7 +1646,7 @@ elif page == "📰 Macro News":
     headlines_for_ai, news_items = fetch_macro_news()
 
     st.markdown(apply_theme(f"""
-    <div class="glass-card" style="height:auto !important; display:flex; flex-direction:row; align-items:center; gap:20px; margin-bottom:28px; padding:24px 32px !important;">
+    <div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);border-top:2px solid #111118;display:flex;flex-direction:row;align-items:center;gap:20px;margin-bottom:24px;padding:20px 28px;">
         <div style="font-size:2.2em; line-height:1;">📰</div>
         <div>
             <h2 style="margin:0; font-family:'Syne'; font-size:1.65em; font-weight:800; letter-spacing:-1px; color:#0F172A;">Global Macro  ·  AI Briefing</h2>
@@ -1655,7 +1682,7 @@ elif page == "📰 Macro News":
         for idx, item in enumerate(news_items):
             with cols[idx % 3]:
                 html_snippet = apply_theme(f"""
-                <div class="glass-card" style="padding:18px !important; margin-bottom:12px; height:140px !important; gap:0; flex-direction:column; justify-content:space-between;">
+                <div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.10);border-top:2px solid rgba(0,0,0,0.18);padding:16px;margin-bottom:10px;height:138px;display:flex;flex-direction:column;justify-content:space-between;transition:border-top-color 0.15s;">
                     <div style="font-family:'DM Sans'; font-weight:400; font-size:0.9em; line-height:1.5; color:#4A5568; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">
                         <a href="{item['link']}" target="_blank" style="color:#4A5568; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#10B981'" onmouseout="this.style.color='#94A3B8'">{item['title']}</a>
                     </div>
