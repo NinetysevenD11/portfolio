@@ -21,9 +21,23 @@ warnings.filterwarnings('ignore')
 st.set_page_config(page_title="AMLS V4.5 FINANCE STRATEGY", layout="wide", page_icon="🌿", initial_sidebar_state="expanded")
 
 # --- 🎨 테마 커스텀 시스템 ---
-if 'main_color' not in st.session_state:
-    st.session_state.main_color = '#10B981'
+if 'main_color'   not in st.session_state: st.session_state.main_color   = '#10B981'
+if 'bg_color'     not in st.session_state: st.session_state.bg_color     = '#F7F6F2'
+if 'tc_heading'   not in st.session_state: st.session_state.tc_heading   = '#111118'
+if 'tc_body'      not in st.session_state: st.session_state.tc_body      = '#2D2D2D'
+if 'tc_muted'     not in st.session_state: st.session_state.tc_muted     = '#6B6B7A'
+if 'tc_label'     not in st.session_state: st.session_state.tc_label     = '#9494A0'
+if 'tc_data'      not in st.session_state: st.session_state.tc_data      = '#111118'
+if 'tc_sidebar'   not in st.session_state: st.session_state.tc_sidebar   = '#2D2D2D'
+
 main_color = st.session_state.main_color
+bg_color   = st.session_state.bg_color
+tc_heading = st.session_state.tc_heading
+tc_body    = st.session_state.tc_body
+tc_muted   = st.session_state.tc_muted
+tc_label   = st.session_state.tc_label
+tc_data    = st.session_state.tc_data
+tc_sidebar = st.session_state.tc_sidebar
 
 def hex_to_rgb(hex_col):
     h = hex_col.lstrip('#')
@@ -322,15 +336,16 @@ css_block = f"""<style>
 
     /* ── DESIGN TOKENS ──────────────────────────────── */
     :root {{
-        /* Paper — warm ivory, not cold white */
-        --paper:      #F7F6F2;
-        --paper-2:    #EFEDE7;
-        --paper-3:    #E8E5DD;
-        --ink:        #111118;
-        --ink-2:      #2C2C35;
-        --ink-3:      #4A4A57;
-        --ink-4:      #6B6B7A;
-        --ink-5:      #9494A0;
+        /* Paper — user-customizable */
+        --paper:      {bg_color};
+        --paper-2:    {bg_color}dd;
+        --paper-3:    {bg_color}bb;
+        /* Ink — user-customizable per role */
+        --ink:        {tc_heading};
+        --ink-2:      {tc_body};
+        --ink-3:      {tc_body};
+        --ink-4:      {tc_muted};
+        --ink-5:      {tc_label};
         /* Rule lines */
         --rule:       rgba(0,0,0,0.10);
         --rule-strong:rgba(0,0,0,0.18);
@@ -351,14 +366,14 @@ css_block = f"""<style>
     *, *::before, *::after {{ box-sizing: border-box; }}
 
     .stApp, [data-testid="stAppViewContainer"] {{
-        background-color: var(--paper) !important;
+        background-color: {bg_color} !important;
         background-image:
             /* Subtle dot grid — institutional graph paper */
             radial-gradient(circle, rgba(0,0,0,0.055) 1px, transparent 1px),
             /* Accent corner wash */
             radial-gradient(ellipse 70% 40% at 5% 0%, rgba(16,185,129,0.055) 0%, transparent 55%) !important;
         background-size: 24px 24px, 100% 100% !important;
-        color: var(--ink) !important;
+        color: {tc_body} !important;
         font-family: 'DM Sans', sans-serif;
         font-size: 14px;
     }}
@@ -555,16 +570,16 @@ css_block = f"""<style>
         font-family: 'Instrument Serif', serif !important;
         font-size: 2.4em !important; font-weight: 400 !important;
         letter-spacing: -0.5px; margin: 0 !important;
-        color: var(--ink) !important; font-style: italic;
+        color: {tc_heading} !important; font-style: italic;
     }}
     h2 {{
         font-family: 'DM Sans', sans-serif !important;
-        color: var(--ink) !important; font-weight: 700 !important;
+        color: {tc_heading} !important; font-weight: 700 !important;
         letter-spacing: -0.3px;
     }}
-    h3 {{ font-family: 'DM Sans', sans-serif !important; color: var(--ink-2) !important; }}
-    p  {{ color: var(--ink-3) !important; line-height: 1.65; }}
-    strong {{ color: var(--ink) !important; }}
+    h3 {{ font-family: 'DM Sans', sans-serif !important; color: {tc_body} !important; }}
+    p  {{ color: {tc_body} !important; line-height: 1.65; }}
+    strong {{ color: {tc_heading} !important; }}
 
     /* All numbers — tabular figures */
     [data-testid="stMetricValue"],
@@ -579,7 +594,7 @@ css_block = f"""<style>
     }}
     .crow:last-child {{ border-bottom:none; }}
     .clabel {{
-        color: var(--ink-3); font-weight:500;
+        color: {tc_muted}; font-weight:500;
         font-family:'DM Sans'; font-size:1em;
     }}
     .cval {{
@@ -588,10 +603,34 @@ css_block = f"""<style>
         letter-spacing:0.02em; font-variant-numeric:tabular-nums;
     }}
 
+    /* ── METRIC CARD TEXT ───────────────────────────── */
+    [data-testid="stMetricLabel"] > div > div > p {{
+        font-size: 0.65em !important; font-weight: 500;
+        color: {tc_label} !important;
+        white-space:normal !important; letter-spacing: 0.14em; text-transform:uppercase;
+        font-family:'DM Mono', monospace !important;
+    }}
+    [data-testid="stMetricValue"] > div {{
+        font-family:'DM Mono', monospace !important;
+        font-size:1.4em !important; font-weight:400;
+        color:{tc_data} !important;
+        font-variant-numeric: tabular-nums;
+    }}
+
+    /* ── SIDEBAR TEXT ───────────────────────────────── */
+    [data-testid="stSidebar"] p      {{ color:{tc_sidebar} !important; }}
+    [data-testid="stSidebar"] strong {{ color:{tc_heading}   !important; }}
+    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"] p {{
+        color:{tc_sidebar} !important;
+    }}
+    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) p {{
+        color:{tc_heading} !important; font-weight:700 !important;
+    }}
+
     /* ── RADAR LINKS ────────────────────────────────── */
     .radar-link {{ text-decoration:none !important; display:block; }}
     .radar-link-title {{
-        font-size:0.62em; font-weight:500; color:var(--ink-4);
+        font-size:0.62em; font-weight:500; color:{tc_label};
         transition:color 0.15s; font-family:'DM Mono', monospace;
         letter-spacing:0.16em; text-transform:uppercase;
     }}
@@ -694,15 +733,15 @@ css_block = f"""<style>
         border-radius:0 !important;
     }}
 
-    /* ── SIDEBAR TEXT OVERRIDES ─────────────────────── */
-    [data-testid="stSidebar"] p      {{ color:var(--ink-3) !important; }}
-    [data-testid="stSidebar"] strong {{ color:var(--ink)   !important; }}
-
     /* ── DATA TABLE (stDataFrame) ───────────────────── */
     [data-testid="stDataFrame"] {{
         border:1px solid var(--rule-strong) !important;
         border-radius:0 !important;
     }}
+
+    /* ── MINT TABLE BODY TEXT ───────────────────────── */
+    .mint-table td {{ color:{tc_body} !important; }}
+    .mint-table th {{ color:{tc_label} !important; }}
 </style>"""
 
 
@@ -737,6 +776,73 @@ with col2:
         st.session_state.main_color = new_color
         st.rerun()
 
+# ── 배경색 설정 ────────────────────────────────────────
+st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#4A5568; letter-spacing:0.2em; text-transform:uppercase; padding:14px 15px 4px; border-top:1px solid rgba(0,0,0,0.08);">배경 색상</div>""", unsafe_allow_html=True)
+_bg_c1, _bg_c2, _bg_c3 = st.sidebar.columns([0.1, 1, 0.1])
+with _bg_c2:
+    _new_bg = st.color_picker("배경색", st.session_state.bg_color, label_visibility="collapsed", key="cp_bg")
+    if _new_bg != st.session_state.bg_color:
+        st.session_state.bg_color = _new_bg
+        st.rerun()
+# 빠른 프리셋
+st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.6em; color:#9494A0; padding:2px 15px 8px; letter-spacing:0.08em;">프리셋:</div>""", unsafe_allow_html=True)
+_p1, _p2, _p3, _p4, _p5 = st.sidebar.columns(5)
+_presets = [("#F7F6F2","아이보리"), ("#FFFFFF","화이트"), ("#F0F4F8","블루그레이"), ("#1A1A2E","다크"), ("#0F1B12","딥그린")]
+for _col, (_hex, _name) in zip([_p1,_p2,_p3,_p4,_p5], _presets):
+    if _col.button("", key=f"preset_{_hex}", help=_name,
+                   use_container_width=True):
+        st.session_state.bg_color = _hex
+        st.rerun()
+# 프리셋 버튼에 색상 표시용 CSS 주입
+_preset_css = ""
+for i, (_hex, _) in enumerate(_presets):
+    _preset_css += f"""
+    [data-testid="stSidebar"] button[data-testid="baseButton-secondary"]:nth-of-type({i+2}) {{
+        background: {_hex} !important;
+        border: 1px solid rgba(0,0,0,0.18) !important;
+        min-height: 22px !important; padding: 0 !important;
+        border-radius: 3px !important;
+    }}"""
+st.sidebar.markdown(f"<style>{_preset_css}</style>", unsafe_allow_html=True)
+
+# ── 글씨 색상 개별 설정 ────────────────────────────────
+st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#4A5568; letter-spacing:0.2em; text-transform:uppercase; padding:12px 15px 6px; border-top:1px solid rgba(0,0,0,0.08);">글씨 색상 설정</div>""", unsafe_allow_html=True)
+
+_tc_defs = [
+    ("heading",  "헤딩  (제목·숫자)",      "tc_heading",  "cp_tc_heading"),
+    ("body",     "본문  (설명·라벨)",       "tc_body",     "cp_tc_body"),
+    ("muted",    "뮤트  (보조 텍스트)",     "tc_muted",    "cp_tc_muted"),
+    ("label",    "서브라벨  (캡션·단위)",   "tc_label",    "cp_tc_label"),
+    ("data",     "데이터  (숫자·표)",       "tc_data",     "cp_tc_data"),
+    ("sidebar",  "사이드바  (메뉴 텍스트)", "tc_sidebar",  "cp_tc_sidebar"),
+]
+
+for _role, _disp, _key, _widget_key in _tc_defs:
+    _lc, _rc = st.sidebar.columns([2, 1])
+    _lc.markdown(
+        f'<div style="font-family:DM Mono,monospace;font-size:0.72em;'
+        f'color:{getattr(st.session_state, _key)};padding:8px 0 0 4px;'
+        f'letter-spacing:0.04em;">{_disp}</div>',
+        unsafe_allow_html=True
+    )
+    _picked = _rc.color_picker("", getattr(st.session_state, _key),
+                                label_visibility="collapsed", key=_widget_key)
+    if _picked != getattr(st.session_state, _key):
+        setattr(st.session_state, _key, _picked)
+        st.rerun()
+
+# 초기화 버튼
+if st.sidebar.button("↺  색상 전체 초기화", use_container_width=True, key="reset_colors"):
+    st.session_state.main_color = '#10B981'
+    st.session_state.bg_color   = '#F7F6F2'
+    st.session_state.tc_heading = '#111118'
+    st.session_state.tc_body    = '#2D2D2D'
+    st.session_state.tc_muted   = '#6B6B7A'
+    st.session_state.tc_label   = '#9494A0'
+    st.session_state.tc_data    = '#111118'
+    st.session_state.tc_sidebar = '#2D2D2D'
+    st.rerun()
+
 st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#4A5568; letter-spacing:0.2em; text-transform:uppercase; padding:6px 15px;">Bookmarks</div>""", unsafe_allow_html=True)
 st.sidebar.markdown("""
 <div style="display:flex; flex-direction:column; gap:0px; padding:0 12px;">
@@ -753,25 +859,35 @@ st.sidebar.markdown("""
 
 # ── 사이드바 포트폴리오 백업/복구 ──────────────────
 st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#4A5568; letter-spacing:0.2em; text-transform:uppercase; padding:14px 20px 6px; border-top:1px solid rgba(0,0,0,0.08);">Portfolio Data</div>""", unsafe_allow_html=True)
-_sb_up_col, _sb_dl_col = st.sidebar.columns(2)
-with _sb_up_col:
-    _sidebar_upload = st.file_uploader("📂 Restore", type="json", label_visibility="collapsed", key="sb_uploader")
-    if _sidebar_upload is not None:
-        try:
-            import json as _json
-            _loaded = _json.load(_sidebar_upload)
-            st.session_state.portfolio.update(_loaded)
-            sanitize_portfolio()
-            save_portfolio_to_disk()
-            st.sidebar.success("복구 완료")
-            st.rerun()
-        except:
-            st.sidebar.error("파일 오류")
-with _sb_dl_col:
-    import json as _json2
-    _sb_json = _json2.dumps(st.session_state.portfolio)
-    st.sidebar.download_button("💾 Backup", data=_sb_json, file_name="portfolio.json",
-                                mime="application/json", use_container_width=True, key="sb_backup")
+
+import json as _json2
+_sb_json = _json2.dumps(st.session_state.portfolio)
+st.sidebar.download_button(
+    "💾  Backup (JSON 저장)",
+    data=_sb_json,
+    file_name="portfolio.json",
+    mime="application/json",
+    use_container_width=True,
+    key="sb_backup"
+)
+
+_sidebar_upload = st.sidebar.file_uploader(
+    "📂  Restore (JSON 불러오기)",
+    type="json",
+    key="sb_uploader",
+    label_visibility="visible"
+)
+if _sidebar_upload is not None:
+    try:
+        import json as _json
+        _loaded = _json.load(_sidebar_upload)
+        st.session_state.portfolio.update(_loaded)
+        sanitize_portfolio()
+        save_portfolio_to_disk()
+        st.sidebar.success("✅ 복구 완료")
+        st.rerun()
+    except:
+        st.sidebar.error("❌ 파일 형식 오류")
 
 # ==========================================
 # 5. 메인 헤더  —  Editorial Bento Style
