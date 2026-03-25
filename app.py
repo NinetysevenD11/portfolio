@@ -1213,10 +1213,13 @@ if page == "📊 Dashboard":
 
     def _sec_label(txt):
         st.markdown(
-            f'<div style="font-family:DM Mono,monospace;font-size:0.6em;font-weight:500;'
-            f'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
-            f'padding-bottom:6px;border-bottom:2px solid #111118;margin:18px 0 12px;">'
-            f'{txt}</div>', unsafe_allow_html=True)
+            f'<div style="display:flex;align-items:center;gap:12px;margin:24px 0 14px;">'
+            f'<div style="font-family:Instrument Serif,serif;font-size:1.25em;font-weight:400;'
+            f'font-style:italic;color:{tc_heading};letter-spacing:-0.3px;white-space:nowrap;">'
+            f'{txt}</div>'
+            f'<div style="flex:1;height:1px;background:rgba(0,0,0,0.12);"></div>'
+            f'</div>',
+            unsafe_allow_html=True)
 
     def _chg_color(v): return "#059669" if v >= 0 else "#DC2626"
     def _chg_arrow(v): return "▲" if v >= 0 else "▼"
