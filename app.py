@@ -1760,52 +1760,7 @@ elif page == "💼 Portfolio":
             save_portfolio_to_disk()
             st.rerun()
 
-        # Quick Orders — Rebalancing Matrix와 높이 맞춤
-        if total_val_usd > 0:
-            st.markdown("<div style='height:360px'></div>", unsafe_allow_html=True)
-            st.markdown(
-                '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
-                'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
-                'padding-bottom:6px;border-bottom:2px solid #111118;margin-bottom:10px;">'
-                'Quick Orders</div>',
-                unsafe_allow_html=True
-            )
-            sell_items_q, buy_items_q = [], []
-            for asset in ASSET_LIST:
-                cur_p_q = current_prices[asset] if current_prices[asset] > 0 else 1.0
-                diff_q  = diff_vals[asset]
-                if asset != 'CASH' and diff_q < -cur_p_q * 0.05:
-                    sell_items_q.append((asset, f"{abs(diff_q)/cur_p_q:,.2f}주 매도", "#DC2626"))
-                elif asset == 'CASH' and diff_q < -1.0:
-                    sell_items_q.append(("CASH", f"${abs(diff_q):,.0f} 사용", "#DC2626"))
-                if asset != 'CASH' and diff_q > cur_p_q * 0.05:
-                    buy_items_q.append((asset, f"{diff_q/cur_p_q:,.2f}주 매수", "#059669"))
-                elif asset == 'CASH' and diff_q > 1.0:
-                    buy_items_q.append(("CASH", f"${diff_q:,.0f} 확보", "#059669"))
-
-            def _qcard(title, items, accent):
-                rows = "".join([
-                    f'<div style="display:flex;justify-content:space-between;'
-                    f'padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.05);">'
-                    f'<span style="font-family:DM Mono,monospace;font-size:0.78em;'
-                    f'font-weight:600;color:#111118;">{a}</span>'
-                    f'<span style="font-family:DM Mono,monospace;font-size:0.76em;'
-                    f'color:{c};font-variant-numeric:tabular-nums;">{v}</span></div>'
-                    for a, v, c in items
-                ]) or '<div style="font-family:DM Mono,monospace;font-size:0.72em;color:#9494A0;padding:6px 0;">— 없음</div>'
-                st.markdown(
-                    f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.10);'
-                    f'border-top:2px solid {accent};padding:11px 13px;margin-bottom:8px;">'
-                    f'<div style="font-family:Plus Jakarta Sans,sans-serif;font-size:0.8em;'
-                    f'font-weight:700;color:{accent};margin-bottom:7px;">{title}</div>'
-                    f'{rows}</div>',
-                    unsafe_allow_html=True
-                )
-
-            _qcard("🔴  SELL", sell_items_q, "#DC2626")
-            _qcard("🟢  BUY",  buy_items_q,  "#059669")
-
-    # ── 오른쪽: Allocation 차트 + Rebalancing Matrix ─────────────
+    # ── 오른쪽: Allocation 차트 (풀너비) + 아래에 Quick Orders | Rebalancing Matrix ─────────────────────────────────
     with right_pf:
         if total_val_usd > 0:
             c_green, c_red = main_color, "#DC2626"
@@ -1818,7 +1773,7 @@ elif page == "💼 Portfolio":
                 showlegend=False
             )
 
-            # 차트 3개 — 파이 2개 + 델타 바 (균등 3칸)
+            # ── 차트 3개 풀너비 ───────────────────────────────────
             st.markdown(
                 '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
                 'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
@@ -1880,14 +1835,61 @@ elif page == "💼 Portfolio":
                     with st.container(border=True):
                         st.plotly_chart(fig_bar, use_container_width=True)
 
-            # Rebalancing Matrix
-            st.markdown(
-                '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
-                'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
-                'padding-bottom:6px;border-bottom:2px solid #111118;margin:14px 0 10px;">'
-                'Rebalancing  Matrix</div>',
-                unsafe_allow_html=True
-            )
+            # ── 차트 아래: Quick Orders | Rebalancing Matrix 나란히 ──
+            st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+            qo_col, matrix_col = st.columns([1, 2.2])
+
+            with qo_col:
+                st.markdown(
+                    '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
+                    'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
+                    'padding-bottom:6px;border-bottom:2px solid #111118;margin-bottom:10px;">'
+                    'Quick Orders</div>',
+                    unsafe_allow_html=True
+                )
+                sell_items_q, buy_items_q = [], []
+                for asset in ASSET_LIST:
+                    cur_p_q = current_prices[asset] if current_prices[asset] > 0 else 1.0
+                    diff_q  = diff_vals[asset]
+                    if asset != 'CASH' and diff_q < -cur_p_q * 0.05:
+                        sell_items_q.append((asset, f"{abs(diff_q)/cur_p_q:,.2f}주 매도", "#DC2626"))
+                    elif asset == 'CASH' and diff_q < -1.0:
+                        sell_items_q.append(("CASH", f"${abs(diff_q):,.0f} 사용", "#DC2626"))
+                    if asset != 'CASH' and diff_q > cur_p_q * 0.05:
+                        buy_items_q.append((asset, f"{diff_q/cur_p_q:,.2f}주 매수", "#059669"))
+                    elif asset == 'CASH' and diff_q > 1.0:
+                        buy_items_q.append(("CASH", f"${diff_q:,.0f} 확보", "#059669"))
+
+                def _qcard2(title, items, accent):
+                    rows = "".join([
+                        f'<div style="display:flex;justify-content:space-between;'
+                        f'padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.05);">'
+                        f'<span style="font-family:DM Mono,monospace;font-size:0.78em;'
+                        f'font-weight:600;color:#111118;">{a}</span>'
+                        f'<span style="font-family:DM Mono,monospace;font-size:0.76em;'
+                        f'color:{c};font-variant-numeric:tabular-nums;">{v}</span></div>'
+                        for a, v, c in items
+                    ]) or '<div style="font-family:DM Mono,monospace;font-size:0.72em;color:#9494A0;padding:6px 0;">— 없음</div>'
+                    st.markdown(
+                        f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.10);'
+                        f'border-top:2px solid {accent};padding:11px 13px;margin-bottom:8px;">'
+                        f'<div style="font-family:Plus Jakarta Sans,sans-serif;font-size:0.8em;'
+                        f'font-weight:700;color:{accent};margin-bottom:7px;">{title}</div>'
+                        f'{rows}</div>',
+                        unsafe_allow_html=True
+                    )
+
+                _qcard2("🔴  SELL", sell_items_q, "#DC2626")
+                _qcard2("🟢  BUY",  buy_items_q,  "#059669")
+
+            with matrix_col:
+                st.markdown(
+                    '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
+                    'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
+                    'padding-bottom:6px;border-bottom:2px solid #111118;margin-bottom:10px;">'
+                    'Rebalancing  Matrix</div>',
+                    unsafe_allow_html=True
+                )
 
             rebal_html = '<div style="overflow-x:auto;">'
             rebal_html += '<table class="mint-table"><thead><tr>'
