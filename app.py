@@ -57,6 +57,9 @@ def sanitize_portfolio():
         else:
             st.session_state.portfolio[a] = {'shares': 0.0, 'avg_price': 0.0, 'fx': 1350.0}
 
+if 'goal_usd' not in st.session_state:
+    st.session_state.goal_usd = 100000.0   # 기본 목표: $100,000
+
 if 'portfolio' not in st.session_state:
     st.session_state.portfolio = {asset: {'shares':0.0, 'avg_price':0.0, 'fx':1350.0} for asset in ASSET_LIST}
     if os.path.exists(PORTFOLIO_FILE):
@@ -1126,6 +1129,147 @@ elif page == "💼 Portfolio":
         unsafe_allow_html=True
     )
     st.markdown("</div></div>", unsafe_allow_html=True)
+
+    # ── 목표 금액 게이지 ────────────────────────────────────────
+    _goal_col_input, _goal_col_gauge = st.columns([1, 2.5])
+
+    with _goal_col_input:
+        new_goal = st.number_input(
+            "🎯 목표 금액 (USD)",
+            min_value=1000.0,
+            max_value=100_000_000.0,
+            value=st.session_state.goal_usd,
+            step=1000.0,
+            format="%.0f",
+            key="goal_input"
+        )
+        if new_goal != st.session_state.goal_usd:
+            st.session_state.goal_usd = new_goal
+            st.rerun()
+
+    with _goal_col_gauge:
+        _goal    = st.session_state.goal_usd
+        _nav     = total_val_usd
+        _pct_raw = (_nav / _goal * 100) if _goal > 0 else 0.0
+        _pct     = min(_pct_raw, 100.0)           # 100% 초과는 100으로 캡
+        _over    = _pct_raw > 100.0               # 목표 초과 여부
+        _remain  = max(_goal - _nav, 0.0)
+
+        # 달성률에 따라 색상 계산
+        if _over:
+            _bar_color   = "#059669"
+            _badge_bg    = "rgba(5,150,105,0.12)"
+            _badge_bdr   = "rgba(5,150,105,0.35)"
+            _badge_txt   = "#059669"
+            _badge_label = "🏆  목표 달성!"
+        elif _pct >= 75:
+            _bar_color   = main_color
+            _badge_bg    = f"rgba({r_c},{g_c},{b_c},0.10)"
+            _badge_bdr   = f"rgba({r_c},{g_c},{b_c},0.30)"
+            _badge_txt   = main_color
+            _badge_label = "⚡  75% 이상"
+        elif _pct >= 50:
+            _bar_color   = "#D97706"
+            _badge_bg    = "rgba(217,119,6,0.10)"
+            _badge_bdr   = "rgba(217,119,6,0.30)"
+            _badge_txt   = "#D97706"
+            _badge_label = "📈  순항 중"
+        else:
+            _bar_color   = "#9494A0"
+            _badge_bg    = "rgba(0,0,0,0.05)"
+            _badge_bdr   = "rgba(0,0,0,0.14)"
+            _badge_txt   = "#6B6B7A"
+            _badge_label = "🌱  시작 단계"
+
+        # 게이지 트랙 마커 (25 / 50 / 75 / 100%)
+        _markers = ""
+        for _m in [25, 50, 75, 100]:
+            _markers += (
+                f'<div style="position:absolute;left:{_m}%;top:0;bottom:0;'
+                f'width:1px;background:rgba(0,0,0,0.12);transform:translateX(-50%);">'
+                f'<span style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);'
+                f'font-family:DM Mono,monospace;font-size:0.58em;color:#AAAAAA;'
+                f'white-space:nowrap;">{_m}%</span>'
+                f'</div>'
+            )
+
+        # 현재 위치 핀
+        _pin_left = min(_pct, 99.0)
+        _pin = (
+            f'<div style="position:absolute;left:{_pin_left}%;top:-4px;bottom:-4px;'
+            f'width:2px;background:{_bar_color};transform:translateX(-50%);'
+            f'box-shadow:0 0 6px {_bar_color};">'
+            f'<div style="position:absolute;top:-7px;left:50%;transform:translateX(-50%);'
+            f'width:10px;height:10px;border-radius:50%;background:{_bar_color};'
+            f'box-shadow:0 0 8px {_bar_color};"></div>'
+            f'</div>'
+        )
+
+        st.markdown(apply_theme(
+            f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);'
+            f'border-top:3px solid {_bar_color};padding:16px 20px 14px;'
+            f'margin-bottom:14px;">'
+
+            # 헤더 행
+            f'<div style="display:flex;align-items:baseline;justify-content:space-between;'
+            f'margin-bottom:18px;">'
+
+            # 좌: 타이틀 + 배지
+            f'<div style="display:flex;align-items:center;gap:10px;">'
+            f'<span style="font-family:DM Mono,monospace;font-size:0.62em;color:#9494A0;'
+            f'letter-spacing:0.18em;text-transform:uppercase;">Goal Tracker</span>'
+            f'<span style="background:{_badge_bg};border:1px solid {_badge_bdr};'
+            f'color:{_badge_txt};font-family:DM Mono,monospace;font-size:0.66em;'
+            f'padding:2px 10px;letter-spacing:0.06em;">{_badge_label}</span>'
+            f'</div>'
+
+            # 우: 달성률 + 잔여
+            f'<div style="text-align:right;">'
+            f'<span style="font-family:DM Mono,monospace;font-size:1.8em;font-weight:500;'
+            f'color:{_bar_color};font-variant-numeric:tabular-nums;letter-spacing:-1px;">'
+            f'{_pct_raw:.1f}%</span>'
+            f'<span style="font-family:DM Mono,monospace;font-size:0.72em;color:#9494A0;'
+            f'margin-left:10px;">{"초과 달성!" if _over else f"잔여 ${_remain:,.0f}"}</span>'
+            f'</div>'
+
+            f'</div>'  # 헤더 행 닫기
+
+            # 게이지 트랙
+            f'<div style="position:relative;padding-top:22px;">'
+            f'{_markers}'
+            f'<div style="position:relative;height:10px;background:rgba(0,0,0,0.07);'
+            f'overflow:visible;">'
+            f'<div style="height:10px;width:{_pct:.2f}%;background:linear-gradient('
+            f'90deg,{_bar_color}88,{_bar_color});'
+            f'transition:width 0.6s ease;"></div>'
+            f'{_pin}'
+            f'</div>'
+            f'</div>'
+
+            # 하단 레이블 행
+            f'<div style="display:flex;justify-content:space-between;margin-top:10px;">'
+            f'<div>'
+            f'<span style="font-family:DM Mono,monospace;font-size:0.6em;color:#9494A0;'
+            f'text-transform:uppercase;letter-spacing:0.12em;">Current NAV</span><br>'
+            f'<span style="font-family:DM Mono,monospace;font-size:1.05em;color:#111118;'
+            f'font-variant-numeric:tabular-nums;">${_nav:,.2f}</span>'
+            f'</div>'
+            f'<div style="text-align:center;">'
+            f'<span style="font-family:DM Mono,monospace;font-size:0.6em;color:#9494A0;'
+            f'text-transform:uppercase;letter-spacing:0.12em;">Goal (USD)</span><br>'
+            f'<span style="font-family:DM Mono,monospace;font-size:1.05em;color:#111118;'
+            f'font-variant-numeric:tabular-nums;">${_goal:,.0f}</span>'
+            f'</div>'
+            f'<div style="text-align:right;">'
+            f'<span style="font-family:DM Mono,monospace;font-size:0.6em;color:#9494A0;'
+            f'text-transform:uppercase;letter-spacing:0.12em;">Goal (KRW)</span><br>'
+            f'<span style="font-family:DM Mono,monospace;font-size:1.05em;color:#111118;'
+            f'font-variant-numeric:tabular-nums;">₩{_goal * cur_fx:,.0f}</span>'
+            f'</div>'
+            f'</div>'
+
+            f'</div>'
+        ), unsafe_allow_html=True)
 
     # ── 메인 2패널: 좌(포지션 입력+Quick Orders) + 우(차트+리밸런싱) ─
     left_pf, right_pf = st.columns([1.1, 2])
