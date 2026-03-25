@@ -1710,6 +1710,12 @@ elif page == "💼 Portfolio":
         ), unsafe_allow_html=True)
 
     # ── 메인 3패널: 좌(입력) + 중(Quick Orders) + 우(차트+리밸런싱) ─
+    # diff_vals: 패널 전체에서 공유
+    if total_val_usd > 0:
+        diff_vals = {a: (total_val_usd * target_weights.get(a, 0.0)) - curr_vals[a] for a in ASSET_LIST}
+    else:
+        diff_vals = {a: 0.0 for a in ASSET_LIST}
+
     left_pf, mid_pf, right_pf = st.columns([1.1, 0.9, 2])
 
     # ── 왼쪽: 포지션 입력 ─────────────────────────────────────
