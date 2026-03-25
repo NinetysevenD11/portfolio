@@ -805,43 +805,37 @@ for i, (_hex, _) in enumerate(_presets):
     }}"""
 st.sidebar.markdown(f"<style>{_preset_css}</style>", unsafe_allow_html=True)
 
-# ── 글씨 색상 개별 설정 ────────────────────────────────
-st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#4A5568; letter-spacing:0.2em; text-transform:uppercase; padding:12px 15px 6px; border-top:1px solid rgba(0,0,0,0.08);">글씨 색상 설정</div>""", unsafe_allow_html=True)
+# ── 글씨 색상 개별 설정 (접기/펼치기) ───────────────
+with st.sidebar.expander("🎨  글씨 색상 설정", expanded=False):
+    _tc_defs = [
+        ("heading",  "헤딩  (제목·큰 숫자)",    "tc_heading",  "cp_tc_heading"),
+        ("body",     "본문  (설명·라벨)",        "tc_body",     "cp_tc_body"),
+        ("muted",    "뮤트  (보조 텍스트)",      "tc_muted",    "cp_tc_muted"),
+        ("label",    "서브라벨  (캡션·단위)",    "tc_label",    "cp_tc_label"),
+        ("data",     "데이터  (숫자·표)",        "tc_data",     "cp_tc_data"),
+        ("sidebar",  "사이드바  (메뉴)",         "tc_sidebar",  "cp_tc_sidebar"),
+    ]
+    for _role, _disp, _key, _widget_key in _tc_defs:
+        _lc, _rc = st.columns([2, 1])
+        _lc.markdown(
+            f'<div style="font-family:DM Mono,monospace;font-size:0.72em;'
+            f'color:{getattr(st.session_state, _key)};padding:6px 0 0 2px;">{_disp}</div>',
+            unsafe_allow_html=True
+        )
+        _picked = _rc.color_picker("", getattr(st.session_state, _key),
+                                    label_visibility="collapsed", key=_widget_key)
+        if _picked != getattr(st.session_state, _key):
+            setattr(st.session_state, _key, _picked)
+            st.rerun()
 
-_tc_defs = [
-    ("heading",  "헤딩  (제목·숫자)",      "tc_heading",  "cp_tc_heading"),
-    ("body",     "본문  (설명·라벨)",       "tc_body",     "cp_tc_body"),
-    ("muted",    "뮤트  (보조 텍스트)",     "tc_muted",    "cp_tc_muted"),
-    ("label",    "서브라벨  (캡션·단위)",   "tc_label",    "cp_tc_label"),
-    ("data",     "데이터  (숫자·표)",       "tc_data",     "cp_tc_data"),
-    ("sidebar",  "사이드바  (메뉴 텍스트)", "tc_sidebar",  "cp_tc_sidebar"),
-]
-
-for _role, _disp, _key, _widget_key in _tc_defs:
-    _lc, _rc = st.sidebar.columns([2, 1])
-    _lc.markdown(
-        f'<div style="font-family:DM Mono,monospace;font-size:0.72em;'
-        f'color:{getattr(st.session_state, _key)};padding:8px 0 0 4px;'
-        f'letter-spacing:0.04em;">{_disp}</div>',
-        unsafe_allow_html=True
-    )
-    _picked = _rc.color_picker("", getattr(st.session_state, _key),
-                                label_visibility="collapsed", key=_widget_key)
-    if _picked != getattr(st.session_state, _key):
-        setattr(st.session_state, _key, _picked)
+    st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+    if st.button("↺  색상 전체 초기화", use_container_width=True, key="reset_colors"):
+        for _k, _v in [("main_color","#10B981"),("bg_color","#F7F6F2"),
+                        ("tc_heading","#111118"),("tc_body","#2D2D2D"),
+                        ("tc_muted","#6B6B7A"),("tc_label","#9494A0"),
+                        ("tc_data","#111118"),("tc_sidebar","#2D2D2D")]:
+            setattr(st.session_state, _k, _v)
         st.rerun()
-
-# 초기화 버튼
-if st.sidebar.button("↺  색상 전체 초기화", use_container_width=True, key="reset_colors"):
-    st.session_state.main_color = '#10B981'
-    st.session_state.bg_color   = '#F7F6F2'
-    st.session_state.tc_heading = '#111118'
-    st.session_state.tc_body    = '#2D2D2D'
-    st.session_state.tc_muted   = '#6B6B7A'
-    st.session_state.tc_label   = '#9494A0'
-    st.session_state.tc_data    = '#111118'
-    st.session_state.tc_sidebar = '#2D2D2D'
-    st.rerun()
 
 st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.62em; font-weight:400; color:#4A5568; letter-spacing:0.2em; text-transform:uppercase; padding:6px 15px;">Bookmarks</div>""", unsafe_allow_html=True)
 st.sidebar.markdown("""
@@ -2088,19 +2082,47 @@ AMLS 전략이 레버리지 MDD를 어떻게 회피하면서 수익을 냈는지
 elif page == "📰 Macro News":
     headlines_for_ai, news_items = fetch_macro_news()
 
+    # ── 상단 마스트헤드 ────────────────────────────────────────
     st.markdown(apply_theme(f"""
-    <div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);border-top:2px solid #111118;display:flex;flex-direction:row;align-items:center;gap:20px;margin-bottom:24px;padding:20px 28px;">
-        <div style="font-size:2.2em; line-height:1;">📰</div>
-        <div>
-            <h2 style="margin:0; font-family:'Syne'; font-size:1.65em; font-weight:800; letter-spacing:-1px; color:#0F172A;">Global Macro  ·  AI Briefing</h2>
-            <p style="margin:5px 0 0; font-family:'DM Mono'; font-size:0.68em; color:#10B981; letter-spacing:0.18em; text-transform:uppercase;">Wall Street Analysis Engine</p>
+    <div style="border-top:3px solid #111118;border-bottom:1px solid rgba(0,0,0,0.12);
+        padding:18px 0 14px;margin-bottom:24px;">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div>
+                <div style="font-family:'DM Mono',monospace;font-size:0.6em;color:#9494A0;
+                    letter-spacing:0.22em;text-transform:uppercase;margin-bottom:6px;">
+                    Global Macro  ·  Wall Street Analysis Engine
+                </div>
+                <div style="font-family:'Instrument Serif',serif;font-size:2.4em;
+                    font-weight:400;font-style:italic;color:{tc_heading};
+                    letter-spacing:-1px;line-height:1;">
+                    Market Briefing
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding-bottom:4px;">
+                <div class="live-pulse" style="font-family:'DM Mono',monospace;font-size:0.65em;
+                    color:#059669;padding:4px 12px;
+                    background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);
+                    letter-spacing:0.06em;">{rt_label}</div>
+                <div style="font-family:'DM Mono',monospace;font-size:0.62em;color:#9494A0;
+                    letter-spacing:0.05em;">{last_update_time}</div>
+            </div>
         </div>
-        <div style="margin-left:auto; background:rgba(16,185,129,0.1); padding:6px 18px; border-radius:50px; font-family:'DM Mono'; font-size:0.72em; font-weight:400; color:#10B981; border:1px solid rgba(16,185,129,0.3); letter-spacing:0.06em;">{rt_label}</div>
     </div>
     """), unsafe_allow_html=True)
 
-    with st.expander("✦ System-2 심층 추론 애널리스트 분석", expanded=True):
-        if st.button("↻ 심층 추론 요약 실행", use_container_width=True):
+    # ── 2패널: 좌(AI 분석) + 우(헤드라인) ─────────────────────
+    news_left, news_right = st.columns([1, 1.6])
+
+    with news_left:
+        st.markdown(
+            f'<div style="font-family:DM Mono,monospace;font-size:0.6em;font-weight:500;'
+            f'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
+            f'padding-bottom:6px;border-bottom:2px solid #111118;margin-bottom:14px;">'
+            f'AI  Analyst  ·  System-2 Reasoning</div>',
+            unsafe_allow_html=True
+        )
+
+        if st.button("↻  심층 추론 요약 실행", use_container_width=True):
             try:
                 import google.generativeai as genai
                 api_key = st.secrets["GEMINI_API_KEY"]
@@ -2109,27 +2131,106 @@ elif page == "📰 Macro News":
                 else:
                     with st.spinner("AI 분석 중..."):
                         genai.configure(api_key=api_key)
-                        models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+                        models = [m.name for m in genai.list_models()
+                                  if 'generateContent' in m.supported_generation_methods]
                         model  = genai.GenerativeModel(models[0].replace('models/',''))
-                        prompt = "너는 퀀트 애널리스트야. 다음 뉴스를 섹터별, 리스크 요소, 최종 투자 스탠스로 나누어 3문단으로 요약해.\n" + "\n".join(headlines_for_ai)
+                        prompt = ("너는 퀀트 애널리스트야. 다음 뉴스를 섹터별, 리스크 요소, "
+                                  "최종 투자 스탠스로 나누어 3문단으로 요약해.\n"
+                                  + "\n".join(headlines_for_ai))
                         response = model.generate_content(prompt)
-                        st.markdown(apply_theme(f"""<div class="glass-card" style="height:auto !important; padding:28px !important; color:#CBD5E1; font-weight:400; line-height:1.75; font-size:0.95em;">{response.text}</div>"""), unsafe_allow_html=True)
+                        # AI 응답 박스
+                        st.markdown(
+                            f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);'
+                            f'border-left:3px solid {main_color};padding:20px 22px;'
+                            f'margin-top:12px;">'
+                            f'<div style="font-family:DM Mono,monospace;font-size:0.58em;'
+                            f'color:#9494A0;letter-spacing:0.16em;text-transform:uppercase;'
+                            f'margin-bottom:10px;">AI Summary</div>'
+                            f'<div style="font-family:DM Sans,sans-serif;font-size:0.9em;'
+                            f'color:{tc_body};line-height:1.75;">{response.text}</div>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
             except KeyError:
                 st.error("🚨 GEMINI_API_KEY 누락")
+        else:
+            # 버튼 미클릭 상태 — 안내 카드
+            st.markdown(
+                f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.10);'
+                f'border-left:3px solid rgba(0,0,0,0.15);padding:20px 22px;margin-top:12px;">'
+                f'<div style="font-family:DM Mono,monospace;font-size:0.6em;color:#9494A0;'
+                f'letter-spacing:0.14em;text-transform:uppercase;margin-bottom:10px;">How It Works</div>'
+                f'<div style="font-family:DM Sans,sans-serif;font-size:0.85em;color:{tc_muted};'
+                f'line-height:1.7;">'
+                f'버튼을 누르면 Google Gemini AI가 최신 뉴스 헤드라인을<br>'
+                f'<b style="color:{tc_body};">① 섹터별 분류</b> → '
+                f'<b style="color:{tc_body};">② 리스크 요소 추출</b> → '
+                f'<b style="color:{tc_body};">③ 최종 투자 스탠스</b><br>'
+                f'3단계로 구조화해서 요약해 드립니다.'
+                f'</div></div>',
+                unsafe_allow_html=True
+            )
 
-    st.divider()
+        # 뉴스 소스 카운트
+        if news_items:
+            st.markdown(
+                f'<div style="margin-top:16px;padding:10px 14px;'
+                f'background:rgba(0,0,0,0.03);border-left:2px solid rgba(0,0,0,0.15);">'
+                f'<span style="font-family:DM Mono,monospace;font-size:0.7em;color:#9494A0;">'
+                f'수집된 헤드라인  <b style="color:{tc_data};">{len(news_items)}건</b>'
+                f'  ·  Google News RSS</span>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
 
-    if news_items:
-        st.markdown("""<div style="font-family:'Syne'; font-size:1.15em; font-weight:700; color:#0F172A; margin-bottom:18px; letter-spacing:-0.3px;">Latest Headlines</div>""", unsafe_allow_html=True)
-        cols = st.columns(3)
-        for idx, item in enumerate(news_items):
-            with cols[idx % 3]:
-                html_snippet = apply_theme(f"""
-                <div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.10);border-top:2px solid rgba(0,0,0,0.18);padding:16px;margin-bottom:10px;height:138px;display:flex;flex-direction:column;justify-content:space-between;transition:border-top-color 0.15s;">
-                    <div style="font-family:'DM Sans'; font-weight:400; font-size:0.9em; line-height:1.5; color:#4A5568; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">
-                        <a href="{item['link']}" target="_blank" style="color:#4A5568; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#10B981'" onmouseout="this.style.color='#94A3B8'">{item['title']}</a>
-                    </div>
-                    <div style="font-family:'DM Mono'; font-size:0.68em; color:#4A5568; margin-top:8px; letter-spacing:0.06em;">{item['date']}</div>
-                </div>
-                """)
-                st.markdown(html_snippet, unsafe_allow_html=True)
+    with news_right:
+        st.markdown(
+            f'<div style="font-family:DM Mono,monospace;font-size:0.6em;font-weight:500;'
+            f'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
+            f'padding-bottom:6px;border-bottom:2px solid #111118;margin-bottom:14px;">'
+            f'Latest Headlines  ·  {len(news_items) if news_items else 0} items</div>',
+            unsafe_allow_html=True
+        )
+
+        if news_items:
+            for idx, item in enumerate(news_items):
+                # 번호 + 제목 + 날짜 — 룰드 리스트 형식
+                _num_color  = main_color if idx < 3 else "#9494A0"
+                _top_border = f"2px solid {main_color}" if idx == 0 else "1px solid rgba(0,0,0,0.10)"
+                st.markdown(
+                    f'<div style="display:flex;gap:14px;padding:12px 0;'
+                    f'border-bottom:1px solid rgba(0,0,0,0.07);'
+                    f'border-top:{_top_border if idx == 0 else "none"};">'
+
+                    # 번호
+                    f'<div style="font-family:DM Mono,monospace;font-size:0.75em;'
+                    f'color:{_num_color};font-weight:600;min-width:22px;'
+                    f'padding-top:2px;font-variant-numeric:tabular-nums;">'
+                    f'{idx+1:02d}</div>'
+
+                    # 내용
+                    f'<div style="flex:1;">'
+                    f'<a href="{item["link"]}" target="_blank" style="text-decoration:none;">'
+                    f'<div style="font-family:DM Sans,sans-serif;font-size:0.88em;'
+                    f'color:{tc_body};line-height:1.5;font-weight:{"500" if idx < 3 else "400"};'
+                    f'transition:color 0.15s;"'
+                    f' onmouseover="this.style.color=\'{main_color}\'"'
+                    f' onmouseout="this.style.color=\'{tc_body}\'">'
+                    f'{item["title"]}'
+                    f'</div>'
+                    f'</a>'
+                    f'<div style="font-family:DM Mono,monospace;font-size:0.65em;'
+                    f'color:#9494A0;margin-top:4px;letter-spacing:0.04em;">'
+                    f'{item["date"]}</div>'
+                    f'</div>'
+
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+        else:
+            st.markdown(
+                f'<div style="padding:20px;background:#FAFAF7;border:1px solid rgba(0,0,0,0.10);">'
+                f'<span style="font-family:DM Mono,monospace;font-size:0.8em;color:#9494A0;">'
+                f'뉴스를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.</span></div>',
+                unsafe_allow_html=True
+            )
