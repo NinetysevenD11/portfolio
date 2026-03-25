@@ -1221,35 +1221,125 @@ if page == "📊 Dashboard":
     def _chg_color(v): return "#059669" if v >= 0 else "#DC2626"
     def _chg_arrow(v): return "▲" if v >= 0 else "▼"
 
-    # ── ① 글로벌 증시 히트맵 ────────────────────────────────────
-    _sec_label("① Global Markets  ·  Heatmap")
-    _hm_cols = st.columns(4)
-    _gm_sorted = sorted(_gm_tickers.items(), key=lambda x: _gm_data.get(x[0],{}).get('chg',0), reverse=True)
-    for _i, (_t, _name) in enumerate(_gm_sorted):
-        _d    = _gm_data.get(_t, {})
-        _chg  = _d.get('chg', 0.0)
-        _px   = _d.get('price', 0.0)
-        _abs  = abs(_chg)
-        # 색상 강도: 절댓값에 비례
-        _intensity = min(_abs / 3.0, 1.0)
-        if _chg >= 0:
-            _r, _g, _b2 = int(5 + (0-5)*_intensity), int(150 + (200-150)*_intensity), int(105 + (80-105)*_intensity)
-        else:
-            _r, _g, _b2 = int(220 + (255-220)*_intensity*0.3), int(38 - 38*_intensity*0.5), int(38 - 38*_intensity*0.5)
-        _bg     = f"rgba({_r},{_g},{_b2},0.12)"
-        _border = f"rgba({_r},{_g},{_b2},0.45)"
-        _txt    = f"rgb({_r},{_g},{_b2})"
-        with _hm_cols[_i % 4]:
-            st.markdown(
-                f'<div style="background:{_bg};border:1px solid {_border};'
-                f'border-top:2px solid {_txt};padding:10px 12px;margin-bottom:8px;">'
-                f'<div style="font-family:DM Mono,monospace;font-size:0.62em;color:#9494A0;'
-                f'letter-spacing:0.1em;text-transform:uppercase;">{_name}</div>'
-                f'<div style="font-family:DM Mono,monospace;font-size:0.95em;color:#111118;'
-                f'font-variant-numeric:tabular-nums;margin:2px 0;">${_px:,.2f}</div>'
-                f'<div style="font-family:DM Mono,monospace;font-size:0.82em;color:{_txt};'
-                f'font-weight:600;">{_chg_arrow(_chg)} {_chg:+.2f}%</div>'
-                f'</div>', unsafe_allow_html=True)
+    # ── ① 나스닥 100 히트맵 (Treemap) ──────────────────────────
+    _sec_label("① Nasdaq 100  ·  Heatmap")
+
+    # 나스닥 100 주요 구성종목 (섹터별 그룹)
+    _qqq_stocks = {
+        'AAPL': ('Technology', 'Apple'),
+        'MSFT': ('Technology', 'Microsoft'),
+        'NVDA': ('Technology', 'Nvidia'),
+        'AVGO': ('Technology', 'Broadcom'),
+        'AMD':  ('Technology', 'AMD'),
+        'INTC': ('Technology', 'Intel'),
+        'QCOM': ('Technology', 'Qualcomm'),
+        'TXN':  ('Technology', 'Texas Instr'),
+        'ORCL': ('Technology', 'Oracle'),
+        'ADBE': ('Technology', 'Adobe'),
+        'CRM':  ('Technology', 'Salesforce'),
+        'NOW':  ('Technology', 'ServiceNow'),
+        'INTU': ('Technology', 'Intuit'),
+        'GOOGL':('Communication', 'Alphabet'),
+        'META': ('Communication', 'Meta'),
+        'NFLX': ('Communication', 'Netflix'),
+        'AMZN': ('Consumer', 'Amazon'),
+        'TSLA': ('Consumer', 'Tesla'),
+        'BKNG': ('Consumer', 'Booking'),
+        'MCD':  ('Consumer', "McDonald's"),
+        'COST': ('Consumer', 'Costco'),
+        'SBUX': ('Consumer', 'Starbucks'),
+        'PYPL': ('Financials', 'PayPal'),
+        'ISRG': ('Healthcare', 'Intuitive Surg'),
+        'GILD': ('Healthcare', 'Gilead'),
+        'AMGN': ('Healthcare', 'Amgen'),
+        'REGN': ('Healthcare', 'Regeneron'),
+        'HON':  ('Industrials', 'Honeywell'),
+        'PEP':  ('Staples', 'PepsiCo'),
+    }
+
+    # 종목 데이터 수집 (이미 _gm_data에 없으면 fetch)
+    _qqq_tlist = list(_qqq_stocks.keys())
+    _qqq_missing = [t for t in _qqq_tlist if t not in _gm_data]
+    if _qqq_missing:
+        try:
+            _end_q = datetime.now()
+            _start_q = _end_q - timedelta(days=5)
+            _raw_q = yf.download(_qqq_missing,
+                                  start=_start_q.strftime('%Y-%m-%d'),
+                                  end=_end_q.strftime('%Y-%m-%d'),
+                                  progress=False, auto_adjust=True)['Close']
+            for _t in _qqq_missing:
+                _col_q = _raw_q[_t] if _t in _raw_q.columns else None
+                if _col_q is not None:
+                    _s = _col_q.dropna()
+                    if len(_s) >= 2:
+                        _gm_data[_t] = {'price': float(_s.iloc[-1]),
+                                         'chg': float((_s.iloc[-1]/_s.iloc[-2]-1)*100)}
+                    elif len(_s) == 1:
+                        _gm_data[_t] = {'price': float(_s.iloc[-1]), 'chg': 0.0}
+        except:
+            pass
+
+    # Treemap 데이터 준비
+    _tm_labels, _tm_parents, _tm_values, _tm_colors, _tm_text = [], [], [], [], []
+    _tm_labels.append("Nasdaq 100"); _tm_parents.append(""); _tm_values.append(0); _tm_colors.append(0); _tm_text.append("")
+
+    _sector_set = {}
+    for _t, (_sec, _name) in _qqq_stocks.items():
+        if _sec not in _sector_set:
+            _sector_set[_sec] = True
+            _tm_labels.append(_sec); _tm_parents.append("Nasdaq 100")
+            _tm_values.append(0); _tm_colors.append(0); _tm_text.append("")
+
+    for _t, (_sec, _name) in _qqq_stocks.items():
+        _d   = _gm_data.get(_t, {})
+        _chg = _d.get('chg', 0.0)
+        _px  = _d.get('price', 0.0)
+        _tm_labels.append(f"{_t}")
+        _tm_parents.append(_sec)
+        _tm_values.append(max(abs(_px) * 0.1, 1))   # 크기는 가격 기반
+        _tm_colors.append(_chg)
+        _tm_text.append(f"{_name}<br>{_px:,.1f}<br>{_chg:+.2f}%")
+
+    _tm_fig = go.Figure(go.Treemap(
+        labels=_tm_labels,
+        parents=_tm_parents,
+        values=_tm_values,
+        customdata=_tm_text,
+        hovertemplate='%{customdata}<extra></extra>',
+        texttemplate='<b>%{label}</b><br>%{customdata}',
+        textfont=dict(size=11, family='DM Mono'),
+        marker=dict(
+            colors=_tm_colors,
+            colorscale=[
+                [0.0, '#DC2626'],
+                [0.3, '#FCA5A5'],
+                [0.5, '#F7F6F2'],
+                [0.7, '#6EE7B7'],
+                [1.0, '#059669'],
+            ],
+            cmid=0,
+            cmin=-3, cmax=3,
+            showscale=True,
+            colorbar=dict(
+                thickness=12, len=0.6,
+                title=dict(text='%', font=dict(size=10, family='DM Mono')),
+                tickfont=dict(size=9, family='DM Mono'),
+                tickformat='+.1f',
+            )
+        ),
+        branchvalues='total',
+        tiling=dict(packing='squarify'),
+    ))
+    _tm_fig.update_layout(
+        height=400,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(family='DM Mono', color=t_color),
+        margin=dict(l=0, r=0, t=10, b=0),
+    )
+    with st.container(border=True):
+        st.plotly_chart(_tm_fig, use_container_width=True)
 
     # ── ② 금리 / 원자재 / 크립토 ────────────────────────────────
     _sec_label("② Rates  /  Commodities  /  Crypto")
@@ -1317,8 +1407,8 @@ if page == "📊 Dashboard":
 
     # 섹터 바 차트
     _sec_fig = go.Figure()
-    _sec_names_plot = [x['name'] for x in _sec_sorted_full]
-    _sec_rets_plot  = [x['ret1m'] for x in _sec_sorted_full]
+    _sec_names_plot  = [x['name'] for x in _sec_sorted_full]
+    _sec_rets_plot   = [x['ret1m'] for x in _sec_sorted_full]
     _sec_colors_plot = [_chg_color(v) for v in _sec_rets_plot]
     _sec_fig.add_trace(go.Bar(
         x=_sec_names_plot, y=_sec_rets_plot,
@@ -1327,12 +1417,13 @@ if page == "📊 Dashboard":
         textposition='outside', textfont=dict(size=10, family='DM Mono')
     ))
     _sec_fig.update_layout(
-        height=260, **chart_layout,
-        yaxis=dict(tickformat='.1f', ticksuffix='%', **_ax),
-        xaxis=dict(**_ax), showlegend=False,
+        height=260, showlegend=False,
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(family='DM Mono', color=t_color),
         margin=dict(l=0, r=0, t=20, b=40)
     )
-    _sec_fig.update_xaxes(tickfont=dict(size=10))
+    _sec_fig.update_xaxes(**_ax_r, tickfont=dict(size=10))
+    _sec_fig.update_yaxes(tickformat='.1f', ticksuffix='%', **_ax_r)
     with st.container(border=True):
         st.plotly_chart(_sec_fig, use_container_width=True)
 
