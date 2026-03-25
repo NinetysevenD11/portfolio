@@ -371,7 +371,7 @@ regime_info = {1:("R1  BULL","풀 가동"),2:("R2  CORR","방어 진입"), 3:("R
 #    → Ruled structure, tabular precision, zero decoration
 # ==========================================
 css_block = f"""<style>
-    @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap');
 
     /* ── DESIGN TOKENS ──────────────────────────────── */
     :root {{
@@ -413,7 +413,7 @@ css_block = f"""<style>
             radial-gradient(ellipse 70% 40% at 5% 0%, rgba(16,185,129,0.055) 0%, transparent 55%) !important;
         background-size: 24px 24px, 100% 100% !important;
         color: {tc_body} !important;
-        font-family: 'DM Sans', sans-serif;
+        font-family: 'Plus Jakarta Sans', sans-serif;
         font-size: 14px;
     }}
 
@@ -606,17 +606,17 @@ css_block = f"""<style>
 
     /* ── TYPOGRAPHY ─────────────────────────────────── */
     h1 {{
-        font-family: 'Instrument Serif', serif !important;
-        font-size: 2.4em !important; font-weight: 400 !important;
-        letter-spacing: -0.5px; margin: 0 !important;
-        color: {tc_heading} !important; font-style: italic;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        font-size: 2.2em !important; font-weight: 800 !important;
+        letter-spacing: -1.5px; margin: 0 !important;
+        color: {tc_heading} !important;
     }}
     h2 {{
-        font-family: 'DM Sans', sans-serif !important;
-        color: {tc_heading} !important; font-weight: 700 !important;
-        letter-spacing: -0.3px;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        color: {tc_heading} !important; font-weight: 800 !important;
+        letter-spacing: -0.5px;
     }}
-    h3 {{ font-family: 'DM Sans', sans-serif !important; color: {tc_body} !important; }}
+    h3 {{ font-family: 'Plus Jakarta Sans', sans-serif !important; color: {tc_body} !important; }}
     p  {{ color: {tc_body} !important; line-height: 1.65; }}
     strong {{ color: {tc_heading} !important; }}
 
@@ -793,7 +793,7 @@ sidebar_top = st.sidebar.container()
 sidebar_top.markdown(apply_theme(f"""
 <div style="padding:20px 20px 14px; border-bottom:1px solid rgba(0,0,0,0.10);">
     <div style="font-family:'DM Mono'; font-size:0.58em; color:#9494A0; letter-spacing:0.22em; text-transform:uppercase; margin-bottom:8px;">Quantitative Engine</div>
-    <div style="font-family:'Instrument Serif',serif; font-size:1.7em; font-weight:400; font-style:italic; color:#111118; letter-spacing:-0.3px; line-height:1.1; margin-bottom:12px;">
+    <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:1.5em; font-weight:800; color:#111118; letter-spacing:-0.5px; letter-spacing:-0.3px; line-height:1.1; margin-bottom:12px;">
         AMLS <span style="color:#10B981;">V4.5</span>
     </div>
     <div class="live-pulse" style="display:inline-flex; align-items:center; gap:5px; font-family:'DM Mono'; font-size:0.65em; color:#059669; padding:4px 10px; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); letter-spacing:0.06em;">
@@ -927,7 +927,7 @@ _p_reg  = _pill("REGIME", f"R{curr_regime}", main_color)
 
 _hdr_left = apply_theme(f"""
 <div style="display:flex;flex-direction:column;justify-content:center;">
-    <div style="font-family:'Syne';font-size:2.5em;font-weight:800;letter-spacing:-2px;color:#0F172A;line-height:1;">
+    <div style="font-family:'Plus Jakarta Sans';font-size:2.5em;font-weight:800;letter-spacing:-2px;color:#0F172A;line-height:1;">
         AMLS <span style="color:#10B981;">V4.5</span>
     </div>
     <div style="font-family:'DM Mono';font-size:0.65em;color:#4A5568;letter-spacing:0.22em;text-transform:uppercase;margin-top:4px;">
@@ -1056,13 +1056,13 @@ if page == "📊 Dashboard":
             f'border-top:3px solid {regime_accent};'
             f'padding:20px 18px 16px;margin-bottom:10px;position:relative;overflow:hidden;">'
             f'<div style="position:absolute;right:-4px;bottom:-16px;'
-            f'font-family:Instrument Serif,serif;font-size:7.5em;font-weight:400;'
+            f'font-family:Plus Jakarta Sans,sans-serif;font-size:7em;font-weight:800;'
             f'color:rgba(0,0,0,0.04);line-height:1;pointer-events:none;user-select:none;">'
             f'{curr_regime}</div>'
             f'<div style="font-family:DM Mono,monospace;font-size:0.68em;color:#9494A0;'
             f'letter-spacing:0.18em;text-transform:uppercase;margin-bottom:10px;">Market Regime</div>'
-            f'<div style="font-family:Instrument Serif,serif;font-size:2.5em;'
-            f'font-weight:400;font-style:italic;color:{regime_accent};'
+            f'<div style="font-family:Plus Jakarta Sans,sans-serif;font-size:2em;'
+            f'font-weight:800;letter-spacing:-1px;color:{regime_accent};'
             f'letter-spacing:-0.5px;line-height:1;margin-bottom:4px;">'
             f'{regime_info[curr_regime][0]}</div>'
             f'<div style="font-family:DM Mono,monospace;font-size:0.72em;color:#6B6B7A;'
@@ -1088,8 +1088,8 @@ if page == "📊 Dashboard":
             f'padding:18px 18px 14px;margin-bottom:10px;">'
             f'<div style="font-family:DM Mono,monospace;font-size:0.68em;color:#9494A0;'
             f'letter-spacing:0.18em;text-transform:uppercase;margin-bottom:8px;">Semi-Conductor Gate</div>'
-            f'<div style="font-family:Instrument Serif,serif;font-size:1.6em;'
-            f'font-weight:400;font-style:italic;color:{soxl_color};margin-bottom:4px;">'
+            f'<div style="font-family:Plus Jakarta Sans,sans-serif;font-size:1.6em;'
+            f'font-weight:400;color:{soxl_color};margin-bottom:4px;">'
             f'{soxl_title}</div>'
             f'<div style="font-family:DM Mono,monospace;font-size:0.7em;color:#6B6B7A;'
             f'letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">{soxl_strat}</div>'
@@ -1214,8 +1214,8 @@ if page == "📊 Dashboard":
     def _sec_label(txt):
         st.markdown(
             f'<div style="display:flex;align-items:center;gap:12px;margin:24px 0 14px;">'
-            f'<div style="font-family:Instrument Serif,serif;font-size:1.25em;font-weight:400;'
-            f'font-style:italic;color:{tc_heading};letter-spacing:-0.3px;white-space:nowrap;">'
+            f'<div style="font-family:Plus Jakarta Sans,sans-serif;font-size:1.1em;font-weight:700;'
+            f'color:{tc_heading};letter-spacing:-0.3px;white-space:nowrap;">'
             f'{txt}</div>'
             f'<div style="flex:1;height:1px;background:rgba(0,0,0,0.12);"></div>'
             f'</div>',
@@ -2012,7 +2012,7 @@ elif page == "🍫 12-Pack Radar":
         f'<div style="flex:3;min-width:260px;">'
         f'<div style="font-family:DM Mono,monospace;font-size:0.57em;color:#9494A0;'
         f'letter-spacing:0.18em;text-transform:uppercase;margin-bottom:4px;">Macro Signal Status</div>'
-        f'<div style="font-family:Instrument Serif,serif;font-size:1.4em;font-style:italic;'
+        f'<div style="font-family:Plus Jakarta Sans,sans-serif;font-size:1.2em;font-weight:700;letter-spacing:-0.3px;font-style:normal;coloric;'
         f'color:{radar_color};line-height:1.1;margin-bottom:8px;">{radar_status}</div>'
         f'<div style="font-family:DM Sans,sans-serif;font-size:0.82em;color:#4A4A57;line-height:1.6;">{radar_msg}</div>'
         f'</div>'
@@ -2252,7 +2252,7 @@ elif page == "📈 Backtest Lab":
     st.markdown(apply_theme("""
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
         <div>
-            <h2 style="font-family:'Syne';font-size:1.7em;color:#0F172A;margin:0;">📈 Backtest Lab</h2>
+            <h2 style="font-family:'Plus Jakarta Sans';font-size:1.7em;color:#0F172A;margin:0;">📈 Backtest Lab</h2>
             <div style="font-family:'DM Mono';font-size:0.65em;color:#4A5568;letter-spacing:0.16em;text-transform:uppercase;margin-top:3px;">Strategy Simulator  ·  Historical Analysis</div>
         </div>
     </div>"""), unsafe_allow_html=True)
@@ -2417,9 +2417,9 @@ elif page == "📰 Macro News":
                     letter-spacing:0.22em;text-transform:uppercase;margin-bottom:6px;">
                     Global Macro  ·  Wall Street Analysis Engine
                 </div>
-                <div style="font-family:'Instrument Serif',serif;font-size:2.4em;
-                    font-weight:400;font-style:italic;color:{tc_heading};
-                    letter-spacing:-1px;line-height:1;">
+                <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:2.2em;
+                    font-weight:800;color:{tc_heading};
+                    letter-spacing:-1.5px;line-height:1;">
                     Market Briefing
                 </div>
             </div>
