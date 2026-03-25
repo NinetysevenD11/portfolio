@@ -275,6 +275,8 @@ def fetch_global_markets():
                     results[t] = {'price': float(s.iloc[-1]), 'chg': 0.0}
     except: pass
     return results, global_tickers, asset_tickers, leader_tickers
+
+with st.spinner('데이터 수집 중...'):
     df = load_data()
     rt_prices, last_update_time = fetch_realtime_prices()
 
