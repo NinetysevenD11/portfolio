@@ -1709,24 +1709,35 @@ elif page == "💼 Portfolio":
             f'</div>'
         ), unsafe_allow_html=True)
 
-    # ── 메인 2패널: 좌(입력+Quick Orders 세로) + 우(차트+리밸런싱 넓게) ─
-    # diff_vals: 패널 전체에서 공유
+    # ── diff_vals 공통 계산 ─────────────────────────────────────
     if total_val_usd > 0:
         diff_vals = {a: (total_val_usd * target_weights.get(a, 0.0)) - curr_vals[a] for a in ASSET_LIST}
     else:
         diff_vals = {a: 0.0 for a in ASSET_LIST}
 
-    left_pf, right_pf = st.columns([1.2, 2.4])
+    c_green, c_red = main_color, "#DC2626"
+    pie_colors = [line_c, '#B0B0BE', '#34D399', '#6EE7B7', '#A7F3D0',
+                  '#059669', '#047857', '#065F46', '#D1FAE5']
+    pie_layout_base = dict(
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(family="DM Mono", color=t_color),
+        showlegend=False, margin=dict(l=10, r=10, t=32, b=10)
+    )
 
-    # ── 왼쪽: 포지션 입력 + Quick Orders 세로 스택 ───────────────
-    with left_pf:
+    def _sec_div(txt):
         st.markdown(
-            '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
-            'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
-            'padding-bottom:6px;border-bottom:2px solid #111118;margin-bottom:10px;">'
-            'Position Input</div>',
-            unsafe_allow_html=True
-        )
+            f'<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
+            f'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
+            f'padding-bottom:6px;border-bottom:2px solid #111118;margin-bottom:10px;">'
+            f'{txt}</div>', unsafe_allow_html=True)
+
+    # ══════════════════════════════════════════
+    # 행3: Position Input  |  Allocation Visual
+    # ══════════════════════════════════════════
+    col_input, col_alloc = st.columns([1.2, 2.4])
+
+    with col_input:
+        _sec_div("Position Input")
         editor_data = []
         for asset in ASSET_LIST:
             val = st.session_state.portfolio.get(asset, {})
@@ -1737,22 +1748,19 @@ elif page == "💼 Portfolio":
                 "FX Rate(₩)": float(val.get('fx', 1350.0))
             })
         df_editor = pd.DataFrame(editor_data)
-
         with st.container(border=True):
             edited_df = st.data_editor(
                 df_editor, disabled=["Asset"], hide_index=True,
                 use_container_width=True, key="pf_editor",
                 column_config={
-                    "Shares": st.column_config.NumberColumn("Shares", format="%.4f"),
+                    "Shares":       st.column_config.NumberColumn("Shares", format="%.4f"),
                     "Avg Price($)": st.column_config.NumberColumn("Avg($)", format="%.2f"),
-                    "FX Rate(₩)": st.column_config.NumberColumn("FX(₩)", format="%.0f")
+                    "FX Rate(₩)":  st.column_config.NumberColumn("FX(₩)", format="%.0f")
                 }
             )
-
         if not edited_df.equals(df_editor):
             for _, row in edited_df.iterrows():
-                asset = row["Asset"]
-                st.session_state.portfolio[asset] = {
+                st.session_state.portfolio[row["Asset"]] = {
                     'shares': float(row["Shares"]),
                     'avg_price': float(row["Avg Price($)"]),
                     'fx': float(row["FX Rate(₩)"])
@@ -1760,161 +1768,129 @@ elif page == "💼 Portfolio":
             save_portfolio_to_disk()
             st.rerun()
 
-    # ── 오른쪽: Allocation 차트 (풀너비) + 아래에 Quick Orders | Rebalancing Matrix ─────────────────────────────────
-    with right_pf:
-        if total_val_usd > 0:
-            c_green, c_red = main_color, "#DC2626"
-            pie_colors = [line_c, '#B0B0BE', '#34D399', '#6EE7B7', '#A7F3D0',
-                          '#059669', '#047857', '#065F46', '#D1FAE5']
-            pie_layout = dict(
-                margin=dict(l=10, r=10, t=30, b=10),
-                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(family="DM Mono, DM Sans", color=t_color),
-                showlegend=False
-            )
+    with col_alloc:
+        _sec_div("Allocation  ·  Visual")
+        ca, cb, cc = st.columns([1, 1, 1.2])
 
-            # ── 차트 3개 풀너비 ───────────────────────────────────
-            st.markdown(
-                '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
-                'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
-                'padding-bottom:6px;border-bottom:2px solid #111118;margin-bottom:10px;">'
-                'Allocation  ·  Visual</div>',
-                unsafe_allow_html=True
-            )
-            chart_c1, chart_c2, chart_c3 = st.columns([1, 1, 1.2])
-
-            labels_cur = [a for a in ASSET_LIST if curr_vals[a] > 0]
-            vals_cur   = [curr_vals[a] for a in labels_cur]
-            if sum(vals_cur) > 0:
-                fig_cur = go.Figure(data=[go.Pie(
-                    labels=labels_cur, values=vals_cur, hole=.5,
-                    textinfo='label+percent', textfont=dict(size=11),
-                    marker=dict(colors=pie_colors, line=dict(color='#FAFAF7', width=1.5))
-                )])
-                fig_cur.update_layout(
-                    title=dict(text="Current", font=dict(family="DM Mono", size=12, color=t_color)),
-                    **pie_layout
-                )
-                with chart_c1:
-                    with st.container(border=True):
-                        st.plotly_chart(fig_cur, use_container_width=True)
-
-            labels_tgt = [a for a in ASSET_LIST if target_weights.get(a, 0) > 0]
-            vals_tgt   = [target_weights.get(a, 0) for a in labels_tgt]
-            fig_tgt = go.Figure(data=[go.Pie(
-                labels=labels_tgt, values=vals_tgt, hole=.5,
+        labels_cur = [a for a in ASSET_LIST if curr_vals[a] > 0]
+        vals_cur   = [curr_vals[a] for a in labels_cur]
+        if sum(vals_cur) > 0:
+            fig_cur = go.Figure(data=[go.Pie(
+                labels=labels_cur, values=vals_cur, hole=.5,
                 textinfo='label+percent', textfont=dict(size=11),
                 marker=dict(colors=pie_colors, line=dict(color='#FAFAF7', width=1.5))
             )])
-            fig_tgt.update_layout(
-                title=dict(text=f"Target  R{curr_regime}", font=dict(family="DM Mono", size=12, color=t_color)),
-                **pie_layout
-            )
-            with chart_c2:
+            fig_cur.update_layout(
+                title=dict(text="Current", font=dict(family="DM Mono", size=12, color=t_color)),
+                **pie_layout_base)
+            with ca:
                 with st.container(border=True):
-                    st.plotly_chart(fig_tgt, use_container_width=True)
+                    st.plotly_chart(fig_cur, use_container_width=True)
 
-            diff_labels = [a for a in ASSET_LIST if abs(diff_vals[a]) >= 1.0]
-            diff_values = [diff_vals[a] for a in diff_labels]
-            diff_colors = [c_green if v > 0 else c_red for v in diff_values]
-            if diff_labels:
-                fig_bar = go.Figure(data=[go.Bar(
-                    x=diff_labels, y=diff_values, marker_color=diff_colors,
-                    text=[f"${v:,.0f}" for v in diff_values],
-                    textposition='auto', textfont=dict(size=10), marker_line_width=0
-                )])
-                fig_bar.update_layout(
-                    title=dict(text="Rebalancing Δ($)", font=dict(family="DM Mono", size=12, color=t_color)),
-                    paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color=t_color, family="DM Mono", size=10),
-                    margin=dict(t=30, b=10, l=10, r=10),
-                    xaxis=dict(gridcolor='rgba(0,0,0,0.07)', zeroline=False),
-                    yaxis=dict(gridcolor='rgba(0,0,0,0.07)', zeroline=False)
-                )
-                with chart_c3:
-                    with st.container(border=True):
-                        st.plotly_chart(fig_bar, use_container_width=True)
+        labels_tgt = [a for a in ASSET_LIST if target_weights.get(a, 0) > 0]
+        vals_tgt   = [target_weights.get(a, 0) for a in labels_tgt]
+        fig_tgt = go.Figure(data=[go.Pie(
+            labels=labels_tgt, values=vals_tgt, hole=.5,
+            textinfo='label+percent', textfont=dict(size=11),
+            marker=dict(colors=pie_colors, line=dict(color='#FAFAF7', width=1.5))
+        )])
+        fig_tgt.update_layout(
+            title=dict(text=f"Target  R{curr_regime}", font=dict(family="DM Mono", size=12, color=t_color)),
+            **pie_layout_base)
+        with cb:
+            with st.container(border=True):
+                st.plotly_chart(fig_tgt, use_container_width=True)
 
-            # ── 차트 아래: Quick Orders | Rebalancing Matrix 나란히 ──
-            st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-            qo_col, matrix_col = st.columns([1, 2.2])
+        diff_labels = [a for a in ASSET_LIST if abs(diff_vals[a]) >= 1.0]
+        diff_values = [diff_vals[a] for a in diff_labels]
+        if diff_labels:
+            fig_bar = go.Figure(data=[go.Bar(
+                x=diff_labels, y=diff_values,
+                marker_color=[c_green if v > 0 else c_red for v in diff_values],
+                text=[f"${v:,.0f}" for v in diff_values],
+                textposition='auto', textfont=dict(size=10), marker_line_width=0
+            )])
+            fig_bar.update_layout(
+                title=dict(text="Δ Rebalancing", font=dict(family="DM Mono", size=12, color=t_color)),
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(color=t_color, family="DM Mono", size=10),
+                margin=dict(t=32, b=10, l=10, r=10),
+                showlegend=False
+            )
+            fig_bar.update_xaxes(**_ax_r)
+            fig_bar.update_yaxes(**_ax_r)
+            with cc:
+                with st.container(border=True):
+                    st.plotly_chart(fig_bar, use_container_width=True)
 
-            with qo_col:
+    # ══════════════════════════════════════════
+    # 행4: Quick Orders  |  Rebalancing Matrix
+    # ══════════════════════════════════════════
+    col_qo, col_matrix = st.columns([1.2, 2.4])
+
+    with col_qo:
+        _sec_div("Quick Orders")
+        if total_val_usd > 0:
+            sell_items, buy_items = [], []
+            for asset in ASSET_LIST:
+                cp = current_prices[asset] if current_prices[asset] > 0 else 1.0
+                dv = diff_vals[asset]
+                if asset != 'CASH' and dv < -cp * 0.05:
+                    sell_items.append((asset, f"{abs(dv)/cp:,.2f}주 매도", "#DC2626"))
+                elif asset == 'CASH' and dv < -1.0:
+                    sell_items.append(("CASH", f"${abs(dv):,.0f} 사용", "#DC2626"))
+                if asset != 'CASH' and dv > cp * 0.05:
+                    buy_items.append((asset, f"{dv/cp:,.2f}주 매수", "#059669"))
+                elif asset == 'CASH' and dv > 1.0:
+                    buy_items.append(("CASH", f"${dv:,.0f} 확보", "#059669"))
+
+            def _order_card(title, items, accent):
+                rows = "".join([
+                    f'<div style="display:flex;justify-content:space-between;padding:7px 0;'
+                    f'border-bottom:1px solid rgba(0,0,0,0.05);">'
+                    f'<span style="font-family:DM Mono,monospace;font-size:0.8em;'
+                    f'font-weight:600;color:#111118;">{a}</span>'
+                    f'<span style="font-family:DM Mono,monospace;font-size:0.78em;'
+                    f'color:{c};font-variant-numeric:tabular-nums;">{v}</span></div>'
+                    for a, v, c in items
+                ]) or '<div style="font-family:DM Mono,monospace;font-size:0.74em;color:#9494A0;padding:7px 0;">— 해당 없음</div>'
                 st.markdown(
-                    '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
-                    'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
-                    'padding-bottom:6px;border-bottom:2px solid #111118;margin-bottom:10px;">'
-                    'Quick Orders</div>',
-                    unsafe_allow_html=True
-                )
-                sell_items_q, buy_items_q = [], []
-                for asset in ASSET_LIST:
-                    cur_p_q = current_prices[asset] if current_prices[asset] > 0 else 1.0
-                    diff_q  = diff_vals[asset]
-                    if asset != 'CASH' and diff_q < -cur_p_q * 0.05:
-                        sell_items_q.append((asset, f"{abs(diff_q)/cur_p_q:,.2f}주 매도", "#DC2626"))
-                    elif asset == 'CASH' and diff_q < -1.0:
-                        sell_items_q.append(("CASH", f"${abs(diff_q):,.0f} 사용", "#DC2626"))
-                    if asset != 'CASH' and diff_q > cur_p_q * 0.05:
-                        buy_items_q.append((asset, f"{diff_q/cur_p_q:,.2f}주 매수", "#059669"))
-                    elif asset == 'CASH' and diff_q > 1.0:
-                        buy_items_q.append(("CASH", f"${diff_q:,.0f} 확보", "#059669"))
+                    f'<div style="border:1px solid rgba(0,0,0,0.10);border-top:2px solid {accent};'
+                    f'padding:12px 14px;margin-bottom:10px;">'
+                    f'<div style="font-family:Plus Jakarta Sans,sans-serif;font-size:0.82em;'
+                    f'font-weight:700;color:{accent};margin-bottom:8px;">{title}</div>'
+                    f'{rows}</div>',
+                    unsafe_allow_html=True)
 
-                def _qcard2(title, items, accent):
-                    rows = "".join([
-                        f'<div style="display:flex;justify-content:space-between;'
-                        f'padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.05);">'
-                        f'<span style="font-family:DM Mono,monospace;font-size:0.78em;'
-                        f'font-weight:600;color:#111118;">{a}</span>'
-                        f'<span style="font-family:DM Mono,monospace;font-size:0.76em;'
-                        f'color:{c};font-variant-numeric:tabular-nums;">{v}</span></div>'
-                        for a, v, c in items
-                    ]) or '<div style="font-family:DM Mono,monospace;font-size:0.72em;color:#9494A0;padding:6px 0;">— 없음</div>'
-                    st.markdown(
-                        f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.10);'
-                        f'border-top:2px solid {accent};padding:11px 13px;margin-bottom:8px;">'
-                        f'<div style="font-family:Plus Jakarta Sans,sans-serif;font-size:0.8em;'
-                        f'font-weight:700;color:{accent};margin-bottom:7px;">{title}</div>'
-                        f'{rows}</div>',
-                        unsafe_allow_html=True
-                    )
+            _order_card("🔴  SELL", sell_items, "#DC2626")
+            _order_card("🟢  BUY",  buy_items,  "#059669")
+        else:
+            st.markdown(
+                '<div style="font-family:DM Mono,monospace;font-size:0.78em;color:#9494A0;'
+                'padding:12px 0;">포지션을 먼저 입력해주세요.</div>',
+                unsafe_allow_html=True)
 
-                _qcard2("🔴  SELL", sell_items_q, "#DC2626")
-                _qcard2("🟢  BUY",  buy_items_q,  "#059669")
-
-            with matrix_col:
-                st.markdown(
-                    '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
-                    'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
-                    'padding-bottom:6px;border-bottom:2px solid #111118;margin-bottom:10px;">'
-                    'Rebalancing  Matrix</div>',
-                    unsafe_allow_html=True
-                )
-
-            rebal_html = '<div style="overflow-x:auto;">'
-            rebal_html += '<table class="mint-table"><thead><tr>'
+    with col_matrix:
+        _sec_div("Rebalancing  Matrix")
+        if total_val_usd > 0:
+            rebal_html = '<div style="overflow-x:auto;"><table class="mint-table"><thead><tr>'
             rebal_html += '<th>Asset</th><th>Avg→Cur</th><th>Ret%</th><th>Value($)</th><th>Tgt%</th><th>Tgt($)</th><th>Δ($)</th><th style="text-align:center;">Action</th>'
             rebal_html += '</tr></thead><tbody>'
-
             for asset in ASSET_LIST:
                 shares = st.session_state.portfolio[asset]['shares']
                 avg_p  = st.session_state.portfolio[asset]['avg_price']
-                pur_fx = st.session_state.portfolio[asset]['fx']
                 cur_p  = current_prices[asset] if current_prices[asset] > 0 else 1.0
                 curr_v = curr_vals[asset]
                 tgt_w  = target_weights.get(asset, 0.0)
                 tgt_v  = total_val_usd * tgt_w
                 diff   = diff_vals[asset]
-
                 if asset == 'CASH':
                     avg_p_str, ret_usd = "—", 0.0
                 else:
                     avg_p_str = f"${avg_p:.1f}→${cur_p:.1f}"
                     ret_usd   = (cur_p / avg_p - 1) * 100 if avg_p > 0 else 0.0
-
                 ret_c   = c_green if ret_usd >= 0 else c_red
                 ret_str = f"{ret_usd:+.1f}%" if asset != 'CASH' else "—"
-
                 if abs(diff) < cur_p * 0.05 and asset != 'CASH':
                     action, diff_str = "<span style='color:#9494A0;'>HOLD</span>", "—"
                 elif abs(diff) < 1.0 and asset == 'CASH':
@@ -1925,11 +1901,9 @@ elif page == "💼 Portfolio":
                 else:
                     action   = "<span style='color:#DC2626;font-weight:600;background:rgba(220,38,38,0.1);padding:2px 8px;border-left:2px solid #DC2626;'>SELL</span>"
                     diff_str = f"<span style='color:#DC2626;font-weight:500;'>-${abs(diff):,.0f}</span>"
-
                 if tgt_w > 0 or curr_v > 0 or shares > 0:
                     rebal_html += (
-                        f'<tr><td style="font-weight:700;font-family:DM Sans,sans-serif;'
-                        f'color:#059669;">{asset}</td>'
+                        f'<tr><td style="font-weight:700;font-family:DM Sans,sans-serif;color:#059669;">{asset}</td>'
                         f'<td style="color:#4A4A57;">{avg_p_str}</td>'
                         f'<td><span style="color:{ret_c};font-weight:500;">{ret_str}</span></td>'
                         f'<td>{curr_v:,.0f}</td>'
@@ -1938,7 +1912,6 @@ elif page == "💼 Portfolio":
                         f'<td>{diff_str}</td>'
                         f'<td style="text-align:center;">{action}</td></tr>'
                     )
-
             rebal_html += "</tbody></table></div>"
             with st.container(border=True):
                 st.markdown(apply_theme(rebal_html), unsafe_allow_html=True)
