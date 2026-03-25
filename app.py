@@ -1760,9 +1760,9 @@ elif page == "💼 Portfolio":
             save_portfolio_to_disk()
             st.rerun()
 
-        # Quick Orders — 입력 테이블 바로 아래
+        # Quick Orders — Rebalancing Matrix와 높이 맞춤
         if total_val_usd > 0:
-            st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='height:360px'></div>", unsafe_allow_html=True)
             st.markdown(
                 '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
                 'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
