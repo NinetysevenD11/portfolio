@@ -1716,7 +1716,7 @@ elif page == "💼 Portfolio":
     else:
         diff_vals = {a: 0.0 for a in ASSET_LIST}
 
-    left_pf, mid_pf, right_pf = st.columns([1.1, 0.9, 2])
+    left_pf, mid_pf, right_pf = st.columns([1.4, 1.1, 1.5])
 
     # ── 왼쪽: 포지션 입력 ─────────────────────────────────────
     with left_pf:
@@ -1825,7 +1825,7 @@ elif page == "💼 Portfolio":
                 showlegend=False
             )
 
-            chart_c1, chart_c2, chart_c3 = st.columns([1, 1, 1.5])
+            chart_c1, chart_c2, chart_c3 = st.columns([1, 1, 1])
 
             labels_cur = [a for a in ASSET_LIST if curr_vals[a] > 0]
             vals_cur   = [curr_vals[a] for a in labels_cur]
