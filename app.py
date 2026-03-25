@@ -1718,34 +1718,28 @@ elif page == "💼 Portfolio":
     c_green, c_red = main_color, "#DC2626"
     pie_colors = [line_c, '#B0B0BE', '#34D399', '#6EE7B7', '#A7F3D0',
                   '#059669', '#047857', '#065F46', '#D1FAE5']
-    pie_layout_base = dict(
-        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(family="DM Mono", color=t_color),
-        showlegend=False, margin=dict(l=10, r=10, t=32, b=10)
-    )
 
-    def _sec_div(txt):
+    def _lbl(txt):
         st.markdown(
             f'<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
             f'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
-            f'padding-bottom:6px;border-bottom:2px solid #111118;margin-bottom:10px;">'
+            f'padding-bottom:6px;border-bottom:2px solid #111118;margin:0 0 10px;">'
             f'{txt}</div>', unsafe_allow_html=True)
 
-    # ══════════════════════════════════════════
-    # 행3: Position Input  |  Allocation Visual
-    # ══════════════════════════════════════════
-    col_input, col_alloc = st.columns([1.2, 2.4])
+    # ── 단일 2패널 ─────────────────────────────────────────────
+    pf_left, pf_right = st.columns([1.1, 2.5])
 
-    with col_input:
-        _sec_div("Position Input")
+    # ══ 좌측: Position Input ▸ Quick Orders ════════════════════
+    with pf_left:
+        _lbl("Position Input")
         editor_data = []
         for asset in ASSET_LIST:
-            val = st.session_state.portfolio.get(asset, {})
+            v = st.session_state.portfolio.get(asset, {})
             editor_data.append({
-                "Asset": asset,
-                "Shares": float(val.get('shares', 0.0)),
-                "Avg Price($)": float(val.get('avg_price', 1.0 if asset == 'CASH' else 0.0)),
-                "FX Rate(₩)": float(val.get('fx', 1350.0))
+                "Asset":       asset,
+                "Shares":      float(v.get('shares', 0.0)),
+                "Avg Price($)":float(v.get('avg_price', 1.0 if asset == 'CASH' else 0.0)),
+                "FX Rate(₩)": float(v.get('fx', 1350.0))
             })
         df_editor = pd.DataFrame(editor_data)
         with st.container(border=True):
@@ -1755,82 +1749,22 @@ elif page == "💼 Portfolio":
                 column_config={
                     "Shares":       st.column_config.NumberColumn("Shares", format="%.4f"),
                     "Avg Price($)": st.column_config.NumberColumn("Avg($)", format="%.2f"),
-                    "FX Rate(₩)":  st.column_config.NumberColumn("FX(₩)", format="%.0f")
+                    "FX Rate(₩)":  st.column_config.NumberColumn("FX(₩)",  format="%.0f"),
                 }
             )
         if not edited_df.equals(df_editor):
             for _, row in edited_df.iterrows():
                 st.session_state.portfolio[row["Asset"]] = {
-                    'shares': float(row["Shares"]),
+                    'shares':    float(row["Shares"]),
                     'avg_price': float(row["Avg Price($)"]),
-                    'fx': float(row["FX Rate(₩)"])
+                    'fx':        float(row["FX Rate(₩)"])
                 }
             save_portfolio_to_disk()
             st.rerun()
 
-    with col_alloc:
-        _sec_div("Allocation  ·  Visual")
-        ca, cb, cc = st.columns([1, 1, 1.2])
-
-        labels_cur = [a for a in ASSET_LIST if curr_vals[a] > 0]
-        vals_cur   = [curr_vals[a] for a in labels_cur]
-        if sum(vals_cur) > 0:
-            fig_cur = go.Figure(data=[go.Pie(
-                labels=labels_cur, values=vals_cur, hole=.5,
-                textinfo='label+percent', textfont=dict(size=11),
-                marker=dict(colors=pie_colors, line=dict(color='#FAFAF7', width=1.5))
-            )])
-            fig_cur.update_layout(
-                title=dict(text="Current", font=dict(family="DM Mono", size=12, color=t_color)),
-                **pie_layout_base)
-            with ca:
-                with st.container(border=True):
-                    st.plotly_chart(fig_cur, use_container_width=True)
-
-        labels_tgt = [a for a in ASSET_LIST if target_weights.get(a, 0) > 0]
-        vals_tgt   = [target_weights.get(a, 0) for a in labels_tgt]
-        fig_tgt = go.Figure(data=[go.Pie(
-            labels=labels_tgt, values=vals_tgt, hole=.5,
-            textinfo='label+percent', textfont=dict(size=11),
-            marker=dict(colors=pie_colors, line=dict(color='#FAFAF7', width=1.5))
-        )])
-        fig_tgt.update_layout(
-            title=dict(text=f"Target  R{curr_regime}", font=dict(family="DM Mono", size=12, color=t_color)),
-            **pie_layout_base)
-        with cb:
-            with st.container(border=True):
-                st.plotly_chart(fig_tgt, use_container_width=True)
-
-        diff_labels = [a for a in ASSET_LIST if abs(diff_vals[a]) >= 1.0]
-        diff_values = [diff_vals[a] for a in diff_labels]
-        if diff_labels:
-            fig_bar = go.Figure(data=[go.Bar(
-                x=diff_labels, y=diff_values,
-                marker_color=[c_green if v > 0 else c_red for v in diff_values],
-                text=[f"${v:,.0f}" for v in diff_values],
-                textposition='auto', textfont=dict(size=10), marker_line_width=0
-            )])
-            fig_bar.update_layout(
-                title=dict(text="Δ Rebalancing", font=dict(family="DM Mono", size=12, color=t_color)),
-                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(color=t_color, family="DM Mono", size=10),
-                margin=dict(t=32, b=10, l=10, r=10),
-                showlegend=False
-            )
-            fig_bar.update_xaxes(**_ax_r)
-            fig_bar.update_yaxes(**_ax_r)
-            with cc:
-                with st.container(border=True):
-                    st.plotly_chart(fig_bar, use_container_width=True)
-
-    # ══════════════════════════════════════════
-    # 행4: Quick Orders  |  Rebalancing Matrix
-    # ══════════════════════════════════════════
-    col_qo, col_matrix = st.columns([1.2, 2.4])
-
-    with col_qo:
-        _sec_div("Quick Orders")
         if total_val_usd > 0:
+            st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+            _lbl("Quick Orders")
             sell_items, buy_items = [], []
             for asset in ASSET_LIST:
                 cp = current_prices[asset] if current_prices[asset] > 0 else 1.0
@@ -1844,14 +1778,13 @@ elif page == "💼 Portfolio":
                 elif asset == 'CASH' and dv > 1.0:
                     buy_items.append(("CASH", f"${dv:,.0f} 확보", "#059669"))
 
-            def _order_card(title, items, accent):
+            def _qcard(title, items, accent):
                 rows = "".join([
                     f'<div style="display:flex;justify-content:space-between;padding:7px 0;'
-                    f'border-bottom:1px solid rgba(0,0,0,0.05);">'
-                    f'<span style="font-family:DM Mono,monospace;font-size:0.8em;'
-                    f'font-weight:600;color:#111118;">{a}</span>'
-                    f'<span style="font-family:DM Mono,monospace;font-size:0.78em;'
-                    f'color:{c};font-variant-numeric:tabular-nums;">{v}</span></div>'
+                    f'border-bottom:1px solid rgba(0,0,0,0.06);">'
+                    f'<span style="font-family:DM Mono,monospace;font-size:0.8em;font-weight:600;color:#111118;">{a}</span>'
+                    f'<span style="font-family:DM Mono,monospace;font-size:0.78em;color:{c};font-variant-numeric:tabular-nums;">{v}</span>'
+                    f'</div>'
                     for a, v, c in items
                 ]) or '<div style="font-family:DM Mono,monospace;font-size:0.74em;color:#9494A0;padding:7px 0;">— 해당 없음</div>'
                 st.markdown(
@@ -1862,16 +1795,75 @@ elif page == "💼 Portfolio":
                     f'{rows}</div>',
                     unsafe_allow_html=True)
 
-            _order_card("🔴  SELL", sell_items, "#DC2626")
-            _order_card("🟢  BUY",  buy_items,  "#059669")
-        else:
-            st.markdown(
-                '<div style="font-family:DM Mono,monospace;font-size:0.78em;color:#9494A0;'
-                'padding:12px 0;">포지션을 먼저 입력해주세요.</div>',
-                unsafe_allow_html=True)
+            _qcard("🔴  SELL", sell_items, "#DC2626")
+            _qcard("🟢  BUY",  buy_items,  "#059669")
 
-    with col_matrix:
-        _sec_div("Rebalancing  Matrix")
+    # ══ 우측: Allocation 차트 ▸ Rebalancing Matrix ═════════════
+    with pf_right:
+        _lbl("Allocation  ·  Visual")
+        pie_common = dict(
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(family="DM Mono", color=t_color),
+            showlegend=False, margin=dict(l=8, r=8, t=32, b=8)
+        )
+        ca, cb, cc = st.columns([1, 1, 1.1])
+
+        # Current 파이
+        labels_cur = [a for a in ASSET_LIST if curr_vals[a] > 0]
+        vals_cur   = [curr_vals[a] for a in labels_cur]
+        if sum(vals_cur) > 0:
+            fig_cur = go.Figure(go.Pie(
+                labels=labels_cur, values=vals_cur, hole=.52,
+                textinfo='label+percent', textfont=dict(size=10),
+                marker=dict(colors=pie_colors, line=dict(color='#FAFAF7', width=1.5))
+            ))
+            fig_cur.update_layout(
+                title=dict(text="Current", font=dict(family="DM Mono", size=11, color=t_color)),
+                **pie_common)
+            with ca:
+                with st.container(border=True):
+                    st.plotly_chart(fig_cur, use_container_width=True)
+
+        # Target 파이
+        labels_tgt = [a for a in ASSET_LIST if target_weights.get(a, 0) > 0]
+        vals_tgt   = [target_weights.get(a, 0) for a in labels_tgt]
+        fig_tgt = go.Figure(go.Pie(
+            labels=labels_tgt, values=vals_tgt, hole=.52,
+            textinfo='label+percent', textfont=dict(size=10),
+            marker=dict(colors=pie_colors, line=dict(color='#FAFAF7', width=1.5))
+        ))
+        fig_tgt.update_layout(
+            title=dict(text=f"Target  R{curr_regime}", font=dict(family="DM Mono", size=11, color=t_color)),
+            **pie_common)
+        with cb:
+            with st.container(border=True):
+                st.plotly_chart(fig_tgt, use_container_width=True)
+
+        # Δ 바 차트
+        diff_labels = [a for a in ASSET_LIST if abs(diff_vals[a]) >= 1.0]
+        diff_values = [diff_vals[a] for a in diff_labels]
+        if diff_labels:
+            fig_bar = go.Figure(go.Bar(
+                x=diff_labels, y=diff_values,
+                marker_color=[c_green if v > 0 else c_red for v in diff_values],
+                text=[f"${v:,.0f}" for v in diff_values],
+                textposition='auto', textfont=dict(size=9), marker_line_width=0
+            ))
+            fig_bar.update_layout(
+                title=dict(text="Δ Rebalancing", font=dict(family="DM Mono", size=11, color=t_color)),
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(color=t_color, family="DM Mono", size=9),
+                showlegend=False, margin=dict(t=32, b=8, l=8, r=8)
+            )
+            fig_bar.update_xaxes(**_ax_r)
+            fig_bar.update_yaxes(**_ax_r)
+            with cc:
+                with st.container(border=True):
+                    st.plotly_chart(fig_bar, use_container_width=True)
+
+        # Rebalancing Matrix
+        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+        _lbl("Rebalancing  Matrix")
         if total_val_usd > 0:
             rebal_html = '<div style="overflow-x:auto;"><table class="mint-table"><thead><tr>'
             rebal_html += '<th>Asset</th><th>Avg→Cur</th><th>Ret%</th><th>Value($)</th><th>Tgt%</th><th>Tgt($)</th><th>Δ($)</th><th style="text-align:center;">Action</th>'
