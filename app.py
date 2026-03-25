@@ -1709,16 +1709,16 @@ elif page == "💼 Portfolio":
             f'</div>'
         ), unsafe_allow_html=True)
 
-    # ── 메인 3패널: 좌(입력) + 중(Quick Orders) + 우(차트+리밸런싱) ─
+    # ── 메인 2패널: 좌(입력+Quick Orders 세로) + 우(차트+리밸런싱 넓게) ─
     # diff_vals: 패널 전체에서 공유
     if total_val_usd > 0:
         diff_vals = {a: (total_val_usd * target_weights.get(a, 0.0)) - curr_vals[a] for a in ASSET_LIST}
     else:
         diff_vals = {a: 0.0 for a in ASSET_LIST}
 
-    left_pf, mid_pf, right_pf = st.columns([1.4, 1.1, 1.5])
+    left_pf, right_pf = st.columns([1.2, 2.4])
 
-    # ── 왼쪽: 포지션 입력 ─────────────────────────────────────
+    # ── 왼쪽: 포지션 입력 + Quick Orders 세로 스택 ───────────────
     with left_pf:
         st.markdown(
             '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
@@ -1760,26 +1760,26 @@ elif page == "💼 Portfolio":
             save_portfolio_to_disk()
             st.rerun()
 
-    # ── 가운데: Quick Orders ──────────────────────────────────
-    with mid_pf:
-        st.markdown(
-            '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
-            'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
-            'padding-bottom:6px;border-bottom:2px solid #111118;margin-bottom:10px;">'
-            'Quick Orders</div>',
-            unsafe_allow_html=True
-        )
+        # Quick Orders — 입력 테이블 바로 아래
         if total_val_usd > 0:
+            st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+            st.markdown(
+                '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
+                'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
+                'padding-bottom:6px;border-bottom:2px solid #111118;margin-bottom:10px;">'
+                'Quick Orders</div>',
+                unsafe_allow_html=True
+            )
             sell_items_q, buy_items_q = [], []
             for asset in ASSET_LIST:
                 cur_p_q = current_prices[asset] if current_prices[asset] > 0 else 1.0
                 diff_q  = diff_vals[asset]
                 if asset != 'CASH' and diff_q < -cur_p_q * 0.05:
-                    sell_items_q.append((asset, f"{abs(diff_q)/cur_p_q:,.2f} 주 매도", "#DC2626"))
+                    sell_items_q.append((asset, f"{abs(diff_q)/cur_p_q:,.2f}주 매도", "#DC2626"))
                 elif asset == 'CASH' and diff_q < -1.0:
                     sell_items_q.append(("CASH", f"${abs(diff_q):,.0f} 사용", "#DC2626"))
                 if asset != 'CASH' and diff_q > cur_p_q * 0.05:
-                    buy_items_q.append((asset, f"{diff_q/cur_p_q:,.2f} 주 매수", "#059669"))
+                    buy_items_q.append((asset, f"{diff_q/cur_p_q:,.2f}주 매수", "#059669"))
                 elif asset == 'CASH' and diff_q > 1.0:
                     buy_items_q.append(("CASH", f"${diff_q:,.0f} 확보", "#059669"))
 
@@ -1789,32 +1789,25 @@ elif page == "💼 Portfolio":
                     f'padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.05);">'
                     f'<span style="font-family:DM Mono,monospace;font-size:0.78em;'
                     f'font-weight:600;color:#111118;">{a}</span>'
-                    f'<span style="font-family:DM Mono,monospace;font-size:0.78em;'
+                    f'<span style="font-family:DM Mono,monospace;font-size:0.76em;'
                     f'color:{c};font-variant-numeric:tabular-nums;">{v}</span></div>'
                     for a, v, c in items
-                ]) or '<div style="font-family:DM Mono,monospace;font-size:0.74em;color:#9494A0;padding:6px 0;">— 없음</div>'
+                ]) or '<div style="font-family:DM Mono,monospace;font-size:0.72em;color:#9494A0;padding:6px 0;">— 없음</div>'
                 st.markdown(
                     f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.10);'
-                    f'border-top:2px solid {accent};padding:12px 14px;margin-bottom:10px;">'
-                    f'<div style="font-family:Plus Jakarta Sans,sans-serif;font-size:0.82em;'
-                    f'font-weight:700;color:{accent};margin-bottom:8px;">{title}</div>'
+                    f'border-top:2px solid {accent};padding:11px 13px;margin-bottom:8px;">'
+                    f'<div style="font-family:Plus Jakarta Sans,sans-serif;font-size:0.8em;'
+                    f'font-weight:700;color:{accent};margin-bottom:7px;">{title}</div>'
                     f'{rows}</div>',
                     unsafe_allow_html=True
                 )
 
-            _qcard("🔴 SELL", sell_items_q, "#DC2626")
-            _qcard("🟢 BUY",  buy_items_q,  "#059669")
+            _qcard("🔴  SELL", sell_items_q, "#DC2626")
+            _qcard("🟢  BUY",  buy_items_q,  "#059669")
 
-    # ── 오른쪽: 차트 + 리밸런싱 ─────────────────────────────────
+    # ── 오른쪽: Allocation 차트 + Rebalancing Matrix ─────────────
     with right_pf:
         if total_val_usd > 0:
-            st.markdown(
-                '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
-                'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
-                'padding-bottom:6px;border-bottom:2px solid #111118;margin-bottom:10px;">'
-                'Allocation  ·  Visual</div>',
-                unsafe_allow_html=True
-            )
             c_green, c_red = main_color, "#DC2626"
             pie_colors = [line_c, '#B0B0BE', '#34D399', '#6EE7B7', '#A7F3D0',
                           '#059669', '#047857', '#065F46', '#D1FAE5']
@@ -1825,18 +1818,26 @@ elif page == "💼 Portfolio":
                 showlegend=False
             )
 
-            chart_c1, chart_c2, chart_c3 = st.columns([1, 1, 1])
+            # 차트 3개 — 파이 2개 + 델타 바 (균등 3칸)
+            st.markdown(
+                '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
+                'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
+                'padding-bottom:6px;border-bottom:2px solid #111118;margin-bottom:10px;">'
+                'Allocation  ·  Visual</div>',
+                unsafe_allow_html=True
+            )
+            chart_c1, chart_c2, chart_c3 = st.columns([1, 1, 1.2])
 
             labels_cur = [a for a in ASSET_LIST if curr_vals[a] > 0]
             vals_cur   = [curr_vals[a] for a in labels_cur]
             if sum(vals_cur) > 0:
                 fig_cur = go.Figure(data=[go.Pie(
                     labels=labels_cur, values=vals_cur, hole=.5,
-                    textinfo='label+percent', textfont=dict(size=10),
+                    textinfo='label+percent', textfont=dict(size=11),
                     marker=dict(colors=pie_colors, line=dict(color='#FAFAF7', width=1.5))
                 )])
                 fig_cur.update_layout(
-                    title=dict(text="Current", font=dict(family="DM Mono", size=11, color=t_color)),
+                    title=dict(text="Current", font=dict(family="DM Mono", size=12, color=t_color)),
                     **pie_layout
                 )
                 with chart_c1:
@@ -1847,11 +1848,11 @@ elif page == "💼 Portfolio":
             vals_tgt   = [target_weights.get(a, 0) for a in labels_tgt]
             fig_tgt = go.Figure(data=[go.Pie(
                 labels=labels_tgt, values=vals_tgt, hole=.5,
-                textinfo='label+percent', textfont=dict(size=10),
+                textinfo='label+percent', textfont=dict(size=11),
                 marker=dict(colors=pie_colors, line=dict(color='#FAFAF7', width=1.5))
             )])
             fig_tgt.update_layout(
-                title=dict(text=f"Target  R{curr_regime}", font=dict(family="DM Mono", size=11, color=t_color)),
+                title=dict(text=f"Target  R{curr_regime}", font=dict(family="DM Mono", size=12, color=t_color)),
                 **pie_layout
             )
             with chart_c2:
@@ -1865,10 +1866,10 @@ elif page == "💼 Portfolio":
                 fig_bar = go.Figure(data=[go.Bar(
                     x=diff_labels, y=diff_values, marker_color=diff_colors,
                     text=[f"${v:,.0f}" for v in diff_values],
-                    textposition='auto', textfont=dict(size=9), marker_line_width=0
+                    textposition='auto', textfont=dict(size=10), marker_line_width=0
                 )])
                 fig_bar.update_layout(
-                    title=dict(text="Rebalancing Δ($)", font=dict(family="DM Mono", size=11, color=t_color)),
+                    title=dict(text="Rebalancing Δ($)", font=dict(family="DM Mono", size=12, color=t_color)),
                     paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                     font=dict(color=t_color, family="DM Mono", size=10),
                     margin=dict(t=30, b=10, l=10, r=10),
@@ -1879,6 +1880,7 @@ elif page == "💼 Portfolio":
                     with st.container(border=True):
                         st.plotly_chart(fig_bar, use_container_width=True)
 
+            # Rebalancing Matrix
             st.markdown(
                 '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
                 'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
