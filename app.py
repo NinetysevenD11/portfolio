@@ -1547,7 +1547,7 @@ if page == "📊 Dashboard":
 # ──────────────────────────────────────────
 elif page == "💼 Portfolio":
 
-    # ── 상단 티커 바 (포트폴리오 전용) ─────────────────────────
+    # ── 데이터 준비 ─────────────────────────────────────────────
     current_prices = {}
     for t in ASSET_LIST:
         if t == 'CASH': current_prices[t] = 1.0
@@ -1555,227 +1555,160 @@ elif page == "💼 Portfolio":
         elif t in df.columns: current_prices[t] = df[t].iloc[-1]
         else: current_prices[t] = 0.0
 
-    cur_fx    = rt_prices.get('USDKRW=X', 1350.0)
-    curr_vals = {a: st.session_state.portfolio[a]['shares'] * current_prices[a] for a in ASSET_LIST}
+    cur_fx        = rt_prices.get('USDKRW=X', 1350.0)
+    curr_vals     = {a: st.session_state.portfolio[a]['shares'] * current_prices[a] for a in ASSET_LIST}
     total_val_usd = sum(curr_vals.values())
     total_val_krw = total_val_usd * cur_fx
     invested_cost = sum(
         st.session_state.portfolio[a]['shares'] * st.session_state.portfolio[a]['avg_price']
         for a in ASSET_LIST if a != 'CASH'
     )
-    pnl_pct = (total_val_usd / invested_cost - 1) * 100 if invested_cost > 0 else 0.0
+    pnl_usd   = total_val_usd - invested_cost
+    pnl_pct   = (pnl_usd / invested_cost * 100) if invested_cost > 0 else 0.0
     pnl_color = "#059669" if pnl_pct >= 0 else "#DC2626"
-    pnl_arrow = "▲" if pnl_pct >= 0 else "▼"
+    pnl_sign  = "▲" if pnl_pct >= 0 else "▼"
 
-    def _stat(label, val, sub="", sub_color="#9494A0"):
+    diff_vals = {a: (total_val_usd * target_weights.get(a, 0.0)) - curr_vals[a] for a in ASSET_LIST} if total_val_usd > 0 else {a: 0.0 for a in ASSET_LIST}
+    C_GREEN = main_color
+    C_RED   = "#DC2626"
+
+    # ══════════════════════════════════════════════════════════
+    # ROW 1 — 상단 스탯 바
+    # ══════════════════════════════════════════════════════════
+    def _stat_chip(label, value, sub="", sub_color="#9494A0"):
         return (
-            f'<div style="display:inline-flex;flex-direction:column;padding:0 18px;'
-            f'border-right:1px solid rgba(0,0,0,0.09);min-width:110px;">' 
-            f'<span style="font-family:DM Mono,monospace;font-size:0.65em;color:#9494A0;'
-            f'letter-spacing:0.14em;text-transform:uppercase;">{label}</span>'
-            f'<span style="font-family:DM Mono,monospace;font-size:1.05em;color:#111118;'
-            f'font-variant-numeric:tabular-nums;">{val}</span>'
-            f'<span style="font-family:DM Mono,monospace;font-size:0.66em;color:{sub_color};">'
-            f'{sub}</span></div>'
+            f'<div style="padding:0 22px;border-right:1px solid rgba(0,0,0,0.08);">' 
+            f'<div style="font-family:DM Mono,monospace;font-size:0.58em;color:#9494A0;' 
+            f'letter-spacing:0.15em;text-transform:uppercase;margin-bottom:2px;">{label}</div>' 
+            f'<div style="font-family:DM Mono,monospace;font-size:1.05em;font-weight:400;' 
+            f'color:#111118;font-variant-numeric:tabular-nums;">{value}</div>' 
+            f'<div style="font-family:DM Mono,monospace;font-size:0.65em;color:{sub_color};">{sub}</div>' 
+            f'</div>'
         )
 
-    stat_bar = (
-        _stat("Total NAV", f"${total_val_usd:,.2f}", f"₩{total_val_krw:,.0f}") +
-        _stat("USD/KRW", f"₩{cur_fx:,.2f}", "환율") +
-        _stat("P&L", f"{pnl_pct:+.2f}%", f"{pnl_arrow} 평가손익", pnl_color) +
-        _stat("Regime", f"R{curr_regime}", regime_info[curr_regime][1])
+    chips = (
+        _stat_chip("Total NAV",  f"${total_val_usd:,.2f}",   f"₩{total_val_krw:,.0f}") +
+        _stat_chip("USD / KRW",  f"₩{cur_fx:,.0f}",          "환율") +
+        _stat_chip("P & L",      f"{pnl_pct:+.2f}%",         f"{pnl_sign} ${pnl_usd:,.0f}", pnl_color) +
+        _stat_chip("Regime",     f"R{curr_regime}",           regime_info[curr_regime][1]) +
+        _stat_chip("투자원금",   f"${invested_cost:,.0f}",    "원금 합계")
     )
-
     st.markdown(
-        f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);'
-        f'border-left:3px solid #111118;padding:12px 0 12px 18px;'
-        f'margin-bottom:14px;display:flex;align-items:center;overflow-x:auto;">' 
-        f'<span style="font-family:DM Mono,monospace;font-size:0.57em;color:#9494A0;'
-        f'letter-spacing:0.18em;text-transform:uppercase;white-space:nowrap;'
-        f'padding-right:16px;border-right:1px solid rgba(0,0,0,0.09);">Portfolio</span>'
-        f'{stat_bar}'
-        f'<div style="margin-left:auto;padding:0 14px;display:flex;gap:8px;align-items:center;">' ,
+        f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.11);' 
+        f'border-left:3px solid #111118;padding:10px 0 10px 6px;' 
+        f'display:flex;align-items:center;overflow-x:auto;margin-bottom:12px;">' 
+        f'<span style="font-family:DM Mono,monospace;font-size:0.55em;color:#9494A0;' 
+        f'letter-spacing:0.2em;text-transform:uppercase;padding:0 16px;' 
+        f'border-right:1px solid rgba(0,0,0,0.08);white-space:nowrap;">Portfolio</span>' 
+        f'{chips}</div>',
         unsafe_allow_html=True
     )
-    st.markdown("</div></div>", unsafe_allow_html=True)
 
-    # ── 목표 금액 게이지 ────────────────────────────────────────
-    _goal_col_input, _goal_col_gauge = st.columns([1, 2.5])
-
-    with _goal_col_input:
+    # ══════════════════════════════════════════════════════════
+    # ROW 2 — Goal Tracker
+    # ══════════════════════════════════════════════════════════
+    gc_left, gc_right = st.columns([1, 3])
+    with gc_left:
         new_goal = st.number_input(
-            "🎯 목표 금액 (USD)",
-            min_value=1000.0,
-            max_value=100_000_000.0,
-            value=st.session_state.goal_usd,
-            step=1000.0,
-            format="%.0f",
-            key="goal_input"
+            "🎯 목표 금액 (USD)", min_value=1000.0, max_value=100_000_000.0,
+            value=st.session_state.goal_usd, step=1000.0, format="%.0f", key="goal_input"
         )
         if new_goal != st.session_state.goal_usd:
             st.session_state.goal_usd = new_goal
             st.rerun()
 
-    with _goal_col_gauge:
+    with gc_right:
         _goal    = st.session_state.goal_usd
-        _nav     = total_val_usd
-        _pct_raw = (_nav / _goal * 100) if _goal > 0 else 0.0
-        _pct     = min(_pct_raw, 100.0)           # 100% 초과는 100으로 캡
-        _over    = _pct_raw > 100.0               # 목표 초과 여부
-        _remain  = max(_goal - _nav, 0.0)
+        _pct_raw = (total_val_usd / _goal * 100) if _goal > 0 else 0.0
+        _pct     = min(_pct_raw, 100.0)
+        _over    = _pct_raw > 100.0
+        _remain  = max(_goal - total_val_usd, 0.0)
+        if _over:         _bc, _badge = "#059669", "🏆 목표 달성!"
+        elif _pct >= 75:  _bc, _badge = main_color, "⚡ 75% 이상"
+        elif _pct >= 50:  _bc, _badge = "#D97706", "📈 순항 중"
+        else:             _bc, _badge = "#9494A0", "🌱 시작 단계"
 
-        # 달성률에 따라 색상 계산
-        if _over:
-            _bar_color   = "#059669"
-            _badge_bg    = "rgba(5,150,105,0.12)"
-            _badge_bdr   = "rgba(5,150,105,0.35)"
-            _badge_txt   = "#059669"
-            _badge_label = "🏆  목표 달성!"
-        elif _pct >= 75:
-            _bar_color   = main_color
-            _badge_bg    = f"rgba({r_c},{g_c},{b_c},0.10)"
-            _badge_bdr   = f"rgba({r_c},{g_c},{b_c},0.30)"
-            _badge_txt   = main_color
-            _badge_label = "⚡  75% 이상"
-        elif _pct >= 50:
-            _bar_color   = "#D97706"
-            _badge_bg    = "rgba(217,119,6,0.10)"
-            _badge_bdr   = "rgba(217,119,6,0.30)"
-            _badge_txt   = "#D97706"
-            _badge_label = "📈  순항 중"
-        else:
-            _bar_color   = "#9494A0"
-            _badge_bg    = "rgba(0,0,0,0.05)"
-            _badge_bdr   = "rgba(0,0,0,0.14)"
-            _badge_txt   = "#6B6B7A"
-            _badge_label = "🌱  시작 단계"
-
-        # 게이지 트랙 마커 (25 / 50 / 75 / 100%)
-        _markers = ""
-        for _m in [25, 50, 75, 100]:
-            _markers += (
-                f'<div style="position:absolute;left:{_m}%;top:0;bottom:0;'
-                f'width:1px;background:rgba(0,0,0,0.12);transform:translateX(-50%);">'
-                f'<span style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);'
-                f'font-family:DM Mono,monospace;font-size:0.58em;color:#AAAAAA;'
-                f'white-space:nowrap;">{_m}%</span>'
-                f'</div>'
-            )
-
-        # 현재 위치 핀
-        _pin_left = min(_pct, 99.0)
-        _pin = (
-            f'<div style="position:absolute;left:{_pin_left}%;top:-4px;bottom:-4px;'
-            f'width:2px;background:{_bar_color};transform:translateX(-50%);'
-            f'box-shadow:0 0 6px {_bar_color};">'
-            f'<div style="position:absolute;top:-7px;left:50%;transform:translateX(-50%);'
-            f'width:10px;height:10px;border-radius:50%;background:{_bar_color};'
-            f'box-shadow:0 0 8px {_bar_color};"></div>'
+        _markers_html = "".join([
+            f'<div style="position:absolute;left:{m}%;top:0;bottom:0;width:1px;background:rgba(0,0,0,0.13);">' 
+            f'<span style="position:absolute;top:-17px;left:50%;transform:translateX(-50%);' 
+            f'font-family:DM Mono,monospace;font-size:0.56em;color:#AAAAAA;white-space:nowrap;">{m}%</span>' 
+            f'</div>'
+            for m in [25, 50, 75, 100]
+        ])
+        _pin_x = min(_pct, 99.0)
+        _pin_html = (
+            f'<div style="position:absolute;left:{_pin_x}%;top:-3px;bottom:-3px;' 
+            f'width:2px;background:{_bc};transform:translateX(-50%);' 
+            f'box-shadow:0 0 5px {_bc};">' 
+            f'<div style="position:absolute;top:-6px;left:50%;transform:translateX(-50%);' 
+            f'width:9px;height:9px;border-radius:50%;background:{_bc};box-shadow:0 0 6px {_bc};"></div>' 
             f'</div>'
         )
-
-        st.markdown(apply_theme(
-            f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.12);'
-            f'border-top:3px solid {_bar_color};padding:16px 20px 14px;'
-            f'margin-bottom:14px;">'
-
-            # 헤더 행
-            f'<div style="display:flex;align-items:baseline;justify-content:space-between;'
-            f'margin-bottom:18px;">'
-
-            # 좌: 타이틀 + 배지
-            f'<div style="display:flex;align-items:center;gap:10px;">'
-            f'<span style="font-family:DM Mono,monospace;font-size:0.62em;color:#9494A0;'
-            f'letter-spacing:0.18em;text-transform:uppercase;">Goal Tracker</span>'
-            f'<span style="background:{_badge_bg};border:1px solid {_badge_bdr};'
-            f'color:{_badge_txt};font-family:DM Mono,monospace;font-size:0.66em;'
-            f'padding:2px 10px;letter-spacing:0.06em;">{_badge_label}</span>'
-            f'</div>'
-
-            # 우: 달성률 + 잔여
-            f'<div style="text-align:right;">'
-            f'<span style="font-family:DM Mono,monospace;font-size:1.8em;font-weight:500;'
-            f'color:{_bar_color};font-variant-numeric:tabular-nums;letter-spacing:-1px;">'
-            f'{_pct_raw:.1f}%</span>'
-            f'<span style="font-family:DM Mono,monospace;font-size:0.72em;color:#9494A0;'
-            f'margin-left:10px;">{"초과 달성!" if _over else f"잔여 ${_remain:,.0f}"}</span>'
-            f'</div>'
-
-            f'</div>'  # 헤더 행 닫기
-
-            # 게이지 트랙
-            f'<div style="position:relative;padding-top:22px;">'
-            f'{_markers}'
-            f'<div style="position:relative;height:10px;background:rgba(0,0,0,0.07);'
-            f'overflow:visible;">'
-            f'<div style="height:10px;width:{_pct:.2f}%;background:linear-gradient('
-            f'90deg,{_bar_color}88,{_bar_color});'
-            f'transition:width 0.6s ease;"></div>'
-            f'{_pin}'
-            f'</div>'
-            f'</div>'
-
-            # 하단 레이블 행
-            f'<div style="display:flex;justify-content:space-between;margin-top:10px;">'
-            f'<div>'
-            f'<span style="font-family:DM Mono,monospace;font-size:0.6em;color:#9494A0;'
-            f'text-transform:uppercase;letter-spacing:0.12em;">Current NAV</span><br>'
-            f'<span style="font-family:DM Mono,monospace;font-size:1.05em;color:#111118;'
-            f'font-variant-numeric:tabular-nums;">${_nav:,.2f}</span>'
-            f'</div>'
-            f'<div style="text-align:center;">'
-            f'<span style="font-family:DM Mono,monospace;font-size:0.6em;color:#9494A0;'
-            f'text-transform:uppercase;letter-spacing:0.12em;">Goal (USD)</span><br>'
-            f'<span style="font-family:DM Mono,monospace;font-size:1.05em;color:#111118;'
-            f'font-variant-numeric:tabular-nums;">${_goal:,.0f}</span>'
-            f'</div>'
-            f'<div style="text-align:right;">'
-            f'<span style="font-family:DM Mono,monospace;font-size:0.6em;color:#9494A0;'
-            f'text-transform:uppercase;letter-spacing:0.12em;">Goal (KRW)</span><br>'
-            f'<span style="font-family:DM Mono,monospace;font-size:1.05em;color:#111118;'
-            f'font-variant-numeric:tabular-nums;">₩{_goal * cur_fx:,.0f}</span>'
-            f'</div>'
-            f'</div>'
-
-            f'</div>'
-        ), unsafe_allow_html=True)
-
-    # ── diff_vals 공통 계산 ─────────────────────────────────────
-    if total_val_usd > 0:
-        diff_vals = {a: (total_val_usd * target_weights.get(a, 0.0)) - curr_vals[a] for a in ASSET_LIST}
-    else:
-        diff_vals = {a: 0.0 for a in ASSET_LIST}
-
-    c_green, c_red = main_color, "#DC2626"
-    pie_colors = [line_c, '#B0B0BE', '#34D399', '#6EE7B7', '#A7F3D0',
-                  '#059669', '#047857', '#065F46', '#D1FAE5']
-
-    def _lbl(txt):
         st.markdown(
-            f'<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
-            f'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
-            f'padding-bottom:6px;border-bottom:2px solid #111118;margin:0 0 10px;">'
-            f'{txt}</div>', unsafe_allow_html=True)
+            f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.11);' 
+            f'border-top:3px solid {_bc};padding:14px 20px 12px;margin-bottom:12px;">' 
+            f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' 
+            f'<div style="display:flex;align-items:center;gap:10px;">' 
+            f'<span style="font-family:DM Mono,monospace;font-size:0.6em;color:#9494A0;' 
+            f'letter-spacing:0.16em;text-transform:uppercase;">Goal Tracker</span>' 
+            f'<span style="background:{_bc}18;border:1px solid {_bc}55;color:{_bc};' 
+            f'font-family:DM Mono,monospace;font-size:0.63em;padding:2px 9px;">{_badge}</span>' 
+            f'</div>' 
+            f'<div style="text-align:right;">' 
+            f'<span style="font-family:DM Mono,monospace;font-size:1.75em;font-weight:400;' 
+            f'color:{_bc};font-variant-numeric:tabular-nums;letter-spacing:-0.5px;">{_pct_raw:.1f}%</span>' 
+            f'<span style="font-family:DM Mono,monospace;font-size:0.68em;color:#9494A0;margin-left:8px;">' 
+            f'{"초과달성!" if _over else f"잔여 ${_remain:,.0f}"}</span>' 
+            f'</div></div>' 
+            f'<div style="position:relative;padding-top:20px;">' 
+            f'{_markers_html}' 
+            f'<div style="position:relative;height:8px;background:rgba(0,0,0,0.07);overflow:visible;">' 
+            f'<div style="height:8px;width:{_pct:.2f}%;' 
+            f'background:linear-gradient(90deg,{_bc}66,{_bc});"></div>' 
+            f'{_pin_html}</div></div>' 
+            f'<div style="display:flex;justify-content:space-between;margin-top:10px;">' 
+            f'<div><div style="font-family:DM Mono,monospace;font-size:0.58em;color:#9494A0;' 
+            f'text-transform:uppercase;letter-spacing:0.1em;">Current NAV</div>' 
+            f'<div style="font-family:DM Mono,monospace;font-size:0.95em;color:#111118;' 
+            f'font-variant-numeric:tabular-nums;">${total_val_usd:,.2f}</div></div>' 
+            f'<div style="text-align:center;"><div style="font-family:DM Mono,monospace;font-size:0.58em;' 
+            f'color:#9494A0;text-transform:uppercase;letter-spacing:0.1em;">Goal (USD)</div>' 
+            f'<div style="font-family:DM Mono,monospace;font-size:0.95em;color:#111118;' 
+            f'font-variant-numeric:tabular-nums;">${_goal:,.0f}</div></div>' 
+            f'<div style="text-align:right;"><div style="font-family:DM Mono,monospace;font-size:0.58em;' 
+            f'color:#9494A0;text-transform:uppercase;letter-spacing:0.1em;">Goal (KRW)</div>' 
+            f'<div style="font-family:DM Mono,monospace;font-size:0.95em;color:#111118;' 
+            f'font-variant-numeric:tabular-nums;">₩{_goal*cur_fx:,.0f}</div></div></div></div>',
+            unsafe_allow_html=True
+        )
 
-    # ── 단일 2패널 ─────────────────────────────────────────────
-    pf_left, pf_right = st.columns([1.1, 2.5])
+    # ══════════════════════════════════════════════════════════
+    # ROW 3+4 — 메인 레이아웃: 좌(입력) + 우(시각화)
+    # ══════════════════════════════════════════════════════════
+    col_l, col_r = st.columns([1.1, 2.5])
 
-    # ══ 좌측: Position Input ▸ Quick Orders ════════════════════
-    with pf_left:
-        _lbl("Position Input")
-        editor_data = []
+    # ── 좌: Position Input ───────────────────────────────────
+    with col_l:
+        st.markdown(
+            '<div style="font-family:DM Mono,monospace;font-size:0.58em;font-weight:500;' 
+            'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;' 
+            'padding-bottom:5px;border-bottom:2px solid #111118;margin-bottom:10px;">' 
+            'Position Input</div>',
+            unsafe_allow_html=True
+        )
+        _edata = []
         for asset in ASSET_LIST:
             v = st.session_state.portfolio.get(asset, {})
-            editor_data.append({
-                "Asset":       asset,
-                "Shares":      float(v.get('shares', 0.0)),
-                "Avg Price($)":float(v.get('avg_price', 1.0 if asset == 'CASH' else 0.0)),
-                "FX Rate(₩)": float(v.get('fx', 1350.0))
+            _edata.append({
+                "Asset":        asset,
+                "Shares":       float(v.get('shares', 0.0)),
+                "Avg Price($)": float(v.get('avg_price', 1.0 if asset == 'CASH' else 0.0)),
+                "FX Rate(₩)":  float(v.get('fx', 1350.0))
             })
-        df_editor = pd.DataFrame(editor_data)
+        _df_ed = pd.DataFrame(_edata)
         with st.container(border=True):
-            edited_df = st.data_editor(
-                df_editor, disabled=["Asset"], hide_index=True,
+            _df_edited = st.data_editor(
+                _df_ed, disabled=["Asset"], hide_index=True,
                 use_container_width=True, key="pf_editor",
                 column_config={
                     "Shares":       st.column_config.NumberColumn("Shares", format="%.4f"),
@@ -1783,8 +1716,8 @@ elif page == "💼 Portfolio":
                     "FX Rate(₩)":  st.column_config.NumberColumn("FX(₩)",  format="%.0f"),
                 }
             )
-        if not edited_df.equals(df_editor):
-            for _, row in edited_df.iterrows():
+        if not _df_edited.equals(_df_ed):
+            for _, row in _df_edited.iterrows():
                 st.session_state.portfolio[row["Asset"]] = {
                     'shares':    float(row["Shares"]),
                     'avg_price': float(row["Avg Price($)"]),
@@ -1793,151 +1726,166 @@ elif page == "💼 Portfolio":
             save_portfolio_to_disk()
             st.rerun()
 
+        # Quick Orders — 입력 바로 아래
         if total_val_usd > 0:
-            st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
-            _lbl("Quick Orders")
-            sell_items, buy_items = [], []
+            st.markdown(
+                '<div style="font-family:DM Mono,monospace;font-size:0.58em;font-weight:500;' 
+                'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;' 
+                'padding-bottom:5px;border-bottom:2px solid #111118;margin:14px 0 10px;">' 
+                'Quick Orders</div>',
+                unsafe_allow_html=True
+            )
+            _sells, _buys = [], []
             for asset in ASSET_LIST:
-                cp = current_prices[asset] if current_prices[asset] > 0 else 1.0
-                dv = diff_vals[asset]
-                if asset != 'CASH' and dv < -cp * 0.05:
-                    sell_items.append((asset, f"{abs(dv)/cp:,.2f}주 매도", "#DC2626"))
-                elif asset == 'CASH' and dv < -1.0:
-                    sell_items.append(("CASH", f"${abs(dv):,.0f} 사용", "#DC2626"))
-                if asset != 'CASH' and dv > cp * 0.05:
-                    buy_items.append((asset, f"{dv/cp:,.2f}주 매수", "#059669"))
-                elif asset == 'CASH' and dv > 1.0:
-                    buy_items.append(("CASH", f"${dv:,.0f} 확보", "#059669"))
+                _cp = current_prices[asset] if current_prices[asset] > 0 else 1.0
+                _dv = diff_vals[asset]
+                if asset != 'CASH' and _dv < -_cp * 0.05:
+                    _sells.append((asset, f"{abs(_dv)/_cp:,.2f}주 매도"))
+                elif asset == 'CASH' and _dv < -1.0:
+                    _sells.append(("CASH", f"${abs(_dv):,.0f} 사용"))
+                if asset != 'CASH' and _dv > _cp * 0.05:
+                    _buys.append((asset, f"{_dv/_cp:,.2f}주 매수"))
+                elif asset == 'CASH' and _dv > 1.0:
+                    _buys.append(("CASH", f"${_dv:,.0f} 확보"))
 
-            def _qcard(title, items, accent):
-                rows = "".join([
-                    f'<div style="display:flex;justify-content:space-between;padding:7px 0;'
-                    f'border-bottom:1px solid rgba(0,0,0,0.06);">'
-                    f'<span style="font-family:DM Mono,monospace;font-size:0.8em;font-weight:600;color:#111118;">{a}</span>'
-                    f'<span style="font-family:DM Mono,monospace;font-size:0.78em;color:{c};font-variant-numeric:tabular-nums;">{v}</span>'
-                    f'</div>'
-                    for a, v, c in items
-                ]) or '<div style="font-family:DM Mono,monospace;font-size:0.74em;color:#9494A0;padding:7px 0;">— 해당 없음</div>'
+            def _qo_card(title, items, accent):
+                _rows = "".join([
+                    f'<div style="display:flex;justify-content:space-between;' 
+                    f'padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.05);">' 
+                    f'<span style="font-family:DM Mono,monospace;font-size:0.8em;' 
+                    f'font-weight:600;color:#111118;">{a}</span>' 
+                    f'<span style="font-family:DM Mono,monospace;font-size:0.78em;' 
+                    f'color:{accent};font-variant-numeric:tabular-nums;">{v}</span></div>'
+                    for a, v in items
+                ]) or '<div style="font-family:DM Mono,monospace;font-size:0.74em;color:#9494A0;padding:6px 0;">— 해당 없음</div>'
                 st.markdown(
-                    f'<div style="border:1px solid rgba(0,0,0,0.10);border-top:2px solid {accent};'
-                    f'padding:12px 14px;margin-bottom:10px;">'
-                    f'<div style="font-family:Plus Jakarta Sans,sans-serif;font-size:0.82em;'
-                    f'font-weight:700;color:{accent};margin-bottom:8px;">{title}</div>'
-                    f'{rows}</div>',
-                    unsafe_allow_html=True)
+                    f'<div style="border:1px solid rgba(0,0,0,0.09);border-top:2px solid {accent};' 
+                    f'padding:11px 13px;margin-bottom:8px;">' 
+                    f'<div style="font-family:Plus Jakarta Sans,sans-serif;font-size:0.82em;' 
+                    f'font-weight:700;color:{accent};margin-bottom:7px;">{title}</div>' 
+                    f'{_rows}</div>',
+                    unsafe_allow_html=True
+                )
+            _qo_card("🔴  SELL", _sells, "#DC2626")
+            _qo_card("🟢  BUY",  _buys,  "#059669")
 
-            _qcard("🔴  SELL", sell_items, "#DC2626")
-            _qcard("🟢  BUY",  buy_items,  "#059669")
-
-    # ══ 우측: Allocation 차트 ▸ Rebalancing Matrix ═════════════
-    with pf_right:
-        _lbl("Allocation  ·  Visual")
-        pie_common = dict(
+    # ── 우: Allocation + Rebalancing ─────────────────────────
+    with col_r:
+        _pie_common = dict(
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
             font=dict(family="DM Mono", color=t_color),
-            showlegend=False, margin=dict(l=8, r=8, t=32, b=8)
+            showlegend=False, margin=dict(l=8, r=8, t=30, b=8)
         )
-        ca, cb, cc = st.columns([1, 1, 1.1])
+        _pie_colors = [line_c,'#B0B0BE','#34D399','#6EE7B7','#A7F3D0',
+                       '#059669','#047857','#065F46','#D1FAE5']
 
-        # Current 파이
-        labels_cur = [a for a in ASSET_LIST if curr_vals[a] > 0]
-        vals_cur   = [curr_vals[a] for a in labels_cur]
-        if sum(vals_cur) > 0:
-            fig_cur = go.Figure(go.Pie(
-                labels=labels_cur, values=vals_cur, hole=.52,
+        # ── Allocation Visual (파이 2 + 델타 바) ─────────────
+        st.markdown(
+            '<div style="font-family:DM Mono,monospace;font-size:0.58em;font-weight:500;' 
+            'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;' 
+            'padding-bottom:5px;border-bottom:2px solid #111118;margin-bottom:10px;">' 
+            'Allocation  ·  Visual</div>',
+            unsafe_allow_html=True
+        )
+        _ca, _cb, _cc = st.columns([1, 1, 1.1])
+
+        _lcur = [a for a in ASSET_LIST if curr_vals[a] > 0]
+        _vcur = [curr_vals[a] for a in _lcur]
+        if sum(_vcur) > 0:
+            _fig_cur = go.Figure(go.Pie(
+                labels=_lcur, values=_vcur, hole=.52,
                 textinfo='label+percent', textfont=dict(size=10),
-                marker=dict(colors=pie_colors, line=dict(color='#FAFAF7', width=1.5))
+                marker=dict(colors=_pie_colors, line=dict(color='#FAFAF7', width=1.5))
             ))
-            fig_cur.update_layout(
-                title=dict(text="Current", font=dict(family="DM Mono", size=11, color=t_color)),
-                **pie_common)
-            with ca:
+            _fig_cur.update_layout(title=dict(text="Current", font=dict(family="DM Mono", size=11, color=t_color)), **_pie_common)
+            with _ca:
                 with st.container(border=True):
-                    st.plotly_chart(fig_cur, use_container_width=True)
+                    st.plotly_chart(_fig_cur, use_container_width=True)
 
-        # Target 파이
-        labels_tgt = [a for a in ASSET_LIST if target_weights.get(a, 0) > 0]
-        vals_tgt   = [target_weights.get(a, 0) for a in labels_tgt]
-        fig_tgt = go.Figure(go.Pie(
-            labels=labels_tgt, values=vals_tgt, hole=.52,
+        _ltgt = [a for a in ASSET_LIST if target_weights.get(a, 0) > 0]
+        _vtgt = [target_weights[a] for a in _ltgt]
+        _fig_tgt = go.Figure(go.Pie(
+            labels=_ltgt, values=_vtgt, hole=.52,
             textinfo='label+percent', textfont=dict(size=10),
-            marker=dict(colors=pie_colors, line=dict(color='#FAFAF7', width=1.5))
+            marker=dict(colors=_pie_colors, line=dict(color='#FAFAF7', width=1.5))
         ))
-        fig_tgt.update_layout(
-            title=dict(text=f"Target  R{curr_regime}", font=dict(family="DM Mono", size=11, color=t_color)),
-            **pie_common)
-        with cb:
+        _fig_tgt.update_layout(title=dict(text=f"Target  R{curr_regime}", font=dict(family="DM Mono", size=11, color=t_color)), **_pie_common)
+        with _cb:
             with st.container(border=True):
-                st.plotly_chart(fig_tgt, use_container_width=True)
+                st.plotly_chart(_fig_tgt, use_container_width=True)
 
-        # Δ 바 차트
-        diff_labels = [a for a in ASSET_LIST if abs(diff_vals[a]) >= 1.0]
-        diff_values = [diff_vals[a] for a in diff_labels]
-        if diff_labels:
-            fig_bar = go.Figure(go.Bar(
-                x=diff_labels, y=diff_values,
-                marker_color=[c_green if v > 0 else c_red for v in diff_values],
-                text=[f"${v:,.0f}" for v in diff_values],
+        _dlabels = [a for a in ASSET_LIST if abs(diff_vals[a]) >= 1.0]
+        _dvals   = [diff_vals[a] for a in _dlabels]
+        if _dlabels:
+            _fig_bar = go.Figure(go.Bar(
+                x=_dlabels, y=_dvals,
+                marker_color=[C_GREEN if v > 0 else C_RED for v in _dvals],
+                text=[f"${v:,.0f}" for v in _dvals],
                 textposition='auto', textfont=dict(size=9), marker_line_width=0
             ))
-            fig_bar.update_layout(
+            _fig_bar.update_layout(
                 title=dict(text="Δ Rebalancing", font=dict(family="DM Mono", size=11, color=t_color)),
                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                 font=dict(color=t_color, family="DM Mono", size=9),
-                showlegend=False, margin=dict(t=32, b=8, l=8, r=8)
+                showlegend=False, margin=dict(t=30, b=8, l=8, r=8)
             )
-            fig_bar.update_xaxes(**_ax_r)
-            fig_bar.update_yaxes(**_ax_r)
-            with cc:
+            _fig_bar.update_xaxes(**_ax_r)
+            _fig_bar.update_yaxes(**_ax_r)
+            with _cc:
                 with st.container(border=True):
-                    st.plotly_chart(fig_bar, use_container_width=True)
+                    st.plotly_chart(_fig_bar, use_container_width=True)
 
-        # Rebalancing Matrix
-        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
-        _lbl("Rebalancing  Matrix")
+        # ── Rebalancing Matrix ────────────────────────────────
+        st.markdown(
+            '<div style="font-family:DM Mono,monospace;font-size:0.58em;font-weight:500;' 
+            'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;' 
+            'padding-bottom:5px;border-bottom:2px solid #111118;margin:12px 0 10px;">' 
+            'Rebalancing  Matrix</div>',
+            unsafe_allow_html=True
+        )
         if total_val_usd > 0:
-            rebal_html = '<div style="overflow-x:auto;"><table class="mint-table"><thead><tr>'
-            rebal_html += '<th>Asset</th><th>Avg→Cur</th><th>Ret%</th><th>Value($)</th><th>Tgt%</th><th>Tgt($)</th><th>Δ($)</th><th style="text-align:center;">Action</th>'
-            rebal_html += '</tr></thead><tbody>'
+            _rhtml = '<div style="overflow-x:auto;"><table class="mint-table"><thead><tr>'
+            _rhtml += '<th>Asset</th><th>Avg→Cur</th><th>Ret%</th><th>Value($)</th><th>Tgt%</th><th>Tgt($)</th><th>Δ($)</th><th style="text-align:center;">Action</th>'
+            _rhtml += '</tr></thead><tbody>'
             for asset in ASSET_LIST:
-                shares = st.session_state.portfolio[asset]['shares']
-                avg_p  = st.session_state.portfolio[asset]['avg_price']
-                cur_p  = current_prices[asset] if current_prices[asset] > 0 else 1.0
-                curr_v = curr_vals[asset]
-                tgt_w  = target_weights.get(asset, 0.0)
-                tgt_v  = total_val_usd * tgt_w
-                diff   = diff_vals[asset]
+                _shs  = st.session_state.portfolio[asset]['shares']
+                _avgp = st.session_state.portfolio[asset]['avg_price']
+                _curp = current_prices[asset] if current_prices[asset] > 0 else 1.0
+                _curv = curr_vals[asset]
+                _tgtw = target_weights.get(asset, 0.0)
+                _tgtv = total_val_usd * _tgtw
+                _diff = diff_vals[asset]
                 if asset == 'CASH':
-                    avg_p_str, ret_usd = "—", 0.0
+                    _avgstr, _ret = "—", 0.0
                 else:
-                    avg_p_str = f"${avg_p:.1f}→${cur_p:.1f}"
-                    ret_usd   = (cur_p / avg_p - 1) * 100 if avg_p > 0 else 0.0
-                ret_c   = c_green if ret_usd >= 0 else c_red
-                ret_str = f"{ret_usd:+.1f}%" if asset != 'CASH' else "—"
-                if abs(diff) < cur_p * 0.05 and asset != 'CASH':
-                    action, diff_str = "<span style='color:#9494A0;'>HOLD</span>", "—"
-                elif abs(diff) < 1.0 and asset == 'CASH':
-                    action, diff_str = "<span style='color:#9494A0;'>HOLD</span>", "—"
-                elif diff > 0:
-                    action   = "<span style='color:#059669;font-weight:600;background:rgba(5,150,105,0.1);padding:2px 8px;border-left:2px solid #059669;'>BUY</span>"
-                    diff_str = f"<span style='color:#059669;font-weight:500;'>+${diff:,.0f}</span>"
+                    _avgstr = f"${_avgp:.1f}→${_curp:.1f}"
+                    _ret    = (_curp / _avgp - 1) * 100 if _avgp > 0 else 0.0
+                _retc   = C_GREEN if _ret >= 0 else C_RED
+                _retstr = f"{_ret:+.1f}%" if asset != 'CASH' else "—"
+                if abs(_diff) < _curp * 0.05 and asset != 'CASH':
+                    _act, _dstr = "<span style='color:#9494A0;'>HOLD</span>", "—"
+                elif abs(_diff) < 1.0 and asset == 'CASH':
+                    _act, _dstr = "<span style='color:#9494A0;'>HOLD</span>", "—"
+                elif _diff > 0:
+                    _act  = "<span style='color:#059669;font-weight:600;background:rgba(5,150,105,0.1);padding:2px 8px;border-left:2px solid #059669;'>BUY</span>"
+                    _dstr = f"<span style='color:#059669;font-weight:500;'>+${_diff:,.0f}</span>"
                 else:
-                    action   = "<span style='color:#DC2626;font-weight:600;background:rgba(220,38,38,0.1);padding:2px 8px;border-left:2px solid #DC2626;'>SELL</span>"
-                    diff_str = f"<span style='color:#DC2626;font-weight:500;'>-${abs(diff):,.0f}</span>"
-                if tgt_w > 0 or curr_v > 0 or shares > 0:
-                    rebal_html += (
-                        f'<tr><td style="font-weight:700;font-family:DM Sans,sans-serif;color:#059669;">{asset}</td>'
-                        f'<td style="color:#4A4A57;">{avg_p_str}</td>'
-                        f'<td><span style="color:{ret_c};font-weight:500;">{ret_str}</span></td>'
-                        f'<td>{curr_v:,.0f}</td>'
-                        f'<td style="color:#059669;">{tgt_w*100:.0f}%</td>'
-                        f'<td>{tgt_v:,.0f}</td>'
-                        f'<td>{diff_str}</td>'
-                        f'<td style="text-align:center;">{action}</td></tr>'
+                    _act  = "<span style='color:#DC2626;font-weight:600;background:rgba(220,38,38,0.1);padding:2px 8px;border-left:2px solid #DC2626;'>SELL</span>"
+                    _dstr = f"<span style='color:#DC2626;font-weight:500;'>-${abs(_diff):,.0f}</span>"
+                if _tgtw > 0 or _curv > 0 or _shs > 0:
+                    _rhtml += (
+                        f'<tr><td style="font-weight:700;color:#059669;">{asset}</td>'
+                        f'<td style="color:#4A4A57;">{_avgstr}</td>'
+                        f'<td><span style="color:{_retc};font-weight:500;">{_retstr}</span></td>'
+                        f'<td>{_curv:,.0f}</td>'
+                        f'<td style="color:#059669;">{_tgtw*100:.0f}%</td>'
+                        f'<td>{_tgtv:,.0f}</td>'
+                        f'<td>{_dstr}</td>'
+                        f'<td style="text-align:center;">{_act}</td></tr>'
                     )
-            rebal_html += "</tbody></table></div>"
+            _rhtml += "</tbody></table></div>"
             with st.container(border=True):
-                st.markdown(apply_theme(rebal_html), unsafe_allow_html=True)
+                st.markdown(apply_theme(_rhtml), unsafe_allow_html=True)
 
 
 elif page == "🍫 12-Pack Radar":
