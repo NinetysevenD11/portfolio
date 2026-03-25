@@ -237,7 +237,44 @@ def fetch_macro_news():
     except: pass
     return headlines_for_ai, news_items
 
-with st.spinner('데이터 수집 중...'):
+@st.cache_data(ttl=300)
+def fetch_global_markets():
+    """글로벌 증시 + 금리/원자재/크립토 + 주도주 데이터"""
+    # 글로벌 주요 지수 ETF
+    global_tickers = {
+        'SPY':'S&P 500','QQQ':'Nasdaq 100','DIA':'Dow Jones','IWM':'Russell 2000',
+        'EWJ':'Japan','EWT':'Taiwan','EWY':'Korea','FXI':'China','EWH':'HongKong',
+        'VGK':'Europe','EWG':'Germany','EWU':'UK','EWQ':'France','EWC':'Canada',
+        'EEM':'Emg Mkt','EWZ':'Brazil','EWA':'Australia',
+    }
+    # 금리/원자재/크립토
+    asset_tickers = {
+        '^TNX':'US 10Y','GLD':'Gold','SLV':'Silver','USO':'Oil',
+        'BTC-USD':'Bitcoin','ETH-USD':'Ethereum','UUP':'DXY',
+    }
+    # 주도주 (Magnificent 7 + 반도체 주요주)
+    leader_tickers = {
+        'AAPL':'Apple','MSFT':'Microsoft','NVDA':'Nvidia','AMZN':'Amazon',
+        'GOOGL':'Alphabet','META':'Meta','TSLA':'Tesla',
+        'AVGO':'Broadcom','AMD':'AMD','TSM':'TSMC',
+    }
+    all_t = list(global_tickers.keys()) + list(asset_tickers.keys()) + list(leader_tickers.keys())
+    results = {}
+    try:
+        end = datetime.now()
+        start = end - timedelta(days=5)
+        raw = yf.download(all_t, start=start.strftime('%Y-%m-%d'),
+                          end=end.strftime('%Y-%m-%d'), progress=False, auto_adjust=True)['Close']
+        for t in all_t:
+            if t in raw.columns:
+                s = raw[t].dropna()
+                if len(s) >= 2:
+                    chg = (s.iloc[-1] / s.iloc[-2] - 1) * 100
+                    results[t] = {'price': float(s.iloc[-1]), 'chg': float(chg)}
+                elif len(s) == 1:
+                    results[t] = {'price': float(s.iloc[-1]), 'chg': 0.0}
+    except: pass
+    return results, global_tickers, asset_tickers, leader_tickers
     df = load_data()
     rt_prices, last_update_time = fetch_realtime_prices()
 
@@ -784,52 +821,7 @@ with _bg_c2:
     if _new_bg != st.session_state.bg_color:
         st.session_state.bg_color = _new_bg
         st.rerun()
-# 빠른 프리셋
-st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.6em; color:#9494A0; padding:2px 15px 6px; letter-spacing:0.08em;">프리셋:</div>""", unsafe_allow_html=True)
 
-_presets = [
-    ("#F7F6F2", "아이보리"),
-    ("#FFFFFF",  "화이트"),
-    ("#F0F4F8",  "블루그레이"),
-    ("#1A1A2E",  "다크"),
-    ("#0F1B12",  "딥그린"),
-]
-
-_p1, _p2, _p3, _p4, _p5 = st.sidebar.columns(5)
-for _col, (_hex, _name) in zip([_p1, _p2, _p3, _p4, _p5], _presets):
-    _is_active = (st.session_state.bg_color.upper() == _hex.upper())
-    _border    = f"2px solid {main_color}" if _is_active else "1px solid rgba(0,0,0,0.22)"
-    # 색상 스워치를 HTML로 표시
-    _col.markdown(
-        f'<div style="width:100%;height:24px;background:{_hex};'
-        f'border:{_border};cursor:pointer;box-sizing:border-box;" '
-        f'title="{_name}"></div>',
-        unsafe_allow_html=True
-    )
-    if _col.button(_name, key=f"preset_{_hex}", use_container_width=True):
-        st.session_state.bg_color = _hex
-        st.rerun()
-
-# 프리셋 버튼 라벨 글씨 최소화 CSS
-st.sidebar.markdown("""
-<style>
-[data-testid="stSidebar"] [data-testid="column"] > div > div > div > div > button {
-    font-size: 0.52em !important;
-    padding: 1px 2px !important;
-    min-height: 18px !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    border: none !important;
-    color: #9494A0 !important;
-    letter-spacing: 0.02em;
-    line-height: 1.2;
-}
-[data-testid="stSidebar"] [data-testid="column"] > div > div > div > div > button:hover {
-    color: #111118 !important;
-    background: transparent !important;
-}
-</style>
-""", unsafe_allow_html=True)
 
 # ── 글씨 색상 개별 설정 (접기/펼치기) ───────────────
 with st.sidebar.expander("🎨  글씨 색상 설정", expanded=False):
@@ -1211,6 +1203,220 @@ if page == "📊 Dashboard":
         with st.container(border=True):
             st.plotly_chart(fig_tqqq, use_container_width=True)
 
+    # ══════════════════════════════════════════════════════════════
+    # ── 하단 추가 섹션 ──────────────────────────────────────────
+    # ══════════════════════════════════════════════════════════════
+    with st.spinner("글로벌 마켓 데이터 로딩..."):
+        _gm_data, _gm_tickers, _asset_tickers, _leader_tickers = fetch_global_markets()
+
+    def _sec_label(txt):
+        st.markdown(
+            f'<div style="font-family:DM Mono,monospace;font-size:0.6em;font-weight:500;'
+            f'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
+            f'padding-bottom:6px;border-bottom:2px solid #111118;margin:18px 0 12px;">'
+            f'{txt}</div>', unsafe_allow_html=True)
+
+    def _chg_color(v): return "#059669" if v >= 0 else "#DC2626"
+    def _chg_arrow(v): return "▲" if v >= 0 else "▼"
+
+    # ── ① 글로벌 증시 히트맵 ────────────────────────────────────
+    _sec_label("① Global Markets  ·  Heatmap")
+    _hm_cols = st.columns(4)
+    _gm_sorted = sorted(_gm_tickers.items(), key=lambda x: _gm_data.get(x[0],{}).get('chg',0), reverse=True)
+    for _i, (_t, _name) in enumerate(_gm_sorted):
+        _d    = _gm_data.get(_t, {})
+        _chg  = _d.get('chg', 0.0)
+        _px   = _d.get('price', 0.0)
+        _abs  = abs(_chg)
+        # 색상 강도: 절댓값에 비례
+        _intensity = min(_abs / 3.0, 1.0)
+        if _chg >= 0:
+            _r, _g, _b2 = int(5 + (0-5)*_intensity), int(150 + (200-150)*_intensity), int(105 + (80-105)*_intensity)
+        else:
+            _r, _g, _b2 = int(220 + (255-220)*_intensity*0.3), int(38 - 38*_intensity*0.5), int(38 - 38*_intensity*0.5)
+        _bg     = f"rgba({_r},{_g},{_b2},0.12)"
+        _border = f"rgba({_r},{_g},{_b2},0.45)"
+        _txt    = f"rgb({_r},{_g},{_b2})"
+        with _hm_cols[_i % 4]:
+            st.markdown(
+                f'<div style="background:{_bg};border:1px solid {_border};'
+                f'border-top:2px solid {_txt};padding:10px 12px;margin-bottom:8px;">'
+                f'<div style="font-family:DM Mono,monospace;font-size:0.62em;color:#9494A0;'
+                f'letter-spacing:0.1em;text-transform:uppercase;">{_name}</div>'
+                f'<div style="font-family:DM Mono,monospace;font-size:0.95em;color:#111118;'
+                f'font-variant-numeric:tabular-nums;margin:2px 0;">${_px:,.2f}</div>'
+                f'<div style="font-family:DM Mono,monospace;font-size:0.82em;color:{_txt};'
+                f'font-weight:600;">{_chg_arrow(_chg)} {_chg:+.2f}%</div>'
+                f'</div>', unsafe_allow_html=True)
+
+    # ── ② 금리 / 원자재 / 크립토 ────────────────────────────────
+    _sec_label("② Rates  /  Commodities  /  Crypto")
+    _asset_icons = {'^TNX':'📈','GLD':'🥇','SLV':'⚪','USO':'🛢','BTC-USD':'₿','ETH-USD':'Ξ','UUP':'💵'}
+    _asset_cols = st.columns(7)
+    for _i, (_t, _name) in enumerate(_asset_tickers.items()):
+        _d   = _gm_data.get(_t, {})
+        _chg = _d.get('chg', 0.0)
+        _px  = _d.get('price', 0.0)
+        _clr = _chg_color(_chg)
+        _ico = _asset_icons.get(_t, '')
+        with _asset_cols[_i]:
+            st.markdown(
+                f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.10);'
+                f'border-top:2px solid {_clr};padding:12px 10px;text-align:center;">'
+                f'<div style="font-size:1.1em;margin-bottom:4px;">{_ico}</div>'
+                f'<div style="font-family:DM Mono,monospace;font-size:0.6em;color:#9494A0;'
+                f'letter-spacing:0.1em;text-transform:uppercase;">{_name}</div>'
+                f'<div style="font-family:DM Mono,monospace;font-size:0.88em;color:#111118;'
+                f'font-variant-numeric:tabular-nums;margin:3px 0;">${_px:,.2f}</div>'
+                f'<div style="font-family:DM Mono,monospace;font-size:0.8em;'
+                f'color:{_clr};font-weight:600;">{_chg_arrow(_chg)} {_chg:+.2f}%</div>'
+                f'</div>', unsafe_allow_html=True)
+
+    # ── ③ 시장 주도주 ────────────────────────────────────────────
+    _sec_label("③ Market Leaders  ·  Magnificent 7  +  Semis")
+    _ld_sorted = sorted(_leader_tickers.items(),
+                        key=lambda x: _gm_data.get(x[0],{}).get('chg',0), reverse=True)
+    _ld_cols = st.columns(5)
+    for _i, (_t, _name) in enumerate(_ld_sorted):
+        _d   = _gm_data.get(_t, {})
+        _chg = _d.get('chg', 0.0)
+        _px  = _d.get('price', 0.0)
+        _clr = _chg_color(_chg)
+        _rank_color = "#D97706" if _i == 0 else ("#9494A0" if _i >= 3 else "#111118")
+        with _ld_cols[_i % 5]:
+            st.markdown(
+                f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.10);'
+                f'border-top:2px solid {_clr};padding:12px 14px;margin-bottom:8px;">'
+                f'<div style="display:flex;justify-content:space-between;align-items:baseline;">'
+                f'<span style="font-family:DM Mono,monospace;font-size:0.62em;color:#9494A0;'
+                f'text-transform:uppercase;letter-spacing:0.1em;">{_t}</span>'
+                f'<span style="font-family:DM Mono,monospace;font-size:0.62em;'
+                f'color:{_rank_color};font-weight:600;">#{_i+1}</span>'
+                f'</div>'
+                f'<div style="font-family:DM Sans,sans-serif;font-size:0.82em;'
+                f'color:#2C2C35;margin:3px 0;">{_name}</div>'
+                f'<div style="font-family:DM Mono,monospace;font-size:1.0em;color:#111118;'
+                f'font-variant-numeric:tabular-nums;">${_px:,.2f}</div>'
+                f'<div style="font-family:DM Mono,monospace;font-size:0.82em;'
+                f'color:{_clr};font-weight:600;">{_chg_arrow(_chg)} {_chg:+.2f}%</div>'
+                f'</div>', unsafe_allow_html=True)
+
+    # ── ④ 주도 섹터 스캐너 ──────────────────────────────────────
+    _sec_label("④ Sector Scanner  ·  1-Month Performance")
+    _sec_data_full = [
+        {'t': s, 'name': {'XLK':'Technology','XLV':'Health Care','XLF':'Financials',
+            'XLY':'Cons. Discret','XLC':'Comm. Svc','XLI':'Industrials',
+            'XLP':'Cons. Staples','XLE':'Energy','XLU':'Utilities',
+            'XLRE':'Real Estate','XLB':'Materials'}.get(s, s),
+         'ret1m': last_row.get(f'{s}_1M', 0.0) * 100}
+        for s in SECTOR_TICKERS
+    ]
+    _sec_sorted_full = sorted(_sec_data_full, key=lambda x: x['ret1m'], reverse=True)
+
+    # 섹터 바 차트
+    _sec_fig = go.Figure()
+    _sec_names_plot = [x['name'] for x in _sec_sorted_full]
+    _sec_rets_plot  = [x['ret1m'] for x in _sec_sorted_full]
+    _sec_colors_plot = [_chg_color(v) for v in _sec_rets_plot]
+    _sec_fig.add_trace(go.Bar(
+        x=_sec_names_plot, y=_sec_rets_plot,
+        marker_color=_sec_colors_plot, marker_line_width=0,
+        text=[f"{v:+.1f}%" for v in _sec_rets_plot],
+        textposition='outside', textfont=dict(size=10, family='DM Mono')
+    ))
+    _sec_fig.update_layout(
+        height=260, **chart_layout,
+        yaxis=dict(tickformat='.1f', ticksuffix='%', **_ax),
+        xaxis=dict(**_ax), showlegend=False,
+        margin=dict(l=0, r=0, t=20, b=40)
+    )
+    _sec_fig.update_xaxes(tickfont=dict(size=10))
+    with st.container(border=True):
+        st.plotly_chart(_sec_fig, use_container_width=True)
+
+    # ── ⑤ 미국 경제 캘린더 ──────────────────────────────────────
+    _sec_label("⑤ US Economic Calendar  ·  Key Events This Week")
+    _cal_l, _cal_r = st.columns([1.4, 1])
+    with _cal_l:
+        # 주요 경제지표 일정 (정기 이벤트 기반 — 실제 날짜는 매달 고정 스케줄)
+        from datetime import date
+        _today    = date.today()
+        _weekday  = _today.weekday()   # Mon=0 ... Sun=6
+        _mon      = _today - timedelta(days=_weekday)
+        def _wd(offset):
+            d = _mon + timedelta(days=offset)
+            return d.strftime('%m/%d (%a)')
+
+        _cal_events = [
+            (_wd(0), "Mon", "ISM Manufacturing PMI",      "Medium", "#D97706"),
+            (_wd(0), "Mon", "Construction Spending",       "Low",    "#9494A0"),
+            (_wd(1), "Tue", "JOLTS Job Openings",          "High",   "#DC2626"),
+            (_wd(1), "Tue", "Factory Orders",              "Medium", "#D97706"),
+            (_wd(2), "Wed", "ADP Employment Change",       "High",   "#DC2626"),
+            (_wd(2), "Wed", "ISM Services PMI",            "Medium", "#D97706"),
+            (_wd(2), "Wed", "FOMC Meeting Minutes",        "High",   "#DC2626"),
+            (_wd(3), "Thu", "Initial Jobless Claims",      "Medium", "#D97706"),
+            (_wd(3), "Thu", "Trade Balance",               "Medium", "#D97706"),
+            (_wd(4), "Fri", "Non-Farm Payrolls",           "HIGH",   "#DC2626"),
+            (_wd(4), "Fri", "Unemployment Rate",           "HIGH",   "#DC2626"),
+            (_wd(4), "Fri", "Average Hourly Earnings",     "Medium", "#D97706"),
+        ]
+        st.markdown(
+            '<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.10);">'
+            '<table style="width:100%;border-collapse:collapse;font-family:DM Mono,monospace;">'
+            '<tr style="border-bottom:2px solid #111118;">'
+            '<th style="padding:8px 10px;font-size:0.6em;color:#9494A0;letter-spacing:0.14em;'
+            'text-transform:uppercase;text-align:left;font-weight:400;">Date</th>'
+            '<th style="padding:8px 10px;font-size:0.6em;color:#9494A0;letter-spacing:0.14em;'
+            'text-transform:uppercase;text-align:left;font-weight:400;">Event</th>'
+            '<th style="padding:8px 10px;font-size:0.6em;color:#9494A0;letter-spacing:0.14em;'
+            'text-transform:uppercase;text-align:center;font-weight:400;">Impact</th>'
+            '</tr>'
+            + "".join([
+                f'<tr style="border-bottom:1px solid rgba(0,0,0,0.05);">'
+                f'<td style="padding:7px 10px;font-size:0.7em;color:#9494A0;white-space:nowrap;">'
+                f'{date_s}</td>'
+                f'<td style="padding:7px 10px;font-size:0.75em;color:#2C2C35;">{evt}</td>'
+                f'<td style="padding:7px 10px;text-align:center;">'
+                f'<span style="background:{imp_c}22;color:{imp_c};border:1px solid {imp_c}55;'
+                f'font-size:0.6em;padding:2px 7px;letter-spacing:0.06em;">{imp}</span></td>'
+                f'</tr>'
+                for date_s, _, evt, imp, imp_c in _cal_events
+            ])
+            + '</table></div>',
+            unsafe_allow_html=True
+        )
+    with _cal_r:
+        # 이번 주 요약 카드
+        _high_events = [e for e in _cal_events if e[3] in ("High","HIGH")]
+        st.markdown(
+            f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.10);'
+            f'border-top:2px solid #DC2626;padding:16px 18px;">'
+            f'<div style="font-family:DM Mono,monospace;font-size:0.6em;color:#9494A0;'
+            f'letter-spacing:0.16em;text-transform:uppercase;margin-bottom:10px;">'
+            f'High Impact Events</div>'
+            + "".join([
+                f'<div style="display:flex;align-items:center;gap:8px;padding:7px 0;'
+                f'border-bottom:1px solid rgba(0,0,0,0.05);">'
+                f'<div style="width:6px;height:6px;border-radius:50%;background:#DC2626;'
+                f'flex-shrink:0;"></div>'
+                f'<div>'
+                f'<div style="font-family:DM Mono,monospace;font-size:0.62em;color:#9494A0;">'
+                f'{d}</div>'
+                f'<div style="font-family:DM Sans,sans-serif;font-size:0.82em;color:#2C2C35;'
+                f'font-weight:500;">{e}</div>'
+                f'</div></div>'
+                for d, _, e, imp, _ in _high_events
+            ])
+            + f'<div style="margin-top:10px;padding:8px;background:rgba(220,38,38,0.05);'
+            f'border-left:2px solid #DC2626;">'
+            f'<span style="font-family:DM Mono,monospace;font-size:0.66em;color:#9494A0;">'
+            f'고영향 이벤트 총 <b style="color:#DC2626;">{len(_high_events)}건</b></span>'
+            f'</div>'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+
 # ──────────────────────────────────────────
 elif page == "💼 Portfolio":
 
@@ -1455,52 +1661,6 @@ elif page == "💼 Portfolio":
         if total_val_usd > 0:
             diff_vals = {a: (total_val_usd * target_weights.get(a, 0.0)) - curr_vals[a] for a in ASSET_LIST}
 
-            st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
-            st.markdown(
-                '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
-                'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
-                'padding-bottom:6px;border-bottom:2px solid #111118;margin-bottom:10px;">'
-                'Quick Orders</div>',
-                unsafe_allow_html=True
-            )
-
-            sell_items, buy_items = [], []
-            for asset in ASSET_LIST:
-                cur_p = current_prices[asset] if current_prices[asset] > 0 else 1.0
-                diff  = diff_vals[asset]
-                if asset != 'CASH' and diff < -cur_p * 0.05:
-                    sell_items.append((asset, f"{abs(diff)/cur_p:,.2f} 주 매도", "#DC2626"))
-                elif asset == 'CASH' and diff < -1.0:
-                    sell_items.append(("CASH", f"${abs(diff):,.0f} 사용", "#DC2626"))
-                if asset != 'CASH' and diff > cur_p * 0.05:
-                    buy_items.append((asset, f"{diff/cur_p:,.2f} 주 매수", "#059669"))
-                elif asset == 'CASH' and diff > 1.0:
-                    buy_items.append(("CASH", f"${diff:,.0f} 확보", "#059669"))
-
-            qo_col1, qo_col2 = st.columns(2)
-
-            def _order_card(title, items, accent, col):
-                rows_html = "".join([
-                    f'<div style="display:flex;justify-content:space-between;'
-                    f'padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.05);">'
-                    f'<span style="font-family:DM Mono,monospace;font-size:0.78em;'
-                    f'font-weight:600;color:#111118;">{a}</span>'
-                    f'<span style="font-family:DM Mono,monospace;font-size:0.78em;'
-                    f'color:{c};font-variant-numeric:tabular-nums;">{v}</span></div>'
-                    for a, v, c in items
-                ]) or f'<div style="font-family:DM Mono,monospace;font-size:0.74em;color:#9494A0;padding:6px 0;">— 없음</div>'
-                col.markdown(
-                    f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.10);'
-                    f'border-top:2px solid {accent};padding:12px 14px;">'
-                    f'<div style="font-family:DM Sans,sans-serif;font-size:0.8em;'
-                    f'font-weight:700;color:{accent};margin-bottom:8px;">{title}</div>'
-                    f'{rows_html}</div>',
-                    unsafe_allow_html=True
-                )
-
-            _order_card("🔴 SELL", sell_items, "#DC2626", qo_col1)
-            _order_card("🟢 BUY",  buy_items,  "#059669", qo_col2)
-
     with right_pf:
         if total_val_usd > 0:
             # 차트 행: 2개 파이 + 1개 바
@@ -1576,6 +1736,49 @@ elif page == "💼 Portfolio":
                         st.plotly_chart(fig_bar, use_container_width=True)
 
             # 리밸런싱 테이블
+            # ── Quick Orders (리밸런싱 테이블 바로 위) ─────────
+            sell_items_r, buy_items_r = [], []
+            for asset in ASSET_LIST:
+                cur_p_r = current_prices[asset] if current_prices[asset] > 0 else 1.0
+                diff_r  = diff_vals[asset]
+                if asset != 'CASH' and diff_r < -cur_p_r * 0.05:
+                    sell_items_r.append((asset, f"{abs(diff_r)/cur_p_r:,.2f} 주 매도", "#DC2626"))
+                elif asset == 'CASH' and diff_r < -1.0:
+                    sell_items_r.append(("CASH", f"${abs(diff_r):,.0f} 사용", "#DC2626"))
+                if asset != 'CASH' and diff_r > cur_p_r * 0.05:
+                    buy_items_r.append((asset, f"{diff_r/cur_p_r:,.2f} 주 매수", "#059669"))
+                elif asset == 'CASH' and diff_r > 1.0:
+                    buy_items_r.append(("CASH", f"${diff_r:,.0f} 확보", "#059669"))
+
+            st.markdown(
+                '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
+                'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
+                'padding-bottom:6px;border-bottom:2px solid #111118;margin-bottom:10px;">'
+                'Quick Orders</div>',
+                unsafe_allow_html=True
+            )
+            _qo_c1, _qo_c2 = st.columns(2)
+            def _order_card_r(title, items, accent, col):
+                rows_html = "".join([
+                    f'<div style="display:flex;justify-content:space-between;'
+                    f'padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.05);">'
+                    f'<span style="font-family:DM Mono,monospace;font-size:0.78em;'
+                    f'font-weight:600;color:#111118;">{a}</span>'
+                    f'<span style="font-family:DM Mono,monospace;font-size:0.78em;'
+                    f'color:{c};font-variant-numeric:tabular-nums;">{v}</span></div>'
+                    for a, v, c in items
+                ]) or f'<div style="font-family:DM Mono,monospace;font-size:0.74em;color:#9494A0;padding:6px 0;">— 없음</div>'
+                col.markdown(
+                    f'<div style="background:#FAFAF7;border:1px solid rgba(0,0,0,0.10);'
+                    f'border-top:2px solid {accent};padding:12px 14px;margin-bottom:12px;">'
+                    f'<div style="font-family:DM Sans,sans-serif;font-size:0.8em;'
+                    f'font-weight:700;color:{accent};margin-bottom:8px;">{title}</div>'
+                    f'{rows_html}</div>',
+                    unsafe_allow_html=True
+                )
+            _order_card_r("🔴 SELL", sell_items_r, "#DC2626", _qo_c1)
+            _order_card_r("🟢 BUY",  buy_items_r,  "#059669", _qo_c2)
+
             st.markdown(
                 '<div style="font-family:DM Mono,monospace;font-size:0.57em;font-weight:500;'
                 'color:#6B6B7A;letter-spacing:0.2em;text-transform:uppercase;'
