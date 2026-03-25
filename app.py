@@ -785,25 +785,51 @@ with _bg_c2:
         st.session_state.bg_color = _new_bg
         st.rerun()
 # 빠른 프리셋
-st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.6em; color:#9494A0; padding:2px 15px 8px; letter-spacing:0.08em;">프리셋:</div>""", unsafe_allow_html=True)
+st.sidebar.markdown("""<div style="font-family:'DM Mono'; font-size:0.6em; color:#9494A0; padding:2px 15px 6px; letter-spacing:0.08em;">프리셋:</div>""", unsafe_allow_html=True)
+
+_presets = [
+    ("#F7F6F2", "아이보리"),
+    ("#FFFFFF",  "화이트"),
+    ("#F0F4F8",  "블루그레이"),
+    ("#1A1A2E",  "다크"),
+    ("#0F1B12",  "딥그린"),
+]
+
 _p1, _p2, _p3, _p4, _p5 = st.sidebar.columns(5)
-_presets = [("#F7F6F2","아이보리"), ("#FFFFFF","화이트"), ("#F0F4F8","블루그레이"), ("#1A1A2E","다크"), ("#0F1B12","딥그린")]
-for _col, (_hex, _name) in zip([_p1,_p2,_p3,_p4,_p5], _presets):
-    if _col.button("", key=f"preset_{_hex}", help=_name,
-                   use_container_width=True):
+for _col, (_hex, _name) in zip([_p1, _p2, _p3, _p4, _p5], _presets):
+    _is_active = (st.session_state.bg_color.upper() == _hex.upper())
+    _border    = f"2px solid {main_color}" if _is_active else "1px solid rgba(0,0,0,0.22)"
+    # 색상 스워치를 HTML로 표시
+    _col.markdown(
+        f'<div style="width:100%;height:24px;background:{_hex};'
+        f'border:{_border};cursor:pointer;box-sizing:border-box;" '
+        f'title="{_name}"></div>',
+        unsafe_allow_html=True
+    )
+    if _col.button(_name, key=f"preset_{_hex}", use_container_width=True):
         st.session_state.bg_color = _hex
         st.rerun()
-# 프리셋 버튼에 색상 표시용 CSS 주입
-_preset_css = ""
-for i, (_hex, _) in enumerate(_presets):
-    _preset_css += f"""
-    [data-testid="stSidebar"] button[data-testid="baseButton-secondary"]:nth-of-type({i+2}) {{
-        background: {_hex} !important;
-        border: 1px solid rgba(0,0,0,0.18) !important;
-        min-height: 22px !important; padding: 0 !important;
-        border-radius: 3px !important;
-    }}"""
-st.sidebar.markdown(f"<style>{_preset_css}</style>", unsafe_allow_html=True)
+
+# 프리셋 버튼 라벨 글씨 최소화 CSS
+st.sidebar.markdown("""
+<style>
+[data-testid="stSidebar"] [data-testid="column"] > div > div > div > div > button {
+    font-size: 0.52em !important;
+    padding: 1px 2px !important;
+    min-height: 18px !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    color: #9494A0 !important;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+}
+[data-testid="stSidebar"] [data-testid="column"] > div > div > div > div > button:hover {
+    color: #111118 !important;
+    background: transparent !important;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # ── 글씨 색상 개별 설정 (접기/펼치기) ───────────────
 with st.sidebar.expander("🎨  글씨 색상 설정", expanded=False):
