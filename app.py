@@ -92,43 +92,55 @@ def save_portfolio_to_disk():
             json.dump(st.session_state.portfolio, f)
     except: pass
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=3600, show_spinner=False)
 def load_data():
     end_date   = datetime.now()
     start_date = end_date - timedelta(days=900)
-    data = yf.download(TICKERS, start=start_date.strftime("%Y-%m-%d"),
-                       end=end_date.strftime("%Y-%m-%d"), progress=False, auto_adjust=True)['Close']
-    df = pd.DataFrame(index=data.index)
-    for t in TICKERS: df[t] = data[t]
-    df = df.ffill().bfill()
-    df['QQQ_MA20']      = df['QQQ'].rolling(20).mean()
-    df['QQQ_MA50']      = df['QQQ'].rolling(50).mean()
-    df['QQQ_MA200']     = df['QQQ'].rolling(200).mean()
-    df['TQQQ_MA200']    = df['TQQQ'].rolling(200).mean()
-    df['SMH_MA50']      = df['SMH'].rolling(50).mean()
-    df['VIX_MA5']       = df['^VIX'].rolling(5).mean()
-    df['VIX_MA20']      = df['^VIX'].rolling(20).mean()
-    df['VIX_MA50']      = df['^VIX'].rolling(50).mean()
-    df['SMH_3M_Ret']    = df['SMH'].pct_change(63)
-    df['SMH_1M_Ret']    = df['SMH'].pct_change(21)
-    df['SMH_RSI']       = ta.rsi(df['SMH'], length=14)
-    df['HYG_IEF_Ratio'] = df['HYG'] / df['IEF']
-    df['HYG_IEF_MA20']  = df['HYG_IEF_Ratio'].rolling(20).mean()
-    df['HYG_IEF_MA50']  = df['HYG_IEF_Ratio'].rolling(50).mean()
-    df['QQQ_20d_Ret']   = df['QQQ'].pct_change(20)
-    df['QQQE_20d_Ret']  = df['QQQE'].pct_change(20)
-    df['QQQ_RSI']       = ta.rsi(df['QQQ'], length=14)
-    df['GLD_SPY_Ratio'] = df['GLD'] / df['SPY']
-    df['GLD_SPY_MA50']  = df['GLD_SPY_Ratio'].rolling(50).mean()
-    df['QQQ_High52']    = df['QQQ'].rolling(252).max()
-    df['QQQ_DD']        = (df['QQQ'] / df['QQQ_High52']) - 1
-    df['UUP_MA50']      = df['UUP'].rolling(50).mean()
-    df['TNX_MA50']      = df['^TNX'].rolling(50).mean()
-    df['BTC_MA50']      = df['BTC-USD'].rolling(50).mean()
-    df['IWM_SPY_Ratio'] = df['IWM'] / df['SPY']
-    df['IWM_SPY_MA50']  = df['IWM_SPY_Ratio'].rolling(50).mean()
-    for sec in SECTOR_TICKERS: df[f'{sec}_1M'] = df[sec].pct_change(21)
-    return df.dropna()
+    for attempt in range(3):
+        try:
+            data = yf.download(TICKERS, start=start_date.strftime("%Y-%m-%d"),
+                               end=end_date.strftime("%Y-%m-%d"),
+                               progress=False, auto_adjust=True)['Close']
+            if data.empty:
+                continue
+            df = pd.DataFrame(index=data.index)
+            for t in TICKERS:
+                if t in data.columns: df[t] = data[t]
+            df = df.ffill().bfill()
+            df['QQQ_MA20']      = df['QQQ'].rolling(20).mean()
+            df['QQQ_MA50']      = df['QQQ'].rolling(50).mean()
+            df['QQQ_MA200']     = df['QQQ'].rolling(200).mean()
+            df['TQQQ_MA200']    = df['TQQQ'].rolling(200).mean()
+            df['SMH_MA50']      = df['SMH'].rolling(50).mean()
+            df['VIX_MA5']       = df['^VIX'].rolling(5).mean()
+            df['VIX_MA20']      = df['^VIX'].rolling(20).mean()
+            df['VIX_MA50']      = df['^VIX'].rolling(50).mean()
+            df['SMH_3M_Ret']    = df['SMH'].pct_change(63)
+            df['SMH_1M_Ret']    = df['SMH'].pct_change(21)
+            df['SMH_RSI']       = ta.rsi(df['SMH'], length=14)
+            df['HYG_IEF_Ratio'] = df['HYG'] / df['IEF']
+            df['HYG_IEF_MA20']  = df['HYG_IEF_Ratio'].rolling(20).mean()
+            df['HYG_IEF_MA50']  = df['HYG_IEF_Ratio'].rolling(50).mean()
+            df['QQQ_20d_Ret']   = df['QQQ'].pct_change(20)
+            df['QQQE_20d_Ret']  = df['QQQE'].pct_change(20)
+            df['QQQ_RSI']       = ta.rsi(df['QQQ'], length=14)
+            df['GLD_SPY_Ratio'] = df['GLD'] / df['SPY']
+            df['GLD_SPY_MA50']  = df['GLD_SPY_Ratio'].rolling(50).mean()
+            df['QQQ_High52']    = df['QQQ'].rolling(252).max()
+            df['QQQ_DD']        = (df['QQQ'] / df['QQQ_High52']) - 1
+            df['UUP_MA50']      = df['UUP'].rolling(50).mean()
+            df['TNX_MA50']      = df['^TNX'].rolling(50).mean()
+            df['BTC_MA50']      = df['BTC-USD'].rolling(50).mean()
+            df['IWM_SPY_Ratio'] = df['IWM'] / df['SPY']
+            df['IWM_SPY_MA50']  = df['IWM_SPY_Ratio'].rolling(50).mean()
+            for sec in SECTOR_TICKERS: df[f'{sec}_1M'] = df[sec].pct_change(21)
+            result = df.dropna()
+            if not result.empty:
+                return result
+        except Exception:
+            import time
+            time.sleep(1)
+    return None
 
 def get_target_v45(row):
     if row['^VIX'] > 40: return 4
@@ -276,12 +288,31 @@ def fetch_global_markets():
     except: pass
     return results, global_tickers, asset_tickers, leader_tickers
 
-with st.spinner('데이터 수집 중...'):
+with st.spinner('시장 데이터 수집 중...'):
     df = load_data()
+    # 세션 캐시: 성공하면 저장, 실패하면 이전 값 사용
+    if df is not None and not df.empty:
+        st.session_state['_df_cache'] = df
+    elif '_df_cache' in st.session_state:
+        df = st.session_state['_df_cache']
     rt_prices, last_update_time = fetch_realtime_prices()
 
 if df is None or df.empty:
-    st.error("🚨 야후 파이낸스(Yahoo Finance) 통신 지연. 잠시 후 새로고침 해주세요.")
+    st.markdown("""
+    <div style="background:#FEF2F2;border:1px solid #FCA5A5;border-left:4px solid #DC2626;
+        padding:20px 24px;margin:20px 0;font-family:'Plus Jakarta Sans',sans-serif;">
+        <div style="font-size:1.1em;font-weight:700;color:#DC2626;margin-bottom:6px;">
+            📡 야후 파이낸스(Yahoo Finance) 연결 실패
+        </div>
+        <div style="font-size:0.9em;color:#7F1D1D;line-height:1.6;">
+            Streamlit Cloud에서 야후 파이낸스 서버에 일시적으로 연결하지 못했습니다.<br>
+            보통 30초~2분 내에 자동 복구됩니다.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    if st.button("🔄  다시 시도", type="primary", use_container_width=False):
+        st.cache_data.clear()
+        st.rerun()
     st.stop()
 
 last_index = df.index[-1]
